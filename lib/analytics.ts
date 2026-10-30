@@ -362,10 +362,10 @@ export const openReportPreview = (doc: ReportDoc, opts?: { autoPrint?: boolean; 
 </head>
 <body class="size-${paper}">
     <div class="toolbar no-print">
-        <button class="btn-print" onclick="window.print()">🖨️ ${rtl ? 'طباعة' : 'Print'}</button>
-        <button class="btn-pdf" onclick="window.print()">${rtl ? '📄 تصدير PDF' : '📄 Export PDF'}</button>
+        <button id="btn-print" class="btn-print">🖨️ ${rtl ? 'طباعة' : 'Print'}</button>
+        <button id="btn-pdf" class="btn-pdf">${rtl ? '📄 تصدير PDF' : '📄 Export PDF'}</button>
         <label class="paper-label">${rtl ? 'مقاس الورق' : 'Paper size'}:
-            <select id="paper-select" onchange="window.__setPaper && window.__setPaper(this.value)">
+            <select id="paper-select">
                 <option value="A4">A4</option>
                 <option value="A5">A5</option>
                 <option value="80mm">${rtl ? 'حراري 80mm' : 'Thermal 80mm'}</option>
@@ -384,27 +384,36 @@ export const openReportPreview = (doc: ReportDoc, opts?: { autoPrint?: boolean; 
     ${totalsHtml ? `<div class="totals">${totalsHtml}</div>` : ''}
     ${notesHtml}
     <div class="generated">${rtl ? 'صُصدر في' : 'Generated at'}: ${new Date().toLocaleString()}</div>
-    <script>
-        (function(){
-            var CSS = ${JSON.stringify(PAPER_PAGE_CSS)};
-            window.__setPaper = function(s){
-                if (!CSS[s]) return;
-                var st = document.getElementById('page-css');
-                if (st) st.textContent = CSS[s];
-                document.body.className = 'size-' + s;
-                var sel = document.getElementById('paper-select');
-                if (sel && sel.value !== s) sel.value = s;
-                try { localStorage.setItem('report_print_size', s); } catch(e) {}
-            };
-            var sel = document.getElementById('paper-select');
-            if (sel) sel.value = document.body.className.replace('size-', '') || 'A4';
-            document.querySelector('.btn-print').addEventListener('click', function(){ setTimeout(function(){ window.close(); }, 1500); });
-        })();
-    <\/script>
 </body>
 </html>`;
     win.document.write(html);
     win.document.close();
-    if (opts?.autoPrint) win.onload = () => win.print();
+
+    // ربط أدوات المعاينة من النافذة الأم — سياسة CSP تمنع السكربتات/المعالجات المضمّنة
+    try {
+        const doc = win.document;
+        const applyPaper = (size: string) => {
+            const css = (PAPER_PAGE_CSS as Record<string, string>)[size];
+            if (!css) return;
+            const st = doc.getElementById('page-css');
+            if (st) st.textContent = css;
+            doc.body.className = `size-${size}`;
+            const sel = doc.getElementById('paper-select') as HTMLSelectElement | null;
+            if (sel && sel.value !== size) sel.value = size;
+            try { localStorage.setItem('report_print_size', size); } catch { /* ignore */ }
+        };
+        const print = () => { try { win.focus(); win.print(); } catch { /* ignore */ } };
+        doc.getElementById('btn-print')?.addEventListener('click', print);
+        doc.getElementById('btn-pdf')?.addEventListener('click', print);
+        const sel = doc.getElementById('paper-select') as HTMLSelectElement | null;
+        if (sel) {
+            sel.addEventListener('change', () => applyPaper(sel.value));
+            sel.value = doc.body.className.replace('size-', '') || 'A4';
+        }
+    } catch {
+        // نافذة غير متاحة (أُغلقت) — لا شيء لربطه
+    }
+
+    if (opts?.autoPrint) win.onload = () => { try { win.print(); } catch { /* ignore */ } };
     return win;
 };

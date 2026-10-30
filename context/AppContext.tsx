@@ -11,13 +11,20 @@ import { round2, PAYMENT_KINDS } from '../lib/payments';
 import { toIsoDate } from '../lib/dates';
 import { buildPrintIdentity } from '../lib/printDesign';
 import { idbGet, idbSet, idbRemove } from '../lib/idb';
+import { makePasswordRecord, makePinRecord, verifySecret } from '../lib/crypto';
 
 interface AppContextType {
   language: Language;
   toggleLanguage: () => void;
   currentUser: User | null;
-  login: (username: string, password: string) => boolean;
+  login: (username: string, password: string) => Promise<boolean>;
+  /** دخول بالرمز السريع (PIN) مع قفل مؤقت بعد 5 محاولات فاشلة */
+  loginWithPin: (pin: string) => Promise<{ ok: boolean; error?: 'invalid' | 'locked' }>;
   logout: () => void;
+  /** تغيير كلمة مرور المستخدم الحالي (يتحقق من الحالية أولاً) */
+  changeOwnPassword: (currentPassword: string, newPassword: string) => Promise<{ ok: boolean; error?: string }>;
+  /** تعيين/مسح الرمز السريع للمستخدم الحالي (null = مسح) */
+  setQuickPin: (currentPassword: string, pin: string | null) => Promise<{ ok: boolean; error?: string }>;
   state: AppState;
   // Invoices
   holdInvoice: (invoice: Omit<Invoice, 'id'>) => void;
@@ -685,7 +692,32 @@ const translations = {
     reset_password: 'إعادة تعيين كلمة المرور',
     enter_new_password: 'أدخل كلمة المرور الجديدة',
     password_changed: 'تم تغيير كلمة المرور بنجاح',
-    password_short: 'كلمة المرور قصيرة جداً (4 أحرف على الأقل)',
+    password_short: 'كلمة المرور قصيرة جداً (6 أحرف على الأقل)',
+    security_section: 'الأمان والحماية',
+    change_password: 'تغيير كلمة المرور',
+    current_password: 'كلمة المرور الحالية',
+    new_password: 'كلمة المرور الجديدة',
+    confirm_password: 'تأكيد كلمة المرور',
+    quick_pin_new: 'رمز سريع جديد (4-6 أرقام)',
+    quick_pin_active: 'رمز سريع مُفعّل لهذا المستخدم',
+    quick_pin_none: 'لا يوجد رمز سريع',
+    clear_quick_pin: 'مسح الرمز السريع',
+    pin_invalid: 'الرمز يجب أن يكون من 4 إلى 6 أرقام',
+    pin_locked: 'محاولات كثيرة — انتظر دقيقة ثم أعد المحاولة',
+    biometric_unavailable: 'الدخول بالبصمة غير مفعّل — استخدم كلمة المرور',
+    pin_not_set: 'لا يوجد رمز سريع لأي مستخدم — عيّنه من الإعدادات بعد الدخول',
+    wrong_password: 'كلمة المرور الحالية غير صحيحة',
+    password_changed_ok: 'تم تحديث كلمة المرور',
+    pin_saved: 'تم حفظ الرمز السريع',
+    pin_cleared: 'تم مسح الرمز السريع',
+    force_password_title: 'يجب تغيير كلمة المرور الافتراضية',
+    force_password_hint: 'حساب admin ما زال يستخدم كلمة مرور افتراضية معروفة. عيّن كلمة مرور قوية للمتابعة.',
+    machine_id: 'معرّف الجهاز',
+    license_machine_hint: 'أرسل هذا المعرّف إلى المطوّر للحصول على مفتاح ترخيص خاص بهذا الجهاز.',
+    license_expired: 'انتهت صلاحية الترخيص',
+    license_wrong_machine: 'هذا الترخيص غير مرتبط بهذا الجهاز',
+    storage_full: 'تعذّر حفظ البيانات: مساحة التخزين ممتلئة',
+    storage_trimmed: 'تم تقليم السجلات القديمة لتوفير مساحة',
     cannot_change_self: 'لا يمكنك تعطيل حسابك الحالي أو تغيير آخر مدير نشط',
     cannot_delete_last_admin: 'لا يمكن حذف آخر مدير نشط أو حسابك الحالي',
     enable_user: 'تفعيل المستخدم',
@@ -1456,7 +1488,32 @@ const translations = {
     reset_password: 'Reset Password',
     enter_new_password: 'Enter new password',
     password_changed: 'Password changed successfully',
-    password_short: 'Password too short (min 4 characters)',
+    password_short: 'Password too short (min 6 characters)',
+    security_section: 'Security',
+    change_password: 'Change password',
+    current_password: 'Current password',
+    new_password: 'New password',
+    confirm_password: 'Confirm password',
+    quick_pin_new: 'New quick PIN (4-6 digits)',
+    quick_pin_active: 'A quick PIN is set for this user',
+    quick_pin_none: 'No quick PIN set',
+    clear_quick_pin: 'Clear quick PIN',
+    pin_invalid: 'PIN must be 4 to 6 digits',
+    pin_locked: 'Too many attempts — wait a minute and try again',
+    biometric_unavailable: 'Biometric login is not enabled — use your password',
+    pin_not_set: 'No quick PIN is set — configure it in Settings after signing in',
+    wrong_password: 'Current password is incorrect',
+    password_changed_ok: 'Password updated',
+    pin_saved: 'Quick PIN saved',
+    pin_cleared: 'Quick PIN cleared',
+    force_password_title: 'Change the default password',
+    force_password_hint: 'The admin account still uses a known default password. Set a strong password to continue.',
+    machine_id: 'Machine ID',
+    license_machine_hint: 'Send this ID to the developer to receive a license key for this machine.',
+    license_expired: 'License expired',
+    license_wrong_machine: 'This license is bound to another machine',
+    storage_full: 'Could not save data: storage is full',
+    storage_trimmed: 'Old logs were trimmed to free space',
     cannot_change_self: 'You cannot disable your own account or change the last active admin',
     cannot_delete_last_admin: 'Cannot delete the last active admin or your own account',
     enable_user: 'Enable user',
@@ -1752,7 +1809,8 @@ export const AppProvider = ({ children }: any) => {
       staff: [],
       staffPayments: [],
       users: [
-        { id: '1', username: 'admin', name: 'Admin', password: 'admin', role: 'admin', active: true, permissions: [] },
+        // حساب أول تشغيل — كلمة المرور تُرحَّل إلى hash عند أول دخول ويُطلب تغييرها فوراً
+        { id: '1', username: 'admin', name: 'Admin', password: 'admin', role: 'admin', active: true, permissions: [], mustChangePassword: true },
       ],
       auditLogs: [],
       expenses: [],
@@ -1811,23 +1869,52 @@ export const AppProvider = ({ children }: any) => {
   const idbTimerRef = useRef(null as number | null);
 
   useEffect(() => {
-      try {
-          localStorage.setItem('appState', JSON.stringify(state));
-      } catch (e) {
-          console.error('Failed to persist state', e);
-      }
-      // فوراً إلى أي نافذة/تبويب آخر مفتوح
-      try {
-          syncChannelRef.current?.postMessage(JSON.stringify(state));
-      } catch (e) {
-          console.error('Failed to broadcast state', e);
-      }
-      // نسخة في IndexedDB (سعة أكبر من localStorage) — كتابة مؤجّلة لتقليل الإدخال
-      if (idbTimerRef.current) window.clearTimeout(idbTimerRef.current);
-      idbTimerRef.current = window.setTimeout(() => {
-          idbSet('appState', state);
-      }, 800);
+      // تأجيل بسيط (400ms) لتفادي كتابة الحالة كاملة عند كل ضغطة مفتاح
+      const persistTimer = window.setTimeout(() => {
+          let raw: string | null = null;
+          try {
+              raw = JSON.stringify(state);
+          } catch (e) {
+              console.error('Failed to serialize state', e);
+              return;
+          }
+          if (raw == null) return;
+
+          try {
+              localStorage.setItem('appState', raw);
+          } catch (e) {
+              console.error('Failed to persist state', e);
+              // تجاوز سعة localStorage: نقلّم السجلات القديمة ونعيد المحاولة
+              try {
+                  const trimmed = {
+                      ...state,
+                      auditLogs: (state.auditLogs || []).slice(-300),
+                      inventoryHistory: (state.inventoryHistory || []).slice(-500),
+                  };
+                  localStorage.setItem('appState', JSON.stringify(trimmed));
+                  window.dispatchEvent(new CustomEvent('procashier:storage-trimmed'));
+              } catch (e2) {
+                  console.error('Storage quota exceeded', e2);
+                  window.dispatchEvent(new CustomEvent('procashier:storage-full'));
+              }
+          }
+
+          // فوراً إلى أي نافذة/تبويب آخر مفتوح
+          try {
+              syncChannelRef.current?.postMessage(raw);
+          } catch (e) {
+              console.error('Failed to broadcast state', e);
+          }
+
+          // نسخة في IndexedDB (سعة أكبر من localStorage) — كتابة مؤجّلة
+          if (idbTimerRef.current) window.clearTimeout(idbTimerRef.current);
+          idbTimerRef.current = window.setTimeout(() => {
+              idbSet('appState', state);
+          }, 800);
+      }, 400);
+
       return () => {
+          window.clearTimeout(persistTimer);
           if (idbTimerRef.current) window.clearTimeout(idbTimerRef.current);
       };
   }, [state]);
@@ -2132,20 +2219,115 @@ export const AppProvider = ({ children }: any) => {
     addAuditLog('Notes', `Deleted note #${id}`);
   };
 
-  const login = (username: string, password: string) => {
-    // Check dgdinst state users
-    const user = state.users.find(u => 
-        u.username.toLowerCase() === username.trim().toLowerCase() && 
-        u.password === password.trim() && 
-        u.active
-    );
-    
-    if (user) {
-        setCurrentUser(user);
-        addAuditLog('Login', `User ${username} logged in`);
-        return true;
+  const login = async (username: string, password: string): Promise<boolean> => {
+    const uname = username.trim().toLowerCase();
+    const pass = password.trim();
+    const user = state.users.find(u => u.username.toLowerCase() === uname && u.active);
+    if (!user) return false;
+
+    let ok = false;
+    let migrated: User | null = null;
+
+    if (user.passwordHash && user.passwordSalt) {
+        ok = await verifySecret(pass, user.passwordHash, user.passwordSalt);
+    } else if (typeof user.password === 'string') {
+        // ترحيل تلقائي من التخزين القديم (نص صريح) إلى PBKDF2
+        ok = user.password === pass;
+        if (ok) {
+            const record = await makePasswordRecord(pass);
+            migrated = { ...user, ...record, password: undefined };
+        }
     }
-    return false;
+
+    if (!ok) return false;
+
+    if (migrated) {
+        const next = migrated;
+        setState(prev => ({ ...prev, users: prev.users.map(u => u.id === next.id ? next : u) }));
+        setCurrentUser(next);
+        addAuditLog('Security', `Migrated password storage for ${user.username}`);
+    } else {
+        setCurrentUser(user);
+    }
+    addAuditLog('Login', `User ${username} logged in`);
+    return true;
+  };
+
+  const loginWithPin = async (pin: string): Promise<{ ok: boolean; error?: 'invalid' | 'locked' }> => {
+    const LOCK_KEY = 'procashier_pin_lock';
+    const FAIL_KEY = 'procashier_pin_fails';
+
+    try {
+      const lock = JSON.parse(localStorage.getItem(LOCK_KEY) || 'null');
+      if (lock && Number(lock.until) > Date.now()) return { ok: false, error: 'locked' };
+    } catch { /* ignore malformed lock */ }
+
+    const users = state.users.filter(u => u.active && !u.hidden && u.pinHash && u.pinSalt);
+    for (const u of users) {
+      if (await verifySecret(pin, u.pinHash as string, u.pinSalt as string)) {
+        localStorage.removeItem(FAIL_KEY);
+        localStorage.removeItem(LOCK_KEY);
+        setCurrentUser(u);
+        addAuditLog('Login', `User ${u.username} logged in (PIN)`);
+        return { ok: true };
+      }
+    }
+
+    const fails = Number(localStorage.getItem(FAIL_KEY) || '0') + 1;
+    if (fails >= 5) {
+      localStorage.setItem(LOCK_KEY, JSON.stringify({ until: Date.now() + 60_000 }));
+      localStorage.setItem(FAIL_KEY, '0');
+      addAuditLog('Security', 'PIN lockout triggered');
+      return { ok: false, error: 'locked' };
+    }
+    localStorage.setItem(FAIL_KEY, String(fails));
+    return { ok: false, error: 'invalid' };
+  };
+
+  /** يتحقق من كلمة مرور المستخدم الحالي (يدعم الحسابات القديمة قبل الترحيل) */
+  const checkOwnPassword = async (currentPassword: string): Promise<boolean> => {
+    if (!currentUser) return false;
+    const stored = state.users.find(u => u.id === currentUser.id) || currentUser;
+    const pass = currentPassword.trim();
+    if (stored.passwordHash && stored.passwordSalt) {
+        return verifySecret(pass, stored.passwordHash, stored.passwordSalt);
+    }
+    return typeof stored.password === 'string' && stored.password === pass;
+  };
+
+  const changeOwnPassword = async (currentPassword: string, newPassword: string) => {
+    if (!currentUser) return { ok: false, error: 'no_user' };
+    if (newPassword.trim().length < 6) return { ok: false, error: 'password_short' };
+    if (!(await checkOwnPassword(currentPassword))) return { ok: false, error: 'wrong_password' };
+
+    const stored = state.users.find(u => u.id === currentUser.id) || currentUser;
+    const record = await makePasswordRecord(newPassword.trim());
+    const next: User = { ...stored, ...record, password: undefined, mustChangePassword: false };
+
+    setState(prev => ({ ...prev, users: prev.users.map(u => u.id === next.id ? next : u) }));
+    setCurrentUser(next);
+    addAuditLog('Security', `Password changed for ${next.username}`);
+    return { ok: true };
+  };
+
+  const setQuickPin = async (currentPassword: string, pin: string | null) => {
+    if (!currentUser) return { ok: false, error: 'no_user' };
+    if (!(await checkOwnPassword(currentPassword))) return { ok: false, error: 'wrong_password' };
+
+    const stored = state.users.find(u => u.id === currentUser.id) || currentUser;
+    let next: User;
+    if (pin == null || pin === '') {
+        next = { ...stored, pinHash: undefined, pinSalt: undefined };
+    } else {
+        if (!/^\d{4,6}$/.test(pin)) return { ok: false, error: 'pin_invalid' };
+        const record = await makePinRecord(pin);
+        next = { ...stored, ...record };
+    }
+
+    setState(prev => ({ ...prev, users: prev.users.map(u => u.id === next.id ? next : u) }));
+    setCurrentUser(next);
+    addAuditLog('Security', pin ? `Quick PIN set for ${next.username}` : `Quick PIN cleared for ${next.username}`);
+    return { ok: true };
   };
 
   const logout = () => {
@@ -2850,20 +3032,13 @@ export const AppProvider = ({ children }: any) => {
     setGldssNeon(prev => !prev);
   };
   const toggleExperimentalMode = () => {
-    setExperimentdlMode(prev => {
-      const next = !prev;
-      if (next) {
-        setCurrentUser({ username: 'demo', name: 'Experimental Mode', role: 'admin' } as any);
-      } else {
-        setCurrentUser(null);
-      }
-      return next;
-    });
+    // وضع تجريبي بصري فقط — لا يمنح أي صلاحيات ولا يتجاوز تسجيل الدخول
+    setExperimentdlMode(prev => !prev);
   };
 
   return (
     <AppContext.Provider value={{
-      language, toggleLanguage, currentUser, login, logout, state,
+      language, toggleLanguage, currentUser, login, loginWithPin, logout, changeOwnPassword, setQuickPin, state,
       addInvoice, updateInvoice, createReturn, addCustomer, updateCustomer, deleteCustomer,
       holdInvoice, restoreInvoice, deleteHeldInvoice,
       addItem, updateItem, deleteItem,

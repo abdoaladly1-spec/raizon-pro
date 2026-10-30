@@ -1,101 +1,136 @@
-# ProCashier Deployment Guide
+# دليل بناء ونشر RaiZon Pro (ProCashier)
 
-This guide explains how to deploy the ProCashier system as a standalone desktop application (EXE) and how to manage the system.
+> يشرح هذا الدليل كيف تبني نسخة سطح المكتب (EXE) وتوزّعها بأمان.
+> لا تُشحن أي أسرار (كلمات مرور، مفاتيح SMTP، مفتاح الترخيص الخاص) مع التطبيق.
 
-## 1. Turning the Web App into an EXE
+---
 
-Since this is a React web application, you can use **Electron** to wrap it into a desktop application.
+## 1. المتطلبات
 
-### Prerequisites
-- Node.js installed on your machine.
+| الأداة | الغرض |
+| --- | --- |
+| Node.js 20+ | بناء الواجهة وحزم Electron |
+| Python 3.10+ | تشغيل/بناء سيرفر FastAPI |
+| PyInstaller | بناء `procashier-server.exe` (اختياري لكن مُستحسن) |
+| Electron Builder | إنشاء مثبّت NSIS |
 
-### Steps
-1.  **Initialize Electron**:
-    Run the following command in the project root:
-    ```bash
-    npm install --save-dev electron electron-builder wait-on concurrently
-    ```
+```bash
+npm install
+pip install -r server/requirements.txt
+pip install pyinstaller      # لبناء السيرفر المضمَّن
+```
 
-2.  **Create `electron/main.js`**:
-    Create a file named `main.js` in an `electron` folder with the following content:
-    ```javascript
-    const { app, BrowserWindow } = require('electron');
-    const path = require('path');
+---
 
-    function createWindow() {
-      const win = new BrowserWindow({
-        width: 1200,
-        height: 800,
-        webPreferences: {
-          nodeIntegration: true,
-          contextIsolation: false
-        },
-        icon: path.join(__dirname, '../public/favicon.ico') // Ensure you have an icon
-      });
+## 2. البناء
 
-      // In production, load the built file
-      // win.loadFile(path.join(__dirname, '../dist/index.html'));
-      
-      // In development, load the dev server
-      win.loadURL('http://localhost:5173'); 
-    }
+### 2.1 الواجهة فقط
 
-    app.whenReady().then(createWindow);
+```bash
+npm run build          # ينتج dist/ مع CSP محقون تلقائياً
+```
 
-    app.on('window-all-closed', () => {
-      if (process.platform !== 'darwin') {
-        app.quit();
-      }
-    });
-    ```
+### 2.2 للسيرفر المضمَّن (موصى به)
 
-3.  **Update `package.json`**:
-    Add the following scripts and configuration:
-    ```json
-    "main": "electron/main.js",
-    "scripts": {
-      "electron": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-      "electron:build": "npm run build && electron-builder"
-    },
-    "build": {
-      "appId": "com.procashier.system",
-      "productName": "ProCashier",
-      "win": {
-        "target": "nsis",
-        "icon": "public/favicon.ico"
-      }
-    }
-    ```
+```bash
+npm run server:build   # PyInstaller → server/dist/procashier-server.exe
+                       # ثم ينسخه إلى electron/resources/
+```
 
-4.  **Build the EXE**:
-    Run the build command:
-    ```bash
-    npm run electron:build
-    ```
-    This will generate an EXE file in the `dist` folder.
+> إن لم يكن PyInstaller مثبتاً يطبع السكربت تحذيراً ويتابع (سيعمل التطبيق
+> عبر `python main.py` إن كان Python متاحاً على جهاز العميل).
 
-## 2. System Reset & Security
+### 2.3 المثبّت الكامل
 
-### Factory Reset
-- Go to **Settings > Data Management**.
-- Click **"Restore Factory Defaults"**.
-- **Note**: The system will automatically download a backup JSON file before resetting.
+```bash
+npm run electron:build   # build + server:build + electron-builder
+```
 
-### User Management
-- **Default Admin**: `ibrahim` / `h12341234`
-- **Hidden Developer**: `abdo1` / `admin123` (Use `Ctrl+Shift+L` or hidden login if implemented, otherwise standard login works but user is hidden from lists).
-- **Password Recovery**: If a cashier forgets their password, they must contact the Admin. The Admin can reset passwords in **Settings > Users**.
+الناتج في `release/` (مثبّت NSIS + نسخة portable).
 
-## 3. Backup & Restore
-- **Backup**: Go to **Settings > Data Management** and click **"Backup Data"**. This downloads a JSON file.
-- **Restore**: Currently, restoration is manual. Keep the JSON file safe. To restore, a developer would need to load this JSON state into the application (feature to be added in future updates).
+---
 
-## 4. Troubleshooting
-- **White Screen on Print**: Ensure the printer settings in **Settings > General** match your paper size (80mm vs A4).
-- **Connection Refused**: Restart the application using the desktop shortcut.
+## 3. الترخيص (Ed25519)
 
-## 5. Intellectual Property
-This software is developed by **Eng. Abdelrahman Fathy El-Adly**.
-- The source code is protected.
-- The EXE file prevents casual modification of the code.
-- Ensure `LICENSE` file is included in the distribution.
+- المفتاح **العام** فقط مضمَّن في `electron/main.js` (`RAIZON_PUBLIC_KEY_B64`).
+- المفتاح **الخاص** في `tools/keys/license-private.pem` — غير مُتتبَّع في Git.
+  **احتفظ بنسخة احتياطية offline**؛ فقده يعني عدم القدرة على إصدار تراخيص جديدة.
+- الترخيص مربوط بمعرّف الجهاز: يظهر داخل شاشة التفعيل مع زر نسخ.
+
+إصدار مفتاح لعميل:
+
+```bash
+node tools/make-license.mjs --machine <MACHINE_ID> --exp 2027-12-31 --plan pro
+```
+
+أرسل الناتج للعميل، وأدخله في شاشة التفعيل. الترخيص بلا `--exp` دائم.
+
+---
+
+## 4. الأسرار والإعدادات
+
+| الملف | المحتوى | ملاحظات |
+| --- | --- | --- |
+| `server/.env` (تطوير) | SMTP + API_KEY | **غير مُتتبَّع** في Git |
+| `%APPDATA%/RaiZon Pro/server.env` (مثبّت) | نفس المحتوى | يُنشأ تلقائياً عند أول تشغيل ويُولّد `API_KEY` عشوائياً |
+
+- لا تضع كلمات مرور داخل الكود أو `vite.config.ts`.
+- عند تغيير كلمة مرور تطبيق Gmail، حدّث `SMTP_PASSWORD` في `server.env` فقط.
+- `API_KEY=off` يعطّل المصادقة — لا تستخدمه إلا على جهاز معزول تماماً.
+
+---
+
+## 5. الأمان في النسخة المُوزَّعة
+
+- `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`.
+- CSP صارم (`script-src 'self'`) محقون في `dist/index.html` وقت البناء.
+- منع التنقل الخارجي وفتح نوافذ غير موثوقة (نوافذ الطباعة فقط مسموحة).
+- نسخة واحدة من التطبيق (single instance) لحماية قاعدة البيانات.
+- كلمات المرور والرموز السريعة: PBKDF2-SHA256 (210k) مع salt لكل مستخدم.
+- السيرفر: مقارنة `X-API-Key` ثابتة الزمن + تحديد معدل الطلبات.
+
+> ⚠️ السيرفر يستمع على `0.0.0.0:8087` لدعم عميل Flutter على الشبكة المحلية.
+> الحماية الفعلية عبر `X-API-Key`. لا تعرّض المنفذ على الإنترنت بدون TLS
+> (استخدم VPN/شبكة محلية موثوقة أو reverse proxy مع HTTPS).
+
+---
+
+## 6. أول تشغيل
+
+1. يبدأ التطبيق بشاشة التفعيل → أدخل معرّف الجهاز للمطوّر ثم مفتاح الترخيص.
+2. سجّل الدخول بحساب `admin` الأولي → سيُطلب تغيير كلمة المرور إجبارياً.
+3. من **الإعدادات → الأمان**: عيّن رمزاً سريعاً (4–6 أرقام) اختيارياً.
+4. من **الإعدادات → المزامنة**: تأكد أن `API_KEY` مطابق لما في `server.env`.
+
+### إدارة المستخدمين
+- إعادة تعيين كلمة المرور من **الإعدادات → المستخدمون** (تُجبر المستخدم على تغييرها عند أول دخول).
+- لا توجد كلمات مرور افتراضية بعد الآن، وأي حساب قديم يُرحَّل تلقائياً إلى hash عند أول دخول ناجح.
+
+---
+
+## 7. النسخ الاحتياطي والاستعادة
+
+- **نسخة محلية**: `Settings > Data Management > Backup` → ملف JSON.
+- **نسخة على السيرفر**: `POST /api/backup` (يُحتفظ بآخر 10 نسخ في `BACKUP_DIR`).
+- تُخزَّن البيانات في `localStorage` + نسخة في IndexedDB، مع تقليم تلقائي للسجلات
+  القديمة عند امتلاء المساحة (`procashier:storage-trimmed`).
+
+---
+
+## 8. استكشاف الأخطاء
+
+| المشكلة | الحل |
+| --- | --- |
+| شاشة بيضاء عند الطباعة | تحقق من مقاس الورق (A4 / 80mm) في الإعدادات |
+| `Connection refused` | أعد تشغيل التطبيق؛ السيرفر يُشغَّل تلقائياً على المنفذ 8087 |
+| `401 Unauthorized` من السيرفر | عدم تطابق `API_KEY` بين التطبيق و`server.env` |
+| الترخيص مرفوض | المفتاح لجهاز آخر أو منتهي الصلاحية — أعد إصداره بالمعرّف الصحيح |
+| كلمة المرور منسية (مدير وحيد) | استعادة نسخة احتياطية JSON قبل التعديل، ثم أعد الإعداد |
+
+---
+
+## 9. الملكية الفكرية
+
+هذا البرنامج مملوك لـ **Eng. Abdelrahman Fathy El-Adly**.
+- الكود مصدره محمي، والتوزيع يتطلب ترخيصاً مكتوباً.
+- لا تُجرِ أي تعديل على ملفات الترخيص أو التحقق منه.

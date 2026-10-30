@@ -5,6 +5,7 @@ import { Card, Button, ModalShell } from '../components/ui';
 import { Invoice, PaymentPart, ReturnRecord } from '../types';
 import { remainingRefundable, validateReturn, paidForMethod, refundedForMethod, buildReturnItems, type RemainingItem } from '../lib/returns';
 import { round2 } from '../lib/payments';
+import { escapeHtml } from '../lib/escapeHtml';
 
 const METHODS: PaymentPart['method'][] = ['cash', 'card', 'wallet'];
 
@@ -242,17 +243,17 @@ export const ReturnsPage = () => {
         if (!win) return;
         const rows = (rec.items || []).map(it => `
             <tr>
-                <td>${it.name}</td>
-                <td>${it.quantity}</td>
+                <td>${escapeHtml(it.name)}</td>
+                <td>${escapeHtml(it.quantity)}</td>
                 <td>${round2(it.price)}</td>
                 <td>${round2(it.discountAmount)}</td>
                 <td>${round2(it.taxAmount)}</td>
                 <td><b>${round2(it.refundAmount)}</b></td>
             </tr>`).join('');
-        const partRows = (rec.refundParts || []).map(p => `<div>${t(p.method)}: <b>${round2(p.amount)}</b> ${t('egp')}</div>`).join('');
+        const partRows = (rec.refundParts || []).map(p => `<div>${escapeHtml(t(p.method))}: <b>${round2(p.amount)}</b> ${escapeHtml(t('egp'))}</div>`).join('');
         const html = `
             <html dir="${language === 'ar' ? 'rtl' : 'ltr'}">
-            <head><meta charset="utf-8"><title>${t('return_receipt')}</title>
+            <head><meta charset="utf-8"><title>${escapeHtml(t('return_receipt'))}</title>
             <style>
                 body{font-family:system-ui,-apple-system,sans-serif;padding:24px;color:#111}
                 h1{font-size:18px;margin:0 0 4px} .muted{color:#555;font-size:13px}
@@ -263,22 +264,22 @@ export const ReturnsPage = () => {
                 .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef;font-size:12px}
             </style></head>
             <body>
-                <h1>${t('return_receipt')} <span class="badge">${t(`return_status_${rec.status}`)}</span></h1>
-                <div class="muted">${t('return_invoice_no')}${inv?.id ?? rec.invoiceId} · ${rec.date} · ${rec.type === 'full' ? t('return_full') : t('return_partial')}</div>
-                <div class="muted">${t('created_by')}: ${rec.staffName || rec.createdBy || '-'} ${rec.reason ? `· ${t('return_reason')}: ${rec.reason}` : ''}</div>
+                <h1>${escapeHtml(t('return_receipt'))} <span class="badge">${escapeHtml(t(`return_status_${rec.status}`))}</span></h1>
+                <div class="muted">${escapeHtml(t('return_invoice_no'))}${escapeHtml(inv?.id ?? rec.invoiceId)} · ${escapeHtml(rec.date)} · ${escapeHtml(rec.type === 'full' ? t('return_full') : t('return_partial'))}</div>
+                <div class="muted">${escapeHtml(t('created_by'))}: ${escapeHtml(rec.staffName || rec.createdBy || '-')} ${rec.reason ? `· ${escapeHtml(t('return_reason'))}: ${escapeHtml(rec.reason)}` : ''}</div>
                 <table>
                     <thead><tr>
-                        <th>${t('items')}</th><th>${t('quantity')}</th><th>${t('price')}</th>
-                        <th>${t('discount')}</th><th>${t('tax')}</th><th>${t('return_refund_amount')}</th>
+                        <th>${escapeHtml(t('items'))}</th><th>${escapeHtml(t('quantity'))}</th><th>${escapeHtml(t('price'))}</th>
+                        <th>${escapeHtml(t('discount'))}</th><th>${escapeHtml(t('tax'))}</th><th>${escapeHtml(t('return_refund_amount'))}</th>
                     </tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
                 <div class="total">
-                    <div>${t('return_refund_amount')}: <b>${round2(rec.refundAmount)} ${t('egp')}</b></div>
+                    <div>${escapeHtml(t('return_refund_amount'))}: <b>${round2(rec.refundAmount)} ${escapeHtml(t('egp'))}</b></div>
                     ${partRows}
-                    <div>${t('cash_refunds')}: <b>${round2(rec.cashRefund)} ${t('egp')}</b></div>
-                    ${rec.pointsReversed ? `<div>${t('return_points')}: ${rec.pointsReversed}</div>` : ''}
-                    ${rec.commissionReversed ? `<div>${t('return_commission')}: ${round2(rec.commissionReversed)} ${t('egp')}</div>` : ''}
+                    <div>${escapeHtml(t('cash_refunds'))}: <b>${round2(rec.cashRefund)} ${escapeHtml(t('egp'))}</b></div>
+                    ${rec.pointsReversed ? `<div>${escapeHtml(t('return_points'))}: ${escapeHtml(rec.pointsReversed)}</div>` : ''}
+                    ${rec.commissionReversed ? `<div>${escapeHtml(t('return_commission'))}: ${round2(rec.commissionReversed)} ${escapeHtml(t('egp'))}</div>` : ''}
                 </div>
             </body></html>`;
         win.document.write(html);

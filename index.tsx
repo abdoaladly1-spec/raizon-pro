@@ -4,7 +4,8 @@ import App from './App';
 import './index.css';
 
 // Register Service Worker for PWA — يتحقق من التحديثات تلقائياً
-if ('serviceWorker' in navigator) {
+// ملاحظة: file:// (نسخة Electron المثبّتة) لا يدعم Service Workers — نتجاهلها بهدوء
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {

@@ -14,7 +14,16 @@ export interface User {
   id: string;
   username: string;
   name: string;
+  /** @deprecated كلمة مرور قديمة (نص صريح) — تُرحَّل إلى hash عند أول دخول ثم تُمسح */
   password?: string;
+  /** PBKDF2-SHA256 hash (base64) */
+  passwordHash?: string;
+  passwordSalt?: string;
+  /** رمز سريع اختياري لكل مستخدم — hash + salt */
+  pinHash?: string;
+  pinSalt?: string;
+  /** إجبار تغيير كلمة المرور في أول دخول (حساب admin الافتراضي) */
+  mustChangePassword?: boolean;
   role: Role;
   permissions: string[];
   active: boolean;

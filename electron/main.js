@@ -4,7 +4,7 @@
  * Unauthorized copying of this file, via any medium is strictly prohibited.
  */
 
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
@@ -14,6 +14,23 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// ------------------------------------------------------------------
+// نسخة واحدة فقط من التطبيق (يمنع فتح نافذتين على نفس قاعدة البيانات)
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+}
+
+let mainWindow = null;
+
+app.on('second-instance', () => {
+  if (!mainWindow) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+});
+// ------------------------------------------------------------------
 
 // ------------------------------------------------------------------
 // تشغيل سيرفر ProCashier تلقائياً لو مش شغّال (8087)
@@ -115,27 +132,47 @@ function ensureApiKey(envFile) {
   }
 }
 
+// مسار السيرفر المضمَّن (PyInstaller) — يُنسخ إلى موارد التطبيق عند البناء
+function findBundledServer() {
+  const candidates = [
+    app.isPackaged ? path.join(process.resourcesPath, 'procashier-server.exe') : '',
+    path.join(path.dirname(app.getPath('exe')), 'procashier-server.exe'),
+    path.join(__dirname, '..', 'server', 'dist', 'procashier-server.exe'),
+  ].filter(Boolean);
+  return candidates.find((file) => fs.existsSync(file)) || null;
+}
+
 async function maybeStartServer() {
   if (serverStartTried) return;
   serverStartTried = true;
   try {
     if (await isServerUp()) return;
-    const dir = findServerDir();
-    if (!dir) return;
+
+    const userData = app.getPath('userData');
     const env = { ...process.env };
     if (app.isPackaged) {
       // مجلد التنصيب قد يكون غير قابل للكتابة (Program Files) => قاعدة البيانات في userData
-      const userData = app.getPath('userData');
       env.DB_PATH = path.join(userData, 'procashier.db');
       // النسخ الاحتياطية أيضاً في userData (مجلد التنصيب للقراءة فقط)
       env.PROCASHIER_BACKUP_DIR = path.join(userData, 'backups');
       // إعدادات Gmail للنسخة المثبتة: server.env بجانب قاعدة البيانات في userData
       loadEnvFile(path.join(userData, 'server.env'), env);
     }
+    // نفس ملف الإعدادات للسيرفر وللـ Electron (يضمن تطابق API_KEY)
+    env.PROCASHIER_ENV_FILE = apiKeyFile();
     const key = ensureApiKey(apiKeyFile());
     if (key) env.API_KEY = key;
-    const child = spawn('python', ['main.py'], {
-      cwd: dir,
+
+    const bundled = findBundledServer();
+    let command = bundled || 'python';
+    let args = bundled ? [] : ['main.py'];
+    let cwd = bundled ? path.dirname(bundled) : findServerDir();
+
+    // احتياطي: لو مفيش exe ولا مجلد سيرفر، لا شيء لنشغّله
+    if (!bundled && !cwd) return;
+
+    const child = spawn(command, args, {
+      cwd,
       env,
       detached: true,
       stdio: 'ignore',
@@ -157,10 +194,14 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
       webviewTag: false,
+      spellcheck: false,
     },
     icon: path.join(__dirname, '../public/icon.ico')
   });
+
+  mainWindow = win;
 
   const isDev = !app.isPackaged;
 
@@ -172,9 +213,71 @@ function createWindow() {
   }
   
   win.setMenuBarVisibility(false);
+
+  win.on('closed', () => {
+    if (mainWindow === win) mainWindow = null;
+  });
 }
 
+// ------------------------------------------------------------------
+// تقوية الأمان: منع التنقل الخارجي وفتح نوافذ غير موثوقة
+// نسمح فقط بـ: صفحات التطبيق المحلية (file://) ونوافذ الطباعة about:blank
+const ALLOWED_INTERNAL_ORIGINS = new Set([
+  'http://localhost:4189',
+  'http://127.0.0.1:4189',
+]);
+
+const isInternalUrl = (rawUrl) => {
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol === 'file:') return true;
+    if (url.protocol === 'about:' && url.href === 'about:blank') return true;
+    return ALLOWED_INTERNAL_ORIGINS.has(url.origin) && !app.isPackaged;
+  } catch {
+    return false;
+  }
+};
+
+app.on('web-contents-created', (_event, contents) => {
+  // منع أي تنقل إلى موقع خارجي داخل نافذة التطبيق
+  contents.on('will-navigate', (event, url) => {
+    if (!isInternalUrl(url)) {
+      event.preventDefault();
+      console.warn('[security] blocked navigation:', url);
+    }
+  });
+
+  // نافذة جديدة: نسمح فقط بنوافذ الطباعة الفارغة، ونفتح الروابط الخارجية في المتصفح
+  contents.setWindowOpenHandler(({ url }) => {
+    if (url === '' || url === 'about:blank') {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: true,
+            webviewTag: false,
+            preload: undefined,
+          },
+        },
+      };
+    }
+    if (/^https?:\/\//i.test(url)) {
+      shell.openExternal(url).catch(() => {});
+    } else {
+      console.warn('[security] blocked window.open:', url);
+    }
+    return { action: 'deny' };
+  });
+
+  // منع تحميل أي preload/webview إضافي
+  contents.on('will-attach-webview', (event) => event.preventDefault());
+});
+// ------------------------------------------------------------------
+
 app.whenReady().then(() => {
+  if (!gotSingleInstanceLock) return;
   maybeStartServer();
   createWindow();
 
@@ -198,54 +301,55 @@ function getMachineId() {
   return crypto.createHash('sha256').update(`${platform}-${hostname}-${arch}`).digest('hex');
 }
 
-const SECRET_SALT = 'PRO_CASHIER_IBRAHIM_NAWAR_2025_SECURE_SALT';
-const ENCRYPTION_KEY = crypto.scryptSync(SECRET_SALT, 'salt', 32); // 256-bit key
-const IV_LENGTH = 16;
+// ---------------- الترخيص (Ed25519) ----------------
+// المفتاح العام فقط يُشحن مع التطبيق. المفتاح الخاص يبقى عند المطوّر (tools/keys، غير مُتتبَّع).
+const RAIZON_PUBLIC_KEY_B64 = 'MCowBQYDK2VwAyEA/GFgoO0KxX7/iUWoViRfRvE/kz0VaP73s0MxR4gDhMk=';
+const RAIZON_APP_ID = 'RAIZON_PRO';
 const LICENSE_FILE = path.join(app.getPath('userData'), 'license.key');
+const licensePublicKey = crypto.createPublicKey({
+    key: Buffer.from(RAIZON_PUBLIC_KEY_B64, 'base64'),
+    format: 'der',
+    type: 'spki',
+});
 
-function decryptProductKey(encryptedKey) {
+/** يتحقق من توقيع المفتاح ويرجعه للبيانات أو سبب الرفض */
+function verifyLicenseKey(rawKey) {
     try {
-        // Key Format: IV:EncryptedData (Hex)
-        const parts = encryptedKey.split(':');
-        if (parts.length !== 2) return null;
-        
-        const iv = Buffer.from(parts[0], 'hex');
-        const encryptedText = Buffer.from(parts[1], 'hex');
-        
-        const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
-        let decrypted = decipher.update(encryptedText);
-        decrypted = Buffer.concat([decrypted, decipher.final()]);
-        
-        return JSON.parse(decrypted.toString());
-    } catch (e) {
-        return null;
+        const [payloadPart, sigPart] = String(rawKey || '').trim().split('.');
+        if (!payloadPart || !sigPart) return { ok: false, reason: 'format' };
+
+        // التوقيع على نفس بايتات النص (base64url) التي وُقّعت في tools/make-license.mjs
+        const valid = crypto.verify(
+            null,
+            Buffer.from(payloadPart),
+            licensePublicKey,
+            Buffer.from(sigPart, 'base64url'),
+        );
+        if (!valid) return { ok: false, reason: 'signature' };
+
+        const payload = JSON.parse(Buffer.from(payloadPart, 'base64url').toString('utf8'));
+        if (payload.app !== RAIZON_APP_ID) return { ok: false, reason: 'app' };
+        if (payload.mid !== getMachineId()) return { ok: false, reason: 'machine' };
+        if (payload.exp) {
+            const exp = Date.parse(`${payload.exp}T23:59:59Z`);
+            if (!Number.isFinite(exp) || Date.now() > exp) return { ok: false, reason: 'expired' };
+        }
+        return { ok: true, payload };
+    } catch {
+        return { ok: false, reason: 'error' };
     }
 }
 
 function verifyLicense() {
+    const machineId = getMachineId();
     try {
-        if (!fs.existsSync(LICENSE_FILE)) return { valid: false, machineId: getMachineId() };
-        
+        if (!fs.existsSync(LICENSE_FILE)) return { valid: false, machineId, reason: 'missing' };
         const licenseData = JSON.parse(fs.readFileSync(LICENSE_FILE, 'utf8'));
-        const currentMachineId = getMachineId();
-        
-        // 1. Check if License is bound to this machine
-        if (licenseData.machineId !== currentMachineId) {
-            return { valid: false, machineId: currentMachineId, reason: 'Hardware Mismatch' };
-        }
-        
-        // 2. Check Integrity (Hash of stored data)
-        const integrityHash = crypto.createHmac('sha256', SECRET_SALT)
-            .update(`${licenseData.machineId}${licenseData.productKey}ACTIVATED`)
-            .digest('hex');
-            
-        if (licenseData.integrity !== integrityHash) {
-            return { valid: false, machineId: currentMachineId, reason: 'License Tampered' };
-        }
-
-        return { valid: true };
-    } catch (e) {
-        return { valid: false, machineId: getMachineId() };
+        const res = verifyLicenseKey(licenseData.key);
+        if (!res.ok) return { valid: false, machineId, reason: res.reason };
+        return { valid: true, machineId, payload: res.payload };
+    } catch {
+        return { valid: false, machineId, reason: 'error' };
     }
 }
 
@@ -319,31 +423,27 @@ ipcMain.handle('print:pdf', async (event) => {
 });
 
 
-ipcMain.handle('activate-license', (event, { key }) => {
-    const currentMachineId = getMachineId();
-    
-    // 1. Validate Product Key Format & Payload
-    const keyPayload = decryptProductKey(key);
-    
-    if (!keyPayload || keyPayload.app !== 'PROCASHIER' || !keyPayload.valid) {
-        return { success: false, message: 'Invalid Product Key' };
+ipcMain.handle('activate-license', (event, arg) => {
+    const key = typeof arg === 'string' ? arg : arg?.key;
+    const res = verifyLicenseKey(key);
+
+    if (!res.ok) {
+        const messages = {
+            machine: 'License is bound to another machine',
+            expired: 'License expired',
+            app: 'Invalid Product Key',
+            signature: 'Invalid Product Key',
+            format: 'Invalid Product Key',
+        };
+        return { success: false, message: messages[res.reason] || 'Invalid Product Key' };
     }
-    
-    // 2. Bind to Machine & Save
-    // Integrity Hash: HMAC(MachineID + Key + "ACTIVATED")
-    const integrityHash = crypto.createHmac('sha256', SECRET_SALT)
-        .update(`${currentMachineId}${key}ACTIVATED`)
-        .digest('hex');
-        
-    const licenseData = {
-        machineId: currentMachineId,
-        productKey: key,
-        activatedAt: new Date().toISOString(),
-        integrity: integrityHash
-    };
-    
+
     try {
-        fs.writeFileSync(LICENSE_FILE, JSON.stringify(licenseData));
+        fs.writeFileSync(LICENSE_FILE, JSON.stringify({
+            machineId: getMachineId(),
+            key: String(key).trim(),
+            activatedAt: new Date().toISOString(),
+        }));
         return { success: true };
     } catch (e) {
         return { success: false, message: 'Write Error' };

@@ -15,7 +15,7 @@ import { listPrinters, type PrinterInfoLite } from '../lib/printBridge';
 import { PAGE_SIZES, ELEMENT_ORDER, TEMPLATE_PRESETS, applyTemplatePreset, normalizeTemplate, DEFAULT_ELEMENTS, type PrintDesign } from '../lib/printDesign';
 
 export const SettingsPage = () => {
-    const { state, t, language, updateSettings, addItem, updateItem, deleteItem, currentUser, resetSystem, restoreState, resetLoyaltyPoints, addToast } = useApp();
+    const { state, t, language, updateSettings, addItem, updateItem, deleteItem, currentUser, resetSystem, restoreState, resetLoyaltyPoints, addToast, changeOwnPassword, setQuickPin } = useApp();
     const [activeTab, setActiveTab] = useState('general' as 'general' | 'items' | 'users' | 'logs' | 'print');
     const [form, setForm] = useState(state.settings);
 
@@ -59,6 +59,68 @@ export const SettingsPage = () => {
     // نسخ احتياطي للحالة كاملة على السيرفر + استعادتها منه
     const [backupBusy, setBackupBusy] = useState(false);
     const serverCfg = () => ({ url: form.serverUrl || '', apiKey: form.serverApiKey || '' });
+
+    // الأمان: تغيير كلمة المرور + ضبط الرمز السريع
+    const [pwCurrent, setPwCurrent] = useState('');
+    const [pwNew, setPwNew] = useState('');
+    const [pinValue, setPinValue] = useState('');
+    const [secBusy, setSecBusy] = useState(false);
+
+    const secError = (error?: string) => {
+        if (error === 'password_short') return t('password_short');
+        if (error === 'pin_invalid') return t('pin_invalid');
+        return t('wrong_password');
+    };
+
+    const handleChangePassword = async () => {
+        if (secBusy || !pwCurrent || pwNew.length < 6) return;
+        setSecBusy(true);
+        try {
+            const res = await changeOwnPassword(pwCurrent, pwNew);
+            if (res.ok) {
+                addToast(t('password_changed_ok'), 'success');
+                setPwCurrent('');
+                setPwNew('');
+            } else {
+                addToast(secError(res.error), 'error');
+            }
+        } finally {
+            setSecBusy(false);
+        }
+    };
+
+    const handleSavePin = async () => {
+        if (secBusy || !pwCurrent) return;
+        setSecBusy(true);
+        try {
+            const res = await setQuickPin(pwCurrent, pinValue);
+            if (res.ok) {
+                addToast(t('pin_saved'), 'success');
+                setPinValue('');
+                setPwCurrent('');
+            } else {
+                addToast(secError(res.error), 'error');
+            }
+        } finally {
+            setSecBusy(false);
+        }
+    };
+
+    const handleClearPin = async () => {
+        if (secBusy || !pwCurrent) return;
+        setSecBusy(true);
+        try {
+            const res = await setQuickPin(pwCurrent, null);
+            if (res.ok) {
+                addToast(t('pin_cleared'), 'success');
+                setPwCurrent('');
+            } else {
+                addToast(secError(res.error), 'error');
+            }
+        } finally {
+            setSecBusy(false);
+        }
+    };
 
     const handlePushBackup = async () => {
         if (backupBusy) return;
@@ -342,6 +404,49 @@ export const SettingsPage = () => {
                                       </div>
                                   </div>
                               )}
+                        </div>
+
+                        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+                             <h3 className="text-lg font-bold mb-1">{t('security_section')}</h3>
+                             <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t('change_password')} — {currentUser?.username}</p>
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                 <Input label={t('current_password')} type="password" value={pwCurrent} onChange={(e:any)=>setPwCurrent(e.target.value)} />
+                                 <Input label={t('new_password')} type="password" value={pwNew} onChange={(e:any)=>setPwNew(e.target.value)} />
+                                 <button
+                                     onClick={handleChangePassword}
+                                     disabled={secBusy || !pwCurrent || pwNew.length < 6}
+                                     className="px-4 py-2 rounded-lg bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 font-bold disabled:opacity-40 transition-opacity"
+                                 >
+                                     {t('change_password')}
+                                 </button>
+                             </div>
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mt-4">
+                                 <Input
+                                     label={t('quick_pin_new')}
+                                     type="password"
+                                     inputMode="numeric"
+                                     value={pinValue}
+                                     placeholder={currentUser?.pinHash ? t('quick_pin_active') : t('quick_pin_none')}
+                                     onChange={(e:any)=>setPinValue(String(e.target.value).replace(/\D/g, '').slice(0, 6))}
+                                 />
+                                 <button
+                                     onClick={handleSavePin}
+                                     disabled={secBusy || !pwCurrent || pinValue.length < 4}
+                                     className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold disabled:opacity-40 transition-opacity"
+                                 >
+                                     {t('save')}
+                                 </button>
+                                 {currentUser?.pinHash && (
+                                     <button
+                                         onClick={handleClearPin}
+                                         disabled={secBusy || !pwCurrent}
+                                         className="px-4 py-2 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 font-bold disabled:opacity-40 transition-opacity"
+                                     >
+                                         {t('clear_quick_pin')}
+                                     </button>
+                                 )}
+                             </div>
+                             <p className="text-[11px] text-slate-400 mt-2">{t('force_password_hint')}</p>
                         </div>
 
                         <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">

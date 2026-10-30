@@ -34,10 +34,18 @@ server/*.sqlite-*
 server/backups/
 server/*.log
 
+# ===== مفاتيح الترخيص الخاصة (لا تُرفع أبداً) =====
+tools/keys/
+*.pem
+!tools/keys/.gitkeep
+
 # ===== Python =====
 __pycache__/
 *.py[cod]
 .pytest_cache/
+server/build/
+server/dist/
+electron/resources/procashier-server.exe
 
 # ===== Editor directories and files =====
 .vscode/*

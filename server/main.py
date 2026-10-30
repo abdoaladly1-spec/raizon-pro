@@ -6,13 +6,18 @@
 """
 from typing import Any, Dict, List, Optional, Tuple
 
+import hmac
 import json
 import socket
+import threading
+import time
+from collections import defaultdict, deque
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import BackgroundTasks, Body, Depends, FastAPI, Header, HTTPException, Query
+from fastapi import BackgroundTasks, Body, Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 import database
@@ -25,6 +30,8 @@ app = FastAPI(title="ProCashier Server", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
+    # التطبيق يعمل من file:// (Origin: null) ومن الويب المحلي؛ لا نعتمد على Origin
+    # للحماية — الحماية الفعلية عبر X-API-Key.
     allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
@@ -32,10 +39,68 @@ app.add_middleware(
 )
 
 
+# ------------------------------------------------------------------ Rate limit
+class SlidingWindowLimiter:
+    """محدِّد معدل بسيط في الذاكرة (بدون اعتماديات خارجية).
+
+    ملاحظة: العدّاد لكل عملية (process) — كافٍ لسيرفر محلي/مكتب واحد.
+    """
+
+    def __init__(self, limit: int, window_seconds: float):
+        self.limit = limit
+        self.window = window_seconds
+        self._hits: Dict[str, deque] = defaultdict(deque)
+        self._lock = threading.Lock()
+
+    def allow(self, key: str) -> bool:
+        now = time.monotonic()
+        with self._lock:
+            bucket = self._hits[key]
+            while bucket and now - bucket[0] > self.window:
+                bucket.popleft()
+            if len(bucket) >= self.limit:
+                return False
+            bucket.append(now)
+            return True
+
+
+# طلبات مسيئة للمصادقة: 30 محاولة فاشلة كل دقيقة لكل IP
+AUTH_FAIL_LIMITER = SlidingWindowLimiter(limit=30, window_seconds=60)
+# سقف عام لكل IP: 300 طلب كل دقيقة
+GENERAL_LIMITER = SlidingWindowLimiter(limit=300, window_seconds=60)
+
+
+def client_ip(request: Optional[Request]) -> str:
+    if request is None:
+        return "unknown"
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    ip = client_ip(request)
+    if not GENERAL_LIMITER.allow(ip):
+        return JSONResponse({"detail": "Too many requests"}, status_code=429)
+    return await call_next(request)
+
+
 # ------------------------------------------------------------------ Auth
-def require_api_key(x_api_key: Optional[str] = Header(default=None)) -> None:
-    if API_KEY and x_api_key != API_KEY:
+def require_api_key(
+    request: Request,
+    x_api_key: Optional[str] = Header(default=None),
+) -> None:
+    if not API_KEY:
+        return
+    provided = (x_api_key or "").strip()
+    # مقارنة ثابتة الزمن لمنع استنتاج المفتاح من فروق التوقيت
+    if not provided or not hmac.compare_digest(provided, API_KEY):
+        if not AUTH_FAIL_LIMITER.allow(client_ip(request)):
+            raise HTTPException(status_code=429, detail="Too many failed attempts")
         raise HTTPException(status_code=401, detail="Invalid or missing X-API-Key")
+
 
 
 # ------------------------------------------------------------------ Models

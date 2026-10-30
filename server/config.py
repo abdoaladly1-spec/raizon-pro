@@ -4,7 +4,8 @@ import secrets
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-ENV_FILE = BASE_DIR / ".env"
+# نسخة PyInstaller: __file__ داخل مجلد مؤقت — لذا نسمح بتحديد مسار .env صراحةً
+ENV_FILE = Path(os.environ.get("PROCASHIER_ENV_FILE") or (BASE_DIR / ".env"))
 
 
 def _load_env_file(path: Path) -> None:
@@ -56,6 +57,7 @@ def _ensure_api_key() -> str:
         raw = "\n".join(new_lines) + "\n"
     else:
         raw = (raw.rstrip("\n") + "\n" + line) if raw.strip() else line
+    ENV_FILE.parent.mkdir(parents=True, exist_ok=True)
     ENV_FILE.write_text(raw, encoding="utf-8")
     return key
 

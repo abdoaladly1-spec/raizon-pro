@@ -11,30 +11,7 @@
   </head>
   <body class="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 overflow-hidden">
     <div id="root"></div>
+  <script src="/boot.js"></script>
   <script type="module" src="/index.tsx"></script>
-  <script>
-    (function(){
-      try {
-        const saved = localStorage.getItem('theme');
-        const theme = saved ? saved : 'dark';
-        localStorage.setItem('theme', theme);
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-      } catch(e) {}
-    })();
-    (function(){
-      let rafId = null;
-      const update = (e) => {
-        const x = e.clientX + 'px';
-        const y = e.clientY + 'px';
-        document.documentElement.style.setProperty('--cursor-x', x);
-        document.documentElement.style.setProperty('--cursor-y', y);
-        rafId = null;
-      };
-      window.addEventListener('mousemove', (e) => {
-        if (rafId) return;
-        rafId = requestAnimationFrame(() => update(e));
-      }, { passive: true });
-    })();
-  </script>
 </body>
 </html>

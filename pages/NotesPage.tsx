@@ -9,6 +9,7 @@ import { CreateInvoice } from './CreateInvoicePage';
 import { AuditLogs } from './AuditLogsPage';
 import { AdminUsers } from './AdminUsersPage';
 import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, type SyncStatus } from '../lib/serverSync';
+import { escapeHtml, sanitizeRichHtml } from '../lib/escapeHtml';
 
 export const NotesPage = () => {
     const { state, t, addNote, updateNote, deleteNote, currentUser, formatDate, formatTime, formatDateTime } = useApp();
@@ -125,7 +126,7 @@ export const NotesPage = () => {
             printWindow.document.write(`
                 <html>
                 <head>
-                    <title>${selectedNote.title}</title>
+                    <title>${escapeHtml(selectedNote.title)}</title>
                     <style>
                         body { font-family: Arial, sans-serif; padding: 40px; }
                         .header { text-align: center; margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
@@ -135,16 +136,16 @@ export const NotesPage = () => {
                 </head>
                 <body>
                     <div class="header">
-                        <h1>${selectedNote.title}</h1>
-                        <p>${formatDateTime(selectedNote.updatedAt)}</p>
+                        <h1>${escapeHtml(selectedNote.title)}</h1>
+                        <p>${escapeHtml(formatDateTime(selectedNote.updatedAt))}</p>
                     </div>
                     <div class="content">
-                        ${selectedNote.content}
+                        ${sanitizeRichHtml(selectedNote.content || '')}
                     </div>
                     <div class="footer">
-                        <span>${t('created_by')}: ${selectedNote.createdBy}</span>
-                        <span>${t('page')} 1 ${t('of')} 1</span>
-                        <span>© ${t('copyright_footer')}</span>
+                        <span>${escapeHtml(t('created_by'))}: ${escapeHtml(selectedNote.createdBy)}</span>
+                        <span>${escapeHtml(t('page'))} 1 ${escapeHtml(t('of'))} 1</span>
+                        <span>© ${escapeHtml(t('copyright_footer'))}</span>
                     </div>
                 </body>
                 </html>

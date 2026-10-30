@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import { Trash2, Check, X, Search, KeyRound } from '../components/Icons';
 import { User as UserType } from '../types';
 import { Card, Button, Input } from '../components/ui';
+import { makePasswordRecord } from '../lib/crypto';
 
 const emptyForm = (): UserType => ({
     id: '', username: '', name: '', password: '', role: 'cashier', permissions: [], active: true
@@ -43,7 +44,7 @@ export const AdminUsers = () => {
 
     const adminCount = state.users.filter(u => u.role === 'admin' && u.active && !u.hidden).length;
 
-    const handleSubmit = (e: any) => {
+    const handleSubmit = async (e: any) => {
         e.preventDefault();
         const username = form.username.trim();
         const name = form.name.trim();
@@ -51,14 +52,26 @@ export const AdminUsers = () => {
         const duplicated = state.users.some(u => u.username.toLowerCase() === username.toLowerCase() && u.id !== form.id);
         if (duplicated) { setError(t('username_exists')); return; }
 
+        const rawPassword = (form.password || '').trim();
+
         if (isEditing) {
             const original = state.users.find(u => u.id === form.id);
-            // تعديل بدون كلمة مرور جديدة → نحتفظ بالقديمة حتى لا يتعطّل الدخول
-            const password = form.password?.trim() ? form.password : (original?.password || '');
-            updateUser({ ...form, username, name, password });
+            if (!original) { setError(t('required_fields')); return; }
+            // تعديل بدون كلمة مرور جديدة → نحتفظ بالـhash القديم ولا نخزّن نصاً صريحاً
+            let next: UserType = { ...form, username, name, password: undefined };
+            if (rawPassword) {
+                const record = await makePasswordRecord(rawPassword);
+                next = { ...next, ...record, mustChangePassword: false };
+            } else {
+                next.passwordHash = original.passwordHash;
+                next.passwordSalt = original.passwordSalt;
+                next.password = original.password;
+            }
+            updateUser(next);
         } else {
-            if (!form.password) { setError(t('password_required')); return; }
-            addUser({ ...form, id: crypto.randomUUID(), username, name, permissions: form.permissions || [] });
+            if (!rawPassword) { setError(t('password_required')); return; }
+            const record = await makePasswordRecord(rawPassword);
+            addUser({ ...form, ...record, id: crypto.randomUUID(), username, name, password: undefined, permissions: form.permissions || [] });
         }
         setForm(emptyForm());
         setIsEditing(false);
@@ -83,11 +96,13 @@ export const AdminUsers = () => {
         setError('');
     };
 
-    const handleResetPassword = (e: any) => {
+    const handleResetPassword = async (e: any) => {
         e.preventDefault();
         if (!resetTarget) return;
-        if (newPassword.trim().length < 4) { setError(t('password_short')); return; }
-        updateUser({ ...resetTarget, password: newPassword.trim() });
+        if (newPassword.trim().length < 6) { setError(t('password_short')); return; }
+        const record = await makePasswordRecord(newPassword.trim());
+        // يجب على المستخدم تغييرها عند أول دخول بعد إعادة التعيين
+        updateUser({ ...resetTarget, ...record, password: undefined, mustChangePassword: true });
         setSuccess(t('password_changed'));
         setError('');
         setResetTarget(null);

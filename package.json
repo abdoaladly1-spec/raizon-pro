@@ -9,7 +9,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "electron:build": "vite build && electron-builder"
+    "server:build": "node tools/build-server.mjs",
+    "license:make": "node tools/make-license.mjs",
+    "electron:build": "npm run build && npm run server:build && electron-builder"
   },
   "build": {
     "appId": "com.raizon.pro",
@@ -34,6 +36,15 @@
     "asar": true,
     "asarUnpack": [
       "server/**"
+    ],
+    "extraResources": [
+      {
+        "from": "electron/resources",
+        "to": ".",
+        "filter": [
+          "procashier-server.exe"
+        ]
+      }
     ],
     "win": {
       "target": "nsis",

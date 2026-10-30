@@ -84,18 +84,17 @@ export const Clients = () => {
             <body>
                 <h2>${t('clients')}</h2>
                 ${tableContent}
-                <script>
-                    window.onload = () => {
-                        window.print();
-                        setTimeout(() => window.close(), 500);
-                    };
-                </script>
             </body>
             </html>
         `;
 
         printWindow.document.write(html);
         printWindow.document.close();
+        // الطباعة التلقائية من النافذة الأم (CSP يمنع السكربتات المضمّنة)
+        printWindow.onload = () => {
+            try { printWindow.focus(); printWindow.print(); } catch { /* ignore */ }
+            setTimeout(() => { try { printWindow.close(); } catch { /* ignore */ } }, 500);
+        };
     };
 
     return (

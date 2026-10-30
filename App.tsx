@@ -83,7 +83,7 @@ const PageLoader = () => (
 );
 
 const MainContent = () => {
-  const { logout, t, toggleLanguage, language, currentUser, theme, toggleTheme, glassNeon, toggleGlassNeon, state } = useApp();
+  const { logout, t, toggleLanguage, language, currentUser, theme, toggleTheme, glassNeon, toggleGlassNeon, state, addToast } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard' as 'dashboard' | 'create_invoice' | 'invoices' | 'returns' | 'inventory' | 'categories' | 'locations' | 'suppliers' | 'purchase_orders' | 'inventory_history' | 'clients' | 'reservations' | 'stats' | 'settings' | 'expenses' | 'staff' | 'closing' | 'notes' | 'users' | 'audit_logs');
   const [showStats, setShowStats] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
@@ -93,6 +93,18 @@ const MainContent = () => {
   const [syncStatus, setSyncStatus] = useState({ pending: 0, lastSyncAt: null as number | null, lastError: null as string | null, syncing: false } as SyncStatus);
 
   useEffect(() => onSyncStatus(setSyncStatus), []);
+
+  // تحذير المستخدم عند امتلاء مساحة التخزين
+  useEffect(() => {
+    const onFull = () => addToast(t('storage_full'), 'error');
+    const onTrim = () => addToast(t('storage_trimmed'), 'info');
+    window.addEventListener('procashier:storage-full', onFull);
+    window.addEventListener('procashier:storage-trimmed', onTrim);
+    return () => {
+      window.removeEventListener('procashier:storage-full', onFull);
+      window.removeEventListener('procashier:storage-trimmed', onTrim);
+    };
+  }, [addToast, t]);
 
   useEffect(() => {
       const handleStatus = () => setIsOnline(navigator.onLine);
@@ -389,7 +401,32 @@ const MainContent = () => {
 const ActivationScreen = () => {
     const [key, setKey] = useState('');
     const [error, setError] = useState('');
+    const [machineId, setMachineId] = useState(localStorage.getItem('machineId') || '');
+    const [copied, setCopied] = useState(false);
     const { t } = useApp();
+
+    useEffect(() => {
+        const bridge = window.procashier;
+        if (!bridge?.getLicenseStatus) return;
+        let alive = true;
+        bridge.getLicenseStatus()
+            .then(status => {
+                if (alive && status?.machineId) setMachineId(status.machineId);
+            })
+            .catch(() => { /* تجاهل — قد لا يتوفر في المتصفح */ });
+        return () => { alive = false; };
+    }, []);
+
+    const copyMachineId = async () => {
+        if (!machineId) return;
+        try {
+            await navigator.clipboard.writeText(machineId);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        } catch {
+            setError(t('activation_failed'));
+        }
+    };
 
     const handleActivate = async () => {
         try {
@@ -441,6 +478,26 @@ const ActivationScreen = () => {
                                 <Keypad size={16} />
                             </div>
                         </div>
+                    </div>
+
+                    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('machine_id')}</div>
+                                <div className="font-mono text-sm text-slate-700 dark:text-slate-200 truncate" dir="ltr">
+                                    {machineId || '—'}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={copyMachineId}
+                                disabled={!machineId}
+                                className="shrink-0 px-3 py-2 rounded-lg bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 text-xs font-bold transition-opacity disabled:opacity-40"
+                            >
+                                {copied ? t('copied') : t('copy')}
+                            </button>
+                        </div>
+                        <p className="mt-2 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">{t('license_machine_hint')}</p>
                     </div>
                 </div>
 
@@ -542,15 +599,62 @@ const AppContent = () => {
     return <LoginScreen />;
   }
 
+  // إجبار تغيير كلمة المرور الافتراضية قبل استخدام النظام
+  if (currentUser.mustChangePassword) {
+    return <ForcePasswordChange />;
+  }
+
   return <MainContent />;
 };
 
+const ForcePasswordChange = () => {
+  const { currentUser, changeOwnPassword, logout, t } = useApp();
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: any) => {
+    e.preventDefault();
+    setError('');
+    if (next.trim().length < 6) { setError(t('password_short')); return; }
+    if (next !== confirm) { setError(t('wrong_password')); return; }
+    setBusy(true);
+    try {
+      const res = await changeOwnPassword(current, next);
+      if (!res.ok) setError(res.error === 'password_short' ? t('password_short') : t('wrong_password'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4" dir="rtl">
+      <form onSubmit={submit} className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-4">
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{t('force_password_title')}</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{t('force_password_hint')}</p>
+        <p className="text-xs text-slate-400">{currentUser?.username}</p>
+        <Input label={t('current_password')} type="password" value={current} onChange={(e: any) => setCurrent(e.target.value)} required />
+        <Input label={t('new_password')} type="password" value={next} onChange={(e: any) => setNext(e.target.value)} required />
+        <Input label={t('confirm_password')} type="password" value={confirm} onChange={(e: any) => setConfirm(e.target.value)} required placeholder={t('new_password')} />
+        {error && <div className="text-sm text-red-600 dark:text-red-400 font-bold">{error}</div>}
+        <div className="flex gap-2">
+          <Button type="submit" disabled={busy} className="flex-1 justify-center">{t('save')}</Button>
+          <Button type="button" variant="secondary" onClick={logout}>{t('logout')}</Button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
 const LoginScreen = () => {
-    const { login, t, state, theme, toggleTheme } = useApp();
+    const { login, loginWithPin, t, state, theme, toggleTheme } = useApp();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState(false);
+    const [busy, setBusy] = useState(false);
     const [isFocusedUser, setIsFocusedUser] = useState(false);
     const [isFocusedPass, setIsFocusedPass] = useState(false);
   
@@ -558,45 +662,45 @@ const LoginScreen = () => {
     const [showPinPad, setShowPinPad] = useState(false);
     const [pin, setPin] = useState('');
     const [pinError, setPinError] = useState(false);
+    const [pinHint, setPinHint] = useState('');
 
-    const handlePinLogin = () => {
-      const users = state.users.filter(u => u.active && !u.hidden);
-      // 1) رمز سريع محفوظ (افتراضي 1234) → أول مدير
-      const savedPin = localStorage.getItem('procashier_quick_pin') || '1234';
-      if (pin === savedPin) {
-        const admin = users.find(u => u.role === 'admin') || users[0];
-        if (admin) { login(admin.username, admin.password || ''); setShowPinPad(false); setPin(''); return; }
+    const handlePinLogin = async () => {
+      const res = await loginWithPin(pin);
+      if (res.ok) {
+        setShowPinPad(false);
+        setPin('');
+        setPinHint('');
+        return;
       }
-      // 2) أو تطابق كلمة مرور أي مستخدم نشط (لكلمات مرور رقمية)
-      const byPass = users.find(u => u.password && u.password === pin);
-      if (byPass) { login(byPass.username, byPass.password || ''); setShowPinPad(false); setPin(''); return; }
+      setPinHint(res.error === 'locked' ? t('pin_locked') : t('login_error'));
       setPinError(true);
       setTimeout(() => setPinError(false), 1500);
+      setPin('');
     };
   
-    const handleLogin = (e: any) => {
+    const handleLogin = async (e: any) => {
       e.preventDefault();
-      if (login(username, password)) {
-        setError(false);
-        if (rememberMe) {
-          localStorage.setItem('savedUsername', username);
+      if (busy) return;
+      setBusy(true);
+      try {
+        if (await login(username, password)) {
+          setError(false);
+          if (rememberMe) {
+            localStorage.setItem('savedUsername', username);
+          } else {
+            localStorage.removeItem('savedUsername');
+          }
         } else {
-          localStorage.removeItem('savedUsername');
+          setError(true);
         }
-      } else {
-        setError(true);
+      } finally {
+        setBusy(false);
       }
     };
 
     const handleBiometricLogin = () => {
-        // Mock Biometric
-        // In a real app, this would use navigator.credentials.get()
-        const lastUser = state.users.find(u => u.username === (localStorage.getItem('savedUsername') || 'admin'));
-        if (lastUser) {
-            login(lastUser.username, lastUser.password); // Note: In real app, password isn't needed for WebAuthn, handled by backend token
-        } else {
-            alert(t('no_saved_user_biometric'));
-        }
+        // غير مفعّل: لا يمكن اعتبار البصمة تحققاً حقيقياً بدون WebAuthn/backend
+        alert(t('biometric_unavailable'));
     };
 
     useEffect(() => {
@@ -698,13 +802,13 @@ const LoginScreen = () => {
               </button>
             </div>
             
-            <button className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-600/20 transition-all active:scale-95 flex items-center justify-center gap-2 group">
+            <button disabled={busy} className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-600/20 transition-all active:scale-95 flex items-center justify-center gap-2 group disabled:opacity-60">
               {t('login_btn')}
               <span className="group-hover:translate-x-1 transition-transform">→</span>
             </button>
 
             <div className="flex items-center justify-between mt-6">
-                <button type="button" onClick={() => { setShowPinPad(true); setPin(''); setPinError(false); }} className="text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 text-sm transition-colors flex items-center gap-2">
+                <button type="button" onClick={() => { setShowPinPad(true); setPin(''); setPinError(false); setPinHint(''); }} className="text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 text-sm transition-colors flex items-center gap-2">
                     <Keypad size={16} /> {t('quick_pin')}
                 </button>
                 {state.settings.enableBiometricLogin && (
@@ -734,11 +838,11 @@ const LoginScreen = () => {
               </div>
               {/* PIN display */}
               <div className={`flex justify-center gap-2 mb-5 ${pinError ? 'animate-shake' : ''}`}>
-                {[0,1,2,3].map(i => (
+                {[0,1,2,3,4,5].map(i => (
                   <span key={i} className={`w-3.5 h-3.5 rounded-full transition-colors ${i < pin.length ? (pinError ? 'bg-red-500' : 'bg-amber-500') : 'bg-slate-300 dark:bg-slate-600'}`}></span>
                 ))}
               </div>
-              {pinError && <p className="text-center text-red-500 text-xs mb-3">{t('login_error')}</p>}
+              {pinHint && <p className="text-center text-red-500 text-xs mb-3">{pinHint}</p>}
               {/* Keypad */}
               <div className="grid grid-cols-3 gap-2.5">
                 {['1','2','3','4','5','6','7','8','9','','0',''].map((n, idx) => {
@@ -757,7 +861,7 @@ const LoginScreen = () => {
                 })}
               </div>
               <div className="grid grid-cols-2 gap-2.5 mt-4">
-                <button type="button" onClick={() => setShowPinPad(false)} className="py-3 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">{t('cancel')}</button>
+                <button type="button" onClick={() => { setShowPinPad(false); setPin(''); setPinHint(''); }} className="py-3 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">{t('cancel')}</button>
                 <button type="button" onClick={handlePinLogin} disabled={pin.length < 4} className="py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm transition-all active:scale-95 disabled:opacity-50">{t('login_btn')}</button>
               </div>
             </div>
