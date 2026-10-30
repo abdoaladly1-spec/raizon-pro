@@ -48,8 +48,14 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
          {/* Ambient purple glow */}
          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-purple-600/25 rounded-full blur-[120px] animate-pulse"></div>
          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-fuchsia-500/20 rounded-full blur-[90px]"></div>
-         {/* Grid Overlay */}
-         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-15"></div>
+         {/* Grid Overlay — نسيج SVG مضمّن بدل رابط خارجي (يعمل دون إنترنت) */}
+         <div
+            className="absolute inset-0 opacity-15"
+            style={{
+              backgroundImage:
+                "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>\")",
+            }}
+         ></div>
       </div>
 
       {/* Glassmorphism Container */}
