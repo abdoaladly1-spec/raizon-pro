@@ -1,0 +1,35 @@
+name: procashier_flutter
+description: ProCashier Android viewer app
+publish_to: "none"
+version: 1.0.0+1
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+  http: ^1.2.2
+  shared_preferences: ^2.3.3
+  mobile_scanner: ^7.4.2
+  esc_pos_utils_plus: ^2.0.4
+  # 1.2.2+ يتطلب Flutter >=3.44 — نثبّت 1.2.1 لتوافق Flutter 3.35
+  print_bluetooth_thermal: 1.2.1
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "icon.png"
+  adaptive_icon_background: "#0ea5e9"
+  adaptive_icon_foreground: "icon.png"
+
+flutter:
+  uses-material-design: true
+
+

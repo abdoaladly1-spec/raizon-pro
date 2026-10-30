@@ -1,0 +1,211 @@
+import React from 'react';
+
+export interface IconProps {
+  className?: string;
+  size?: number | string;
+  strokeWidth?: number | string;
+}
+
+// Reusable SVG Icon Component wrapper
+const IconWrapper = ({ children, className, size = 24, strokeWidth = 2 }: { children?: React.ReactNode, className?: string, size?: number | string, strokeWidth?: number | string }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth={strokeWidth} 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    {children}
+  </svg>
+);
+
+export const LayoutDashboard = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></IconWrapper>
+);
+export const FileText = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></IconWrapper>
+);
+export const Users = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></IconWrapper>
+);
+export const Calendar = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></IconWrapper>
+);
+export const Package = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="m7.5 4.27 9 5.15" /><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22v-9" /></IconWrapper>
+);
+export const ShoppingCart = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><circle cx="8" cy="21" r="1" /><circle cx="19" cy="21" r="1" /><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" /></IconWrapper>
+);
+export const Truck = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" /><path d="M15 18h-5" /><path d="M14 9h4l4 4v4a1 1 0 0 1-1 1h-2" /><circle cx="7" cy="18" r="2" /><circle cx="17" cy="18" r="2" /></IconWrapper>
+);
+export const Settings = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></IconWrapper>
+);
+export const LogOut = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></IconWrapper>
+);
+export const Plus = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M5 12h14" /><path d="M12 5v14" /></IconWrapper>
+);
+export const Trash2 = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></IconWrapper>
+);
+export const Printer = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect width="12" height="8" x="6" y="14" /></IconWrapper>
+);
+export const Globe = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><circle cx="12" cy="12" r="10" /><line x1="2" x2="22" y1="12" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z" /></IconWrapper>
+);
+export const DollarSign = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></IconWrapper>
+);
+export const TrendingUp = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></IconWrapper>
+);
+export const TrendingDown = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><polyline points="23 18 13.5 8.5 8.5 13.5 1 6" /><polyline points="17 18 23 18 23 12" /></IconWrapper>
+);
+export const AlertCircle = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></IconWrapper>
+);
+export const Clock = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></IconWrapper>
+);
+export const Sun = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="M4.93 4.93l1.41 1.41" /><path d="M17.66 17.66l1.41 1.41" /><path d="M17.66 6.34l1.41-1.41" /><path d="M4.93 19.07l1.41-1.41" /></IconWrapper>
+);
+export const Moon = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></IconWrapper>
+);
+export const Flask = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M10 2v6l-6 10a4 4 0 0 0 3.46 6h9.08A4 4 0 0 0 20 18l-6-10V2" /><path d="M8.5 8h7" /></IconWrapper>
+);
+export const Sparkles = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M12 3l1.3 3.2L16.5 7 13.3 8.3 12 11.5 10.7 8.3 7.5 7l3.2-0.8L12 3z" /><path d="M18 13l.8 2 .8 2-2-.8-2-.8 2-.8 2-.8z" /><path d="M6 13l.8 2 .8 2-2-.8-2-.8 2-.8 2-.8z" /></IconWrapper>
+);
+export const Search = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><circle cx="11" cy="11" r="8" /><line x1="21" x2="16.65" y1="21" y2="16.65" /></IconWrapper>
+);
+export const HelpCircle = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" x2="12.01" y1="17" y2="17" /></IconWrapper>
+);
+export const Keyboard = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><rect width="20" height="16" x="2" y="4" rx="2" ry="2" /><path d="M6 8h.001" /><path d="M10 8h.001" /><path d="M14 8h.001" /><path d="M18 8h.001" /><path d="M6 12h.001" /><path d="M10 12h.001" /><path d="M14 12h.001" /><path d="M18 12h.001" /></IconWrapper>
+);
+export const Award = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><circle cx="12" cy="8" r="7" /><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" /></IconWrapper>
+);
+export const PauseCircle = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><circle cx="12" cy="12" r="10" /><line x1="10" x2="10" y1="15" y2="9" /><line x1="14" x2="14" y1="15" y2="9" /></IconWrapper>
+);
+export const User = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></IconWrapper>
+);
+export const CreditCard = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><rect width="20" height="14" x="2" y="5" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></IconWrapper>
+);
+export const X = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></IconWrapper>
+);
+
+export const Scissors = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}>
+    <circle cx="6" cy="6" r="3" />
+    <circle cx="6" cy="18" r="3" />
+    <line x1="20" y1="4" x2="8.12" y2="15.88" />
+    <line x1="14.47" y1="14.48" x2="20" y2="20" />
+    <line x1="8.12" y1="8.12" x2="12" y2="12" />
+  </IconWrapper>
+);
+
+export const Eye = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}>
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </IconWrapper>
+);
+
+export const EyeOff = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}>
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+    <line x1="1" y1="1" x2="23" y2="23" />
+  </IconWrapper>
+);
+
+export const Keypad = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}>
+    <rect x="2" y="2" width="20" height="20" rx="2" ry="2" />
+    <path d="M7 7h.01" />
+    <path d="M12 7h.01" />
+    <path d="M17 7h.01" />
+    <path d="M7 12h.01" />
+    <path d="M12 12h.01" />
+    <path d="M17 12h.01" />
+    <path d="M12 17h.01" />
+  </IconWrapper>
+);
+
+export const KeyRound = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></IconWrapper>
+);
+export const ArrowLeft = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></IconWrapper>
+);
+export const ChevronRight = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><polyline points="9 18 15 12 9 6" /></IconWrapper>
+);
+export const Wallet = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></IconWrapper>
+);
+export const Banknote = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><rect width="20" height="12" x="2" y="6" rx="2" /><circle cx="12" cy="12" r="2" /><path d="M6 12h.01M18 12h.01" /></IconWrapper>
+);
+export const PieChart = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" /></IconWrapper>
+);
+export const Activity = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></IconWrapper>
+);
+export const Fingerprint = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 6" /><path d="M5 15.366A11 11 0 0 1 5 12a7 7 0 0 1 7-7 7 7 0 0 1 7 7v1.7a2 2 0 0 1-3.35 1.48A4.016 4.016 0 0 0 12 14a4 4 0 0 0-4-4" /><path d="M8.86 19.31A9 9 0 0 1 12 22a9 9 0 0 1 3.29-15.5" /></IconWrapper>
+);
+export const WifiOff = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><line x1="2" x2="22" y1="2" y2="22" /><path d="M8.5 8.5A6 6 0 0 1 12 8a6 6 0 0 1 4.4 1.98" /><path d="M5 12.5A10 10 0 0 1 12 10a10 10 0 0 1 5.38 1.57" /><path d="M15.5 15.5A14 14 0 0 1 12 14a14 14 0 0 1 6.5 2.15" /><path d="M12 20h.01" /></IconWrapper>
+);
+export const Wifi = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M5 12.55a11 11 0 0 1 14.08 0" /><path d="M1.42 9a16 16 0 0 1 21.16 0" /><path d="M8.53 16.11a6 6 0 0 1 6.95 0" /><line x1="12" y1="20" x2="12.01" y2="20" /></IconWrapper>
+);
+export const ArrowUp = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" /></IconWrapper>
+);
+export const ArrowDown = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><line x1="12" y1="5" x2="12" y2="19" /><polyline points="19 12 12 19 5 12" /></IconWrapper>
+);
+export const RefreshCw = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" /><path d="M21 21v-5h-5" /></IconWrapper>
+);
+export const Filter = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></IconWrapper>
+);
+export const Check = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><polyline points="20 6 9 17 4 12" /></IconWrapper>
+);
+export const Tag = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z" /><path d="M7 7h.01" /></IconWrapper>
+);
+export const MapPin = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></IconWrapper>
+);
+export const BarChart2 = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></IconWrapper>
+);
+export const Info = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="16" y2="12" /><line x1="12" x2="12.01" y1="8" y2="8" /></IconWrapper>
+);

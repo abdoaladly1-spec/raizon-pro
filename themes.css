@@ -1,0 +1,113 @@
+:root {
+  --pri-50: #f0f9ff;
+  --pri-100: #e0f2fe;
+  --pri-200: #bae6fd;
+  --pri-300: #7dd3fc;
+  --pri-400: #38bdf8;
+  --pri-500: #0ea5e9;
+  --pri-600: #0284c7;
+  --pri-700: #0369a1;
+  --pri-800: #075985;
+  --pri-900: #0c4a6e;
+  --pri-950: #082f49;
+}
+
+.theme-sunset {
+  --pri-50: #fff7ed;
+  --pri-100: #ffedd5;
+  --pri-200: #fed7aa;
+  --pri-300: #fdba74;
+  --pri-400: #fb923c;
+  --pri-500: #f97316;
+  --pri-600: #ea580c;
+  --pri-700: #c2410c;
+  --pri-800: #9a3412;
+  --pri-900: #7c2d12;
+  --pri-950: #431407;
+}
+
+.theme-forest {
+  --pri-50: #f0fdf4;
+  --pri-100: #dcfce7;
+  --pri-200: #bbf7d0;
+  --pri-300: #86efac;
+  --pri-400: #4ade80;
+  --pri-500: #22c55e;
+  --pri-600: #16a34a;
+  --pri-700: #15803d;
+  --pri-800: #166534;
+  --pri-900: #14532d;
+  --pri-950: #052e16;
+}
+
+.theme-midnight {
+  --pri-50: #f5f3ff;
+  --pri-100: #ede9fe;
+  --pri-200: #ddd6fe;
+  --pri-300: #c4b5fd;
+  --pri-400: #a78bfa;
+  --pri-500: #8b5cf6;
+  --pri-600: #7c3aed;
+  --pri-700: #6d28d9;
+  --pri-800: #5b21b6;
+  --pri-900: #4c1d95;
+  --pri-950: #2e1065;
+}
+
+.theme-ocean {
+  --pri-50: #ecfeff;
+  --pri-100: #cffafe;
+  --pri-200: #a5f3fc;
+  --pri-300: #67e8f9;
+  --pri-400: #22d3ee;
+  --pri-500: #06b6d4;
+  --pri-600: #0891b2;
+  --pri-700: #0e7490;
+  --pri-800: #155e75;
+  --pri-900: #164e63;
+  --pri-950: #083344;
+}
+
+.theme-luxury {
+  --pri-50: #fefce8;
+  --pri-100: #fef9c3;
+  --pri-200: #fef08a;
+  --pri-300: #fde047;
+  --pri-400: #facc15;
+  --pri-500: #eab308;
+  --pri-600: #ca8a04;
+  --pri-700: #a16207;
+  --pri-800: #854d0e;
+  --pri-900: #713f12;
+  --pri-950: #422006;
+}
+
+/* Touch Mode Utilities */
+.touch-mode button, 
+.touch-mode .button,
+.touch-mode input,
+.touch-mode select,
+.touch-mode textarea {
+  min-height: 52px !important;
+  font-size: 16px !important;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+}
+
+.touch-mode nav button {
+    padding: 16px !important;
+    margin-bottom: 8px !important;
+}
+
+/* أزرار الأيقونات فقط (X/الإغلاق...): دائرة كاملة 52×52 بدل بيضاوي 36×52
+   مع توسّط الأيقونة (يعمل مع قاعدة flex في index.css) */
+.touch-mode button:has(> svg):not(:has(> :not(svg))) {
+  min-width: 52px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+.touch-mode table td, 
+.touch-mode table th {
+    padding: 16px 8px !important;
+}

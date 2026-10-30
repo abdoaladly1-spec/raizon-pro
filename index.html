@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RaiZon Pro v1 - منصة الإدارة المتكاملة</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#A855F7">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+  </head>
+  <body class="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 overflow-hidden">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+  <script>
+    (function(){
+      try {
+        const saved = localStorage.getItem('theme');
+        const theme = saved ? saved : 'dark';
+        localStorage.setItem('theme', theme);
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+      } catch(e) {}
+    })();
+    (function(){
+      let rafId = null;
+      const update = (e) => {
+        const x = e.clientX + 'px';
+        const y = e.clientY + 'px';
+        document.documentElement.style.setProperty('--cursor-x', x);
+        document.documentElement.style.setProperty('--cursor-y', y);
+        rafId = null;
+      };
+      window.addEventListener('mousemove', (e) => {
+        if (rafId) return;
+        rafId = requestAnimationFrame(() => update(e));
+      }, { passive: true });
+    })();
+  </script>
+</body>
+</html>
