@@ -953,8 +953,8 @@ export const CreateInvoice = ({ onClose }: any) => {
                     })}
                 </div>
 
-                {/* Items Grid with Modern Touch-friendly Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[460px] overflow-y-auto p-1.5 custom-scrollbar">
+                {/* Items Grid with Modern Touch-friendly Cards - Exactly 3 items per row, larger size */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3.5 max-h-[520px] overflow-y-auto p-1.5 custom-scrollbar">
                     {displayedItems.length === 0 ? (
                         <div className="col-span-full py-12 flex flex-col items-center justify-center text-center">
                             <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-2">
@@ -980,34 +980,34 @@ export const CreateInvoice = ({ onClose }: any) => {
                                     type="button"
                                     disabled={isOutOfStock}
                                     onClick={() => addToInvoice(item)}
-                                    className={`group relative flex flex-col justify-between p-3.5 rounded-2xl border text-right transition-all duration-200 select-none min-h-[120px] cursor-pointer ${
+                                    className={`group relative flex flex-col justify-between p-4 rounded-2xl border text-right transition-all duration-200 select-none min-h-[148px] cursor-pointer ${
                                         isOutOfStock 
                                             ? 'opacity-55 cursor-not-allowed bg-rose-50/20 dark:bg-rose-950/10 border-rose-200 dark:border-rose-900/40' 
                                             : inCartQty > 0
-                                            ? 'bg-primary-50/50 dark:bg-primary-950/25 border-primary-500 dark:border-primary-500 shadow-md ring-2 ring-primary-500/20 hover:shadow-lg active:scale-[0.98]'
-                                            : 'bg-white dark:bg-slate-800/95 border-slate-200/90 dark:border-slate-700/80 hover:border-primary-500/70 dark:hover:border-primary-500/70 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]'
+                                            ? 'bg-primary-50/60 dark:bg-primary-950/30 border-primary-500 dark:border-primary-500 shadow-lg ring-2 ring-primary-500/25 hover:shadow-xl active:scale-[0.98]'
+                                            : 'bg-white dark:bg-slate-800/95 border-slate-200/90 dark:border-slate-700/80 hover:border-primary-500/70 dark:hover:border-primary-500/70 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]'
                                     }`}
                                 >
                                     {/* شارة عدد العناصر الموجودة بالفاتورة الحالية */}
                                     {inCartQty > 0 && (
-                                        <span className="absolute -top-2 -left-2 z-20 flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full bg-primary-600 text-white font-black text-xs shadow-md border-2 border-white dark:border-slate-800">
+                                        <span className="absolute -top-2.5 -left-2.5 z-20 flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-primary-600 text-white font-black text-xs shadow-lg border-2 border-white dark:border-slate-800 animate-scale-in">
                                             {inCartQty}×
                                         </span>
                                     )}
 
                                     {/* الصف العلوي: النوع والمخزون */}
-                                    <div className="w-full flex items-center justify-between gap-1 mb-2">
-                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold ${
+                                    <div className="w-full flex items-center justify-between gap-1.5 mb-2.5">
+                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold ${
                                             isService 
                                                 ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60' 
                                                 : 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800/60'
                                         }`}>
-                                            {isService ? <Scissors size={11} className="shrink-0" /> : <Package size={11} className="shrink-0" />}
+                                            {isService ? <Scissors size={12} className="shrink-0" /> : <Package size={12} className="shrink-0" />}
                                             <span>{isService ? t('service') : t('product')}</span>
                                         </span>
 
                                         {item.trackStock ? (
-                                            <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg ${
+                                            <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-xl ${
                                                 isOutOfStock 
                                                     ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-300 dark:border-rose-900' 
                                                     : isLowStock 
@@ -1018,38 +1018,38 @@ export const CreateInvoice = ({ onClose }: any) => {
                                                     <span>{language === 'ar' ? 'نفد' : 'Out'}</span>
                                                 ) : (
                                                     <>
-                                                        <span className="text-[10px] text-slate-400 font-normal">{language === 'ar' ? 'متاح:' : 'Qty:'}</span>
-                                                        <span className="font-mono">{item.quantity}</span>
+                                                        <span className="text-[11px] text-slate-400 font-normal">{language === 'ar' ? 'متاح:' : 'Qty:'}</span>
+                                                        <span className="font-mono font-black">{item.quantity}</span>
                                                     </>
                                                 )}
                                             </span>
                                         ) : (
-                                            <span className="text-[10px] text-purple-500/80 dark:text-purple-400/80 font-medium">
+                                            <span className="text-xs text-purple-500/80 dark:text-purple-400/80 font-semibold">
                                                 {isService ? (language === 'ar' ? 'خدمة فورية' : 'Service') : ''}
                                             </span>
                                         )}
                                     </div>
 
-                                    {/* اسم العنصر */}
-                                    <div className="w-full text-right mb-2">
-                                        <div className="font-bold text-slate-900 dark:text-slate-100 text-[13px] sm:text-sm leading-snug line-clamp-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                                    {/* اسم العنصر بحجم أكبر وأوضح */}
+                                    <div className="w-full text-right mb-3 flex-1 flex items-center">
+                                        <div className="font-black text-slate-900 dark:text-slate-100 text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                                             {language === 'ar' ? item.nameAr : (item.nameEn || item.nameAr)}
                                         </div>
                                     </div>
 
-                                    {/* الصف السفلي: السعر وزر الإضافة */}
-                                    <div className="w-full pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="font-mono text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400">
+                                    {/* الصف السفلي: السعر وزر الإضافة بحجم أكبر */}
+                                    <div className="w-full pt-2.5 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span className="font-mono text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400">
                                                 {formatNumber(item.price)}
                                             </span>
-                                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
                                                 {t('egp')}
                                             </span>
                                         </div>
 
-                                        <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-700/70 text-slate-500 dark:text-slate-300 group-hover:bg-primary-600 group-hover:text-white transition-all shadow-xs group-hover:scale-110">
-                                            <Plus size={13} strokeWidth={2.5} />
+                                        <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-700/70 text-slate-600 dark:text-slate-300 group-hover:bg-primary-600 group-hover:text-white transition-all shadow-xs group-hover:scale-110">
+                                            <Plus size={16} strokeWidth={2.5} />
                                         </div>
                                     </div>
                                 </button>
