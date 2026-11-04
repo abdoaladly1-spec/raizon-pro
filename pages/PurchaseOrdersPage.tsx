@@ -86,7 +86,7 @@ export const PurchaseOrdersPage = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-4 bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-sm backdrop-blur-sm">
         <div>
-          <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <span className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
               <Package size={20} />
             </span>
@@ -131,36 +131,36 @@ export const PurchaseOrdersPage = () => {
 
       {/* بطاقات المؤشرات الإحصائية لأوامر الشراء */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-purple-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
             <span>إجمالي الأوامر</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 font-bold border border-purple-200 dark:border-purple-800/40">الكل</span>
           </div>
-          <h4 className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono tracking-tight">{poStats.total} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
+          <h4 className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight">{poStats.total} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-amber-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
             <span>قيد الانتظار</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/40">قيد التوريد ⏳</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/40">قيد التوريد</span>
           </div>
-          <h4 className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono tracking-tight">{poStats.pending} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
+          <h4 className="text-2xl font-bold text-amber-600 dark:text-amber-400 font-mono tracking-tight">{poStats.pending} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-emerald-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
             <span>مستلمة بالمخزن</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">تم الاستلام 🟢</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">تم الاستلام</span>
           </div>
-          <h4 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">{poStats.received} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
+          <h4 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">{poStats.received} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-blue-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
             <span>إجمالي المشتريات</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800/40">القيمة 💰</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800/40">القيمة</span>
           </div>
-          <h4 className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono tracking-tight">{poStats.totalSpent.toLocaleString()} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h4>
+          <h4 className="text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono tracking-tight">{poStats.totalSpent.toLocaleString()} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h4>
         </div>
       </div>
 

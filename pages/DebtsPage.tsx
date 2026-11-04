@@ -313,7 +313,7 @@ export const DebtsPage: React.FC = () => {
         recordedBy: currentUser?.username || 'كاشير'
       });
 
-      addToast(`تم تسجيل سداد ${formatNumber(amt)} ${currencySymbol} للعميل ${paymentCustomer.name} بنجاح ✓`, 'success');
+      addToast(`تم تسجيل سداد ${formatNumber(amt)} ${currencySymbol} للعميل ${paymentCustomer.name} بنجاح`, 'success');
       
       // Update profile customer state if open
       if (profileCustomer && profileCustomer.id === paymentCustomer.id) {
@@ -381,7 +381,7 @@ export const DebtsPage: React.FC = () => {
         lastVisit: new Date().toISOString()
       });
 
-      addToast(`تمت إضافة مديونية بمبلغ ${formatNumber(amt)} ${currencySymbol} للعميل ${customer.name} بنجاح ✓`, 'success');
+      addToast(`تمت إضافة مديونية بمبلغ ${formatNumber(amt)} ${currencySymbol} للعميل ${customer.name} بنجاح`, 'success');
       setShowAddDebtModal(false);
       setNewDebtCustomerId('');
       setNewDebtAmount('');
@@ -418,7 +418,7 @@ export const DebtsPage: React.FC = () => {
         notes: newCustNotes.trim() || undefined
       });
 
-      addToast(`تمت إضافة العميل «${newCustName}» بنجاح ✓`, 'success');
+      addToast(`تمت إضافة العميل «${newCustName}» بنجاح`, 'success');
       setShowAddCustomerModal(false);
       setNewCustName('');
       setNewCustPhone('');
@@ -446,7 +446,7 @@ export const DebtsPage: React.FC = () => {
       if (profileCustomer && profileCustomer.id === editingCustomer.id) {
         setProfileCustomer(updated);
       }
-      addToast('تم تحديث بيانات العميل والحد الائتماني بنجاح ✓', 'success');
+      addToast('تم تحديث بيانات العميل والحد الائتماني بنجاح', 'success');
       setEditingCustomer(null);
     } catch (err: any) {
       addToast(err?.message || 'تعذر التحديث', 'error');
@@ -483,7 +483,7 @@ export const DebtsPage: React.FC = () => {
       });
     });
 
-    addToast('تم توليد بيانات تجريبية واقعية بنجاح ✓', 'success');
+    addToast('تم توليد بيانات تجريبية واقعية بنجاح', 'success');
   };
 
   // Helper for status badge presentation
@@ -549,7 +549,7 @@ export const DebtsPage: React.FC = () => {
             <CreditCard size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">سجل الديون</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">سجل الديون</h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               متابعة وإدارة أرصدة العملاء الآجلة، التحصيلات وسندات القبض وكشوف الحساب.
             </p>
@@ -594,14 +594,14 @@ export const DebtsPage: React.FC = () => {
       {/* ===================================================================== */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* إجمالي المبالغ المستحقة */}
-        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 border-t-4 border-t-rose-500 p-4 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all group">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80  p-4 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all group">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400">إجمالي المبالغ المستحقة</span>
             <span className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center justify-center">
               <DollarSign size={18} />
             </span>
           </div>
-          <div className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight">
+          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">
             {formatNumber(summary.totalDue)} <span className="text-xs font-normal text-slate-400">{currencySymbol}</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
@@ -618,7 +618,7 @@ export const DebtsPage: React.FC = () => {
               <Users size={18} />
             </span>
           </div>
-          <div className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight">
+          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">
             {summary.debtorsCount} <span className="text-xs font-normal text-slate-400">عميل مدين</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
@@ -628,20 +628,20 @@ export const DebtsPage: React.FC = () => {
         </div>
 
         {/* إجمالي المبالغ المتأخرة */}
-        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 border-t-4 border-t-amber-500 p-4 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all group">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80  p-4 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all group">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400">المبالغ المتأخرة</span>
             <span className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center">
               <AlertTriangle size={18} />
             </span>
           </div>
-          <div className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight">
+          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">
             {formatNumber(summary.totalOverdue)} <span className="text-xs font-normal text-slate-400">{currencySymbol}</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
             <span className="text-[11px] text-slate-500 dark:text-slate-400">
               {summary.overdueCount > 0 ? (
-                <span className="text-amber-600 dark:text-amber-400 font-bold">⚠️ {summary.overdueCount} تجاوزوا الحد الائتماني</span>
+                <span className="text-amber-600 dark:text-amber-400 font-bold">{summary.overdueCount} تجاوزوا الحد الائتماني الائتماني</span>
               ) : (
                 <span>ضمن الحدود الائتمانية</span>
               )}
@@ -651,14 +651,14 @@ export const DebtsPage: React.FC = () => {
         </div>
 
         {/* المبالغ المحصلة */}
-        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 border-t-4 border-t-emerald-500 p-4 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all group">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80  p-4 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all group">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400">إجمالي التحصيلات</span>
             <span className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
               <Check size={18} />
             </span>
           </div>
-          <div className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight">
+          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">
             {formatNumber(summary.totalCollected)} <span className="text-xs font-normal text-slate-400">{currencySymbol}</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
@@ -746,7 +746,7 @@ export const DebtsPage: React.FC = () => {
           {[
             { id: 'all', label: 'الكل' },
             { id: 'due', label: 'مستحق' },
-            { id: 'overdue', label: 'متأخر ⚠️' },
+            { id: 'overdue', label: 'متأخرات السداد' },
             { id: 'partial', label: 'مسدد جزئياً' },
             { id: 'settled', label: 'مسدد بالكامل' }
           ].map(pill => {
@@ -882,7 +882,7 @@ export const DebtsPage: React.FC = () => {
 
                         {/* Balance */}
                         <td className="py-3.5 px-4 text-center">
-                          <div className={`font-black font-mono text-base ${balance > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                          <div className={`font-bold font-mono text-base ${balance > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
                             {formatNumber(balance)} <span className="text-[11px] font-normal text-slate-400">{currencySymbol}</span>
                           </div>
                         </td>
@@ -930,7 +930,7 @@ export const DebtsPage: React.FC = () => {
                               </button>
                             ) : (
                               <span className="px-2.5 py-1 text-slate-500 text-xs font-bold">
-                                مسدد ✓
+                                مسدد بالكامل
                               </span>
                             )}
 
@@ -990,7 +990,7 @@ export const DebtsPage: React.FC = () => {
 
                     <div className="flex items-center justify-between p-2.5 rounded-lg bg-black/20 border border-slate-200 dark:border-slate-700/80">
                       <span className="text-xs text-slate-500 dark:text-slate-400">المبلغ المستحق:</span>
-                      <span className={`font-mono font-black text-base ${balance > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                      <span className={`font-mono font-bold text-base ${balance > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
                         {formatNumber(balance)} {currencySymbol}
                       </span>
                     </div>
@@ -1047,7 +1047,7 @@ export const DebtsPage: React.FC = () => {
             <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between">
               <div>
                 <span className="text-xs text-slate-500 dark:text-slate-400 block">المديونية المستحقة حالياً:</span>
-                <span className="text-xl font-black font-mono text-rose-400">
+                <span className="text-xl font-bold font-mono text-rose-400">
                   {formatNumber(paymentCustomer.balance || 0)} {currencySymbol}
                 </span>
               </div>
@@ -1130,10 +1130,10 @@ export const DebtsPage: React.FC = () => {
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { id: 'cash', label: 'نقدًا', icon: '💵' },
-                  { id: 'card', label: 'بطاقة', icon: '💳' },
-                  { id: 'wallet', label: 'محفظة', icon: '📱' },
-                  { id: 'instapay', label: 'إنستا باي', icon: '⚡' },
+                  { id: 'cash', label: 'نقدًا', icon: null },
+                  { id: 'card', label: 'بطاقة', icon: null },
+                  { id: 'wallet', label: 'محفظة', icon: null },
+                  { id: 'instapay', label: 'إنستا باي', icon: null },
                 ].map(m => (
                   <button
                     key={m.id}
@@ -1201,7 +1201,7 @@ export const DebtsPage: React.FC = () => {
                 disabled={isSubmittingPayment || !parseFloat(paymentAmount)}
                 className="flex-1 justify-center py-2.5 text-sm font-bold shadow-sm"
               >
-                {isSubmittingPayment ? 'جاري الحفظ...' : '✓ تأكيد وحفظ السداد'}
+                {isSubmittingPayment ? 'جاري الحفظ...' : 'تأكيد وحفظ السداد'}
               </Button>
               <Button
                 type="button"
@@ -1229,7 +1229,7 @@ export const DebtsPage: React.FC = () => {
             {/* بطاقة رأس الملف الشخصي */}
             <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="flex items-center gap-3.5">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-500/30 to-blue-500/30 border border-slate-300 dark:border-slate-600/80 text-white font-black text-lg flex items-center justify-center shadow-sm shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-500/30 to-blue-500/30 border border-slate-300 dark:border-slate-600/80 text-white font-bold text-lg flex items-center justify-center shadow-sm shrink-0">
                   {getInitials(profileCustomer.name)}
                 </div>
                 <div>
@@ -1281,7 +1281,7 @@ export const DebtsPage: React.FC = () => {
             <div className="grid grid-cols-3 gap-3">
               <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700/80">
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 block">إجمالي ما تم سداده:</span>
-                <span className="text-base font-black font-mono text-emerald-400 mt-0.5 block">
+                <span className="text-base font-bold font-mono text-emerald-400 mt-0.5 block">
                   {formatNumber(activeCustomerTotalPaid)} {currencySymbol}
                 </span>
               </div>
@@ -1295,7 +1295,7 @@ export const DebtsPage: React.FC = () => {
 
               <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700/80">
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 block">الرصيد المتبقي المستحق:</span>
-                <span className="text-base font-black font-mono text-rose-400 mt-0.5 block">
+                <span className="text-base font-bold font-mono text-rose-400 mt-0.5 block">
                   {formatNumber(profileCustomer.balance || 0)} {currencySymbol}
                 </span>
               </div>
@@ -1304,7 +1304,7 @@ export const DebtsPage: React.FC = () => {
             {/* ملاحظات العميل */}
             {profileCustomer.notes && (
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-start gap-2">
-                <span className="text-sm">📌</span>
+                
                 <span>{profileCustomer.notes}</span>
               </div>
             )}
@@ -1358,7 +1358,7 @@ export const DebtsPage: React.FC = () => {
                           <td className="py-2.5 px-3 text-center font-mono font-bold text-emerald-400">
                             {row.credit > 0 ? `-${formatNumber(row.credit)}` : '—'}
                           </td>
-                          <td className="py-2.5 px-3 text-center font-mono font-black text-white">
+                          <td className="py-2.5 px-3 text-center font-mono font-bold text-white">
                             {formatNumber(row.balanceAfter)} {currencySymbol}
                           </td>
                         </tr>
@@ -1469,7 +1469,7 @@ export const DebtsPage: React.FC = () => {
                 disabled={isSubmittingDebt || !newDebtCustomerId || !parseFloat(newDebtAmount)}
                 className="flex-1 justify-center py-2.5 text-sm font-bold shadow-sm"
               >
-                {isSubmittingDebt ? 'جاري الحفظ...' : '✓ تأكيد وحفظ العملية'}
+                {isSubmittingDebt ? 'جاري الحفظ...' : 'تأكيد وحفظ العملية'}
               </Button>
               <Button
                 type="button"
@@ -1573,7 +1573,7 @@ export const DebtsPage: React.FC = () => {
                 disabled={isSubmittingCustomer || !newCustName.trim() || !newCustPhone.trim()}
                 className="flex-1 justify-center py-2.5 text-sm font-bold shadow-sm"
               >
-                {isSubmittingCustomer ? 'جاري الحفظ...' : '✓ حفظ العميل'}
+                {isSubmittingCustomer ? 'جاري الحفظ...' : 'حفظ العميل'}
               </Button>
               <Button
                 type="button"

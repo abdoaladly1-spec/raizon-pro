@@ -38,7 +38,7 @@ export const CategoriesPage = () => {
             {/* الترويسة وأزرار التحكم */}
             <div className="flex justify-between items-center flex-wrap gap-4 bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-sm backdrop-blur-sm">
                 <div>
-                    <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                         <span className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-md">
                             <Tag size={20} />
                         </span>
@@ -64,28 +64,28 @@ export const CategoriesPage = () => {
 
             {/* بطاقات المؤشرات الإحصائية للتصنيفات */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-indigo-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                         <span>إجمالي التصنيفات</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800/40">الأقسام</span>
                     </div>
-                    <h4 className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono tracking-tight">{categoryStats.total} <span className="text-xs font-bold text-slate-400">قسم</span></h4>
+                    <h4 className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight">{categoryStats.total} <span className="text-xs font-bold text-slate-400">قسم</span></h4>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-emerald-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                         <span>أقسام تحتوي أصناف</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">نشطة 🟢</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">نشطة</span>
                     </div>
-                    <h4 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">{categoryStats.usedCategories} <span className="text-xs font-bold text-slate-400">قسم</span></h4>
+                    <h4 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">{categoryStats.usedCategories} <span className="text-xs font-bold text-slate-400">قسم</span></h4>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-purple-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                         <span>إجمالي الأصناف المرتبطة</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 font-bold border border-purple-200 dark:border-purple-800/40">أصناف</span>
                     </div>
-                    <h4 className="text-2xl font-black text-purple-600 dark:text-purple-400 font-mono tracking-tight">{categoryStats.totalItems} <span className="text-xs font-bold text-slate-400">صنف وخدمة</span></h4>
+                    <h4 className="text-2xl font-bold text-purple-600 dark:text-purple-400 font-mono tracking-tight">{categoryStats.totalItems} <span className="text-xs font-bold text-slate-400">صنف وخدمة</span></h4>
                 </div>
             </div>
 

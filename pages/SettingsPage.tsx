@@ -22,13 +22,13 @@ import { PAGE_SIZES, ELEMENT_ORDER, TEMPLATE_PRESETS, applyTemplatePreset, norma
 type SettingsTab = 'general' | 'email' | 'print' | 'security' | 'users' | 'logs' | 'updates';
 
 const TABS = [
-    { id: 'general', icon: '🏪', labelAr: 'بيانات المحل', labelEn: 'Shop Profile' },
-    { id: 'email', icon: '📧', labelAr: 'إشعارات المدير', labelEn: 'Manager Alerts' },
-    { id: 'print', icon: '🖨️', labelAr: 'الطباعة والتصميم', labelEn: 'Print Design' },
-    { id: 'security', icon: '💾', labelAr: 'النسخ الاحتياطي والأمان', labelEn: 'Backup & Security' },
-    { id: 'users', icon: '👥', labelAr: 'المستخدمين', labelEn: 'Users' },
-    { id: 'logs', icon: '📋', labelAr: 'سجل التدقيق', labelEn: 'Audit Logs' },
-    { id: 'updates', icon: '🚀', labelAr: 'التحديثات السحابية', labelEn: 'Cloud Updates' },
+    { id: 'general', icon: Building, labelAr: 'بيانات المحل', labelEn: 'Shop Profile' },
+    { id: 'email', icon: Bell, labelAr: 'إشعارات المدير', labelEn: 'Manager Alerts' },
+    { id: 'print', icon: Printer, labelAr: 'الطباعة والتصميم', labelEn: 'Print Design' },
+    { id: 'security', icon: Shield, labelAr: 'النسخ الاحتياطي والأمان', labelEn: 'Backup & Security' },
+    { id: 'users', icon: Users, labelAr: 'المستخدمين', labelEn: 'Users' },
+    { id: 'logs', icon: Activity, labelAr: 'سجل التدقيق', labelEn: 'Audit Logs' },
+    { id: 'updates', icon: RefreshCw, labelAr: 'التحديثات السحابية', labelEn: 'Cloud Updates' },
 ] as const;
 
 export const SettingsPage = () => {
@@ -118,7 +118,7 @@ export const SettingsPage = () => {
                         htmlUrl: res.htmlUrl,
                         installerAsset: res.installerAsset
                     });
-                    addToast(language === 'ar' ? `🎉 يتوفر إصدار جديد: ${res.latestVersion}` : `New update available: ${res.latestVersion}`, 'info');
+                    addToast(language === 'ar' ? `يتوفر إصدار جديد: ${res.latestVersion}` : `New update available: ${res.latestVersion}`, 'info');
                 } else {
                     setUpdateResult({
                         checked: true,
@@ -144,7 +144,7 @@ export const SettingsPage = () => {
                             htmlUrl: data.html_url,
                             downloadUrl: data.assets?.[0]?.browser_download_url || data.html_url
                         });
-                        addToast(language === 'ar' ? `🎉 يتوفر إصدار جديد: ${data.tag_name}` : `New update available: ${data.tag_name}`, 'info');
+                        addToast(language === 'ar' ? `يتوفر إصدار جديد: ${data.tag_name}` : `New update available: ${data.tag_name}`, 'info');
                     } else {
                         setUpdateResult({
                             checked: true,
@@ -369,15 +369,15 @@ export const SettingsPage = () => {
                 if (res.ok) {
                     const data = await res.json();
                     setEmailConfig(prev => ({ ...prev, emailTo: cleanEmail, mode: data.mode, hasPassword: true }));
-                    addToast(language === 'ar' ? 'تم حفظ بريد المدير وتفعيل الإشعارات بنجاح ✓' : 'Manager email saved successfully', 'success');
+                    addToast(language === 'ar' ? 'تم حفظ بريد المدير وتفعيل الإشعارات بنجاح' : 'Manager email saved successfully', 'success');
                 } else {
                     setEmailConfig(prev => ({ ...prev, emailTo: cleanEmail }));
-                    addToast(language === 'ar' ? 'تم حفظ بريد المدير بنجاح في إعدادات النظام ✓' : 'Manager email saved locally ✓', 'success');
+                    addToast(language === 'ar' ? 'تم حفظ بريد المدير بنجاح في إعدادات النظام' : 'Manager email saved locally', 'success');
                 }
             } catch (networkErr) {
                 // حتى لو لم يستجب السيرفر الخارجي، تم الحفظ محلياً بنجاح تام وبدون أي خطأ للمستخدم
                 setEmailConfig(prev => ({ ...prev, emailTo: cleanEmail }));
-                addToast(language === 'ar' ? 'تم حفظ بريد المدير بنجاح في إعدادات النظام ✓' : 'Manager email saved locally ✓', 'success');
+                addToast(language === 'ar' ? 'تم حفظ بريد المدير بنجاح في إعدادات النظام' : 'Manager email saved locally', 'success');
             }
         } catch (e: any) {
             addToast(e?.message || 'حدث خطأ أثناء حفظ الإعدادات', 'error');
@@ -416,7 +416,7 @@ export const SettingsPage = () => {
                         service === 'return' ? (language === 'ar' ? 'إشعار المرتجع' : 'Return notice') :
                         service === 'expense' ? (language === 'ar' ? 'إشعار المصروف' : 'Expense notice') :
                         (language === 'ar' ? 'فاتورة البيع' : 'Invoice');
-                    addToast(language === 'ar' ? `تم إرسال تجربة (${serviceLabel}) بنجاح إلى ${cleanEmail} ✓` : `Test email (${service}) sent successfully!`, 'success');
+                    addToast(language === 'ar' ? `تم إرسال تجربة (${serviceLabel}) بنجاح إلى ${cleanEmail}` : `Test email (${service}) sent successfully!`, 'success');
                 } else if (data.status === 'simulated') {
                     addToast(language === 'ar' ? 'وضع المحاكاة: الإيميل مسجل لكن لم يتم إرسال حقيقي' : 'Simulated mode', 'info');
                 } else {
@@ -584,9 +584,9 @@ export const SettingsPage = () => {
             const data = await res.json();
             if (res.ok && data.ok) {
                 if (data.email?.status === 'sent') {
-                    addToast(language === 'ar' ? `✓ تم حفظ النسخة في مجلد Backup وإرسالها لميل المدير سحابياً بنجاح!` : 'Backup saved locally and emailed to manager!', 'success');
+                    addToast(language === 'ar' ? `تم حفظ النسخة في مجلد Backup وإرسالها لميل المدير سحابياً بنجاح!` : 'Backup saved locally and emailed to manager!', 'success');
                 } else {
-                    addToast(language === 'ar' ? '✓ تم حفظ النسخة بنجاح في مجلد Backup على جهازك' : 'Backup saved locally in Backup folder', 'success');
+                    addToast(language === 'ar' ? 'تم حفظ النسخة بنجاح في مجلد Backup على جهازك' : 'Backup saved locally in Backup folder', 'success');
                 }
                 fetchBackupFiles();
             } else {
@@ -719,7 +719,7 @@ export const SettingsPage = () => {
 
             addToast(
                 language === 'ar' 
-                    ? `✓ تم استعادة كافة البيانات وبريد المدير (${restoredEmail || 'الافتراضي'}) بنجاح!` 
+                    ? `تم استعادة كافة البيانات وبريد المدير (${restoredEmail || 'الافتراضي'}) بنجاح!` 
                     : 'All data and manager email restored successfully!', 
                 'success'
             );
@@ -970,8 +970,8 @@ export const SettingsPage = () => {
             <Card className="border border-white/5 bg-[#161B26] p-6 rounded-2xl shadow-sm">
                 <div className="flex flex-wrap justify-between items-center gap-4 mb-6 pb-5 border-b border-white/5">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-2xl shadow-sm">
-                            🚀
+                        <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shadow-sm">
+                            <RefreshCw size={24} />
                         </div>
                         <div>
                             <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -1007,7 +1007,7 @@ export const SettingsPage = () => {
                         className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-purple-900/30 flex items-center gap-2 cursor-pointer active:scale-95"
                     >
                         <RefreshCw size={16} className={updateChecking ? 'animate-spin' : ''} />
-                        <span>{updateChecking ? (language === 'ar' ? 'جارٍ التحقق...' : 'Checking...') : (language === 'ar' ? '🔍 التحقق من وجود تحديث' : 'Check for Updates')}</span>
+                        <span>{updateChecking ? (language === 'ar' ? 'جارٍ التحقق...' : 'Checking...') : (language === 'ar' ? ' التحقق من وجود تحديث' : 'Check for Updates')}</span>
                     </Button>
                 </div>
 
@@ -1018,10 +1018,10 @@ export const SettingsPage = () => {
                             <div className="p-5 rounded-2xl bg-purple-950/40 border border-purple-500/40 shadow-lg space-y-4">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div className="flex items-center gap-2">
-                                        <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500 text-slate-950 animate-bounce">
-                                            {language === 'ar' ? 'جديد 🎉' : 'NEW 🎉'}
+                                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 text-slate-950 animate-bounce">
+                                            {language === 'ar' ? 'إصدار جديد' : 'New Update'}
                                         </span>
-                                        <h4 className="text-lg font-black text-white">{updateResult.releaseName}</h4>
+                                        <h4 className="text-lg font-bold text-white">{updateResult.releaseName}</h4>
                                         <span className="px-2.5 py-0.5 rounded-lg bg-purple-900/80 border border-purple-400 text-purple-200 font-mono text-xs font-bold">
                                             v{updateResult.latestVersion}
                                         </span>
@@ -1057,15 +1057,15 @@ export const SettingsPage = () => {
                                     <Button 
                                         onClick={handleDownloadUpdate} 
                                         disabled={updateDownloading}
-                                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm rounded-xl shadow-lg shadow-purple-950 flex items-center gap-2 cursor-pointer active:scale-95"
+                                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-purple-950 flex items-center gap-2 cursor-pointer active:scale-95"
                                     >
-                                        <span>⚡ {language === 'ar' ? 'تحديث وإعادة تشغيل التطبيق الآن' : 'Update & Restart App Now'}</span>
+                                        <span>{language === 'ar' ? 'تحديث وإعادة تشغيل التطبيق الآن' : 'Update & Restart App Now'}</span>
                                     </Button>
                                 </div>
                             </div>
                         ) : (
                             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 flex items-center gap-3">
-                                <span className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg shrink-0">✓</span>
+                                <span className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg shrink-0"><Check size={16} /></span>
                                 <div>
                                     <h4 className="text-sm font-bold text-emerald-300">
                                         {language === 'ar' ? 'أنت على أحدث إصدار من RaiZon Pro' : 'You are on the latest version of RaiZon Pro'}
@@ -1088,8 +1088,8 @@ export const SettingsPage = () => {
         <div className="space-y-5 animate-fade-in">
             <Card>
                 <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                    <span className="text-xl">🏪</span>
-                    <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                    <span className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400"><Building size={20} /></span>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                         {language === 'ar' ? 'بيانات النشاط التجاري والاتصال' : 'Shop Information'}
                     </h3>
                 </div>
@@ -1102,8 +1102,8 @@ export const SettingsPage = () => {
 
             <Card>
                 <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                    <span className="text-xl">🧾</span>
-                    <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                    <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"><FileText size={20} /></span>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                         {language === 'ar' ? 'إعدادات الفواتير الافتراضية' : 'Default Invoicing Settings'}
                     </h3>
                 </div>
@@ -1127,8 +1127,8 @@ export const SettingsPage = () => {
 
             <Card>
                 <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                    <span className="text-xl">🎨</span>
-                    <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                    <span className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"><Sun size={20} /></span>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                         {language === 'ar' ? 'المظهر وتنسيق الوقت' : 'Appearance & Time Format'}
                     </h3>
                 </div>
@@ -1206,8 +1206,8 @@ export const SettingsPage = () => {
             <Card>
                 <div className="flex flex-wrap justify-between items-start gap-3 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
                     <div>
-                        <h3 className="text-base font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                            <span>📧</span>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                            <span className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400"><Bell size={20} /></span>
                             <span>{language === 'ar' ? 'إشعارات البريد الإلكتروني للمدير (Gmail)' : 'Manager Gmail Notifications'}</span>
                         </h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1226,27 +1226,27 @@ export const SettingsPage = () => {
                 <div className="mb-4 p-4 rounded-2xl bg-gradient-to-r from-primary-50/80 via-sky-50/40 to-slate-50/60 dark:from-slate-800 dark:via-slate-800/90 dark:to-slate-800/60 border border-primary-200/60 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 shadow-xs">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center text-lg font-bold shadow-xs">
-                            ✉️
+                            
                         </div>
                         <div>
                             <p className="text-xs font-extrabold text-slate-700 dark:text-slate-300">
                                 {language === 'ar' ? 'بريد الإرسال الرسمي المدمج بالنظام:' : 'Official Dispatch Email:'}
                             </p>
-                            <p className="text-sm font-mono font-black text-primary-700 dark:text-primary-300">
+                            <p className="text-sm font-mono font-bold text-primary-700 dark:text-primary-300">
                                 rizon.pro.app@gmail.com
                             </p>
                         </div>
                     </div>
                     <span className="text-xs font-bold px-3 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300/50">
-                        {language === 'ar' ? '✓ مدمج ومعتمد أساسياً' : '✓ Pre-configured'}
+                        {language === 'ar' ? 'مدمج ومعتمد أساسياً' : 'Pre-configured'}
                     </span>
                 </div>
 
                 {/* الحقل الوحيد المطلوب من المدير */}
                 <div className="p-4 rounded-2xl border-2 border-primary-500/40 bg-white dark:bg-slate-800/80 shadow-xs space-y-3">
-                    <label className="block text-sm font-black text-slate-800 dark:text-slate-100 flex items-center justify-between">
+                    <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center justify-between">
                         <span className="flex items-center gap-2">
-                            <span>👤</span>
+                            <User size={16} className="text-slate-400 shrink-0" />
                             <span>{language === 'ar' ? 'بريد جيميل المدير لاستقبال الإشعارات (المستلم):' : "Manager's Receiving Gmail (Recipient):"}</span>
                         </span>
                         <span className="text-xs font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/60 px-2.5 py-0.5 rounded-full border border-primary-200/50">
@@ -1266,7 +1266,7 @@ export const SettingsPage = () => {
 
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                         {language === 'ar'
-                            ? '💡 اكتب هنا إيميل الجيميل الخاص بك كمدير لتصلك عليه إشعارات الفواتير فوراً على هاتفك، وتقرير تقفيل اليومية والمصروفات والأرباح تلقائياً.'
+                            ? 'اكتب هنا إيميل الجيميل الخاص بك كمدير لتصلك عليه إشعارات الفواتير فوراً على هاتفك، وتقرير تقفيل اليومية والمصروفات والأرباح تلقائياً.'
                             : 'Enter your Gmail address here. You will instantly receive new invoice alerts and daily closing summaries directly on your phone.'}
                     </p>
                 </div>
@@ -1274,7 +1274,7 @@ export const SettingsPage = () => {
                 {/* شبكة خيارات تفعيل الإشعارات الفورية لكل الخدمات */}
                 <div className="mt-5 space-y-3">
                     <div className="flex items-center justify-between">
-                        <label className="text-xs font-black text-slate-800 dark:text-slate-200">
+                        <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
                             {language === 'ar' ? 'اختر الإشعارات الفورية المطلوب استلامها فور حدوثها:' : 'Instant Alerts to receive in real-time:'}
                         </label>
                         <span className="text-[11px] text-slate-500 font-bold">
@@ -1293,8 +1293,8 @@ export const SettingsPage = () => {
                                     className="w-4 h-4 mt-0.5 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
                                 />
                                 <div className="space-y-0.5">
-                                    <div className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                                        <span>🧾</span>
+                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                        <FileText size={16} className="text-slate-400 shrink-0" />
                                         <span>{language === 'ar' ? 'فواتير المبيعات الجديدة' : 'New Sales Invoices'}</span>
                                     </div>
                                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
@@ -1314,8 +1314,8 @@ export const SettingsPage = () => {
                                     className="w-4 h-4 mt-0.5 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
                                 />
                                 <div className="space-y-0.5">
-                                    <div className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                                        <span>🔒</span>
+                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                        <Lock size={16} className="text-slate-400 shrink-0" />
                                         <span>{language === 'ar' ? 'تقفيل الوردية اليومية (Z-Report)' : 'Shift Closing (Z-Report)'}</span>
                                     </div>
                                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
@@ -1335,8 +1335,8 @@ export const SettingsPage = () => {
                                     className="w-4 h-4 mt-0.5 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
                                 />
                                 <div className="space-y-0.5">
-                                    <div className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                                        <span>🔄</span>
+                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                        <RefreshCw size={16} className="text-slate-400 shrink-0" />
                                         <span>{language === 'ar' ? 'المرتجعات واسترداد المبالغ' : 'Refunds & Returns'}</span>
                                     </div>
                                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
@@ -1356,8 +1356,8 @@ export const SettingsPage = () => {
                                     className="w-4 h-4 mt-0.5 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
                                 />
                                 <div className="space-y-0.5">
-                                    <div className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                                        <span>💸</span>
+                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                        <Wallet size={16} className="text-slate-400 shrink-0" />
                                         <span>{language === 'ar' ? 'المصروفات والسحب من الخزينة' : 'Drawer Cash Expenses'}</span>
                                     </div>
                                     <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
@@ -1376,9 +1376,9 @@ export const SettingsPage = () => {
                             type="button"
                             onClick={handleSaveEmailConfig}
                             disabled={isSavingEmail || !emailConfig.emailTo}
-                            className="px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-black shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                            className="px-6 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
                         >
-                            <span>💾</span>
+                            <Save size={16} className="text-slate-400 shrink-0" />
                             <span>{isSavingEmail ? (language === 'ar' ? 'جارٍ الحفظ...' : 'Saving...') : (language === 'ar' ? 'حفظ بريد المدير وتحديث الإشعارات' : 'Save & Update Alerts')}</span>
                         </button>
 
@@ -1392,7 +1392,7 @@ export const SettingsPage = () => {
                                 disabled={isTestingEmail || !emailConfig.emailTo}
                                 className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700 hover:bg-slate-100 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
                             >
-                                🧾 {language === 'ar' ? 'فاتورة' : 'Invoice'}
+                                {language === 'ar' ? 'فاتورة' : 'Invoice'}
                             </button>
                             <button
                                 type="button"
@@ -1400,7 +1400,7 @@ export const SettingsPage = () => {
                                 disabled={isTestingEmail || !emailConfig.emailTo}
                                 className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700 hover:bg-slate-100 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
                             >
-                                🔒 {language === 'ar' ? 'تقفيل' : 'Closing'}
+                                {language === 'ar' ? 'تقفيل' : 'Closing'}
                             </button>
                             <button
                                 type="button"
@@ -1408,7 +1408,7 @@ export const SettingsPage = () => {
                                 disabled={isTestingEmail || !emailConfig.emailTo}
                                 className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700 hover:bg-slate-100 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
                             >
-                                🔄 {language === 'ar' ? 'مرتجع' : 'Return'}
+                                {language === 'ar' ? 'مرتجع' : 'Return'}
                             </button>
                             <button
                                 type="button"
@@ -1416,7 +1416,7 @@ export const SettingsPage = () => {
                                 disabled={isTestingEmail || !emailConfig.emailTo}
                                 className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700 hover:bg-slate-100 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
                             >
-                                💸 {language === 'ar' ? 'مصروف' : 'Expense'}
+                                {language === 'ar' ? 'مصروف' : 'Expense'}
                             </button>
                         </div>
                     </div>
@@ -1431,7 +1431,7 @@ export const SettingsPage = () => {
                             ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200'
                             : 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-200'
                     }`}>
-                        {testEmailResult.status === 'sent' && (language === 'ar' ? '✓ تم إرسال البريد التجريبي بنجاح! راجع صندوق بريد المدير الآن للتأكد.' : 'Test email delivered successfully!')}
+                        {testEmailResult.status === 'sent' && (language === 'ar' ? 'تم إرسال البريد التجريبي بنجاح! راجع صندوق بريد المدير الآن للتأكد.' : 'Test email delivered successfully!')}
                         {testEmailResult.status === 'simulated' && (language === 'ar' ? 'وضع محاكاة: احفظ إيميل المدير أولاً للتفعيل الفعلي.' : 'Simulation mode.')}
                         {testEmailResult.status === 'failed' && `${language === 'ar' ? 'خطأ في الإرسال: ' : 'Failed: '}${testEmailResult.error || ''}`}
                     </div>
@@ -1446,8 +1446,8 @@ export const SettingsPage = () => {
         <div className="space-y-5 animate-fade-in">
             <Card>
                 <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                    <span className="text-xl">🎁</span>
-                    <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                    <span className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400"><Award size={20} /></span>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                         {t('loyalty_settings')}
                     </h3>
                 </div>
@@ -1497,9 +1497,9 @@ export const SettingsPage = () => {
         <div className="space-y-5 animate-fade-in">
             <Card>
                 <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                    <span className="text-xl">🌐</span>
+                    <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"><Globe size={20} /></span>
                     <div>
-                        <h3 className="text-base font-black text-slate-900 dark:text-slate-100">{t('server_sync')}</h3>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{t('server_sync')}</h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('server_sync_hint')}</p>
                     </div>
                 </div>
@@ -1604,13 +1604,13 @@ export const SettingsPage = () => {
                 <div className="flex flex-wrap justify-between items-start gap-3 mb-5 pb-4 border-b border-slate-700/60">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center text-2xl shadow-md">
-                            💾
+                            
                         </div>
                         <div>
-                            <h3 className="text-base font-black text-slate-100 flex items-center gap-2">
+                            <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
                                 <span>{language === 'ar' ? 'مركز النسخ الاحتياطي (محلي + سحابي على الإيميل)' : 'Smart Cloud & Local Backup Center'}</span>
                                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
-                                    {language === 'ar' ? '✓ مجلد Backup نشط' : '✓ Backup Folder Active'}
+                                    {language === 'ar' ? 'مجلد Backup نشط ومحمي' : 'Backup Folder Active'}
                                 </span>
                             </h3>
                             <p className="text-xs text-slate-400 mt-0.5">
@@ -1635,8 +1635,8 @@ export const SettingsPage = () => {
                 {/* الزر الرئيسي للنسخ الاحتياطي المزدوج */}
                 <div className="p-4 rounded-2xl bg-slate-800/90 dark:bg-slate-800/95 border border-primary-500/40 shadow-sm mb-5 flex flex-wrap items-center justify-between gap-4">
                     <div className="space-y-1">
-                        <div className="text-sm font-black text-white flex items-center gap-2">
-                            <span className="text-amber-400">⚡</span>
+                        <div className="text-sm font-bold text-white flex items-center gap-2">
+                            
                             <span className="text-slate-100">{language === 'ar' ? 'النسخ الفوري الشامل بضغطة واحدة:' : 'One-Click Full Backup:'}</span>
                         </div>
                         <p className="text-xs text-slate-300 dark:text-slate-300">
@@ -1650,9 +1650,9 @@ export const SettingsPage = () => {
                         type="button"
                         onClick={handleCreateBackupNow}
                         disabled={backupBusy}
-                        className="px-6 py-3 rounded-xl bg-gradient-to-r from-primary-600 via-primary-700 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-black text-xs shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                        className="px-6 py-3 rounded-xl bg-gradient-to-r from-primary-600 via-primary-700 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
                     >
-                        <span>💾</span>
+                        <Save size={16} className="text-slate-400 shrink-0" />
                         <span>{backupBusy ? (language === 'ar' ? 'جارٍ الحفظ والإرسال...' : 'Backing up...') : (language === 'ar' ? 'إنشاء نسخة احتياطية الآن (محلي + سحابي)' : 'Backup Now (Local + Cloud)')}</span>
                     </button>
                 </div>
@@ -1669,8 +1669,8 @@ export const SettingsPage = () => {
                             className="w-4 h-4 rounded text-primary-500 focus:ring-primary-500 cursor-pointer accent-primary-600"
                         />
                         <div className="space-y-0.5">
-                            <div className="text-xs font-black text-slate-100 flex items-center gap-1.5">
-                                <span>🔒</span>
+                            <div className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                                <Lock size={16} className="text-slate-400 shrink-0" />
                                 <span>{language === 'ar' ? 'نسخ احتياطي تلقائي سحابي ومحلي عند كل إقفال وردية (Closing Z-Report)' : 'Auto Cloud & Local Backup on Shift Closing'}</span>
                             </div>
                             <p className="text-[11px] text-slate-400">
@@ -1734,7 +1734,7 @@ export const SettingsPage = () => {
                         onClick={handleTriggerFileRestore}
                         className="px-4 py-2.5 border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm hover:border-slate-600"
                     >
-                        <span>📂</span>
+                        <Package size={16} className="text-slate-400 shrink-0" />
                         <span>{language === 'ar' ? 'استعادة من ملف خارجي (.json)' : 'Restore from external file'}</span>
                     </button>
 
@@ -1764,9 +1764,9 @@ export const SettingsPage = () => {
             <Card>
                 <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
                     <div className="flex items-center gap-2">
-                        <span className="text-xl">📁</span>
+                        <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"><Package size={20} /></span>
                         <div>
-                            <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                                 {language === 'ar' ? 'النسخ المحفوظة في مجلد Backup' : 'Files in Backup folder'}
                             </h3>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1803,7 +1803,7 @@ export const SettingsPage = () => {
                                 {backupFiles.map((bf) => (
                                     <tr key={bf.filename} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="py-3 px-3 font-mono font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                                            <span>📄</span>
+                                            <FileText size={16} className="text-slate-400 shrink-0" />
                                             <span>{bf.filename}</span>
                                         </td>
                                         <td className="py-3 px-3 text-slate-600 dark:text-slate-400 font-mono font-bold">
@@ -1820,7 +1820,7 @@ export const SettingsPage = () => {
                                                     disabled={backupBusy}
                                                     className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:hover:bg-amber-900/80 dark:text-amber-300 font-bold text-[11px] border border-amber-300/50 transition-all cursor-pointer"
                                                 >
-                                                    🔄 {language === 'ar' ? 'استعادة' : 'Restore'}
+                                                    {language === 'ar' ? 'استعادة' : 'Restore'}
                                                 </button>
                                                 <button
                                                     type="button"
@@ -1842,9 +1842,9 @@ export const SettingsPage = () => {
             {/* بطاقة أمان كلمة المرور ورمز PIN */}
             <Card>
                 <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                    <span className="text-xl">🔑</span>
+                    <span className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"><Key size={20} /></span>
                     <div>
-                        <h3 className="text-base font-black text-slate-900 dark:text-slate-100">{t('security_section')}</h3>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{t('security_section')}</h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('change_password')} — {currentUser?.username}</p>
                     </div>
                 </div>
@@ -1916,8 +1916,8 @@ export const SettingsPage = () => {
                 {/* بيانات هوية المحل على الإيصال */}
                 <Card>
                     <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                        <span className="text-xl">🏪</span>
-                        <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                        <span className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400"><Building size={20} /></span>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                             {language === 'ar' ? 'هوية المحل المطبوعة على الإيصال' : 'Receipt Shop Identity'}
                         </h3>
                     </div>
@@ -1945,9 +1945,9 @@ export const SettingsPage = () => {
                 {/* اختيار قالب الفاتورة */}
                 <Card>
                     <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                        <span className="text-xl">📐</span>
+                        <span className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"><Settings size={20} /></span>
                         <div>
-                            <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                                 {language === 'ar' ? 'قوالب وتنسيق الإيصال' : 'Receipt Templates'}
                             </h3>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1971,7 +1971,7 @@ export const SettingsPage = () => {
                                 >
                                     <div className="flex items-center justify-between mb-1.5">
                                         <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100">{p.name}</span>
-                                        {active && <span className="text-xs bg-primary-600 text-white px-2.5 py-0.5 rounded-full font-bold">✓ نشط</span>}
+                                        {active && <span className="flex items-center gap-1 text-xs bg-primary-600 text-white px-2.5 py-0.5 rounded-full font-bold"><Check size={12} /><span>نشط</span></span>}
                                     </div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 leading-relaxed">{p.desc}</p>
                                     <span className="inline-block text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold">
@@ -1986,8 +1986,8 @@ export const SettingsPage = () => {
                 {/* مقاس الورق والهوامش */}
                 <Card>
                     <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                        <span className="text-xl">🖨️</span>
-                        <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                        <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"><Printer size={20} /></span>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                             {language === 'ar' ? 'إعدادات الورق والطباعة' : 'Paper Setup'}
                         </h3>
                     </div>
@@ -2003,7 +2003,7 @@ export const SettingsPage = () => {
                             >
                                 {PAGE_SIZES.map((sz) => (
                                     <option key={sz.id} value={sz.id}>
-                                        {sz.id} ({sz.widthMm}mm) {sz.id === '80mm' ? '★ الأفضل للبونات' : ''}
+                                        {sz.id} ({sz.widthMm}mm) {sz.id === '80mm' ? '(الموصى به للإيصالات)' : ''}
                                     </option>
                                 ))}
                             </select>
@@ -2040,8 +2040,8 @@ export const SettingsPage = () => {
                 {/* نصوص الفاتورة */}
                 <Card>
                     <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                        <span className="text-xl">✍️</span>
-                        <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                        <span className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400"><FileText size={20} /></span>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                             {language === 'ar' ? 'النصوص المخصصة والترحيب' : 'Custom Headers & Footers'}
                         </h3>
                     </div>
@@ -2064,9 +2064,9 @@ export const SettingsPage = () => {
                 {/* شعار الفاتورة */}
                 <Card>
                     <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                        <span className="text-xl">🖼️</span>
+                        <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"><Eye size={20} /></span>
                         <div>
-                            <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                                 {language === 'ar' ? 'شعار النشاط التجاري (اللوجو)' : 'Shop Logo'}
                             </h3>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -2085,12 +2085,12 @@ export const SettingsPage = () => {
                                         onClick={() => handleLogoRemove('front')}
                                         className="text-xs text-red-600 hover:text-red-700 font-bold hover:underline cursor-pointer"
                                     >
-                                        🗑️ {language === 'ar' ? 'حذف الشعار' : 'Remove Logo'}
+                                        {language === 'ar' ? 'حذف الشعار' : 'Remove Logo'}
                                     </button>
                                 </div>
                             ) : (
                                 <label className="cursor-pointer inline-block px-4 py-2.5 rounded-xl bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-xs font-bold hover:bg-slate-100 text-slate-800 dark:text-slate-200 shadow-xs">
-                                    📁 {language === 'ar' ? 'رفع شعار من الجهاز' : 'Upload Logo'}
+                                    {language === 'ar' ? 'رفع شعار من الجهاز' : 'Upload Logo'}
                                     <input
                                         type="file"
                                         accept="image/png,image/jpeg,image/webp"
@@ -2111,12 +2111,12 @@ export const SettingsPage = () => {
                                         onClick={() => handleLogoRemove('back')}
                                         className="text-xs text-red-600 hover:text-red-700 font-bold hover:underline cursor-pointer"
                                     >
-                                        🗑️ {language === 'ar' ? 'حذف العلامة المائية' : 'Remove Watermark'}
+                                        {language === 'ar' ? 'حذف العلامة المائية' : 'Remove Watermark'}
                                     </button>
                                 </div>
                             ) : (
                                 <label className="cursor-pointer inline-block px-4 py-2.5 rounded-xl bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-xs font-bold hover:bg-slate-100 text-slate-800 dark:text-slate-200 shadow-xs">
-                                    📁 {language === 'ar' ? 'رفع علامة مائية' : 'Upload Watermark'}
+                                    {language === 'ar' ? 'رفع علامة مائية' : 'Upload Watermark'}
                                     <input
                                         type="file"
                                         accept="image/png,image/jpeg,image/webp"
@@ -2133,8 +2133,8 @@ export const SettingsPage = () => {
                 <Card>
                     <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
                         <div className="flex items-center gap-2">
-                            <span className="text-xl">👁️</span>
-                            <h3 className="text-base font-black text-slate-900 dark:text-slate-100">
+                            <span className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"><Eye size={20} /></span>
+                            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                                 {language === 'ar' ? 'المعاينة الحية المباشرة لشكل الإيصال' : 'Live Receipt Preview'}
                             </h3>
                         </div>
@@ -2168,7 +2168,7 @@ export const SettingsPage = () => {
                         <Settings size={22} />
                     </span>
                     <div>
-                        <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">{t('settings')}</h2>
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{t('settings')}</h2>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                             {language === 'ar' ? 'إدارة وضبط خيارات النظام والشاشات' : 'System preferences & configurations'}
                         </p>
@@ -2176,7 +2176,7 @@ export const SettingsPage = () => {
                 </div>
 
                 <Button onClick={save} className="px-5 py-2.5 font-bold shadow-xs">
-                    💾 {t('save')}
+                    {t('save')}
                 </Button>
             </div>
 
@@ -2204,7 +2204,7 @@ export const SettingsPage = () => {
                                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/40'
                             }`}
                         >
-                            <span className="text-base">{tab.icon}</span>
+                            <tab.icon size={16} className={isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400'} />
                             <span>{language === 'ar' ? tab.labelAr : tab.labelEn}</span>
                         </button>
                     );

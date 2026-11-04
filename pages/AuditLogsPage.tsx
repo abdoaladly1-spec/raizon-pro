@@ -1,7 +1,7 @@
 /* تم فصل هذا الملف من App.tsx (نظام ProCashier) */
 import React, { useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Search, FileText } from '../components/Icons';
+import { Search, FileText, AlertTriangle, XCircle, RefreshCw, Wallet, AlertCircle, User, Check } from '../components/Icons';
 import { Card } from '../components/ui';
 
 export const AuditLogs = () => {
@@ -169,8 +169,8 @@ export const AuditLogs = () => {
       {/* الترويسة الرئيسية + تبديل التبويبات */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <span>{activeTab === 'suspicious' ? '🚨' : '📋'}</span>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <span className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">{activeTab === 'suspicious' ? <AlertTriangle size={18} /> : <FileText size={18} />}</span>
             <span>{activeTab === 'suspicious' ? (language === 'ar' ? 'سجل العمليات المشبوهة والحساسة' : 'Suspicious Activity Log') : t('audit_logs')}</span>
             <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
               {activeTab === 'suspicious' ? filteredSuspiciousLogs.length : standardLogs.length}
@@ -190,7 +190,7 @@ export const AuditLogs = () => {
             onClick={() => setActiveTab('suspicious')}
             className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${activeTab === 'suspicious' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'}`}
           >
-            <span>🚨</span>
+            <AlertTriangle size={14} />
             <span>{language === 'ar' ? 'العمليات الحساسة والمشبوهة' : 'Suspicious Logs'}</span>
           </button>
           <button
@@ -198,7 +198,7 @@ export const AuditLogs = () => {
             onClick={() => setActiveTab('all')}
             className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${activeTab === 'all' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'}`}
           >
-            <span>📋</span>
+            <FileText size={14} />
             <span>{language === 'ar' ? 'جميع سجلات النظام' : 'All System Logs'}</span>
           </button>
         </div>
@@ -211,10 +211,10 @@ export const AuditLogs = () => {
           <div className="p-4 rounded-2xl bg-slate-900/80 border border-rose-500/30 shadow-sm relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-400">{language === 'ar' ? 'الفواتير الملغاة' : 'Voided Invoices'}</span>
-              <span className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-sm font-black">🚫</span>
+              <span className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-sm font-bold"><XCircle size={16} /></span>
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-black text-rose-400">{metrics.voidCount}</span>
+              <span className="text-2xl font-bold text-rose-400">{metrics.voidCount}</span>
               <span className="text-xs font-bold text-slate-400">({formatNumber(metrics.voidTotal)} {t('egp')})</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-1">{language === 'ar' ? 'إجمالي الفواتير التي قام الكاشير بإلغائها' : 'Invoices voided after creation'}</p>
@@ -224,10 +224,10 @@ export const AuditLogs = () => {
           <div className="p-4 rounded-2xl bg-slate-900/80 border border-amber-500/30 shadow-sm relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-400">{language === 'ar' ? 'المرتجعات المالية' : 'Refunds'}</span>
-              <span className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm font-black">↩️</span>
+              <span className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm font-bold"><RefreshCw size={16} /></span>
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-black text-amber-400">{metrics.returnsCount}</span>
+              <span className="text-2xl font-bold text-amber-400">{metrics.returnsCount}</span>
               <span className="text-xs font-bold text-slate-400">({formatNumber(metrics.returnsTotal)} {t('egp')})</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-1">{language === 'ar' ? 'إجمالي المبالغ المستردة للعملاء' : 'Total money refunded to clients'}</p>
@@ -237,10 +237,10 @@ export const AuditLogs = () => {
           <div className="p-4 rounded-2xl bg-slate-900/80 border border-purple-500/30 shadow-sm relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-400">{language === 'ar' ? 'مسحوبات الدرج اليدوية' : 'Drawer Withdrawals'}</span>
-              <span className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm font-black">💸</span>
+              <span className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm font-bold"><Wallet size={16} /></span>
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-black text-purple-400">{metrics.withdrawalsCount}</span>
+              <span className="text-2xl font-bold text-purple-400">{metrics.withdrawalsCount}</span>
               <span className="text-xs font-bold text-slate-400">({formatNumber(metrics.withdrawalsTotal)} {t('egp')})</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-1">{language === 'ar' ? 'سحب نقدية بدون فاتورة أو مصروف رسمي' : 'Manual cash taken out of drawer'}</p>
@@ -250,10 +250,10 @@ export const AuditLogs = () => {
           <div className="p-4 rounded-2xl bg-slate-900/80 border border-red-500/30 shadow-sm relative overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-400">{language === 'ar' ? 'عجز التقفيل والوردية' : 'Closing Shortages'}</span>
-              <span className="w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center text-sm font-black">⚠️</span>
+              <span className="w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center text-sm font-bold"><AlertCircle size={16} /></span>
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-black text-red-400">{metrics.shortagesCount}</span>
+              <span className="text-2xl font-bold text-red-400">{metrics.shortagesCount}</span>
               <span className="text-xs font-bold text-slate-400">({formatNumber(metrics.shortagesTotal)} {t('egp')})</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-1">{language === 'ar' ? 'فارق النقدية الناقصة عند تسليم الوردية' : 'Cash discrepancy at shift close'}</p>
@@ -311,7 +311,7 @@ export const AuditLogs = () => {
                       </span>
                     </td>
                     <td className="py-3 px-3 font-bold text-slate-200 flex items-center gap-1.5">
-                      <span className="text-slate-400">👤</span>
+                      <User size={14} className="text-slate-400 shrink-0" />
                       <span>{item.user}</span>
                     </td>
                     <td className="py-3 px-3 font-mono font-bold">
@@ -331,7 +331,7 @@ export const AuditLogs = () => {
                 {filteredSuspiciousLogs.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-10 text-center text-slate-500 text-xs">
-                      {language === 'ar' ? '✨ سجل العمليات الحساسة نظيف تماماً! لا توجد فواتير ملغاة أو مسحوبات مشبوهة.' : 'No suspicious activities recorded.'}
+                      {language === 'ar' ? 'سجل العمليات الحساسة منتظم ونظيف، لا توجد فواتير ملغاة أو مسحوبات مشبوهة.' : 'No suspicious activities recorded.'}
                     </td>
                   </tr>
                 )}

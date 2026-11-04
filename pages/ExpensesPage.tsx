@@ -105,7 +105,7 @@ export const ExpensesPage = () => {
 
             {/* Stats Cards Elevated */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 border-t-4 border-t-rose-500">
+                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 ">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('total_expenses')}</span>
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">إجمالي</span>
@@ -115,12 +115,12 @@ export const ExpensesPage = () => {
                             <DollarSign size={22} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight">{totalExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
+                            <h3 className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">{totalExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 border-t-4 border-t-amber-500">
+                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 ">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('sold_today')} ({t('expenses')})</span>
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">اليوم</span>
@@ -130,12 +130,12 @@ export const ExpensesPage = () => {
                             <Calendar size={22} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight">{todayExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
+                            <h3 className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">{todayExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 border-t-4 border-t-emerald-500">
+                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 ">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('cash_expenses_today')}</span>
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">من الدرج</span>
@@ -145,7 +145,7 @@ export const ExpensesPage = () => {
                             <Wallet size={22} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight">{todayCashExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
+                            <h3 className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">{todayCashExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
                         </div>
                     </div>
                 </div>

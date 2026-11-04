@@ -293,7 +293,7 @@ export const ClosingPage = () => {
                     <div className="w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-emerald-500/30">
                         <Award size={42} />
                     </div>
-                    <h2 className="text-2xl font-black text-slate-100 mb-1">{language === 'ar' ? 'تم حفظ إقفال الوردية بنجاح' : 'Shift Closing Completed'}</h2>
+                    <h2 className="text-2xl font-bold text-slate-100 mb-1">{language === 'ar' ? 'تم حفظ إقفال الوردية بنجاح' : 'Shift Closing Completed'}</h2>
                     <p className="text-xs text-slate-400 mb-6">{formatDateTime(new Date())}</p>
 
                     <div className="grid grid-cols-2 gap-3 text-right mb-6 bg-slate-800/80 p-5 rounded-2xl border border-slate-700/60 text-xs">
@@ -313,13 +313,13 @@ export const ClosingPage = () => {
                         <div className="text-left font-bold text-rose-400">-{report.totalExpenses.toLocaleString('en-US')} {t('egp')}</div>
 
                         <div className="text-slate-200 pt-3 border-t border-slate-700 font-bold">{language === 'ar' ? 'المبلغ المتوقع في الدرج:' : 'Expected Cash:'}</div>
-                        <div className="text-left font-black text-slate-100 pt-3 border-t border-slate-700">{report.expectedCash.toLocaleString('en-US')} {t('egp')}</div>
+                        <div className="text-left font-bold text-slate-100 pt-3 border-t border-slate-700">{report.expectedCash.toLocaleString('en-US')} {t('egp')}</div>
 
                         <div className="text-slate-200 font-bold">{language === 'ar' ? 'المبلغ الفعلي المستلم:' : 'Actual Cash:'}</div>
-                        <div className="text-left font-black text-amber-300">{report.actualCash.toLocaleString('en-US')} {t('egp')}</div>
+                        <div className="text-left font-bold text-amber-300">{report.actualCash.toLocaleString('en-US')} {t('egp')}</div>
 
                         <div className="text-slate-200 font-bold pt-3 border-t border-slate-700">{language === 'ar' ? 'حالة الدرج (الفارق):' : 'Difference:'}</div>
-                        <div className={`text-left font-black pt-3 border-t border-slate-700 ${report.difference === 0 ? 'text-emerald-400' : report.difference < 0 ? 'text-rose-400' : 'text-blue-400'}`}>
+                        <div className={`text-left font-bold pt-3 border-t border-slate-700 ${report.difference === 0 ? 'text-emerald-400' : report.difference < 0 ? 'text-rose-400' : 'text-blue-400'}`}>
                             {report.difference > 0 ? '+' : ''}{report.difference.toLocaleString('en-US')} {t('egp')}
                             <span className="block text-[10px] font-normal opacity-80">{t(report.status)}</span>
                         </div>
@@ -371,7 +371,7 @@ export const ClosingPage = () => {
                         <Wallet size={24} />
                     </div>
                     <div>
-                        <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                             <span>{language === 'ar' ? 'إقفال الدرج والوردية اليومية' : 'Shift & Daily Drawer Closing'}</span>
                         </h2>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -405,8 +405,8 @@ export const ClosingPage = () => {
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                            <span className="text-lg">🏦</span>
-                            <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
+                            
+                            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
                                 {language === 'ar' ? 'الرصيد الافتتاحي لدرج النقدية' : 'Cash Drawer Opening Balance'}
                             </h3>
                             {yesterdayRemainingInDrawer !== null && !hasManualOverrideToday && (
@@ -465,7 +465,7 @@ export const ClosingPage = () => {
                         ) : (
                             <div className="flex items-center gap-3">
                                 <div className="text-right">
-                                    <div className="text-xl font-black text-slate-800 dark:text-slate-100 font-mono">
+                                    <div className="text-xl font-bold text-slate-800 dark:text-slate-100 font-mono">
                                         {baseOpeningBalance.toLocaleString('en-US')} <span className="text-xs font-normal text-slate-400">{t('egp')}</span>
                                     </div>
                                     {(deposits > 0 || withdrawals > 0) && (
@@ -481,7 +481,7 @@ export const ClosingPage = () => {
                                     className="p-2 rounded-xl border border-slate-700/80 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all cursor-pointer"
                                     title={language === 'ar' ? 'تعديل الرصيد الافتتاحي يدوياً' : 'Edit Opening Balance'}
                                 >
-                                    ✏️
+                                    تعديل
                                 </button>
                             </div>
                         )}
@@ -527,15 +527,15 @@ export const ClosingPage = () => {
                 {showMovementForm && (
                     <form onSubmit={handleAddMovement} className="mt-4 p-4 rounded-2xl bg-slate-800/90 border border-slate-700 space-y-3 animate-fade-in">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-black text-slate-100 flex items-center gap-1.5">
-                                {movementType === 'deposit' ? '🟢 إيداع وتزويد فكة في الدرج' : '🔴 سحب مبلغ نقدي من الدرج'}
+                            <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
+                                {movementType === 'deposit' ? 'إيداع نقدية في الدرج' : 'سحب نقدية من الدرج'}
                             </span>
                             <button
                                 type="button"
                                 onClick={() => setShowMovementForm(false)}
                                 className="text-xs text-slate-400 hover:text-slate-200 cursor-pointer"
                             >
-                                ✕ {language === 'ar' ? 'إغلاق' : 'Close'}
+                                {language === 'ar' ? 'إغلاق' : 'Close'}
                             </button>
                         </div>
 
@@ -577,7 +577,7 @@ export const ClosingPage = () => {
                             </button>
                             <button
                                 type="submit"
-                                className="px-5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-black shadow-sm cursor-pointer"
+                                className="px-5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold shadow-sm cursor-pointer"
                             >
                                 {language === 'ar' ? 'تأكيد التسجيل' : 'Confirm'}
                             </button>
@@ -591,7 +591,7 @@ export const ClosingPage = () => {
                         {todayMovements.map(m => (
                             <div key={m.id} className="flex items-center justify-between py-2 text-xs">
                                 <div className="flex items-center gap-2">
-                                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black ${m.type === 'deposit' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' : 'bg-rose-950 text-rose-300 border border-rose-500/30'}`}>
+                                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${m.type === 'deposit' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' : 'bg-rose-950 text-rose-300 border border-rose-500/30'}`}>
                                         {m.type === 'deposit' ? '+ إيداع' : '- سحب'}
                                     </span>
                                     <span className="font-mono font-bold text-slate-200">
@@ -623,7 +623,7 @@ export const ClosingPage = () => {
                     <span className="text-xs font-bold text-slate-400 block mb-1">
                         {language === 'ar' ? 'الافتتاحي + الإيداعات' : 'Opening & Float'}
                     </span>
-                    <p className="text-xl font-black text-slate-800 dark:text-slate-100 font-mono">
+                    <p className="text-xl font-bold text-slate-800 dark:text-slate-100 font-mono">
                         {(baseOpeningBalance + deposits).toLocaleString('en-US')}
                     </p>
                     <p className="text-[11px] text-slate-500 mt-1">
@@ -635,7 +635,7 @@ export const ClosingPage = () => {
                     <span className="text-xs font-bold text-emerald-400 block mb-1">
                         {language === 'ar' ? 'المبيعات النقدية (كاش)' : 'Cash Sales'}
                     </span>
-                    <p className="text-xl font-black text-emerald-400 font-mono">
+                    <p className="text-xl font-bold text-emerald-400 font-mono">
                         +{cashSales.toLocaleString('en-US')}
                     </p>
                     <p className="text-[11px] text-slate-500 mt-1">
@@ -647,7 +647,7 @@ export const ClosingPage = () => {
                     <span className="text-xs font-bold text-rose-400 block mb-1">
                         {language === 'ar' ? 'المصروفات والمرتجعات' : 'Cash Deductions'}
                     </span>
-                    <p className="text-xl font-black text-rose-400 font-mono">
+                    <p className="text-xl font-bold text-rose-400 font-mono">
                         -{totalCashDeductions.toLocaleString('en-US')}
                     </p>
                     <p className="text-[11px] text-slate-500 mt-1">
@@ -659,7 +659,7 @@ export const ClosingPage = () => {
                     <span className="text-xs font-bold text-amber-400 block mb-1">
                         {language === 'ar' ? 'المسحوبات من الدرج' : 'Draws'}
                     </span>
-                    <p className="text-xl font-black text-amber-400 font-mono">
+                    <p className="text-xl font-bold text-amber-400 font-mono">
                         -{withdrawals.toLocaleString('en-US')}
                     </p>
                     <p className="text-[11px] text-slate-500 mt-1">
@@ -680,7 +680,7 @@ export const ClosingPage = () => {
                             <span className="text-xs font-bold text-slate-400 block mb-1">
                                 {language === 'ar' ? 'المبلغ المتوقع في الدرج حالياً:' : 'Expected in Drawer:'}
                             </span>
-                            <div className="text-3xl font-black text-emerald-400 font-mono tracking-tight">
+                            <div className="text-3xl font-bold text-emerald-400 font-mono tracking-tight">
                                 {expectedCash.toLocaleString('en-US')} <span className="text-sm font-normal text-slate-400">{t('egp')}</span>
                             </div>
                         </div>
@@ -694,8 +694,8 @@ export const ClosingPage = () => {
                     {/* إدخال النقد الفعلي وعداد الفئات */}
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <label className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                                <span>💵</span>
+                            <label className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                
                                 <span>{language === 'ar' ? 'المبلغ الفعلي الموجود بالدرج الآن:' : 'Actual Cash Counted:'}</span>
                             </label>
 
@@ -738,7 +738,7 @@ export const ClosingPage = () => {
                                         setRetainedInDrawerInput(e.target.value);
                                     }
                                 }}
-                                className="w-full px-5 py-4 text-3xl font-black rounded-2xl border-2 border-primary-500/40 bg-slate-800 text-slate-100 focus:border-primary-500 outline-none transition-all font-mono"
+                                className="w-full px-5 py-4 text-3xl font-bold rounded-2xl border-2 border-primary-500/40 bg-slate-800 text-slate-100 focus:border-primary-500 outline-none transition-all font-mono"
                                 placeholder="0.00"
                                 autoFocus
                             />
@@ -758,17 +758,17 @@ export const ClosingPage = () => {
                                 : 'bg-blue-950/60 border-blue-500/40 text-blue-300'
                         } flex items-center justify-between`}>
                             <div className="space-y-0.5">
-                                <span className="text-xs font-black block">
-                                    {status === 'matched' && (language === 'ar' ? '✓ الدرج مطابق تماماً (لا يوجد عجز أو زيادة)' : 'Perfect Match')}
-                                    {status === 'shortage' && (language === 'ar' ? '⚠️ يوجد عجز في الدرج' : 'Cash Shortage')}
-                                    {status === 'surplus' && (language === 'ar' ? '✦ يوجد فائض في الدرج' : 'Cash Surplus')}
+                                <span className="text-xs font-bold block">
+                                    {status === 'matched' && (language === 'ar' ? 'الدرج مطابق تماماً' : 'Perfect Match')}
+                                    {status === 'shortage' && (language === 'ar' ? 'عجز في الدرج' : 'Cash Shortage')}
+                                    {status === 'surplus' && (language === 'ar' ? 'فائض في الدرج' : 'Cash Surplus')}
                                 </span>
                                 <span className="text-[11px] opacity-80">
                                     {language === 'ar' ? `المتوقع: ${expectedCash.toLocaleString('en-US')} ج.م` : `Expected: ${expectedCash}`}
                                 </span>
                             </div>
 
-                            <div className="text-xl font-black font-mono">
+                            <div className="text-xl font-bold font-mono">
                                 {diff > 0 ? '+' : ''}{diff.toLocaleString('en-US')} {t('egp')}
                             </div>
                         </div>
@@ -778,8 +778,8 @@ export const ClosingPage = () => {
                 {/* العمود الأيسر: توزيع النقدية (المتبقي لغداً + المورّد للخزينة) وزر الإقفال */}
                 <Card className="lg:col-span-5 border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/90 p-6 space-y-5 shadow-sm">
                     <div>
-                        <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 mb-1 flex items-center gap-2">
-                            <span>📦</span>
+                        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-1 flex items-center gap-2">
+                            
                             <span>{language === 'ar' ? 'توزيع النقدية للوردية القادمة' : 'Next Shift Cash Allocation'}</span>
                         </h3>
                         <p className="text-[11px] text-slate-400">
@@ -800,7 +800,7 @@ export const ClosingPage = () => {
                                 value={retainedInDrawerInput}
                                 onChange={e => setRetainedInDrawerInput(e.target.value)}
                                 placeholder={actualCash || '0.00'}
-                                className="w-full px-4 py-2.5 rounded-xl border border-slate-600 bg-slate-800 text-emerald-300 font-black text-base outline-none focus:border-primary-500 font-mono"
+                                className="w-full px-4 py-2.5 rounded-xl border border-slate-600 bg-slate-800 text-emerald-300 font-bold text-base outline-none focus:border-primary-500 font-mono"
                             />
                         </div>
 
@@ -841,7 +841,7 @@ export const ClosingPage = () => {
                             <span className="font-bold text-slate-400">
                                 {language === 'ar' ? 'المبلغ المورّد للخزينة / للإدارة:' : 'Amount to Safe:'}
                             </span>
-                            <span className="font-mono font-black text-indigo-400 text-sm">
+                            <span className="font-mono font-bold text-indigo-400 text-sm">
                                 {transferredToSafe.toLocaleString('en-US')} {t('egp')}
                             </span>
                         </div>
@@ -862,9 +862,9 @@ export const ClosingPage = () => {
                     <button
                         type="button"
                         onClick={handleClose}
-                        className="w-full py-4 rounded-xl bg-gradient-to-r from-primary-600 via-primary-700 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-black text-sm shadow-lg shadow-primary-600/30 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                        className="w-full py-4 rounded-xl bg-gradient-to-r from-primary-600 via-primary-700 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-bold text-sm shadow-lg shadow-primary-600/30 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
                     >
-                        <span>🔒</span>
+                        
                         <span>{language === 'ar' ? 'تأكيد إغلاق الدرج وحفظ الوردية' : 'Save Shift Closing'}</span>
                     </button>
 
@@ -884,7 +884,7 @@ export const ClosingPage = () => {
                ========================================================================= */}
             <div className="pt-4">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-base font-black text-slate-100 flex items-center gap-2">
+                    <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
                         <Clock size={18} className="text-primary-400" />
                         <span>{language === 'ar' ? 'سجل تقارير الإقفال السابقة' : 'Closing Reports History'}</span>
                     </h3>
@@ -921,7 +921,7 @@ export const ClosingPage = () => {
                                                 {typeof r.retainedInDrawer === 'number' ? `${r.retainedInDrawer.toLocaleString('en-US')} ${t('egp')}` : '—'}
                                             </td>
                                             <td className="px-5 py-3">
-                                                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black ${
+                                                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
                                                     r.status === 'matched' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' :
                                                     r.status === 'shortage' ? 'bg-rose-950 text-rose-300 border border-rose-500/30' :
                                                     'bg-blue-950 text-blue-300 border border-blue-500/30'

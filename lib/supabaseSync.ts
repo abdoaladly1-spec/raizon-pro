@@ -37,7 +37,7 @@ export const testSupabaseConnection = async (url?: string, key?: string): Promis
       }
       return { ok: false, message: error.message };
     }
-    return { ok: true, message: 'متصل بالسحابة اللحظية بنجاح 🟢' };
+    return { ok: true, message: 'متصل بالسحابة اللحظية بنجاح' };
   } catch (e: any) {
     return { ok: false, message: e.message || 'فشل الاتصال بقاعدة البيانات السحابية' };
   }

@@ -67,7 +67,7 @@ export const LocationsPage = () => {
                     }
                 }
             }
-            addToast(language === 'ar' ? 'تمت مزامنة جميع الفروع مع سحابة Supabase اللحظية بنجاح 🟢' : 'All branches synced with Supabase Realtime!', 'success');
+            addToast(language === 'ar' ? 'تمت مزامنة جميع الفروع مع السحابة اللحظية بنجاح' : 'All branches synced with Supabase Realtime!', 'success');
         } catch (e: any) {
             addToast(language === 'ar' ? 'فشل إتمام المزامنة' : 'Sync failed', 'error');
         } finally {
@@ -79,7 +79,7 @@ export const LocationsPage = () => {
 
     const handleSetActive = (loc: Location) => {
         updateSettings({ currentLocationId: loc.id });
-        addToast(language === 'ar' ? `تم تحويل الجهاز للعمل على فرع «${loc.name}» ✓` : `Active branch set to ${loc.name}`, 'success');
+        addToast(language === 'ar' ? `تم تحويل الجهاز للعمل على فرع «${loc.name}»` : `Active branch set to ${loc.name}`, 'success');
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -109,7 +109,7 @@ export const LocationsPage = () => {
                 active: true
             });
             // إذا كان هذا الفرع الثاني وكان الفرع الأول هو الوحيد، تفعيل التعدد
-            addToast(language === 'ar' ? `تم إضافة فرع «${trimmedName}» بنجاح ✓` : 'New branch added successfully', 'success');
+            addToast(language === 'ar' ? `تم إضافة فرع «${trimmedName}» بنجاح` : 'New branch added successfully', 'success');
         }
         setShowModal(false);
         setForm({ id: '', name: '', address: '', phone: '', active: true });
@@ -137,7 +137,7 @@ export const LocationsPage = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
                         <span className="p-2 rounded-xl bg-primary-100 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400">
                             <MapPin size={24} />
                         </span>
@@ -157,7 +157,7 @@ export const LocationsPage = () => {
                         className="font-bold shadow-xs cursor-pointer flex items-center gap-1.5 py-2.5 px-3.5 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs sm:text-sm"
                     >
                         <Globe size={16} className={isSyncing ? 'animate-spin text-primary-500' : 'text-primary-500'} />
-                        <span>{isSyncing ? (language === 'ar' ? 'جاري المزامنة...' : 'Syncing...') : (language === 'ar' ? 'مزامنة الفروع 🔄' : 'Sync Branches')}</span>
+                        <span>{isSyncing ? (language === 'ar' ? 'جاري المزامنة...' : 'Syncing...') : (language === 'ar' ? 'مزامنة الفروع' : 'Sync Branches')}</span>
                     </Button>
 
                     <Button 
@@ -185,7 +185,7 @@ export const LocationsPage = () => {
                     </div>
                     <div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{language === 'ar' ? 'إجمالي الفروع' : 'Total Branches'}</div>
-                        <div className="text-xl font-black text-slate-900 dark:text-white font-mono">{state.locations.length}</div>
+                        <div className="text-xl font-bold text-slate-900 dark:text-white font-mono">{state.locations.length}</div>
                     </div>
                 </Card>
 
@@ -195,7 +195,7 @@ export const LocationsPage = () => {
                     </div>
                     <div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{language === 'ar' ? 'الفروع النشطة' : 'Active Branches'}</div>
-                        <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                        <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                             {state.locations.filter(l => l.active).length}
                         </div>
                     </div>
@@ -207,7 +207,7 @@ export const LocationsPage = () => {
                     </div>
                     <div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{language === 'ar' ? 'الكاشير والموظفين' : 'Assigned Staff'}</div>
-                        <div className="text-xl font-black text-slate-900 dark:text-white font-mono">
+                        <div className="text-xl font-bold text-slate-900 dark:text-white font-mono">
                             {state.users.filter(u => u.locationId).length}
                         </div>
                     </div>
@@ -219,7 +219,7 @@ export const LocationsPage = () => {
                     </div>
                     <div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{language === 'ar' ? 'الفرع المدار حالياً' : 'Current Terminal'}</div>
-                        <div className="text-sm font-black text-amber-600 dark:text-amber-400 truncate max-w-[130px]">
+                        <div className="text-sm font-bold text-amber-600 dark:text-amber-400 truncate max-w-[130px]">
                             {state.locations.find(l => l.id === activeLocationId)?.name || 'الفرع الرئيسي'}
                         </div>
                     </div>
@@ -269,8 +269,8 @@ export const LocationsPage = () => {
                                             {loc.active ? (language === 'ar' ? 'نشط' : 'Active') : (language === 'ar' ? 'معطل' : 'Inactive')}
                                         </span>
                                         {isCurrent && (
-                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800 animate-pulse">
-                                                {language === 'ar' ? 'الفرع المدار ⭐' : 'Active Terminal'}
+                                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800 animate-pulse">
+                                                {language === 'ar' ? 'الفرع المدار الحالي' : 'Active Terminal'}
                                             </span>
                                         )}
                                     </div>
@@ -287,8 +287,8 @@ export const LocationsPage = () => {
                                         <span className="font-mono">{loc.phone || (language === 'ar' ? 'الهاتف غير محدد' : 'No phone')}</span>
                                     </div>
                                     <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400">
-                                        <span>👥 {assignedStaffCount} {language === 'ar' ? 'موظف مخصص' : 'Staff'}</span>
-                                        <span>📄 {branchInvoicesCount} {language === 'ar' ? 'فاتورة مسجلة' : 'Invoices'}</span>
+                                        <span className="flex items-center gap-1"><Users size={13} className="text-slate-400" /> {assignedStaffCount} {language === 'ar' ? 'موظف مخصص' : 'Staff'}</span>
+                                        <span className="flex items-center gap-1"><FileText size={13} className="text-slate-400" /> {branchInvoicesCount} {language === 'ar' ? 'فاتورة مسجلة' : 'Invoices'}</span>
                                     </div>
                                 </div>
                             </div>
@@ -302,7 +302,7 @@ export const LocationsPage = () => {
                                         onClick={() => handleSetActive(loc)} 
                                         className="w-full justify-center py-2 text-xs font-bold bg-slate-100 hover:bg-primary-50 dark:bg-slate-700 dark:hover:bg-primary-950/40 hover:text-primary-600 dark:hover:text-primary-300 border border-slate-200 dark:border-slate-600 cursor-pointer"
                                     >
-                                        📍 {language === 'ar' ? 'إدارة هذا الفرع على هذا الجهاز' : 'Manage this branch'}
+                                        <span className="flex items-center justify-center gap-1.5"><MapPin size={14} /> {language === 'ar' ? 'إدارة هذا الفرع على هذا الجهاز' : 'Manage this branch'}</span>
                                     </Button>
                                 )}
 
@@ -333,7 +333,7 @@ export const LocationsPage = () => {
             {/* Modal for Add / Edit Branch */}
             {showModal && (
                 <ModalShell
-                    title={isEditing ? (language === 'ar' ? '✏️ تعديل بيانات الفرع' : 'Edit Branch') : (language === 'ar' ? '🏢 إضافة فرع جديد' : 'Add New Branch')}
+                    title={isEditing ? (language === 'ar' ? 'تعديل بيانات الفرع' : 'Edit Branch') : (language === 'ar' ? 'إضافة فرع جديد' : 'Add New Branch')}
                     onClose={() => setShowModal(false)}
                     maxWidth="max-w-md"
                 >

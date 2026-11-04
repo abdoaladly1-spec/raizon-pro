@@ -60,7 +60,7 @@ export const CreateInvoice = ({ onClose }: any) => {
       playBeep();
       addToInvoice(found);
       const itemName = language === 'ar' ? found.nameAr : (found.nameEn || found.nameAr);
-      addToast(`📦 ${itemName} (+1)`, 'success');
+      addToast(`${itemName} (+1)`, 'success');
     } else {
       addToast(language === 'ar' ? `الباركود [${code}] غير مسجل في المخزون` : `Barcode [${code}] not found`, 'error');
     }
@@ -166,7 +166,7 @@ export const CreateInvoice = ({ onClose }: any) => {
 
       setIsQuickAddingCustomer(false);
       setQuickCustomerForm({ name: '', phone: '' });
-      addToast(language === 'ar' ? `تمت إضافة العميل «${nameTrimmed}» واختياره بنجاح ✓` : 'Customer added successfully', 'success');
+      addToast(language === 'ar' ? `تمت إضافة العميل «${nameTrimmed}» واختياره بنجاح` : 'Customer added successfully', 'success');
     } catch (err: any) {
       addToast(err?.message || 'تعذر إضافة العميل', 'error');
     }
@@ -675,7 +675,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                             className="flex items-center gap-1 text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 transition-colors font-medium"
                             title={language === 'ar' ? 'تعبئة سريعة لعميل نقدي عابر' : 'Quick Cash Customer'}
                         >
-                            <span>⚡ {language === 'ar' ? 'عميل نقدي' : 'Cash Client'}</span>
+                            <span>{language === 'ar' ? 'عميل نقدي' : 'Cash Client'}</span>
                         </button>
                         <button
                             type="button"
@@ -1303,7 +1303,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                     >
-                        💳 {language === 'ar' ? 'سداد فوري (كاش/فيزا/محفظة)' : 'Instant Payment'}
+                        {language === 'ar' ? 'سداد فوري (نقدي / إلكتروني)' : 'Instant Payment'}
                     </button>
                     <button
                         type="button"
@@ -1314,7 +1314,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                     >
-                        📝 {language === 'ar' ? 'على الحساب (آجل VIP)' : 'Credit (VIP Ledger)'}
+                        {language === 'ar' ? 'على الحساب (آجل معتمد)' : 'Credit Ledger'}
                     </button>
                 </div>
 
@@ -1330,7 +1330,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                         </div>
                         {!existingCustomer ? (
                             <div className="p-3 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-bold">
-                                {language === 'ar' ? '⚠️ البيع الآجل يتطلب تحديد عميل مسجل في النظام أولاً' : 'Credit sales require selecting a registered customer first'}
+                                {language === 'ar' ? 'البيع الآجل يتطلب تحديد عميل مسجل في النظام أولاً' : 'Credit sales require selecting a registered customer first'}
                             </div>
                         ) : (
                             <>
@@ -1348,7 +1348,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 </div>
                                 {(existingCustomer.creditLimit || 0) > 0 && ((existingCustomer.balance || 0) + total) > (existingCustomer.creditLimit || 0) && (
                                     <div className="p-2 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-xs font-bold">
-                                        ⚠️ {language === 'ar' ? 'تنبيه: هذه الفاتورة ستتجاوز الحد الائتماني للعميل!' : 'Warning: This invoice exceeds customer credit limit!'}
+                                        {language === 'ar' ? 'تنبيه: هذه الفاتورة ستتجاوز الحد الائتماني للعميل' : 'Warning: This invoice exceeds customer credit limit!'}
                                     </div>
                                 )}
                             </>
@@ -1459,9 +1459,9 @@ export const CreateInvoice = ({ onClose }: any) => {
                             variant="success" 
                             onClick={confirmSave} 
                             disabled={paymentMode === 'credit' ? !existingCustomer : !paymentCheck.ok} 
-                            className="flex-1 justify-center py-3 text-base font-black"
+                            className="flex-1 justify-center py-3 text-base font-bold"
                         >
-                            {paymentMode === 'credit' ? (language === 'ar' ? '✓ تأكيد القيد على الحساب' : 'Confirm Credit Sale') : t('confirm')}
+                            {paymentMode === 'credit' ? (language === 'ar' ? 'تأكيد القيد على الحساب' : 'Confirm Credit Sale') : t('confirm')}
                         </Button>
                         <Button variant="secondary" onClick={() => setShowPaymentModal(false)} className="flex-1 justify-center py-3 text-base">{t('cancel')}</Button>
                     </div>
@@ -1471,7 +1471,7 @@ export const CreateInvoice = ({ onClose }: any) => {
         {/* Hold Invoice Prompt Modal — نافذة تعليق الفاتورة التفاعلية بدون alert/prompt المتصفح */}
         {showHoldPromptModal && (
             <ModalShell
-                title={language === 'ar' ? '⏸️ تعليق الفاتورة الحالية' : '⏸️ Hold Current Invoice'}
+                title={language === 'ar' ? 'تعليق الفاتورة الحالية' : 'Hold Current Invoice'}
                 onClose={() => setShowHoldPromptModal(false)}
                 maxWidth="max-w-md"
             >
@@ -1532,7 +1532,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                             onClick={() => confirmHoldInvoice()}
                             className="flex-1 justify-center py-2.5 text-sm font-bold shadow-sm cursor-pointer"
                         >
-                            {language === 'ar' ? '✓ تأكيد التعليق' : 'Confirm Hold'}
+                            {language === 'ar' ? 'تأكيد تعليق الفاتورة' : 'Confirm Hold'}
                         </Button>
                         <Button
                             type="button"
@@ -1609,7 +1609,7 @@ export const CreateInvoice = ({ onClose }: any) => {
 
                                         {inv.notes && (
                                             <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 italic truncate">
-                                                📝 {inv.notes}
+                                                {inv.notes}
                                             </p>
                                         )}
                                     </div>

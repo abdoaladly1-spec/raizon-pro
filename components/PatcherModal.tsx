@@ -654,7 +654,7 @@ export const PatcherModal: React.FC<PatcherModalProps> = ({ isOpen, onClose, onA
                       <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                         <span>مفعل (اشتراك ساري)</span>
-                        {currentMachineLicense.isPerpetual ? ' 👑 دائم' : currentMachineLicense.expiresAt ? ` (ينتهي ${new Date(currentMachineLicense.expiresAt).toLocaleDateString('ar-EG')})` : ''}
+                        {currentMachineLicense.isPerpetual ? ' دائم' : currentMachineLicense.expiresAt ? ` (ينتهي ${new Date(currentMachineLicense.expiresAt).toLocaleDateString('ar-EG')})` : ''}
                       </span>
                     ) : (
                       <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1">

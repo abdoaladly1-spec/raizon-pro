@@ -1,7 +1,7 @@
 /* تم فصل هذا الملف من App.tsx (نظام ProCashier) */
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Building } from '../components/Icons';
+import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Building, MessageSquare } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from '../types';
 import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, EmptyState, useSound, useLiveTick } from '../components/ui';
 import { FilterModal } from '../components/FilterModal';
@@ -144,7 +144,7 @@ export const InvoicesList = () => {
                             onChange={(e) => setActiveFilters(prev => ({ ...prev, branchName: e.target.value }))}
                             className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary-500 shadow-sm cursor-pointer"
                         >
-                            <option value="">{language === 'ar' ? '🏢 كل الفروع' : 'All Branches'}</option>
+                            <option value="">{language === 'ar' ? 'كل الفروع' : 'All Branches'}</option>
                             {state.locations.map(loc => (
                                 <option key={loc.id} value={loc.name}>فرع {loc.name}</option>
                             ))}
@@ -313,7 +313,7 @@ export const InvoicesList = () => {
                                                                 }}
                                                                 className="w-full px-3 py-2 text-right hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 text-emerald-600 dark:text-emerald-400 cursor-pointer"
                                                             >
-                                                                <span>💬</span>
+                                                                <MessageSquare size={16} className="shrink-0" />
                                                                 <span>{language === 'ar' ? 'مشاركة واتس اب' : 'WhatsApp'}</span>
                                                             </button>
                                                         </div>

@@ -449,7 +449,7 @@ export const StatsPage = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <Card>
                             <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><DollarSign className="text-emerald-500" /> {t('total_revenue')}</h3>
-                            <div className="text-4xl font-black text-emerald-600 dark:text-emerald-400 mb-4">{money(profit.revenue)} <span className="text-base font-normal text-slate-400">{t('egp')}</span></div>
+                            <div className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-4">{money(profit.revenue)} <span className="text-base font-normal text-slate-400">{t('egp')}</span></div>
                             <div className="grid grid-cols-2 gap-3 text-sm">
                                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3"><div className="text-slate-500 text-xs">{t('cash')}</div><b className="text-emerald-600">{money(paySplit.cash)}</b></div>
                                 <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3"><div className="text-slate-500 text-xs">{t('non_cash')}</div><b className="text-blue-600">{money(round2(paySplit.card + paySplit.wallet))}</b></div>
@@ -485,7 +485,7 @@ export const StatsPage = () => {
                             ))}
                             <div className="flex justify-between items-center bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-xl px-4 py-4 shadow-lg shadow-emerald-600/25">
                                 <span className="font-bold">{t('net_profit')}</span>
-                                <span className="font-black text-xl">{money(profit.netProfit)} {t('egp')}</span>
+                                <span className="font-bold text-xl">{money(profit.netProfit)} {t('egp')}</span>
                             </div>
                             <p className="text-xs text-slate-400">{t('discounts_given')}: {money(profit.discounts)} {t('egp')} — {t('report_filter_hint')}</p>
                         </div>
@@ -555,10 +555,10 @@ export const StatsPage = () => {
                             <Card className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-none relative overflow-hidden">
                                 <div className="absolute top-0 left-0 p-6 opacity-20"><Award size={110} /></div>
                                 <div className="relative z-10 flex items-center gap-5">
-                                    <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-full flex items-center justify-center border-4 border-white/30 shadow-xl text-3xl font-black">1</div>
+                                    <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-full flex items-center justify-center border-4 border-white/30 shadow-xl text-3xl font-bold">1</div>
                                     <div>
                                         <div className="uppercase tracking-wider text-xs font-bold text-amber-100 mb-1">{t('top_staff')}</div>
-                                        <h2 className="text-3xl font-black mb-1">{top.name}</h2>
+                                        <h2 className="text-3xl font-bold mb-1">{top.name}</h2>
                                         <p className="text-amber-100">{t('total_revenue')}: <b className="bg-white/20 px-2 py-0.5 rounded">{money(top.revenue)} {t('egp')}</b> · {t('invoices')}: {top.invoices}</p>
                                     </div>
                                 </div>
@@ -637,7 +637,7 @@ export const StatsPage = () => {
                         </Card>
                         <Card>
                             <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><DollarSign className="text-emerald-500" /> {t('total_revenue')}</h3>
-                            <div className="text-4xl font-black text-emerald-600 dark:text-emerald-400 mb-4">{money(yearRevenue)} <span className="text-base font-normal text-slate-400">{t('egp')}</span></div>
+                            <div className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-4">{money(yearRevenue)} <span className="text-base font-normal text-slate-400">{t('egp')}</span></div>
                             <ReportTable
                                 headers={[t('month'), t('total_revenue')]}
                                 rows={months.filter(m => m.value > 0).map(m => [m.label, money(m.value)])}
@@ -840,7 +840,7 @@ export const StatsPage = () => {
                                         <Printer size={16} /> {t('preview')}
                                     </Button>
                                     <Button variant="secondary" onClick={() => openPrint(viewId, true)}>
-                                        📄 {t('export_pdf')}
+                                        {t('export_pdf')}
                                     </Button>
                                 </div>
                             </div>

@@ -143,21 +143,21 @@ const ArabicCalendarPicker = ({
                     onClick={() => setQuickDate(0)}
                     className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-primary-500 hover:text-primary-600 transition-all cursor-pointer shadow-xs active:scale-95"
                 >
-                    🌟 اليوم
+                    اليوم
                 </button>
                 <button
                     type="button"
                     onClick={() => setQuickDate(1)}
                     className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-primary-500 hover:text-primary-600 transition-all cursor-pointer shadow-xs active:scale-95"
                 >
-                    📅 غداً
+                    غداً
                 </button>
                 <button
                     type="button"
                     onClick={() => setQuickDate(2)}
                     className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-primary-500 hover:text-primary-600 transition-all cursor-pointer shadow-xs active:scale-95"
                 >
-                    📅 بعد غد
+                    بعد غد
                 </button>
                 <button
                     type="button"
@@ -170,7 +170,7 @@ const ArabicCalendarPicker = ({
                     }}
                     className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-primary-500 hover:text-primary-600 transition-all cursor-pointer shadow-xs active:scale-95"
                 >
-                    🏖️ الجمعة القادمة
+                    الجمعة القادمة
                 </button>
             </div>
 
@@ -186,7 +186,7 @@ const ArabicCalendarPicker = ({
                 </button>
 
                 <div className="text-center">
-                    <span className="text-sm font-black text-slate-800 dark:text-slate-100">
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
                         {ARABIC_MONTHS[viewMonth]} {viewYear}
                     </span>
                 </div>
@@ -206,7 +206,7 @@ const ArabicCalendarPicker = ({
                 {WEEKDAYS_AR.map((w, idx) => (
                     <div 
                         key={w} 
-                        className={`text-[11px] font-black py-1 ${idx === 6 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'}`}
+                        className={`text-[11px] font-bold py-1 ${idx === 6 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'}`}
                     >
                         {w}
                     </div>
@@ -233,9 +233,9 @@ const ArabicCalendarPicker = ({
                             onClick={() => selectDay(dayNum)}
                             className={`h-9 rounded-xl text-xs font-bold flex flex-col items-center justify-center transition-all cursor-pointer relative ${
                                 isSelected
-                                    ? 'bg-gradient-to-r from-primary-600 to-indigo-600 text-white shadow-md shadow-primary-500/30 scale-105 z-10 font-black'
+                                    ? 'bg-gradient-to-r from-primary-600 to-indigo-600 text-white shadow-md shadow-primary-500/30 scale-105 z-10 font-bold'
                                     : isToday
-                                    ? 'bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-300 border border-primary-300 dark:border-primary-700 font-black'
+                                    ? 'bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-300 border border-primary-300 dark:border-primary-700 font-bold'
                                     : isPast
                                     ? 'text-slate-300 dark:text-slate-600 opacity-40 cursor-not-allowed'
                                     : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 hover:shadow-xs'
@@ -316,7 +316,7 @@ const VisualClockPicker = ({
                     </div>
                     <div>
                         <div className="text-[11px] text-slate-400 font-bold">الوقت المحدد</div>
-                        <div className="text-base font-black text-slate-800 dark:text-slate-100 font-mono tracking-wider">
+                        <div className="text-base font-bold text-slate-800 dark:text-slate-100 font-mono tracking-wider">
                             {String(hour).padStart(2, '0')}:{String(minute).padStart(2, '0')} {period === 'AM' ? 'صباحاً' : 'مساءً'}
                         </div>
                     </div>
@@ -327,24 +327,24 @@ const VisualClockPicker = ({
                     <button
                         type="button"
                         onClick={() => togglePeriod('AM')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             period === 'AM'
                                 ? 'bg-amber-500 text-white shadow-xs'
                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-800'
                         }`}
                     >
-                        ☀️ ص
+                        ص
                     </button>
                     <button
                         type="button"
                         onClick={() => togglePeriod('PM')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             period === 'PM'
                                 ? 'bg-indigo-600 text-white shadow-xs'
                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-800'
                         }`}
                     >
-                        🌙 م
+                        م
                     </button>
                 </div>
             </div>
@@ -386,7 +386,7 @@ const VisualClockPicker = ({
                                 }}
                                 className={`absolute w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
                                     isSelected
-                                        ? 'bg-gradient-to-r from-primary-600 to-indigo-600 text-white shadow-md shadow-primary-500/40 scale-110 font-black z-20'
+                                        ? 'bg-gradient-to-r from-primary-600 to-indigo-600 text-white shadow-md shadow-primary-500/40 scale-110 font-bold z-20'
                                         : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                                 }`}
                             >
@@ -417,7 +417,7 @@ const VisualClockPicker = ({
                                 onClick={() => selectMinute(mItem.val)}
                                 className={`py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
                                     isSelected
-                                        ? 'bg-primary-600 text-white shadow-xs font-black'
+                                        ? 'bg-primary-600 text-white shadow-xs font-bold'
                                         : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-primary-400'
                                 }`}
                             >
@@ -443,7 +443,7 @@ const VisualClockPicker = ({
                                 onClick={() => onChange(slot.value)}
                                 className={`py-1.5 px-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer text-center ${
                                     isSelected
-                                        ? 'bg-primary-600 text-white font-black'
+                                        ? 'bg-primary-600 text-white font-bold'
                                         : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                                 }`}
                             >
@@ -691,7 +691,7 @@ export const ReservationsPage = () => {
             {/* الترويسة الرئيسية مع شريط البحث والفلترة والزر البارز */}
             <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-sm backdrop-blur-sm">
                 <div>
-                    <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                         <Calendar className="text-primary-600 dark:text-primary-400" size={26} />
                         <span>{t('reservations_list')}</span>
                     </h2>
@@ -728,7 +728,7 @@ export const ReservationsPage = () => {
                     <button 
                         type="button"
                         onClick={() => { resetForm(); setShowModal(true); }}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white font-black text-sm shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
                     >
                         <Plus size={20} />
                         <span>{t('new_reservation')}</span>
@@ -747,42 +747,42 @@ export const ReservationsPage = () => {
 
                         {/* بطاقات إحصائيات الحجوزات */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-indigo-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                         <span>{rtl ? 'إجمالي الحجوزات' : 'Total Bookings'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800/40">الكل</span>
                     </div>
-                    <div className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono tracking-tight">
+                    <div className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight">
                         {resStats.total} <span className="text-xs font-bold text-slate-400">{rtl ? 'موعد' : 'res'}</span>
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-amber-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                         <span>{rtl ? 'حجوزات اليوم' : 'Today'}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/40">اليوم 📅</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/40">اليوم</span>
                     </div>
-                    <div className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono tracking-tight">
+                    <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 font-mono tracking-tight">
                         {resStats.today} <span className="text-xs font-bold text-slate-400">{rtl ? 'موعد' : 'res'}</span>
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-emerald-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                         <span>{rtl ? 'مؤكدة' : 'Confirmed'}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">جاهز 🟢</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">مؤكد</span>
                     </div>
-                    <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
+                    <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
                         {resStats.confirmed} <span className="text-xs font-bold text-slate-400">{rtl ? 'موعد' : 'res'}</span>
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-blue-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                         <span>{rtl ? 'مكتملة' : 'Completed'}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800/40">تم بنجاح ✨</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800/40">مكتمل</span>
                     </div>
-                    <div className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono tracking-tight">
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono tracking-tight">
                         {resStats.completed} <span className="text-xs font-bold text-slate-400">{rtl ? 'موعد' : 'res'}</span>
                     </div>
                 </div>
@@ -807,7 +807,7 @@ export const ReservationsPage = () => {
                             {filteredReservations.map(r => (
                                 <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                     <td className="px-5 py-3.5 text-slate-800 dark:text-slate-100 font-bold flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 flex items-center justify-center text-xs font-black">
+                                        <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 flex items-center justify-center text-xs font-bold">
                                             {r.customerName.charAt(0).toUpperCase()}
                                         </div>
                                         <span>{r.customerName}</span>
@@ -874,7 +874,7 @@ export const ReservationsPage = () => {
                                         <Calendar size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-black">
+                                        <h3 className="text-base font-bold">
                                             {rtl ? 'حجز موعد جديد' : 'New Appointment'}
                                         </h3>
                                         <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -897,10 +897,10 @@ export const ReservationsPage = () => {
                             {/* شريط المراحل التفاعلي */}
                             <div className="grid grid-cols-4 gap-2">
                                 {[
-                                    { s: 1, label: 'العميل', icon: '👤' },
-                                    { s: 2, label: 'التاريخ', icon: '📅' },
-                                    { s: 3, label: 'الوقت', icon: '🕒' },
-                                    { s: 4, label: 'التأكيد', icon: '✅' },
+                                    { s: 1, label: 'العميل', icon: null },
+                                    { s: 2, label: 'التاريخ', icon: null },
+                                    { s: 3, label: 'الوقت', icon: null },
+                                    { s: 4, label: 'التأكيد', icon: null },
                                 ].map((item) => (
                                     <button
                                         key={item.s}
@@ -913,7 +913,7 @@ export const ReservationsPage = () => {
                                         }}
                                         className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                             step === item.s
-                                                ? 'bg-primary-600 text-white shadow-xs font-black'
+                                                ? 'bg-primary-600 text-white shadow-xs font-bold'
                                                 : step > item.s
                                                 ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
                                                 : 'bg-white dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 opacity-60'
@@ -942,7 +942,7 @@ export const ReservationsPage = () => {
                                             </span>
                                             {selectedCustomerId > 0 && (
                                                 <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                                                    ✓ {rtl ? 'عميل مسجل في النظام' : 'Registered Client'}
+                                                    {rtl ? 'عميل مسجل في النظام' : 'Registered Client'}
                                                 </span>
                                             )}
                                         </label>
@@ -1061,7 +1061,7 @@ export const ReservationsPage = () => {
                                                         : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
                                                 }`}
                                             >
-                                                <span>🌟 {rtl ? 'أي متخصص متاح' : 'Any Available'}</span>
+                                                <span>{rtl ? 'أي متخصص متاح' : 'Any Available'}</span>
                                             </button>
 
                                             {activeStaff.map((s) => {
@@ -1077,7 +1077,7 @@ export const ReservationsPage = () => {
                                                                 : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
                                                         }`}
                                                     >
-                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black ${isSelected ? 'bg-white text-primary-600' : 'bg-primary-100 dark:bg-primary-900 text-primary-700'}`}>
+                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${isSelected ? 'bg-white text-primary-600' : 'bg-primary-100 dark:bg-primary-900 text-primary-700'}`}>
                                                             {s.name.charAt(0)}
                                                         </div>
                                                         <span>{s.name}</span>
@@ -1097,7 +1097,7 @@ export const ReservationsPage = () => {
                                             <Calendar size={16} className="text-primary-500" />
                                             <span>{rtl ? 'حدد يوم وتاريخ الموعد' : 'Select Date'}</span>
                                         </label>
-                                        <span className="text-xs font-black text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/60 px-3 py-1 rounded-xl">
+                                        <span className="text-xs font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/60 px-3 py-1 rounded-xl">
                                             {formatDateDisplay(date)}
                                         </span>
                                     </div>
@@ -1115,7 +1115,7 @@ export const ReservationsPage = () => {
                                             <Clock size={16} className="text-primary-500" />
                                             <span>{rtl ? 'حدد وقت وساعة الموعد' : 'Select Appointment Time'}</span>
                                         </label>
-                                        <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1 rounded-xl font-mono">
+                                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1 rounded-xl font-mono">
                                             {time}
                                         </span>
                                     </div>
@@ -1130,7 +1130,7 @@ export const ReservationsPage = () => {
                                 <div className="space-y-4 animate-fade-in">
                                     {/* بطاقة ملخص الحجز */}
                                     <div className="bg-gradient-to-br from-primary-50 to-indigo-50 dark:from-slate-800/80 dark:to-slate-800/40 p-5 rounded-2xl border border-primary-200 dark:border-slate-700 space-y-3">
-                                        <div className="text-xs font-black text-primary-700 dark:text-primary-300 flex items-center gap-1.5 border-b border-primary-100 dark:border-slate-700 pb-2">
+                                        <div className="text-xs font-bold text-primary-700 dark:text-primary-300 flex items-center gap-1.5 border-b border-primary-100 dark:border-slate-700 pb-2">
                                             <Sparkles size={16} />
                                             <span>{rtl ? 'ملخص بيانات الموعد قبل التأكيد' : 'Appointment Summary'}</span>
                                         </div>
@@ -1138,7 +1138,7 @@ export const ReservationsPage = () => {
                                         <div className="grid grid-cols-2 gap-3 text-xs">
                                             <div>
                                                 <span className="text-slate-400 block text-[11px]">{rtl ? 'العميل:' : 'Client:'}</span>
-                                                <span className="font-black text-slate-800 dark:text-slate-100 text-sm">
+                                                <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">
                                                     {name || customerQuery}
                                                 </span>
                                                 {customerPhone && (
@@ -1148,7 +1148,7 @@ export const ReservationsPage = () => {
 
                                             <div>
                                                 <span className="text-slate-400 block text-[11px]">{rtl ? 'الخدمة المطلوبة:' : 'Service:'}</span>
-                                                <span className="font-black text-indigo-600 dark:text-indigo-400 text-sm">
+                                                <span className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">
                                                     {selectedService || (rtl ? 'غير محددة' : 'Not specified')}
                                                 </span>
                                             </div>
@@ -1162,7 +1162,7 @@ export const ReservationsPage = () => {
 
                                             <div>
                                                 <span className="text-slate-400 block text-[11px]">{rtl ? 'الوقت المحدد:' : 'Time:'}</span>
-                                                <span className="font-black text-slate-800 dark:text-slate-100 font-mono text-sm">
+                                                <span className="font-bold text-slate-800 dark:text-slate-100 font-mono text-sm">
                                                     {time}
                                                 </span>
                                             </div>
@@ -1186,7 +1186,7 @@ export const ReservationsPage = () => {
                                                 <button
                                                     type="button"
                                                     onClick={() => setReservationStatus('confirmed')}
-                                                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                                                         reservationStatus === 'confirmed'
                                                             ? 'bg-emerald-600 text-white shadow-xs'
                                                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
@@ -1199,7 +1199,7 @@ export const ReservationsPage = () => {
                                                 <button
                                                     type="button"
                                                     onClick={() => setReservationStatus('pending')}
-                                                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                                                         reservationStatus === 'pending'
                                                             ? 'bg-amber-600 text-white shadow-xs'
                                                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
@@ -1255,12 +1255,12 @@ export const ReservationsPage = () => {
                                     <button
                                         type="button"
                                         onClick={handleNextStep}
-                                        className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white font-black text-xs shadow-md transition-all cursor-pointer active:scale-95"
+                                        className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer active:scale-95"
                                     >
                                         <span>
-                                            {step === 1 && (rtl ? 'التالي: اختيار التاريخ 📅' : 'Next: Pick Date')}
-                                            {step === 2 && (rtl ? 'التالي: اختيار الوقت 🕒' : 'Next: Pick Time')}
-                                            {step === 3 && (rtl ? 'التالي: مراجعة الحجز 📝' : 'Next: Review')}
+                                            {step === 1 && (rtl ? 'التالي: اختيار التاريخ' : 'Next: Pick Date')}
+                                            {step === 2 && (rtl ? 'التالي: اختيار الوقت' : 'Next: Pick Time')}
+                                            {step === 3 && (rtl ? 'التالي: مراجعة الحجز' : 'Next: Review')}
                                         </span>
                                         <ChevronRight size={16} className="rtl:rotate-180" />
                                     </button>
@@ -1268,10 +1268,10 @@ export const ReservationsPage = () => {
                                     <button
                                         type="button"
                                         onClick={handleSaveReservation}
-                                        className="flex items-center gap-2 px-7 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
+                                        className="flex items-center gap-2 px-7 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
                                     >
                                         <Check size={18} />
-                                        <span>{rtl ? '✨ تأكيد وحفظ الحجز' : 'Confirm & Save'}</span>
+                                        <span>{rtl ? 'تأكيد وحفظ الحجز' : 'Confirm & Save'}</span>
                                     </button>
                                 )}
                             </div>

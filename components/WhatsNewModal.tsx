@@ -64,7 +64,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
               defaultFeatures.map((item, idx) => (
                 <div key={idx} className="flex items-start gap-2.5">
                   <span className="w-5 h-5 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">
-                    ✓
+                    <Check size={12} />
                   </span>
                   <div>
                     <h5 className="text-xs font-bold text-white">{item.title}</h5>

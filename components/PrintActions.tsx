@@ -67,42 +67,42 @@ export const buildInvoiceWhatsAppMessage = (
     : 0;
 
   const discountLine = discountAmount > 0
-    ? `🏷️ *الخصم:* -${discountAmount.toLocaleString('en-US')} ج.م (${invoice.discountPercent}%)\n`
+    ? `*الخصم:* -${discountAmount.toLocaleString('en-US')} ج.م (${invoice.discountPercent}%)\n`
     : '';
 
   const receivedLine = (invoice.received !== undefined && invoice.received > (invoice.total || 0))
-    ? `💵 *المدفوع:* ${invoice.received.toLocaleString('en-US')} ج.م\n`
+    ? `*المدفوع:* ${invoice.received.toLocaleString('en-US')} ج.م\n`
     : '';
 
   const changeLine = (invoice.change !== undefined && invoice.change > 0)
-    ? `🪙 *المتبقي (الفكة):* ${invoice.change.toLocaleString('en-US')} ج.م\n`
+    ? `*المتبقي:* ${invoice.change.toLocaleString('en-US')} ج.م\n`
     : '';
 
   const staffLine = invoice.staffName
-    ? `👨‍💼 *الموظف:* ${invoice.staffName}\n`
+    ? `*الموظف:* ${invoice.staffName}\n`
     : '';
 
   const notesLine = invoice.notes
-    ? `📝 *ملاحظات:* ${invoice.notes}\n`
+    ? `*ملاحظات:* ${invoice.notes}\n`
     : '';
 
-  const addressLine = shop.address ? `\n📍 *العنوان:* ${shop.address}` : '';
-  const phoneLine = shop.phone ? `\n📞 *للتواصل:* ${shop.phone}` : '';
+  const addressLine = shop.address ? `\n*العنوان:* ${shop.address}` : '';
+  const phoneLine = shop.phone ? `\n*للتواصل:* ${shop.phone}` : '';
 
-  return `🧾 *فاتورة إلكترونية${shopTitle}*
+  return `*فاتورة إلكترونية${shopTitle}*
 ━━━━━━━━━━━━━━━━━━
-🔹 *رقم الفاتورة:* #${invoice.id}
-📅 *التاريخ:* ${dateStr}
-⏰ *الوقت:* ${timeStr}
-👤 *العميل:* ${invoice.customerName || 'عميل نقدي'}
+*رقم الفاتورة:* #${invoice.id}
+*التاريخ:* ${dateStr}
+*الوقت:* ${timeStr}
+*العميل:* ${invoice.customerName || 'عميل نقدي'}
 ${staffLine}━━━━━━━━━━━━━━━━━━
-📦 *الأصناف:*
+*الأصناف:*
 ${itemsText}
 ━━━━━━━━━━━━━━━━━━
-${discountLine}💰 *المجموع:* ${(invoice.total || 0).toLocaleString('en-US')} ج.م
-💳 *طريقة الدفع:* ${paymentText}
+${discountLine}*المجموع:* ${(invoice.total || 0).toLocaleString('en-US')} ج.م
+*طريقة الدفع:* ${paymentText}
 ${receivedLine}${changeLine}${notesLine}
-شكراً لثقتكم بنا، ونسعد دائماً بخدمتكم! ✨${addressLine}${phoneLine}`;
+شكراً لزيارتكم، نسعد دائماً بخدمتكم.${addressLine}${phoneLine}`;
 };
 
 export const openInvoiceWhatsApp = (
@@ -187,7 +187,7 @@ export const PrintActions = ({ invoice }: { invoice: Invoice }) => {
         onClick={handleWhatsApp}
         className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-sm"
       >
-        <span>💬</span>
+        <MessageSquare size={16} className="shrink-0" />
         <span>{language === 'ar' ? 'مشاركة واتساب' : 'WhatsApp'}</span>
       </Button>
     </div>

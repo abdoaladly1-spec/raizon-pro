@@ -2119,7 +2119,7 @@ export const AppProvider = ({ children }: any) => {
             invoices: [mappedInvoice, ...prev.invoices],
           };
         });
-        addToast(`⚡ مزامنة فروع لحظية: فاتورة جديدة في ${inv.branch_name || 'فرع آخر'} #${inv.invoice_number} - ${inv.total} ج.م`, 'info');
+        addToast(`مزامنة الفروع: فاتورة جديدة في ${inv.branch_name || 'فرع آخر'} #${inv.invoice_number} - ${inv.total} ج.م`, 'info');
       },
       onCustomerChange: (cust) => {
         if (!cust || !cust.id) return;

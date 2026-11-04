@@ -362,8 +362,8 @@ export const openReportPreview = (doc: ReportDoc, opts?: { autoPrint?: boolean; 
 </head>
 <body class="size-${paper}">
     <div class="toolbar no-print">
-        <button id="btn-print" class="btn-print">🖨️ ${rtl ? 'طباعة' : 'Print'}</button>
-        <button id="btn-pdf" class="btn-pdf">${rtl ? '📄 تصدير PDF' : '📄 Export PDF'}</button>
+        <button id="btn-print" class="btn-print">${rtl ? 'طباعة التقرير' : 'Print'}</button>
+        <button id="btn-pdf" class="btn-pdf">${rtl ? 'تصدير PDF' : 'Export PDF'}</button>
         <label class="paper-label">${rtl ? 'مقاس الورق' : 'Paper size'}:
             <select id="paper-select">
                 <option value="A4">A4</option>

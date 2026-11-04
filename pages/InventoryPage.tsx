@@ -502,36 +502,36 @@ export const Inventory = () => {
                 <div className="space-y-4">
                     {/* Top Stats Summary Cards */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-purple-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                                 <span>{language === 'ar' ? 'إجمالي الأصناف' : 'Total Items'}</span>
                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 font-bold border border-purple-200 dark:border-purple-800/40">الكتالوج</span>
                             </div>
-                            <h4 className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono tracking-tight">{stats.total}</h4>
+                            <h4 className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight">{stats.total}</h4>
                             <p className="text-[11px] text-slate-400 mt-1 font-medium">{stats.productsCount} منتج • {stats.servicesCount} خدمة</p>
                         </div>
 
-                        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-primary-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                                 <span>{language === 'ar' ? 'المنتجات بالمخزن' : 'Products Stock'}</span>
                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-800/40">رصيد</span>
                             </div>
-                            <h4 className="text-2xl font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight">
+                            <h4 className="text-2xl font-bold text-primary-600 dark:text-primary-400 font-mono tracking-tight">
                                 {stats.totalUnits} <span className="text-xs font-bold text-slate-400">قطعة</span>
                             </h4>
                             <p className="text-[11px] text-slate-400 mt-1 font-medium">{stats.productsCount} منتج مسجل</p>
                         </div>
 
-                        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-emerald-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                                 <span>{language === 'ar' ? 'الخدمات المتاحة' : 'Salon Services'}</span>
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">خدمات ✂️</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">خدمات</span>
                             </div>
-                            <h4 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">{stats.servicesCount}</h4>
+                            <h4 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">{stats.servicesCount}</h4>
                             <p className="text-[11px] text-slate-400 mt-1 font-medium">{language === 'ar' ? 'خدمات بدون مخزون' : 'No stock tracking'}</p>
                         </div>
 
-                        <div className={`relative overflow-hidden rounded-2xl p-4 border border-t-4 border-t-amber-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all ${
+                        <div className={`relative overflow-hidden rounded-2xl p-4 border  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all ${
                             stats.lowStockCount > 0 
                                 ? 'bg-amber-50/50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700/60' 
                                 : 'bg-white dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/80'
@@ -545,10 +545,10 @@ export const Inventory = () => {
                                         ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700' 
                                         : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-600'
                                 }`}>
-                                    {stats.lowStockCount > 0 ? 'تنبيه ⚠️' : 'آمن 🟢'}
+                                    {stats.lowStockCount > 0 ? 'تنبيه' : 'متوفر'}
                                 </span>
                             </div>
-                            <h4 className={`text-2xl font-black font-mono tracking-tight ${stats.lowStockCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-800 dark:text-slate-100'}`}>
+                            <h4 className={`text-2xl font-bold font-mono tracking-tight ${stats.lowStockCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-800 dark:text-slate-100'}`}>
                                 {stats.lowStockCount}
                             </h4>
                             <p className="text-[11px] text-slate-400 mt-1 font-medium">{stats.lowStockCount > 0 ? 'تحتاج لتوريد عاجل' : 'المخزون متوفر بالكامل'}</p>
@@ -561,11 +561,11 @@ export const Inventory = () => {
                         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
                             {[
                                 { id: 'all', label: language === 'ar' ? `الكل (${stats.total})` : `All (${stats.total})` },
-                                { id: 'product', label: language === 'ar' ? `📦 المنتجات (${stats.productsCount})` : `📦 Products (${stats.productsCount})` },
-                                { id: 'service', label: language === 'ar' ? `✂️ الخدمات (${stats.servicesCount})` : `✂️ Services (${stats.servicesCount})` },
-                                { id: 'low_stock', label: language === 'ar' ? `⚠️ النواقص (${stats.lowStockCount})` : `⚠️ Low Stock (${stats.lowStockCount})` },
-                                { id: 'expiring_soon', label: language === 'ar' ? `⏳ أوشك على الانتهاء (${stats.expiringSoonCount})` : `⏳ Expiring (${stats.expiringSoonCount})` },
-                                { id: 'expired', label: language === 'ar' ? `🛑 منتهي الصلاحية (${stats.expiredCount})` : `🛑 Expired (${stats.expiredCount})` },
+                                { id: 'product', label: language === 'ar' ? `المنتجات (${stats.productsCount})` : `Products (${stats.productsCount})` },
+                                { id: 'service', label: language === 'ar' ? `الخدمات (${stats.servicesCount})` : `Services (${stats.servicesCount})` },
+                                { id: 'low_stock', label: language === 'ar' ? `النواقص (${stats.lowStockCount})` : `Low Stock (${stats.lowStockCount})` },
+                                { id: 'expiring_soon', label: language === 'ar' ? `أوشك على الانتهاء (${stats.expiringSoonCount})` : `⏳ Expiring (${stats.expiringSoonCount})` },
+                                { id: 'expired', label: language === 'ar' ? `منتهي الصلاحية (${stats.expiredCount})` : `Expired (${stats.expiredCount})` },
                             ].map(filter => (
                                 <button
                                     key={filter.id}
@@ -672,7 +672,7 @@ export const Inventory = () => {
                                             </div>
 
                                             {/* Item Name */}
-                                            <h3 className="font-black text-base text-slate-800 dark:text-slate-100 leading-snug">
+                                            <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 leading-snug">
                                                 {language === 'ar' ? item.nameAr : (item.nameEn || item.nameAr)}
                                             </h3>
                                             {item.nameEn && language === 'ar' && (
@@ -701,7 +701,7 @@ export const Inventory = () => {
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-slate-500 dark:text-slate-400">{language === 'ar' ? 'الكمية في المخزن:' : 'In Stock:'}</span>
                                                             <div className="flex items-center gap-1.5">
-                                                                <span className={`font-black font-mono px-2.5 py-0.5 rounded-lg text-xs ${
+                                                                <span className={`font-bold font-mono px-2.5 py-0.5 rounded-lg text-xs ${
                                                                     isLowStock 
                                                                         ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200 border border-amber-300' 
                                                                         : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100'
@@ -755,18 +755,18 @@ export const Inventory = () => {
                                                 return (
                                                     <div className="flex flex-wrap items-center gap-1.5 mb-2.5 text-xs">
                                                         {diffDays < 0 ? (
-                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-black bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
-                                                                <span>🛑</span>
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                                                                
                                                                 <span>منتهي الصلاحية ({item.expiryDate})</span>
                                                             </span>
                                                         ) : diffDays <= 30 ? (
-                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-black bg-rose-50 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-300 dark:border-rose-800 animate-pulse-slow">
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-300 dark:border-rose-800 animate-pulse-slow">
                                                                 <span>⏳</span>
                                                                 <span>ينتهي خلال {diffDays} يوم ({item.expiryDate})</span>
                                                             </span>
                                                         ) : diffDays <= 60 ? (
                                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                                                                <span>🕒</span>
+                                                                
                                                                 <span>ينتهي خلال {diffDays} يوم</span>
                                                             </span>
                                                         ) : (
@@ -866,7 +866,7 @@ export const Inventory = () => {
                                         }`}
                                     >
                                         <Package size={16} />
-                                        <span>{language === 'ar' ? '📦 منتج ملموس (له كمية)' : 'Product (Has Stock)'}</span>
+                                        <span>{language === 'ar' ? 'منتج ملموس (له كمية)' : 'Product (Has Stock)'}</span>
                                     </button>
                                     <button
                                         type="button"
@@ -878,7 +878,7 @@ export const Inventory = () => {
                                         }`}
                                     >
                                         <Scissors size={16} />
-                                        <span>{language === 'ar' ? '✂️ خدمة صالون (بدون مخزون)' : 'Service (No Stock)'}</span>
+                                        <span>{language === 'ar' ? 'خدمة صالون (بدون مخزون)' : 'Service (No Stock)'}</span>
                                     </button>
                                 </div>
                             </div>
@@ -986,7 +986,7 @@ export const Inventory = () => {
                                     </div>
                                 ) : (
                                     <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 p-2 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                                        <span>✂️ {language === 'ar' ? 'الخدمة تضاف للفاتورة مباشرة بدون حساب تكلفة تخزين' : 'Service goes directly to invoice'}</span>
+                                        <span>{language === 'ar' ? 'الخدمة تضاف للفاتورة مباشرة بدون حساب تكلفة تخزين' : 'Service goes directly to invoice'}</span>
                                     </div>
                                 )}
                             </div>

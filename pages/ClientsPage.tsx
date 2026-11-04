@@ -239,7 +239,7 @@ export const Clients = () => {
         const updatedBal = Math.max(0, (selectedCustomer.balance || 0) - amountNum);
         setSelectedCustomer({ ...selectedCustomer, balance: updatedBal });
 
-        addToast(language === 'ar' ? `✓ تم تسجيل سداد مبلغ ${amountNum} ج.م بنجاح` : 'Payment recorded successfully', 'success');
+        addToast(language === 'ar' ? `تم تسجيل سداد مبلغ ${amountNum} ج.م بنجاح` : 'Payment recorded successfully', 'success');
         setShowPaymentModal(false);
         setPaymentForm({ amount: '', paymentMethod: 'cash', receiptNumber: '', notes: '' });
     };
@@ -251,17 +251,17 @@ export const Clients = () => {
         const limit = customer.creditLimit ? Number(customer.creditLimit).toLocaleString('en-US') + ' ج.م' : 'غير محدد';
         const purchases = Number(customer.totalSpent || 0).toLocaleString('en-US') + ' ج.م';
 
-        const text = `📑 *كشف حساب العميل - ${shop}*
+        const text = `*كشف حساب العميل - ${shop}*
 ━━━━━━━━━━━━━━━━━━
-👤 *العميل:* ${customer.name}
-📱 *الهاتف:* ${customer.phone || '-'}
-🛡️ *الحد الائتماني المعتمد:* ${limit}
+*العميل:* ${customer.name}
+*الهاتف:* ${customer.phone || '-'}
+*الحد الائتماني المعتمد:* ${limit}
 ━━━━━━━━━━━━━━━━━━
-${debt > 0 ? `🔴 *الرصيد المستحق (المديونية):* ${debt.toLocaleString('en-US')} ج.م` : '🟢 *حالة الحساب:* خالص ولا توجد أي مديونية مستحقة'}
-🛍️ *إجمالي المشتريات:* ${purchases}
+${debt > 0 ? `*الرصيد المستحق (المديونية):* ${debt.toLocaleString('en-US')} ج.م` : '*حالة الحساب:* خالص ولا توجد أي مديونية مستحقة'}
+*إجمالي المشتريات:* ${purchases}
 ━━━━━━━━━━━━━━━━━━
-شكراً لتعاملكم الراقي معنا، ونسعد دائماً بخدمتكم! ✨
-${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
+شكراً لتعاملكم معنا.
+${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
 
         let phone = (customer.phone || '').replace(/\D/g, '');
         if (phone.startsWith('01') && phone.length === 11) phone = '2' + phone;
@@ -383,8 +383,8 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
             {/* الترويسة وأزرار التحكم والفلترة */}
             <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        <span>👥</span>
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        
                         <span>{t('clients')}</span>
                         <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
                             {filtered.length}
@@ -402,7 +402,7 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                         onClick={() => setFilterDebtOnly(!filterDebtOnly)}
                         className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5 ${filterDebtOnly ? 'bg-rose-600 text-white border-rose-600 shadow-xs' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200'}`}
                     >
-                        <span>🔴</span>
+                        
                         <span>{language === 'ar' ? 'المديونيات فقط' : 'Debt Only'}</span>
                     </button>
 
@@ -412,7 +412,7 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                         onClick={() => setFilterVipOnly(!filterVipOnly)}
                         className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5 ${filterVipOnly ? 'bg-amber-600 text-white border-amber-600 shadow-xs' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200'}`}
                     >
-                        <span>⭐</span>
+                        
                         <span>{language === 'ar' ? 'عملاء VIP' : 'VIP Only'}</span>
                     </button>
 
@@ -445,42 +445,42 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
 
             {/* بطاقات المؤشرات السريعة للعملاء */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-indigo-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                         <span>{language === 'ar' ? 'إجمالي العملاء' : 'Total Clients'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800/40">قاعدة البيانات</span>
                     </div>
-                    <div className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono tracking-tight">
+                    <div className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight">
                         {clientStats.total} <span className="text-xs font-bold text-slate-400">عميل</span>
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-amber-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                         <span>{language === 'ar' ? 'عملاء VIP' : 'VIP Clients'}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/40">مميز ⭐</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/40">مميز</span>
                     </div>
-                    <div className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono tracking-tight">
+                    <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 font-mono tracking-tight">
                         {clientStats.vipCount} <span className="text-xs font-bold text-slate-400">عميل</span>
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-rose-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                         <span>{language === 'ar' ? 'عليهم مديونيات' : 'Debtors'}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-bold border border-rose-200 dark:border-rose-800/40">آجل 🔴</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-bold border border-rose-200 dark:border-rose-800/40">آجل</span>
                     </div>
-                    <div className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono tracking-tight">
+                    <div className="text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono tracking-tight">
                         {clientStats.debtCount} <span className="text-xs font-bold text-slate-400">عميل</span>
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-red-600 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                         <span>{language === 'ar' ? 'إجمالي المديونية' : 'Total Debt'}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 font-bold border border-red-200 dark:border-red-800/40">مستحق 💰</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 font-bold border border-red-200 dark:border-red-800/40">مستحق</span>
                     </div>
-                    <div className="text-2xl font-black text-red-600 dark:text-red-400 font-mono tracking-tight">
+                    <div className="text-2xl font-bold text-red-600 dark:text-red-400 font-mono tracking-tight">
                         {formatNumber(clientStats.totalDebt)} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                     </div>
                 </div>
@@ -513,14 +513,14 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                                     >
                                         <td className="py-3 px-3 font-mono font-bold text-slate-500">#{c.id}</td>
                                         <td className="py-3 px-3 font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                                            <span>👤</span>
+                                            
                                             <span>{c.name}</span>
                                         </td>
                                         <td className="py-3 px-3 font-mono text-slate-600 dark:text-slate-300" dir="ltr">{c.phone}</td>
                                         <td className="py-3 px-3">
                                             {c.isVip ? (
                                                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">
-                                                    ⭐ VIP آجل
+                                                    عميل آجل معتمد
                                                 </span>
                                             ) : (
                                                 <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500">
@@ -531,11 +531,11 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                                         <td className="py-3 px-3 font-mono font-bold">
                                             {hasDebt ? (
                                                 <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-rose-500/20 text-rose-400 border border-rose-500/40">
-                                                    🔴 {formatNumber(c.balance || 0)} {t('egp')}
+                                                    <span className="inline-block w-2 h-2 rounded-full bg-rose-500 mx-1"></span>{formatNumber(c.balance || 0)} {t('egp')}
                                                 </span>
                                             ) : (
                                                 <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                                                    🟢 خالص (0)
+                                                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mx-1"></span>خالص (0)
                                                 </span>
                                             )}
                                         </td>
@@ -564,7 +564,7 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                                                         className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 dark:text-emerald-300 font-bold text-[11px] border border-emerald-300/40 transition-all cursor-pointer"
                                                         title="مراسلة واتساب"
                                                     >
-                                                        <span>💬 واتساب</span>
+                                                        <span>واتساب</span>
                                                     </button>
                                                 )}
                                                 <button
@@ -573,7 +573,7 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                                                     className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:hover:bg-sky-900 dark:text-sky-300 font-bold text-[11px] border border-sky-300/40 transition-all cursor-pointer"
                                                     title="فتح كشف الحساب والآجل"
                                                 >
-                                                    📑 {language === 'ar' ? 'كشف الحساب' : 'Ledger'}
+                                                    {language === 'ar' ? 'كشف الحساب' : 'Ledger'}
                                                 </button>
                                                 <button
                                                     type="button"
@@ -639,11 +639,11 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                                     {selectedCustomer.name.charAt(0)}
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                                         <span>{selectedCustomer.name}</span>
                                         {selectedCustomer.isVip && (
                                             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                                                ⭐ عميل VIP
+                                                عميل معتمد
                                             </span>
                                         )}
                                     </h3>
@@ -707,7 +707,7 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                                     onClick={() => setLedgerTab('ledger')}
                                     className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${ledgerTab === 'ledger' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'}`}
                                 >
-                                    <span>📑</span>
+                                    
                                     <span>{language === 'ar' ? `كشف الحساب والمديونية (${ledgerEntries.length})` : 'Statement'}</span>
                                 </button>
                                 <button
@@ -715,7 +715,7 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                                     onClick={() => setLedgerTab('invoices')}
                                     className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${ledgerTab === 'invoices' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'}`}
                                 >
-                                    <span>🧾</span>
+                                    
                                     <span>{language === 'ar' ? `كافة الفواتير (${customerInvoices.length})` : 'All Invoices'}</span>
                                 </button>
                             </div>
@@ -735,7 +735,7 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                                     }}
                                     className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
                                 >
-                                    <span>💵</span>
+                                    
                                     <span>{language === 'ar' ? 'تسجيل سداد دفعة' : 'Record Payment'}</span>
                                 </button>
 
@@ -755,7 +755,7 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                                     className="px-3 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900/80 border border-emerald-500/40 text-emerald-300 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
                                     title="مشاركة كشف الحساب عبر واتساب"
                                 >
-                                    <span>💬</span>
+                                    
                                     <span>واتساب</span>
                                 </button>
                             </div>
@@ -920,9 +920,9 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                             </label>
                             <div className="grid grid-cols-3 gap-2">
                                 {[
-                                    { id: 'cash', labelAr: 'نقداً (كاش)', icon: '💵' },
-                                    { id: 'card', labelAr: 'بطاقة بنكية', icon: '💳' },
-                                    { id: 'wallet', labelAr: 'محفظة', icon: '📱' },
+                                    { id: 'cash', labelAr: 'نقداً (كاش)', icon: null },
+                                    { id: 'card', labelAr: 'بطاقة بنكية', icon: null },
+                                    { id: 'wallet', labelAr: 'محفظة', icon: null },
                                 ].map(m => (
                                     <button
                                         key={m.id}
@@ -965,7 +965,7 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
 
                         <div className="flex gap-2 pt-2 border-t border-slate-800">
                             <Button type="submit" variant="success" className="flex-1 justify-center py-2.5 font-bold">
-                                {language === 'ar' ? '✓ تأكيد وحفظ السداد' : 'Confirm Payment'}
+                                {language === 'ar' ? 'تأكيد وحفظ السداد' : 'Confirm Payment'}
                             </Button>
                             <Button type="button" variant="secondary" onClick={() => setShowPaymentModal(false)} className="flex-1 justify-center">
                                 {t('cancel')}
@@ -1012,7 +1012,7 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                                 />
                                 <div>
                                     <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
-                                        <span>⭐</span>
+                                        
                                         <span>{language === 'ar' ? 'عميل VIP (تفعيل الشراء الآجل على الحساب)' : 'VIP Client (Enable Credit Purchases)'}</span>
                                     </span>
                                     <p className="text-[11px] text-slate-400 mt-0.5">

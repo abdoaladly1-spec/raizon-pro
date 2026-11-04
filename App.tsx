@@ -287,8 +287,8 @@ const MainContent = () => {
                                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 group relative cursor-pointer
                                     ${sidebarCollapsed ? 'justify-center' : '' }
                                     ${isActive 
-                                        ? 'bg-gradient-to-r from-purple-500/15 to-indigo-500/10 dark:from-purple-500/25 dark:to-indigo-500/15 text-purple-700 dark:text-purple-300 font-black shadow-xs border border-purple-500/30' 
-                                        : 'text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
+                                        ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-bold border border-purple-200 dark:border-purple-800/60 shadow-2xs' 
+                                        : 'text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
                                     }`}
                             >
                                 {(() => {
@@ -301,7 +301,7 @@ const MainContent = () => {
                                     ) : null;
                                 })()}
                                 {isActive && (
-                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-7 bg-gradient-to-b from-purple-500 to-indigo-500 rounded-l-full shadow-[0_0_10px_rgba(168,85,247,0.6)]"></div>
+                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-purple-600 dark:bg-purple-400 rounded-l-full"></div>
                                 )}
                             </button>
                         </div>
@@ -416,7 +416,7 @@ const MainContent = () => {
                                  <div className="max-h-64 overflow-y-auto space-y-2 text-xs custom-scrollbar">
                                      {totalNotifications === 0 ? (
                                          <div className="py-6 text-center text-slate-400">
-                                             ✓ كل شيء تمام، لا توجد تنبيهات عاجلة
+                                             لا توجد تنبيهات عاجلة حالياً
                                          </div>
                                      ) : (
                                          <>
@@ -796,7 +796,7 @@ const ActivationScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => 
                     if (currentUser) {
                         sessionStorage.setItem('admin_branch_selected_' + currentUser.id, loc.id);
                     }
-                    addToast(language === 'ar' ? `تم تحويل النظام لإدارة فرع «${loc.name}» ✓` : `Switched to branch: ${loc.name}`, 'success');
+                    addToast(language === 'ar' ? `تم تحويل النظام لإدارة فرع «${loc.name}»` : `Switched to branch: ${loc.name}`, 'success');
                 }}
             />
         </div>
@@ -827,7 +827,7 @@ const AdminBranchSwitcherModal = ({
                             <Building size={20} />
                         </span>
                         <div>
-                            <h3 className="font-black text-slate-900 dark:text-white text-base">تبديل الفرع المدار</h3>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-base">تبديل الفرع المدار</h3>
                             <p className="text-xs text-slate-500 dark:text-slate-400">اختر الفرع الذي ترغب في متابعة عملياته وفواتيره</p>
                         </div>
                     </div>
@@ -904,7 +904,7 @@ const AdminBranchSelectionScreen = ({
                         <span>نظام الفروع المتعددة</span>
                     </div>
 
-                    <h1 className="text-3xl md:text-4xl font-black text-white">
+                    <h1 className="text-3xl md:text-4xl font-bold text-white">
                         تحديد الفرع المُراد إدارته
                     </h1>
                     <p className="text-sm md:text-base text-slate-400 max-w-lg mx-auto">
@@ -917,7 +917,7 @@ const AdminBranchSelectionScreen = ({
                         <div
                             key={loc.id}
                             onClick={() => onSelectBranch(loc)}
-                            className="group p-5 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-slate-800 hover:border-purple-500/60 hover:shadow-[0_0_25px_rgba(168,85,247,0.25)] transition-all cursor-pointer flex flex-col justify-between space-y-4"
+                            className="group p-5 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-slate-800 hover:border-purple-500/60 hover:shadow-md hover:border-purple-500/40 transition-all cursor-pointer flex flex-col justify-between space-y-4"
                         >
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-3">
@@ -925,7 +925,7 @@ const AdminBranchSelectionScreen = ({
                                         <Building size={22} />
                                     </div>
                                     <div>
-                                        <h3 className="text-base md:text-lg font-black text-white group-hover:text-purple-300 transition-colors">
+                                        <h3 className="text-base md:text-lg font-bold text-white group-hover:text-purple-300 transition-colors">
                                             {loc.name}
                                         </h3>
                                         <p className="text-xs text-slate-400 mt-0.5">
@@ -934,7 +934,7 @@ const AdminBranchSelectionScreen = ({
                                     </div>
                                 </div>
                                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                                    نشط ✓
+                                    الفرع المدار الحالي
                                 </span>
                             </div>
 
@@ -1293,11 +1293,11 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                     const st = await bridge.getLicenseStatus();
                     setLicenseInfo(st);
                     if (st.isPerpetual) {
-                        setLiveRemainingText('ترخيص دائم طوال الحياة 👑');
+                        setLiveRemainingText('ترخيص دائم مدى الحياة');
                     } else if (st.expiresAt) {
                         const diff = Date.parse(st.expiresAt) - Date.now();
                         if (diff <= 0) {
-                            setLiveRemainingText('انتهت صلاحية الترخيص - يرجى التجديد ⚠️');
+                            setLiveRemainingText('انتهت صلاحية الترخيص - يرجى التجديد');
                         } else {
                             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                             const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
@@ -1485,7 +1485,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                   onClick={() => setShowUpdateModal(true)}
                   className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30 hover:bg-purple-500/25 transition-all cursor-pointer animate-pulse"
                 >
-                  <span>🚀 يتوفر تحديث جديد ({pendingUpdate.latestVersion}) — اضغط للتحديث</span>
+                  <span className="flex items-center gap-1.5"><RefreshCw size={12} className="shrink-0" /> يتوفر إصدار جديد ({pendingUpdate.latestVersion}) — اضغط للتحديث</span>
                 </button>
               </div>
             )}

@@ -753,7 +753,7 @@ export const InvoiceReceipt = ({
                         }}
                       >
                         <span className="inline-block">
-                          📑 {rtl ? 'الرصيد المتبقي على الحساب (المديونية):' : 'Outstanding Credit Balance:'}{' '}
+                          {rtl ? 'الرصيد المتبقي على الحساب (المديونية):' : 'Outstanding Credit Balance:'}{' '}
                           {Number(customerObj.balance).toLocaleString('en-US')} {rtl ? 'ج.م' : 'EGP'}
                         </span>
                       </div>
@@ -772,7 +772,7 @@ export const InvoiceReceipt = ({
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-bold underline text-black">
-                            📝 {rtl ? 'ملاحظات الفاتورة:' : 'Invoice Notes:'}
+                            {rtl ? 'ملاحظات الفاتورة:' : 'Invoice Notes:'}
                           </span>
                           {/* أزرار الإدارة للأدمن - تظهر على الشاشة فقط وتختفي عند أمر الطباعة */}
                           {currentUser?.role === 'admin' && !demo && (

@@ -649,7 +649,7 @@ export const StaffPage = () => {
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-5 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-purple-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-5 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
                     <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
                         <Users size={24} />
                     </div>
@@ -658,24 +658,24 @@ export const StaffPage = () => {
                             <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('total_staff')}</p>
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 font-bold border border-purple-200 dark:border-purple-800/40">فريق العمل</span>
                         </div>
-                        <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono tracking-tight mt-1">{totalStaff}</h3>
+                        <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight mt-1">{totalStaff}</h3>
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-5 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-emerald-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-5 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
                     <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
                         <Activity size={24} />
                     </div>
                     <div className="flex-1">
                         <div className="flex items-center justify-between">
                             <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('active_staff')}</p>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">نشط الآن 🟢</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">نشط</span>
                         </div>
-                        <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight mt-1">{activeStaff}</h3>
+                        <h3 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight mt-1">{activeStaff}</h3>
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-5 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-blue-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-5 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4">
                     <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shrink-0 shadow-sm">
                         <Calendar size={24} />
                     </div>
@@ -684,7 +684,7 @@ export const StaffPage = () => {
                             <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('today_reservations')}</p>
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800/40">اليوم</span>
                         </div>
-                        <h3 className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono tracking-tight mt-1">{todayReservations}</h3>
+                        <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono tracking-tight mt-1">{todayReservations}</h3>
                     </div>
                 </div>
             </div>
@@ -709,7 +709,7 @@ export const StaffPage = () => {
                                 <p className="text-xs text-slate-400 mt-1">{s.phone}</p>
                                 <div className="mt-2 flex flex-wrap gap-1.5 items-center">
                                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                                        💰 {s.commissionType === 'fixed' ? `${s.commissionValue || 0} ج.م / عميل` : `${s.commissionValue || 0}% على الخدمات`}
+                                        {s.commissionType === 'fixed' ? `${s.commissionValue || 0} ج.م / عميل` : `${s.commissionValue || 0}% على الخدمات`}
                                     </span>
                                 </div>
                             </div>

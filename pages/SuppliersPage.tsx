@@ -44,7 +44,7 @@ export const SuppliersPage = () => {
       {/* الترويسة وأزرار التحكم */}
       <div className="flex justify-between items-center flex-wrap gap-4 bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-sm backdrop-blur-sm">
         <div>
-          <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <span className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
               <Truck size={20} />
             </span>
@@ -81,28 +81,28 @@ export const SuppliersPage = () => {
 
       {/* بطاقات المؤشرات الإحصائية للموردين */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-blue-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
             <span>{language === 'ar' ? 'إجمالي الموردين' : 'Total Suppliers'}</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800/40">الشركات</span>
           </div>
-          <h4 className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono tracking-tight">{supplierStats.total} <span className="text-xs font-bold text-slate-400">مورد</span></h4>
+          <h4 className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight">{supplierStats.total} <span className="text-xs font-bold text-slate-400">مورد</span></h4>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-emerald-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
             <span>{language === 'ar' ? 'موردين نشطين' : 'Active Suppliers'}</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">نشط 🟢</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">نشط</span>
           </div>
-          <h4 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">{supplierStats.active} <span className="text-xs font-bold text-slate-400">مورد</span></h4>
+          <h4 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">{supplierStats.active} <span className="text-xs font-bold text-slate-400">مورد</span></h4>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-purple-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
             <span>{language === 'ar' ? 'أوامر التوريد والشراء' : 'Purchase Orders'}</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 font-bold border border-purple-200 dark:border-purple-800/40">أوامر</span>
           </div>
-          <h4 className="text-2xl font-black text-purple-600 dark:text-purple-400 font-mono tracking-tight">{supplierStats.ordersCount} <span className="text-xs font-bold text-slate-400">أمر شراء</span></h4>
+          <h4 className="text-2xl font-bold text-purple-600 dark:text-purple-400 font-mono tracking-tight">{supplierStats.ordersCount} <span className="text-xs font-bold text-slate-400">أمر شراء</span></h4>
         </div>
       </div>
 
@@ -116,7 +116,7 @@ export const SuppliersPage = () => {
             return (
               <div 
                 key={s.id} 
-                className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-5 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-blue-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all space-y-3"
+                className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-5 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all space-y-3"
               >
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
@@ -138,7 +138,7 @@ export const SuppliersPage = () => {
                 </div>
 
                 <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1.5 pt-1">
-                  {s.contact && <p className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">👤 {s.contact}</p>}
+                  {s.contact && <p className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">{s.contact}</p>}
                   {s.phone && (
                     <div className="flex items-center justify-between">
                       <span className="font-mono font-bold text-slate-700 dark:text-slate-200" dir="ltr">{s.phone}</span>
@@ -154,22 +154,22 @@ export const SuppliersPage = () => {
                           className="px-2 py-0.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 dark:text-emerald-300 font-bold text-[10px] border border-emerald-300/40 transition-all cursor-pointer"
                           title="مراسلة واتساب"
                         >
-                          💬 واتساب
+                          واتساب
                         </button>
                         <a
                           href={`tel:${s.phone}`}
                           className="px-2 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 font-bold text-[10px] border border-blue-300/40 transition-all"
                           title="اتصال هاتف"
                         >
-                          📞 اتصال
+                          اتصال
                         </a>
                       </div>
                     </div>
                   )}
-                  {s.address && <p className="truncate text-slate-400 text-[11px]">📍 {s.address}</p>}
+                  {s.address && <p className="truncate text-slate-400 text-[11px]">{s.address}</p>}
                   {s.paymentTerms && (
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-700/60">
-                      💳 {t('payment_terms')}: <strong className="text-slate-700 dark:text-slate-200">{s.paymentTerms}</strong>
+                      {t('payment_terms')}: <strong className="text-slate-700 dark:text-slate-200">{s.paymentTerms}</strong>
                     </p>
                   )}
                 </div>
