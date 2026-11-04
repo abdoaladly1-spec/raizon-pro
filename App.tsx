@@ -1185,7 +1185,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
     }, []);
   
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 relative overflow-hidden transition-colors duration-500">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 relative overflow-hidden transition-colors duration-500 p-4">
         {/* Background Effects */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-100/40 via-slate-50 to-slate-50 dark:from-purple-900/40 dark:via-slate-900 dark:to-slate-900 z-0"></div>
         <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-purple-300/20 dark:bg-purple-600/20 rounded-full blur-[100px] animate-pulse"></div>
@@ -1399,15 +1399,15 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
           </div>
         </div>
 
-        {/* الربع الأخير بالأسفل بالمنتصف: شارة الإصدار الحالي */}
-        <div className="relative z-10 mt-6 flex flex-col items-center justify-center gap-1.5 select-none">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/60 dark:bg-slate-800/80 border border-slate-200/20 dark:border-white/10 backdrop-blur-md shadow-sm">
+        {/* الربع الأخير بالأسفل بالمنتصف: شارة الإصدار الحالي بتصميم وخط متصل أنيق */}
+        <div className="absolute bottom-6 inset-x-0 flex flex-col items-center justify-center gap-1.5 z-20 pointer-events-auto select-none" dir="rtl">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/80 dark:bg-slate-800/90 border border-slate-200/20 dark:border-white/10 backdrop-blur-md shadow-lg">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs font-mono font-bold text-slate-300">
-              الإصدار {appVersion}
+            <span className="text-xs font-bold text-slate-200 font-sans">
+              الإصدار <span className="font-mono text-purple-300 font-bold">{appVersion}</span>
             </span>
           </div>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium tracking-wide">
             جميع الحقوق محفوظة © RaiZon Pro
           </p>
         </div>
