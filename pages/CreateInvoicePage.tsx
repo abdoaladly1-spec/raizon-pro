@@ -1179,87 +1179,125 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
         
         <div className="lg:col-span-1 h-full">
             <Card className="h-full flex flex-col border-2 border-primary-500/20">
-                <div className="flex justify-between items-center mb-4 border-b pb-4">
-                    <h3 className="font-bold text-lg">{t('invoice')} #{state.invoices.length + 1}</h3>
+                <div className="flex justify-between items-center mb-3 border-b border-slate-200 dark:border-slate-700 pb-3">
+                    <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <span>{t('invoice')} #{state.invoices.length + 1}</span>
+                        </h3>
+                        {selectedItems.length > 0 && (
+                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-800 font-mono">
+                                {selectedItems.reduce((acc: number, cur: any) => acc + (cur.qty || 1), 0)} {language === 'ar' ? 'عنصر' : 'items'}
+                            </span>
+                        )}
+                    </div>
                     <div className="flex items-center gap-2">
                          {selectedItems.length > 0 && (
-                             <button onClick={clearInvoice} className="text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-2 py-1 rounded transition-colors">{t('clear')}</button>
+                             <button 
+                                 type="button" 
+                                 onClick={clearInvoice} 
+                                 className="text-xs text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 px-2 py-1 rounded-lg transition-colors font-bold flex items-center gap-1 cursor-pointer"
+                             >
+                                 <Trash2 size={12} />
+                                 <span>{t('clear')}</span>
+                             </button>
                          )}
-                         <span className="text-sm text-slate-500">{formatDate(new Date())}</span>
+                         <span className="text-xs text-slate-400 font-mono">{formatDate(new Date())}</span>
                     </div>
                 </div>
-                <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-2">
-                    {selectedItems.length === 0 && (
-                        <div className="text-center py-10 text-slate-400 flex flex-col items-center gap-2">
-                            <Package size={48} className="opacity-20"/>
-                            <p>{t('no_items')}</p>
+                <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-1.5 min-h-[180px]">
+                    {selectedItems.length === 0 ? (
+                        <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-center py-10 text-slate-400">
+                            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800/80 flex items-center justify-center text-slate-400 mb-2">
+                                <Package size={26} className="opacity-50" />
+                            </div>
+                            <p className="font-bold text-sm text-slate-600 dark:text-slate-300">{t('no_items')}</p>
+                            <p className="text-xs text-slate-400 mt-1 max-w-[200px]">
+                                {language === 'ar' ? 'اختر العناصر من القائمة لإضافتها إلى الفاتورة' : 'Select items to add to this invoice'}
+                            </p>
                         </div>
-                    )}
-                    {selectedItems.map((item: any) => {
-                        const cartPalettes = [
-                            { bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-l-4 border-emerald-500', text: 'text-emerald-700 dark:text-emerald-300', tag: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-800/50 dark:text-emerald-300', qty: 'bg-emerald-500 text-white', ring: 'ring-emerald-200 dark:ring-emerald-700' },
-                            { bg: 'bg-rose-50 dark:bg-rose-900/20', border: 'border-l-4 border-rose-500', text: 'text-rose-700 dark:text-rose-300', tag: 'bg-rose-100 text-rose-700 dark:bg-rose-800/50 dark:text-rose-300', qty: 'bg-rose-500 text-white', ring: 'ring-rose-200 dark:ring-rose-700' },
-                            { bg: 'bg-sky-50 dark:bg-sky-900/20', border: 'border-l-4 border-sky-500', text: 'text-sky-700 dark:text-sky-300', tag: 'bg-sky-100 text-sky-700 dark:bg-sky-800/50 dark:text-sky-300', qty: 'bg-sky-500 text-white', ring: 'ring-sky-200 dark:ring-sky-700' },
-                            { bg: 'bg-violet-50 dark:bg-violet-900/20', border: 'border-l-4 border-violet-500', text: 'text-violet-700 dark:text-violet-300', tag: 'bg-violet-100 text-violet-700 dark:bg-violet-800/50 dark:text-violet-300', qty: 'bg-violet-500 text-white', ring: 'ring-violet-200 dark:ring-violet-700' },
-                            { bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-l-4 border-amber-500', text: 'text-amber-700 dark:text-amber-300', tag: 'bg-amber-100 text-amber-700 dark:bg-amber-800/50 dark:text-amber-300', qty: 'bg-amber-500 text-white', ring: 'ring-amber-200 dark:ring-amber-700' },
-                            { bg: 'bg-cyan-50 dark:bg-cyan-900/20', border: 'border-l-4 border-cyan-500', text: 'text-cyan-700 dark:text-cyan-300', tag: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-800/50 dark:text-cyan-300', qty: 'bg-cyan-500 text-white', ring: 'ring-cyan-200 dark:ring-cyan-700' },
-                            { bg: 'bg-lime-50 dark:bg-lime-900/20', border: 'border-l-4 border-lime-500', text: 'text-lime-700 dark:text-lime-300', tag: 'bg-lime-100 text-lime-700 dark:bg-lime-800/50 dark:text-lime-300', qty: 'bg-lime-600 text-white', ring: 'ring-lime-200 dark:ring-lime-700' },
-                            { bg: 'bg-fuchsia-50 dark:bg-fuchsia-900/20', border: 'border-l-4 border-fuchsia-500', text: 'text-fuchsia-700 dark:text-fuchsia-300', tag: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-800/50 dark:text-fuchsia-300', qty: 'bg-fuchsia-500 text-white', ring: 'ring-fuchsia-200 dark:ring-fuchsia-700' },
-                            { bg: 'bg-indigo-50 dark:bg-indigo-900/20', border: 'border-l-4 border-indigo-500', text: 'text-indigo-700 dark:text-indigo-300', tag: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-800/50 dark:text-indigo-300', qty: 'bg-indigo-500 text-white', ring: 'ring-indigo-200 dark:ring-indigo-700' },
-                            { bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-l-4 border-yellow-500', text: 'text-yellow-700 dark:text-yellow-300', tag: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-800/50 dark:text-yellow-300', qty: 'bg-yellow-500 text-white', ring: 'ring-yellow-200 dark:ring-yellow-700' },
-                        ];
-                        let hash = 0;
-                        for (let i = 0; i < item.item.id.length; i++) hash = (hash * 31 + item.item.id.charCodeAt(i)) >>> 0;
-                        const cp = cartPalettes[hash % cartPalettes.length];
-                        const isService = item.item.type === 'service';
-                        return (
-                            <div key={item.item.id} className={`relative ${cp.bg} ${cp.border} p-3 rounded-xl group animate-fade-in-right shadow-sm hover:shadow-md transition-all duration-200`}>
-                                <div className="flex items-start justify-between gap-2 mb-2">
-                                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                                        <span className={`w-8 h-8 rounded-lg flex items-center justify-center ring-1 ${cp.ring} ${cp.tag} flex-shrink-0`}>
-                                            {isService ? <Scissors size={14} /> : <Package size={14} />}
-                                        </span>
-                                        <div className="min-w-0 flex-1">
-                                            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{language === 'ar' ? item.item.nameAr : item.item.nameEn}</h4>
-                                            <div className={`text-[10px] font-bold uppercase tracking-wide ${cp.text}`}>
-                                                {isService ? t('service') : t('product')} • {formatNumber(item.item.price)} {t('egp')}
+                    ) : (
+                        selectedItems.map((item: any) => {
+                            const isService = item.item.type === 'service';
+                            return (
+                                <div 
+                                    key={item.item.id} 
+                                    className={`relative p-2.5 rounded-xl border bg-white dark:bg-slate-800/95 transition-all duration-150 shadow-2xs hover:shadow-xs ${
+                                        isService 
+                                            ? 'border-slate-200 dark:border-slate-700/80 border-r-4 border-r-purple-500' 
+                                            : 'border-slate-200 dark:border-slate-700/80 border-r-4 border-r-sky-500'
+                                    }`}
+                                >
+                                    {/* السطر العلوي: الأيقونة + اسم العنصر + زر الحذف */}
+                                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                            <span className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${
+                                                isService 
+                                                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' 
+                                                    : 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300'
+                                            }`}>
+                                                {isService ? <Scissors size={12} /> : <Package size={12} />}
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                <h4 className="font-bold text-slate-900 dark:text-slate-100 text-[13px] truncate leading-tight">
+                                                    {language === 'ar' ? item.item.nameAr : item.item.nameEn}
+                                                </h4>
                                             </div>
                                         </div>
-                                    </div>
-                                    <button onClick={() => removeFromInvoice(item.item.id)} className="text-slate-400 hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-lg transition-colors flex-shrink-0"><Trash2 size={16}/></button>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-1.5">
-                                        <button
-                                            type="button"
-                                            onClick={() => updateItemQuantity(item.item.id, -1)}
-                                            className="w-6 h-6 rounded-md bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-white flex items-center justify-center font-bold text-sm shadow-sm border border-slate-200 dark:border-slate-600 transition-colors"
-                                            title="تقليل الكمية"
+                                        <button 
+                                            type="button" 
+                                            onClick={() => removeFromInvoice(item.item.id)} 
+                                            className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 p-1 rounded-md transition-colors flex-shrink-0 cursor-pointer"
+                                            title={t('delete')}
                                         >
-                                            -
+                                            <Trash2 size={14} />
                                         </button>
-                                        <div className={`w-7 h-7 rounded-md flex items-center justify-center font-bold text-xs shadow-sm ${cp.qty}`}>
-                                            {formatNumber(item.qty)}
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => updateItemQuantity(item.item.id, 1)}
-                                            className="w-6 h-6 rounded-md bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-white flex items-center justify-center font-bold text-sm shadow-sm border border-slate-200 dark:border-slate-600 transition-colors"
-                                            title="زيادة الكمية"
-                                        >
-                                            +
-                                        </button>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mr-1">
-                                            × {formatNumber(item.item.price)} {t('egp')}
-                                        </div>
                                     </div>
-                                    <div className={`text-base font-black font-mono ${cp.text}`}>
-                                        {formatNumber(item.qty * item.item.price)}
+
+                                    {/* السطر السفلي: أزرار التحكم في الكمية + السعر الإجمالي */}
+                                    <div className="flex items-center justify-between pt-1">
+                                        <div className="flex items-center gap-1.5">
+                                            {/* Stepper متناسق وأنيق */}
+                                            <div className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-slate-700/60 p-0.5 border border-slate-200 dark:border-slate-600">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateItemQuantity(item.item.id, -1)}
+                                                    className="w-5 h-5 rounded flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-600 font-bold text-xs transition-colors cursor-pointer active:scale-95"
+                                                    title={language === 'ar' ? 'تقليل الكمية' : 'Decrease'}
+                                                >
+                                                    -
+                                                </button>
+                                                <span className="min-w-[24px] px-1 text-center font-bold font-mono text-xs text-slate-900 dark:text-slate-100 tabular-nums">
+                                                    {item.qty}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateItemQuantity(item.item.id, 1)}
+                                                    className="w-5 h-5 rounded flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-600 font-bold text-xs transition-colors cursor-pointer active:scale-95"
+                                                    title={language === 'ar' ? 'زيادة الكمية' : 'Increase'}
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+
+                                            <span className="text-[11px] text-slate-400 font-medium">
+                                                × <span className="font-mono">{formatNumber(item.item.price)}</span>
+                                            </span>
+                                        </div>
+
+                                        {/* الإجمالي للعنصر */}
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-sm font-black text-slate-900 dark:text-slate-100 font-mono">
+                                                {formatNumber(item.qty * item.item.price)}
+                                            </span>
+                                            <span className="text-[10px] font-semibold text-slate-400">
+                                                {t('egp')}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })
+                    )}
                 </div>
                 <div className="border-t pt-4">
                     <div className="flex justify-between text-xl font-bold mb-4">
