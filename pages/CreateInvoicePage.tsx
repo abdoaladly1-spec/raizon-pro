@@ -115,30 +115,59 @@ export const CreateInvoice = ({ onClose }: any) => {
   const [isQuickAddingCustomer, setIsQuickAddingCustomer] = useState(false);
   const [quickCustomerForm, setQuickCustomerForm] = useState({ name: '', phone: '' });
 
-  const handleQuickAddCustomer = (e: any) => {
-    e.preventDefault();
-    if (!quickCustomerForm.name.trim() || !quickCustomerForm.phone.trim()) return;
-    const phoneRegex = /^01\d{9}$/;
-    if (!phoneRegex.test(quickCustomerForm.phone)) {
-      addToast(t('invalid_phone_format'), 'error');
+  const handleQuickAddCustomer = (e?: any) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const nameTrimmed = (quickCustomerForm.name || '').trim();
+    const rawPhone = (quickCustomerForm.phone || '').trim();
+
+    if (!nameTrimmed) {
+      addToast(language === 'ar' ? 'يرجى إدخال اسم العميل' : 'Please enter customer name', 'error');
       return;
     }
-    const newCust = {
-      id: Date.now(),
-      name: quickCustomerForm.name.trim(),
-      phone: quickCustomerForm.phone.trim(),
-      tier: 'Bronze',
-      loyaltyPoints: 0,
-      totalSpent: 0,
-      lastVisit: new Date().toISOString()
-    };
-    addCustomer(newCust as any);
-    setPhone(newCust.phone);
-    setCustomerName(newCust.name);
-    setCustomerIdInput(String(newCust.id));
-    setIsQuickAddingCustomer(false);
-    setQuickCustomerForm({ name: '', phone: '' });
-    addToast(t('customer_added') || 'تمت إضافة العميل', 'success');
+    if (!rawPhone) {
+      addToast(language === 'ar' ? 'يرجى إدخال رقم الهاتف' : 'Please enter phone number', 'error');
+      return;
+    }
+
+    // Convert Arabic-Indic numerals to standard English digits and strip extra characters
+    let cleanPhone = rawPhone
+      .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
+      .replace(/[^\d]/g, '');
+
+    // If starts with 201 (Egypt country code), strip leading 2
+    if (cleanPhone.startsWith('201') && cleanPhone.length === 12) {
+      cleanPhone = cleanPhone.slice(1);
+    }
+
+    if (cleanPhone.length < 7) {
+      addToast(language === 'ar' ? 'رقم الهاتف قصير جداً، يرجى كتابة رقم صحيح' : 'Invalid phone number', 'error');
+      return;
+    }
+
+    try {
+      const generatedId = addCustomer({
+        name: nameTrimmed,
+        phone: cleanPhone,
+        creditLimit: 2000,
+        balance: 0,
+        notes: ''
+      });
+
+      setPhone(cleanPhone);
+      setCustomerName(nameTrimmed);
+      if (generatedId) {
+        setCustomerIdInput(String(generatedId));
+      }
+
+      setIsQuickAddingCustomer(false);
+      setQuickCustomerForm({ name: '', phone: '' });
+      addToast(language === 'ar' ? `تمت إضافة العميل «${nameTrimmed}» واختياره بنجاح ✓` : 'Customer added successfully', 'success');
+    } catch (err: any) {
+      addToast(err?.message || 'تعذر إضافة العميل', 'error');
+    }
   };
 
   // Quick Add Service State
@@ -1481,10 +1510,20 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
                 />
               </div>
               <div className="flex gap-2 pt-2">
-                <Button type="submit" variant="primary" className="flex-1 justify-center py-2 text-sm">
+                <Button 
+                  type="submit" 
+                  onClick={handleQuickAddCustomer} 
+                  variant="primary" 
+                  className="flex-1 justify-center py-2 text-sm font-bold active:scale-95 cursor-pointer shadow-sm"
+                >
                   {language === 'ar' ? 'حفظ واختيار' : 'Save & Select'}
                 </Button>
-                <Button type="button" variant="secondary" onClick={() => setIsQuickAddingCustomer(false)} className="py-2 text-sm">
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  onClick={() => setIsQuickAddingCustomer(false)} 
+                  className="py-2 text-sm cursor-pointer"
+                >
                   {t('cancel')}
                 </Button>
               </div>
