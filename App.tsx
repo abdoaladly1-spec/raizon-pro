@@ -975,17 +975,6 @@ const AdminBranchSelectionScreen = ({
 const AppContent = () => {
   const isPatcherMode = typeof window !== 'undefined' && window.location.search.includes('mode=patcher');
 
-  // عند تشغيل الباتشر المباشر يتم تجاوز شاشة الإنترو فوراً وفتح الباتشر مباشرة بدون أي تأخير
-  if (isPatcherMode) {
-    return (
-      <PatcherModal
-        isOpen={true}
-        onClose={() => {}}
-        onActivationSuccess={() => {}}
-      />
-    );
-  }
-
   const { currentUser, state, updateSettings, addToast, language, logout } = useApp();
   const [introFinished, setIntroFinished] = useState(false);
   const [adminBranchSelected, setAdminBranchSelected] = useState<string | null>(() => {
@@ -1006,6 +995,16 @@ const AppContent = () => {
       }
     }
   }, [currentUser?.id, currentUser?.locationId, state.locations]);
+
+  // مزامنة وتحديد فرع الأدمن المختار دون كسر قواعد خطافات ريأكت (React Hooks Rules)
+  useEffect(() => {
+    if (currentUser?.id && !sessionStorage.getItem('admin_branch_selected_' + currentUser.id)) {
+      const activeId = state.settings.currentLocationId || (state.locations[0]?.id || '1');
+      sessionStorage.setItem('admin_branch_selected_' + currentUser.id, activeId);
+      setAdminBranchSelected(activeId);
+    }
+  }, [currentUser?.id, state.settings.currentLocationId, state.locations]);
+
   const [isIdle, setIsIdle] = useState(false);
   const [isActivated, setIsActivated] = useState(null as boolean | null);
   const [showPatcher, setShowPatcher] = useState(false);
@@ -1076,6 +1075,17 @@ const AppContent = () => {
     };
   }, [state.settings.enableScreenSaver]);
 
+  // يتم استدعاء جميع الـ Hooks أعلاه بشكل ثابت ودائم لتجنب خطأ الشاشة البيضاء بعد تسجيل الدخول
+  if (isPatcherMode) {
+    return (
+      <PatcherModal
+        isOpen={true}
+        onClose={() => {}}
+        onActivationSuccess={() => {}}
+      />
+    );
+  }
+
   if (isActivated === false) {
       return (
         <>
@@ -1122,15 +1132,6 @@ const AppContent = () => {
   if (currentUser.mustChangePassword) {
     return <ForcePasswordChange />;
   }
-
-  // لا يتم حجب الشاشة أو إعادة تسجيل الدخول عند تحديث الفروع؛ تتحدث البيانات مباشرة في الصفحة بسلاسة
-  useEffect(() => {
-    if (currentUser?.id && !sessionStorage.getItem('admin_branch_selected_' + currentUser.id)) {
-      const activeId = state.settings.currentLocationId || (state.locations[0]?.id || '1');
-      sessionStorage.setItem('admin_branch_selected_' + currentUser.id, activeId);
-      setAdminBranchSelected(activeId);
-    }
-  }, [currentUser?.id, state.settings.currentLocationId, state.locations]);
 
   return (
     <ErrorBoundary>
@@ -1749,10 +1750,12 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
 /* Tailwind Custom Animations - Add to global CSS ideally but keeping here for single-file portability */
 const App = () => {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <ErrorBoundary onReset={() => window.location.reload()}>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </ErrorBoundary>
   );
-}
+};
 
 export default App;
