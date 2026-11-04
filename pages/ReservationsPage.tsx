@@ -50,6 +50,19 @@ const ArabicCalendarPicker = ({
     const today = useMemo(() => new Date(), []);
     const todayIso = useMemo(() => localIsoToday(), []);
 
+    const resStats = useMemo(() => {
+        const list = state.reservations || [];
+        const todayCount = list.filter(r => r.date === todayIso).length;
+        const confirmedCount = list.filter(r => r.status === 'confirmed').length;
+        const completedCount = list.filter(r => r.status === 'completed').length;
+        return {
+            total: list.length,
+            today: todayCount,
+            confirmed: confirmedCount,
+            completed: completedCount
+        };
+    }, [state.reservations, todayIso]);
+
     // تحليل التاريخ المختار
     const parsed = useMemo(() => {
         if (!value) return new Date();
@@ -450,6 +463,19 @@ export const ReservationsPage = () => {
 
     const todayIso = useMemo(() => localIsoToday(), []);
 
+    const resStats = useMemo(() => {
+        const list = state.reservations || [];
+        const todayCount = list.filter(r => r.date === todayIso).length;
+        const confirmedCount = list.filter(r => r.status === 'confirmed').length;
+        const completedCount = list.filter(r => r.status === 'completed').length;
+        return {
+            total: list.length,
+            today: todayCount,
+            confirmed: confirmedCount,
+            completed: completedCount
+        };
+    }, [state.reservations, todayIso]);
+
     // حالة حقول الحجز الجديد
     const [name, setName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
@@ -718,6 +744,49 @@ export const ReservationsPage = () => {
                 showSearch={false}
                 staffList={state.staff}
             />
+
+                        {/* بطاقات إحصائيات الحجوزات */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-indigo-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+                        <span>{rtl ? 'إجمالي الحجوزات' : 'Total Bookings'}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800/40">الكل</span>
+                    </div>
+                    <div className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono tracking-tight">
+                        {resStats.total} <span className="text-xs font-bold text-slate-400">{rtl ? 'موعد' : 'res'}</span>
+                    </div>
+                </div>
+
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-amber-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+                        <span>{rtl ? 'حجوزات اليوم' : 'Today'}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/40">اليوم 📅</span>
+                    </div>
+                    <div className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono tracking-tight">
+                        {resStats.today} <span className="text-xs font-bold text-slate-400">{rtl ? 'موعد' : 'res'}</span>
+                    </div>
+                </div>
+
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-emerald-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+                        <span>{rtl ? 'مؤكدة' : 'Confirmed'}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">جاهز 🟢</span>
+                    </div>
+                    <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
+                        {resStats.confirmed} <span className="text-xs font-bold text-slate-400">{rtl ? 'موعد' : 'res'}</span>
+                    </div>
+                </div>
+
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-blue-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+                        <span>{rtl ? 'مكتملة' : 'Completed'}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800/40">تم بنجاح ✨</span>
+                    </div>
+                    <div className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono tracking-tight">
+                        {resStats.completed} <span className="text-xs font-bold text-slate-400">{rtl ? 'موعد' : 'res'}</span>
+                    </div>
+                </div>
+            </div>
 
             {/* جدول الحجوزات */}
             <Card id="reservations-table" className="overflow-hidden border border-slate-200 dark:border-slate-700/80 shadow-sm rounded-2xl">

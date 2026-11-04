@@ -293,18 +293,33 @@ export const ReturnsPage = () => {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold">{t('returns_title')}</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('returns_subtitle')}</p>
+                    <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
+                        <span className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-500 text-white flex items-center justify-center shadow-md">
+                            <RefreshCw size={20} />
+                        </span>
+                        <span>{t('returns_title')}</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">{t('returns_subtitle')}</p>
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                    <Card className="px-4 py-2 text-sm">
-                        <div className="text-slate-500 dark:text-slate-400">{t('returns_today_total')}</div>
-                        <div className="font-bold text-red-600 dark:text-red-400">{formatNumber(todayReturnsTotal)} {t('egp')}</div>
-                    </Card>
-                    <Card className="px-4 py-2 text-sm">
-                        <div className="text-slate-500 dark:text-slate-400">{t('returns_today_count')}</div>
-                        <div className="font-bold text-amber-600 dark:text-amber-400">{todayReturnsAll.length}</div>
-                    </Card>
+                <div className="grid grid-cols-2 gap-3 sm:w-auto w-full">
+                    <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-rose-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+                            <span>{t('returns_today_total')}</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-black border border-rose-200 dark:border-rose-800/40">اليوم</span>
+                        </div>
+                        <div className="text-xl font-black text-rose-600 dark:text-rose-400 font-mono tracking-tight">
+                            {formatNumber(todayReturnsTotal)} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                        </div>
+                    </div>
+                    <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-amber-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+                            <span>{t('returns_today_count')}</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-black border border-amber-200 dark:border-amber-800/40">عمليات</span>
+                        </div>
+                        <div className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono tracking-tight">
+                            {todayReturnsAll.length} <span className="text-xs font-bold text-slate-400">مرتجع</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 

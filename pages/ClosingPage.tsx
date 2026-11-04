@@ -401,12 +401,12 @@ export const ClosingPage = () => {
             {/* =========================================================================
                 1. بطاقة الرصيد الافتتاحي وحركة الدرج المباشرة (حل طلب المستخدم الأساسي)
                ========================================================================= */}
-            <Card className="border border-primary-500/30 bg-slate-900/80 backdrop-blur-md shadow-md p-5">
+            <Card className="border border-primary-500/30 bg-white dark:bg-slate-800/90 backdrop-blur-md shadow-sm hover:shadow-md transition-all p-5">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="text-lg">🏦</span>
-                            <h3 className="text-sm font-black text-slate-100">
+                            <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
                                 {language === 'ar' ? 'الرصيد الافتتاحي لدرج النقدية' : 'Cash Drawer Opening Balance'}
                             </h3>
                             {yesterdayRemainingInDrawer !== null && !hasManualOverrideToday && (
@@ -465,7 +465,7 @@ export const ClosingPage = () => {
                         ) : (
                             <div className="flex items-center gap-3">
                                 <div className="text-right">
-                                    <div className="text-xl font-black text-slate-100 font-mono">
+                                    <div className="text-xl font-black text-slate-800 dark:text-slate-100 font-mono">
                                         {baseOpeningBalance.toLocaleString('en-US')} <span className="text-xs font-normal text-slate-400">{t('egp')}</span>
                                     </div>
                                     {(deposits > 0 || withdrawals > 0) && (
@@ -623,7 +623,7 @@ export const ClosingPage = () => {
                     <span className="text-xs font-bold text-slate-400 block mb-1">
                         {language === 'ar' ? 'الافتتاحي + الإيداعات' : 'Opening & Float'}
                     </span>
-                    <p className="text-xl font-black text-slate-100 font-mono">
+                    <p className="text-xl font-black text-slate-800 dark:text-slate-100 font-mono">
                         {(baseOpeningBalance + deposits).toLocaleString('en-US')}
                     </p>
                     <p className="text-[11px] text-slate-500 mt-1">
@@ -673,7 +673,7 @@ export const ClosingPage = () => {
                ========================================================================= */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 {/* العمود الأيمن: الخزنة المتوقعة والجرد الفعلي */}
-                <Card className="lg:col-span-7 border border-primary-500/40 bg-slate-900/80 p-6 space-y-6">
+                <Card className="lg:col-span-7 border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/90 p-6 space-y-6 shadow-sm">
                     {/* الخزنة المتوقعة */}
                     <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800/90 to-slate-900 border border-primary-500/30 flex items-center justify-between">
                         <div>
@@ -694,7 +694,7 @@ export const ClosingPage = () => {
                     {/* إدخال النقد الفعلي وعداد الفئات */}
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <label className="text-sm font-black text-slate-100 flex items-center gap-2">
+                            <label className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
                                 <span>💵</span>
                                 <span>{language === 'ar' ? 'المبلغ الفعلي الموجود بالدرج الآن:' : 'Actual Cash Counted:'}</span>
                             </label>
@@ -776,9 +776,9 @@ export const ClosingPage = () => {
                 </Card>
 
                 {/* العمود الأيسر: توزيع النقدية (المتبقي لغداً + المورّد للخزينة) وزر الإقفال */}
-                <Card className="lg:col-span-5 border border-slate-700/80 bg-slate-900/80 p-6 space-y-5">
+                <Card className="lg:col-span-5 border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/90 p-6 space-y-5 shadow-sm">
                     <div>
-                        <h3 className="text-sm font-black text-slate-100 mb-1 flex items-center gap-2">
+                        <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 mb-1 flex items-center gap-2">
                             <span>📦</span>
                             <span>{language === 'ar' ? 'توزيع النقدية للوردية القادمة' : 'Next Shift Cash Allocation'}</span>
                         </h3>
