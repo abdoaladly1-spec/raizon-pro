@@ -1097,9 +1097,16 @@ export const CreateInvoice = ({ onClose }: any) => {
                          onChange={(e) => setSelectedStaffId(e.target.value)}
                      >
                          <option value="">{t('select_barber')}</option>
-                         {state.staff.filter(s => s.role === 'Barber' && s.active).map(s => (
-                             <option key={s.id} value={s.id}>{s.name}</option>
-                         ))}
+                         {state.staff.filter(s => s.active).map(s => {
+                             const commText = Number(s.commissionValue) > 0 
+                                 ? (s.commissionType === 'fixed' ? ` [عمولة: ${s.commissionValue} ج.م]` : ` [عمولة: ${s.commissionValue}%]`)
+                                 : '';
+                             return (
+                                 <option key={s.id} value={s.id}>
+                                     {s.name}{commText}
+                                 </option>
+                             );
+                         })}
                      </select>
                 </div>
                 <div className="mt-4">

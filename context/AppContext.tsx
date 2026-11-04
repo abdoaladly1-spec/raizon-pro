@@ -2753,12 +2753,42 @@ export const AppProvider = ({ children }: any) => {
         return c;
       });
 
+      // احتساب وتسجيل عمولة الموظف تلقائياً عن الفاتورة (نسبة مئوية أو مبلغ ثابت)
+      let nextStaffPayments = prev.staffPayments || [];
+      if (newInvoice.staffId) {
+        const staffMember = prev.staff.find(s => s.id === newInvoice.staffId);
+        if (staffMember && Number(staffMember.commissionValue) > 0) {
+          const val = Number(staffMember.commissionValue);
+          const commissionAmt = staffMember.commissionType === 'fixed'
+            ? round2(val)
+            : round2((Number(newInvoice.total || 0) * val) / 100);
+
+          if (commissionAmt > 0) {
+            const commPayment: StaffPayment = {
+              id: crypto.randomUUID(),
+              staffId: staffMember.id,
+              staffName: staffMember.name,
+              amount: commissionAmt,
+              type: 'commission',
+              method: 'cash',
+              notes: `عمولة تلقائية عن فاتورة #${newInvoice.id} (${staffMember.commissionType === 'fixed' ? `${val} ج.م ثابت` : `${val}%`})`,
+              date: toIsoDate(new Date(newInvoice.timestamp || Date.now())),
+              timestamp: newInvoice.timestamp || Date.now(),
+              createdBy: newInvoice.createdBy || 'System',
+              invoiceUid: newInvoice.uid
+            };
+            nextStaffPayments = [commPayment, ...nextStaffPayments];
+          }
+        }
+      }
+
       return {
         ...prev,
         invoices: [newInvoice, ...prev.invoices],
         items: updatedItems,
         customers: updatedCustomers,
-        inventoryHistory
+        inventoryHistory,
+        staffPayments: nextStaffPayments
       };
     });
     addAuditLog('Invoice', `Created invoice #${newId} for ${invoiceData.total} EGP`);

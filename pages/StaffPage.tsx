@@ -98,7 +98,14 @@ export const StaffPage = () => {
     };
 
     const handleEdit = (staff: any) => {
-        setStaffForm(staff);
+        setStaffForm({
+            ...initialStaffForm,
+            ...staff,
+            commissionType: staff.commissionType || 'percent',
+            commissionValue: (staff.commissionValue !== undefined && staff.commissionValue !== null && staff.commissionValue !== 0) 
+                ? staff.commissionValue 
+                : ''
+        });
         setIsEditing(true);
         setShowModal(true);
     };
@@ -177,9 +184,13 @@ export const StaffPage = () => {
     const staffInvoices = selectedStaffId ? state.invoices.filter(i => i.staffId === selectedStaffId).sort((a,b) => b.timestamp - a.timestamp) : [];
     const staffPayments = selectedStaffId ? state.staffPayments?.filter(p => p.staffId === selectedStaffId).sort((a,b) => b.timestamp - a.timestamp) : [];
 
-    // Advances Calculation
+    // Advances & Commissions Calculation
     const totalAdvances = staffPayments.filter(p => p.type === 'advance').reduce((acc, p) => acc + p.amount, 0);
     const totalSalaryPaid = staffPayments.filter(p => p.type === 'salary').reduce((acc, p) => acc + p.amount, 0);
+    const totalCommissionsEarned = staffPayments
+        .filter(p => p.type === 'commission' || p.type === 'commission_reversal')
+        .reduce((acc, p) => acc + (p.type === 'commission_reversal' ? -p.amount : p.amount), 0);
+    const netDueToStaff = Math.max(0, totalCommissionsEarned - totalAdvances);
     
     // Performance Metrics for Staff Profile
     const completedReservationsCount = staffReservations.filter(r => r.status === 'confirmed').length;
@@ -199,21 +210,26 @@ export const StaffPage = () => {
                 </div>
 
                 {/* Staff Performance Summary Card */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center">
-                        <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full mb-2"><DollarSign size={20}/></div>
+                        <div className="p-2 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-xl mb-2"><DollarSign size={20}/></div>
                         <p className="text-xs text-slate-500 uppercase font-bold">{t('total_revenue')}</p>
-                        <p className="text-xl font-bold">{staffRevenue.toLocaleString('en-US')} {t('egp')}</p>
+                        <p className="text-lg font-bold font-mono text-slate-900 dark:text-white">{staffRevenue.toLocaleString('en-US')} {t('egp')}</p>
                     </div>
                     <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-full mb-2"><Calendar size={20}/></div>
-                        <p className="text-xs text-slate-500 uppercase font-bold">{t('reservations')}</p>
-                        <p className="text-xl font-bold">{completedReservationsCount}</p>
+                        <div className="p-2 bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 rounded-xl mb-2"><Award size={20}/></div>
+                        <p className="text-xs text-slate-500 uppercase font-bold">{language === 'ar' ? 'إجمالي العمولات' : 'Commissions'}</p>
+                        <p className="text-lg font-bold font-mono text-amber-600 dark:text-amber-400">{totalCommissionsEarned.toLocaleString('en-US')} {t('egp')}</p>
                     </div>
                     <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center">
-                        <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-full mb-2"><Award size={20}/></div>
-                        <p className="text-xs text-slate-500 uppercase font-bold">{t('rating')}</p>
-                        <p className="text-xl font-bold">4.9/5.0</p>
+                        <div className="p-2 bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 rounded-xl mb-2"><Banknote size={20}/></div>
+                        <p className="text-xs text-slate-500 uppercase font-bold">{t('total_advances')}</p>
+                        <p className="text-lg font-bold font-mono text-rose-600 dark:text-rose-400">{totalAdvances.toLocaleString('en-US')} {t('egp')}</p>
+                    </div>
+                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center">
+                        <div className="p-2 bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 rounded-xl mb-2"><Wallet size={20}/></div>
+                        <p className="text-xs text-slate-500 uppercase font-bold">{language === 'ar' ? 'صافي المستحق' : 'Net Due'}</p>
+                        <p className="text-lg font-bold font-mono text-purple-600 dark:text-purple-400">{netDueToStaff.toLocaleString('en-US')} {t('egp')}</p>
                     </div>
                 </div>
 
@@ -708,9 +724,17 @@ export const StaffPage = () => {
                                 <p className="text-sm text-slate-500">{t(s.role.toLowerCase()) || s.role}</p>
                                 <p className="text-xs text-slate-400 mt-1">{s.phone}</p>
                                 <div className="mt-2 flex flex-wrap gap-1.5 items-center">
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                                        {s.commissionType === 'fixed' ? `${s.commissionValue || 0} ج.م / عميل` : `${s.commissionValue || 0}% على الخدمات`}
-                                    </span>
+                                    {Number(s.commissionValue) > 0 ? (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                            {s.commissionType === 'fixed'
+                                                ? `عمولة: ${s.commissionValue} ج.م / فاتورة`
+                                                : `عمولة: ${s.commissionValue}% على الفاتورة`}
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                            {language === 'ar' ? 'بدون عمولة' : 'No Commission'}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -778,15 +802,85 @@ export const StaffPage = () => {
                                     <option value="Manager">{t('manager')}</option>
                                 </select>
                             </div>
-                            <div className="flex items-center gap-2">
+                            {/* نظام العمولة على الفواتير (اختياري: نسبة مئوية أو مبلغ ثابت) */}
+                            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-0.5">
+                                        {language === 'ar' ? 'عمولة الموظف على الفواتير (اختياري)' : 'Invoice Commission (Optional)'}
+                                    </label>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        {language === 'ar' ? 'حدد إن كان الموظف يحصل على نسبة مئوية أو مبلغ ثابت عند إتمام الفاتورة' : 'Set commission percentage or fixed amount per invoice'}
+                                    </p>
+                                </div>
+
+                                {/* اختيار نوع العمولة */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setStaffForm(prev => ({ ...prev, commissionType: 'percent' }))}
+                                        className={`py-2 px-3 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1.5 cursor-pointer ${
+                                            staffForm.commissionType === 'percent'
+                                                ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                                                : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600'
+                                        }`}
+                                    >
+                                        <span className="font-mono text-sm font-bold">%</span>
+                                        <span>{language === 'ar' ? 'نسبة مئوية (%)' : 'Percentage (%)'}</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setStaffForm(prev => ({ ...prev, commissionType: 'fixed' }))}
+                                        className={`py-2 px-3 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1.5 cursor-pointer ${
+                                            staffForm.commissionType === 'fixed'
+                                                ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                                                : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600'
+                                        }`}
+                                    >
+                                        <Banknote size={15} />
+                                        <span>{language === 'ar' ? 'مبلغ ثابت لكل فاتورة' : 'Fixed Amount (EGP)'}</span>
+                                    </button>
+                                </div>
+
+                                {/* حقل إدخال قيمة العمولة */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                                        {staffForm.commissionType === 'fixed'
+                                            ? (language === 'ar' ? 'مبلغ العمولة الثابت لكل فاتورة (ج.م):' : 'Fixed amount per invoice (EGP):')
+                                            : (language === 'ar' ? 'نسبة العمولة المئوية من إجمالي الفاتورة (%):' : 'Commission percentage (%):')}
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step={staffForm.commissionType === 'fixed' ? '1' : '0.5'}
+                                            max={staffForm.commissionType === 'percent' ? '100' : undefined}
+                                            value={staffForm.commissionValue}
+                                            onChange={(e) => setStaffForm(prev => ({ ...prev, commissionValue: e.target.value }))}
+                                            placeholder={staffForm.commissionType === 'fixed' ? (language === 'ar' ? 'مثال: 25 (اتركها فارغة بدون عمولة)' : 'e.g. 25') : (language === 'ar' ? 'مثال: 10 (اتركها فارغة بدون عمولة)' : 'e.g. 10')}
+                                            className="w-full px-3.5 py-2.5 pe-12 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 font-mono"
+                                        />
+                                        <span className="absolute inset-y-0 end-0 pe-3 flex items-center text-xs font-bold text-slate-500 pointer-events-none">
+                                            {staffForm.commissionType === 'fixed' ? (language === 'ar' ? 'ج.م' : 'EGP') : '%'}
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                                        {staffForm.commissionType === 'fixed'
+                                            ? (language === 'ar' ? 'تُضاف تلقائياً لرصيد الموظف عن كل فاتورة بيع يتم اختياره فيها (يمكن تركها فارغة).' : 'Credited automatically on each invoice where staff is selected.')
+                                            : (language === 'ar' ? 'تُحسب تلقائياً من إجمالي الفاتورة وتُضاف لرصيد الموظف (يمكن تركها فارغة).' : 'Calculated as percentage of invoice total.')}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-1">
                                 <input 
                                     type="checkbox" 
                                     id="activeStaff"
                                     checked={staffForm.active} 
                                     onChange={(e) => setStaffForm({...staffForm, active: e.target.checked})}
-                                    className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
+                                    className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500 cursor-pointer"
                                 />
-                                <label htmlFor="activeStaff" className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('active')}</label>
+                                <label htmlFor="activeStaff" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">{t('active')}</label>
                             </div>
                         </div>
                         <div className="flex gap-3 mt-6">
