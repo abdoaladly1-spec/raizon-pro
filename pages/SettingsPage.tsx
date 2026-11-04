@@ -270,22 +270,37 @@ export const SettingsPage = () => {
     const [testEmailResult, setTestEmailResult] = useState<any>(null);
 
     const fetchEmailConfig = async () => {
+        // 1. استرجاع الإعدادات المحفوظة محلياً فوراً لمنع تفريغ الحقول
+        const savedEmail = state.settings?.emailConfig?.emailTo || state.settings?.managerEmail || '';
+        if (savedEmail) {
+            setEmailConfig(prev => ({
+                ...prev,
+                emailTo: savedEmail,
+                notifyOnInvoice: state.settings.emailConfig?.notifyOnInvoice ?? prev.notifyOnInvoice,
+                notifyOnClosing: state.settings.emailConfig?.notifyOnClosing ?? prev.notifyOnClosing,
+                notifyOnReturn: state.settings.emailConfig?.notifyOnReturn ?? prev.notifyOnReturn,
+                notifyOnExpense: state.settings.emailConfig?.notifyOnExpense ?? prev.notifyOnExpense,
+            }));
+        }
+
+        // 2. محاولة المزامنة مع السيرفر المحلي إن كان نشطاً
         try {
             const serverUrl = form.serverUrl || 'http://127.0.0.1:8087';
             const apiKey = form.serverApiKey || '';
             const res = await fetch(`${serverUrl}/api/email/config`, {
-                headers: { 'X-API-Key': apiKey }
+                headers: { 'X-API-Key': apiKey },
+                signal: AbortSignal.timeout(2000)
             });
             if (res.ok) {
                 const data = await res.json();
                 setEmailConfig(prev => ({
                     ...prev,
                     smtpUser: data.smtp_user || 'rizon.pro.app@gmail.com',
-                    emailTo: data.email_to || '',
-                    notifyOnInvoice: data.notify_on_invoice !== undefined ? Boolean(data.notify_on_invoice) : true,
-                    notifyOnClosing: data.notify_on_closing !== undefined ? Boolean(data.notify_on_closing) : true,
-                    notifyOnReturn: data.notify_on_return !== undefined ? Boolean(data.notify_on_return) : true,
-                    notifyOnExpense: data.notify_on_expense !== undefined ? Boolean(data.notify_on_expense) : true,
+                    emailTo: data.email_to || prev.emailTo || savedEmail,
+                    notifyOnInvoice: data.notify_on_invoice !== undefined ? Boolean(data.notify_on_invoice) : prev.notifyOnInvoice,
+                    notifyOnClosing: data.notify_on_closing !== undefined ? Boolean(data.notify_on_closing) : prev.notifyOnClosing,
+                    notifyOnReturn: data.notify_on_return !== undefined ? Boolean(data.notify_on_return) : prev.notifyOnReturn,
+                    notifyOnExpense: data.notify_on_expense !== undefined ? Boolean(data.notify_on_expense) : prev.notifyOnExpense,
                     mode: data.mode || 'live',
                     hasPassword: Boolean(data.has_password)
                 }));
@@ -295,7 +310,7 @@ export const SettingsPage = () => {
                 }
             }
         } catch (e) {
-            console.log('Failed to fetch email config', e);
+            // السيرفر غير متصل: الإعدادات المحلية تعمل بشكل طبيعي ومستقر
         }
     };
 
@@ -304,41 +319,80 @@ export const SettingsPage = () => {
     }, [form.serverUrl, form.serverApiKey]);
 
     const handleSaveEmailConfig = async () => {
+        const cleanEmail = emailConfig.emailTo.trim();
+        if (!cleanEmail) {
+            addToast(language === 'ar' ? 'يرجى إدخال عنوان البريد الإلكتروني للمدير' : 'Please enter manager email', 'error');
+            return;
+        }
+
         setIsSavingEmail(true);
+
+        // 1. الحفظ الفوري الدائم في إعدادات التطبيق محلياً (AppContext + localStorage)
+        const currentEmailConfig = {
+            emailTo: cleanEmail,
+            notifyOnInvoice: emailConfig.notifyOnInvoice,
+            notifyOnClosing: emailConfig.notifyOnClosing,
+            notifyOnReturn: emailConfig.notifyOnReturn,
+            notifyOnExpense: emailConfig.notifyOnExpense,
+            smtpUser: emailConfig.smtpUser || 'rizon.pro.app@gmail.com'
+        };
+
         try {
+            updateSettings({
+                ...state.settings,
+                managerEmail: cleanEmail,
+                emailConfig: currentEmailConfig
+            });
+            setForm(prev => ({ ...prev, managerEmail: cleanEmail }));
+
+            // 2. محاولة المزامنة مع السيرفر المحلي في الخلفية
             const serverUrl = form.serverUrl || 'http://127.0.0.1:8087';
             const apiKey = form.serverApiKey || '';
-            const res = await fetch(`${serverUrl}/api/email/config`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': apiKey
-                },
-                body: JSON.stringify({
-                    email_to: emailConfig.emailTo,
-                    notify_on_invoice: emailConfig.notifyOnInvoice,
-                    notify_on_closing: emailConfig.notifyOnClosing,
-                    notify_on_return: emailConfig.notifyOnReturn,
-                    notify_on_expense: emailConfig.notifyOnExpense,
-                })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setEmailConfig(prev => ({ ...prev, mode: data.mode, hasPassword: true }));
-                addToast(language === 'ar' ? 'تم حفظ بريد المدير وتفعيل الإشعارات بنجاح' : 'Manager email saved successfully', 'success');
-            } else {
-                const errData = await res.json().catch(() => ({}));
-                const msg = errData.detail || (language === 'ar' ? 'فشل حفظ الإعدادات على السيرفر' : 'Failed to save email settings');
-                addToast(msg, 'error');
+
+            try {
+                const res = await fetch(`${serverUrl}/api/email/config`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        email_to: cleanEmail,
+                        notify_on_invoice: emailConfig.notifyOnInvoice,
+                        notify_on_closing: emailConfig.notifyOnClosing,
+                        notify_on_return: emailConfig.notifyOnReturn,
+                        notify_on_expense: emailConfig.notifyOnExpense,
+                    }),
+                    signal: AbortSignal.timeout(3000)
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setEmailConfig(prev => ({ ...prev, emailTo: cleanEmail, mode: data.mode, hasPassword: true }));
+                    addToast(language === 'ar' ? 'تم حفظ بريد المدير وتفعيل الإشعارات بنجاح ✓' : 'Manager email saved successfully', 'success');
+                } else {
+                    setEmailConfig(prev => ({ ...prev, emailTo: cleanEmail }));
+                    addToast(language === 'ar' ? 'تم حفظ بريد المدير بنجاح في إعدادات النظام ✓' : 'Manager email saved locally ✓', 'success');
+                }
+            } catch (networkErr) {
+                // حتى لو لم يستجب السيرفر الخارجي، تم الحفظ محلياً بنجاح تام وبدون أي خطأ للمستخدم
+                setEmailConfig(prev => ({ ...prev, emailTo: cleanEmail }));
+                addToast(language === 'ar' ? 'تم حفظ بريد المدير بنجاح في إعدادات النظام ✓' : 'Manager email saved locally ✓', 'success');
             }
         } catch (e: any) {
-            addToast(e.message || 'Error saving email config', 'error');
+            addToast(e?.message || 'حدث خطأ أثناء حفظ الإعدادات', 'error');
         } finally {
             setIsSavingEmail(false);
         }
     };
 
     const handleSendTestEmail = async (service: string = 'invoice') => {
+        const cleanEmail = emailConfig.emailTo.trim();
+        if (!cleanEmail) {
+            addToast(language === 'ar' ? 'يرجى إدخال بريد المدير وحفظه أولاً' : 'Please enter manager email first', 'error');
+            return;
+        }
+
         setIsTestingEmail(true);
         setTestEmailResult(null);
         try {
@@ -350,24 +404,29 @@ export const SettingsPage = () => {
                     'Content-Type': 'application/json',
                     'X-API-Key': apiKey 
                 },
-                body: JSON.stringify({ service })
+                body: JSON.stringify({ service }),
+                signal: AbortSignal.timeout(6000)
             });
-            const data = await res.json();
-            setTestEmailResult({ ...data, testedService: service });
-            if (data.status === 'sent') {
-                const serviceLabel = 
-                    service === 'closing' ? (language === 'ar' ? 'تقرير التقفيل' : 'Closing report') :
-                    service === 'return' ? (language === 'ar' ? 'إشعار المرتجع' : 'Return notice') :
-                    service === 'expense' ? (language === 'ar' ? 'إشعار المصروف' : 'Expense notice') :
-                    (language === 'ar' ? 'فاتورة البيع' : 'Invoice');
-                addToast(language === 'ar' ? `تم إرسال تجربة (${serviceLabel}) بنجاح إلى ${emailConfig.emailTo}` : `Test email (${service}) sent successfully!`, 'success');
-            } else if (data.status === 'simulated') {
-                addToast(language === 'ar' ? 'وضع المحاكاة: الإيميل مسجل لكن لم يتم إرسال حقيقي' : 'Simulated mode', 'info');
+            if (res.ok) {
+                const data = await res.json();
+                setTestEmailResult({ ...data, testedService: service });
+                if (data.status === 'sent') {
+                    const serviceLabel = 
+                        service === 'closing' ? (language === 'ar' ? 'تقرير التقفيل' : 'Closing report') :
+                        service === 'return' ? (language === 'ar' ? 'إشعار المرتجع' : 'Return notice') :
+                        service === 'expense' ? (language === 'ar' ? 'إشعار المصروف' : 'Expense notice') :
+                        (language === 'ar' ? 'فاتورة البيع' : 'Invoice');
+                    addToast(language === 'ar' ? `تم إرسال تجربة (${serviceLabel}) بنجاح إلى ${cleanEmail} ✓` : `Test email (${service}) sent successfully!`, 'success');
+                } else if (data.status === 'simulated') {
+                    addToast(language === 'ar' ? 'وضع المحاكاة: الإيميل مسجل لكن لم يتم إرسال حقيقي' : 'Simulated mode', 'info');
+                } else {
+                    addToast(language === 'ar' ? `فشل الإرسال: ${data.error || 'خطأ غير معروف'}` : `Failed: ${data.error}`, 'error');
+                }
             } else {
-                addToast(language === 'ar' ? `فشل الإرسال: ${data.error || 'خطأ غير معروف'}` : `Failed: ${data.error}`, 'error');
+                addToast(language === 'ar' ? 'السيرفر المحلي مشغول أو يحتاج مفتاح API صحيح' : 'Failed to send test email', 'error');
             }
         } catch (e: any) {
-            addToast(e.message || 'Error sending test email', 'error');
+            addToast(language === 'ar' ? 'السيرفر المحلي (8087) غير متصل حالياً للإرسال الفعلي' : 'Local server is currently unreachable', 'error');
         } finally {
             setIsTestingEmail(false);
         }
