@@ -34,6 +34,14 @@ export const PurchaseOrdersPage = () => {
       .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
   }, [state.purchaseOrders, state.suppliers, search, statusFilter]);
 
+  const poStats = useMemo(() => {
+    const total = state.purchaseOrders.length;
+    const pending = state.purchaseOrders.filter(po => po.status === 'ordered' || po.status === 'draft').length;
+    const received = state.purchaseOrders.filter(po => po.status === 'received').length;
+    const totalSpent = state.purchaseOrders.reduce((sum, po) => sum + (po.total || 0), 0);
+    return { total, pending, received, totalSpent };
+  }, [state.purchaseOrders]);
+
   const totalOf = (items: { quantity: number; cost: number }[]) => items.reduce((s, i) => s + i.quantity * i.cost, 0);
 
   const openCreate = () => {
@@ -76,18 +84,83 @@ export const PurchaseOrdersPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center flex-wrap gap-3">
-        <h2 className="text-2xl font-bold">{t('purchase_orders')}</h2>
-        <div className="flex gap-2 flex-wrap">
+      <div className="flex justify-between items-center flex-wrap gap-4 bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-sm backdrop-blur-sm">
+        <div>
+          <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <span className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
+              <Package size={20} />
+            </span>
+            <span>{t('purchase_orders')}</span>
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+              {filtered.length}
+            </span>
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+            متابعة أوامر الشراء، طلبيات التوريد، واستلام البضائع في المخزن
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
-            <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input className="pl-3 pr-9 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm w-52" placeholder={t('search')} value={search} onChange={e => setSearch(e.target.value)} />
+            <Search size={16} className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input 
+              className="pl-4 pr-4 rtl:pr-9 rtl:pl-4 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 w-52 outline-none focus:ring-2 focus:ring-primary-500 shadow-inner" 
+              placeholder={t('search')} 
+              value={search} 
+              onChange={e => setSearch(e.target.value)} 
+            />
           </div>
-          <select className="py-2 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+          <select 
+            className="py-2 px-3 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold outline-none" 
+            value={statusFilter} 
+            onChange={e => setStatusFilter(e.target.value)}
+          >
             <option value="">{t('filter_all')}</option>
             {Object.keys(STATUS_LABELS).map(s => <option key={s} value={s}>{t(STATUS_LABELS[s])}</option>)}
           </select>
-          <Button variant="purple" onClick={openCreate}><Plus size={18} /> {t('add_order')}</Button>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
+          >
+            <Plus size={16} /> 
+            <span>{t('add_order')}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* بطاقات المؤشرات الإحصائية لأوامر الشراء */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-purple-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+            <span>إجمالي الأوامر</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 font-bold border border-purple-200 dark:border-purple-800/40">الكل</span>
+          </div>
+          <h4 className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono tracking-tight">{poStats.total} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
+        </div>
+
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-amber-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+            <span>قيد الانتظار</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/40">قيد التوريد ⏳</span>
+          </div>
+          <h4 className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono tracking-tight">{poStats.pending} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
+        </div>
+
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-emerald-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+            <span>مستلمة بالمخزن</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">تم الاستلام 🟢</span>
+          </div>
+          <h4 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">{poStats.received} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
+        </div>
+
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-blue-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+            <span>إجمالي المشتريات</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800/40">القيمة 💰</span>
+          </div>
+          <h4 className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono tracking-tight">{poStats.totalSpent.toLocaleString()} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h4>
         </div>
       </div>
 
