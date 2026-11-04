@@ -40,6 +40,8 @@ export const CreateInvoice = ({ onClose }: any) => {
   const [notes, setNotes] = useState(initialDraft?.notes || '');
   const [selectedStaffId, setSelectedStaffId] = useState(initialDraft?.selectedStaffId || '');
   const [showHeldInvoices, setShowHeldInvoices] = useState(false);
+  const [showHoldPromptModal, setShowHoldPromptModal] = useState(false);
+  const [holdNoteInput, setHoldNoteInput] = useState('');
   const [itemSearch, setItemSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -489,21 +491,28 @@ export const CreateInvoice = ({ onClose }: any) => {
   };
 
   const handleHold = () => {
-      if (selectedItems.length === 0) return addToast(t('no_items_to_hold'), 'error');
-      
+      // إذا كانت السلة فارغة، نقوم بفتح قائمة الفواتير المعلقة مباشرة
+      if (selectedItems.length === 0) {
+          if (state.heldInvoices.length > 0) {
+              setShowHeldInvoices(true);
+          } else {
+              addToast(language === 'ar' ? 'السلة فارغة، ولا توجد أي فواتير معلقة حالياً' : 'Cart is empty and no held invoices', 'info');
+          }
+          return;
+      }
+
+      // إذا كانت السلة تحتوي على عناصر، نجهز الاسم الافتراضي ونفتح نافذة التعليق التفاعلية
       const defaultName = customerName?.trim() && customerName.trim() !== 'عميل نقدي' && customerName.trim() !== t('guest')
           ? customerName.trim()
           : (language === 'ar' ? `طلب معلق #${(state.heldInvoices || []).length + 1}` : `Held Order #${(state.heldInvoices || []).length + 1}`);
 
-      const inputName = window.prompt(
-          language === 'ar' 
-              ? 'تسمية الفاتورة المعلقة (اسم العميل / رقم الطاولة / ملاحظة الطلب):' 
-              : 'Name or note for held order:',
-          defaultName
-      );
-      if (inputName === null) return;
+      setHoldNoteInput(defaultName);
+      setShowHoldPromptModal(true);
+  };
 
-      const finalHoldName = inputName.trim() || defaultName;
+  const confirmHoldInvoice = (customName?: string) => {
+      const defaultName = language === 'ar' ? `طلب معلق #${(state.heldInvoices || []).length + 1}` : `Held Order #${(state.heldInvoices || []).length + 1}`;
+      const finalHoldName = (customName || holdNoteInput || '').trim() || (customerName?.trim() && customerName.trim() !== 'عميل نقدي' ? customerName.trim() : defaultName);
 
       const invoiceData: any = {
           customerId: existingCustomer ? existingCustomer.id : 0,
@@ -525,15 +534,17 @@ export const CreateInvoice = ({ onClose }: any) => {
           notes: notes ? `${notes}` : '',
           paymentMethod: 'cash'
       };
-      
+
       holdInvoice(invoiceData);
-      // Reset form
       setSelectedItems([]);
       setPhone('');
       setCustomerName('');
       setCustomerIdInput('');
       setNotes('');
-      addToast(language === 'ar' ? `تم تعليق الفاتورة "${finalHoldName}" بنجاح` : 'Invoice held successfully', 'info');
+      setShowHoldPromptModal(false);
+      setHoldNoteInput('');
+      localStorage.removeItem(DRAFT_KEY);
+      addToast(language === 'ar' ? `تم تعليق الفاتورة «${finalHoldName}» بنجاح ⏸️` : `Invoice "${finalHoldName}" held successfully`, 'success');
   };
 
   const handleSave = () => {
@@ -1256,7 +1267,22 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
                         <span className="text-primary-600">{total.toLocaleString('en-US')} {t('egp')}</span>
                     </div>
                     <div className="flex gap-2">
-                         <Button onClick={handleHold} variant="secondary" className="px-3" title={t('hold_invoice')}><PauseCircle size={20}/></Button>
+                         <div className="relative">
+                             <Button 
+                                 type="button" 
+                                 onClick={handleHold} 
+                                 variant="secondary" 
+                                 className="px-3 py-2 cursor-pointer relative" 
+                                 title={language === 'ar' ? 'تعليق الفاتورة أو فتح المعلقة (⏸️)' : 'Hold Invoice or View Held (⏸️)'}
+                             >
+                                 <PauseCircle size={20}/>
+                                 {state.heldInvoices.length > 0 && (
+                                     <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800 animate-pulse">
+                                         {state.heldInvoices.length}
+                                     </span>
+                                 )}
+                             </Button>
+                         </div>
                          <Button onClick={handleSave} className="flex-1 justify-center">{t('save')}</Button>
                          <Button onClick={onClose} variant="danger" className="px-3"><Trash2 size={20}/></Button>
                     </div>
@@ -1444,6 +1470,85 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
                         </Button>
                         <Button variant="secondary" onClick={() => setShowPaymentModal(false)} className="flex-1 justify-center py-3 text-base">{t('cancel')}</Button>
                     </div>
+            </ModalShell>
+        )}
+
+        {/* Hold Invoice Prompt Modal — نافذة تعليق الفاتورة التفاعلية بدون alert/prompt المتصفح */}
+        {showHoldPromptModal && (
+            <ModalShell
+                title={language === 'ar' ? '⏸️ تعليق الفاتورة الحالية' : '⏸️ Hold Current Invoice'}
+                onClose={() => setShowHoldPromptModal(false)}
+                maxWidth="max-w-md"
+            >
+                <div className="space-y-4">
+                    <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60">
+                        <p className="text-xs text-amber-800 dark:text-amber-200 font-medium">
+                            {language === 'ar' 
+                                ? `سيتم حفظ أصناف السلة الحالية (${selectedItems.length} صنف بقيمة ${formatNumber(total)} ج.م) مؤقتاً لتتمكن من خدمة عميل آخر والرجوع لها في أي وقت.`
+                                : `This cart (${selectedItems.length} items, ${formatNumber(total)} EGP) will be suspended so you can serve another customer.`}
+                        </p>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                            {language === 'ar' ? 'تسمية الطلب / رقم الطاولة / ملاحظة:' : 'Order name, table or note:'}
+                        </label>
+                        <input
+                            type="text"
+                            autoFocus
+                            value={holdNoteInput}
+                            onChange={(e) => setHoldNoteInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    confirmHoldInvoice();
+                                }
+                            }}
+                            placeholder={language === 'ar' ? 'مثال: طاولة 4، سفري، أحمد...' : 'e.g. Table 4, Takeaway...'}
+                            className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500 font-semibold"
+                        />
+                    </div>
+
+                    {/* Quick Suggestion Chips */}
+                    <div className="flex flex-wrap gap-1.5">
+                        {[
+                            language === 'ar' ? 'طاولة 1' : 'Table 1',
+                            language === 'ar' ? 'طاولة 2' : 'Table 2',
+                            language === 'ar' ? 'طاولة 3' : 'Table 3',
+                            language === 'ar' ? 'طلب سفري' : 'Takeaway',
+                            language === 'ar' ? 'عميل صالون' : 'Salon',
+                            language === 'ar' ? 'طلب خارجي' : 'External'
+                        ].map(chip => (
+                            <button
+                                key={chip}
+                                type="button"
+                                onClick={() => setHoldNoteInput(chip)}
+                                className="px-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                            >
+                                {chip}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex gap-2.5 pt-2">
+                        <Button
+                            type="button"
+                            variant="primary"
+                            onClick={() => confirmHoldInvoice()}
+                            className="flex-1 justify-center py-2.5 text-sm font-bold shadow-sm cursor-pointer"
+                        >
+                            {language === 'ar' ? '✓ تأكيد التعليق' : 'Confirm Hold'}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setShowHoldPromptModal(false)}
+                            className="py-2.5 text-sm cursor-pointer"
+                        >
+                            {t('cancel')}
+                        </Button>
+                    </div>
+                </div>
             </ModalShell>
         )}
 
