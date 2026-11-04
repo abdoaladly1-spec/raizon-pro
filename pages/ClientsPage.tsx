@@ -43,6 +43,16 @@ export const Clients = () => {
         notes: ''
     });
 
+    // إحصائيات عامة وسريعة للعملاء والمديونيات
+    const clientStats = useMemo(() => {
+        const list = state.customers || [];
+        const total = list.length;
+        const vipCount = list.filter(c => c.isVip).length;
+        const debtors = list.filter(c => (c.balance || 0) > 0);
+        const totalDebt = debtors.reduce((sum, c) => sum + (c.balance || 0), 0);
+        return { total, vipCount, debtCount: debtors.length, totalDebt };
+    }, [state.customers]);
+
     // فلترة قائمة العملاء
     const filtered = useMemo(() => {
         return state.customers.filter(c => {
@@ -430,6 +440,49 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                     >
                         <Plus size={16}/> {t('add')}
                     </Button>
+                </div>
+            </div>
+
+            {/* بطاقات المؤشرات السريعة للعملاء */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-indigo-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+                        <span>{language === 'ar' ? 'إجمالي العملاء' : 'Total Clients'}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800/40">قاعدة البيانات</span>
+                    </div>
+                    <div className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono tracking-tight">
+                        {clientStats.total} <span className="text-xs font-bold text-slate-400">عميل</span>
+                    </div>
+                </div>
+
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-amber-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+                        <span>{language === 'ar' ? 'عملاء VIP' : 'VIP Clients'}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/40">مميز ⭐</span>
+                    </div>
+                    <div className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono tracking-tight">
+                        {clientStats.vipCount} <span className="text-xs font-bold text-slate-400">عميل</span>
+                    </div>
+                </div>
+
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-rose-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+                        <span>{language === 'ar' ? 'عليهم مديونيات' : 'Debtors'}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-bold border border-rose-200 dark:border-rose-800/40">آجل 🔴</span>
+                    </div>
+                    <div className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono tracking-tight">
+                        {clientStats.debtCount} <span className="text-xs font-bold text-slate-400">عميل</span>
+                    </div>
+                </div>
+
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-red-600 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+                        <span>{language === 'ar' ? 'إجمالي المديونية' : 'Total Debt'}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 font-bold border border-red-200 dark:border-red-800/40">مستحق 💰</span>
+                    </div>
+                    <div className="text-2xl font-black text-red-600 dark:text-red-400 font-mono tracking-tight">
+                        {formatNumber(clientStats.totalDebt)} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                    </div>
                 </div>
             </div>
 

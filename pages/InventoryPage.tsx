@@ -502,27 +502,56 @@ export const Inventory = () => {
                 <div className="space-y-4">
                     {/* Top Stats Summary Cards */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 shadow-xs">
-                            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">{language === 'ar' ? 'إجمالي الأصناف' : 'Total Items'}</p>
-                            <h4 className="text-xl font-black text-slate-800 dark:text-slate-100 mt-1">{stats.total}</h4>
-                            <p className="text-[11px] text-slate-400 mt-0.5">{stats.productsCount} منتج • {stats.servicesCount} خدمة</p>
+                        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-purple-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+                                <span>{language === 'ar' ? 'إجمالي الأصناف' : 'Total Items'}</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 font-bold border border-purple-200 dark:border-purple-800/40">الكتالوج</span>
+                            </div>
+                            <h4 className="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono tracking-tight">{stats.total}</h4>
+                            <p className="text-[11px] text-slate-400 mt-1 font-medium">{stats.productsCount} منتج • {stats.servicesCount} خدمة</p>
                         </div>
-                        <div className="bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 shadow-xs">
-                            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">{language === 'ar' ? 'المنتجات بالمخزن' : 'Products Stock'}</p>
-                            <h4 className="text-xl font-black text-primary-600 dark:text-primary-400 mt-1">{stats.totalUnits} <span className="text-xs font-medium text-slate-400">قطعة</span></h4>
-                            <p className="text-[11px] text-slate-400 mt-0.5">{stats.productsCount} منتج مسجل</p>
+
+                        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-primary-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+                                <span>{language === 'ar' ? 'المنتجات بالمخزن' : 'Products Stock'}</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-800/40">رصيد</span>
+                            </div>
+                            <h4 className="text-2xl font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight">
+                                {stats.totalUnits} <span className="text-xs font-bold text-slate-400">قطعة</span>
+                            </h4>
+                            <p className="text-[11px] text-slate-400 mt-1 font-medium">{stats.productsCount} منتج مسجل</p>
                         </div>
-                        <div className="bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 shadow-xs">
-                            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">{language === 'ar' ? 'الخدمات المتاحة' : 'Salon Services'}</p>
-                            <h4 className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{stats.servicesCount}</h4>
-                            <p className="text-[11px] text-slate-400 mt-0.5">{language === 'ar' ? 'خدمات صالون بدون مخزون' : 'No stock tracking'}</p>
+
+                        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 border-t-4 border-t-emerald-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
+                                <span>{language === 'ar' ? 'الخدمات المتاحة' : 'Salon Services'}</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">خدمات ✂️</span>
+                            </div>
+                            <h4 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">{stats.servicesCount}</h4>
+                            <p className="text-[11px] text-slate-400 mt-1 font-medium">{language === 'ar' ? 'خدمات بدون مخزون' : 'No stock tracking'}</p>
                         </div>
-                        <div className={`rounded-xl p-3.5 border shadow-xs ${stats.lowStockCount > 0 ? 'bg-amber-50/60 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/60' : 'bg-white dark:bg-slate-800/90 border-slate-200 dark:border-slate-700'}`}>
-                            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">{language === 'ar' ? 'نواقص المخزون' : 'Low Stock'}</p>
-                            <h4 className={`text-xl font-black mt-1 ${stats.lowStockCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-800 dark:text-slate-100'}`}>
+
+                        <div className={`relative overflow-hidden rounded-2xl p-4 border border-t-4 border-t-amber-500 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all ${
+                            stats.lowStockCount > 0 
+                                ? 'bg-amber-50/50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700/60' 
+                                : 'bg-white dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/80'
+                        }`}>
+                            <div className="flex items-center justify-between text-xs font-bold mb-1">
+                                <span className={stats.lowStockCount > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-slate-500 dark:text-slate-400'}>
+                                    {language === 'ar' ? 'نواقص المخزون' : 'Low Stock'}
+                                </span>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                                    stats.lowStockCount > 0 
+                                        ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700' 
+                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-600'
+                                }`}>
+                                    {stats.lowStockCount > 0 ? 'تنبيه ⚠️' : 'آمن 🟢'}
+                                </span>
+                            </div>
+                            <h4 className={`text-2xl font-black font-mono tracking-tight ${stats.lowStockCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-800 dark:text-slate-100'}`}>
                                 {stats.lowStockCount}
                             </h4>
-                            <p className="text-[11px] text-slate-400 mt-0.5">{stats.lowStockCount > 0 ? 'تحتاج لتوريد عاجل' : 'المخزون آمن'}</p>
+                            <p className="text-[11px] text-slate-400 mt-1 font-medium">{stats.lowStockCount > 0 ? 'تحتاج لتوريد عاجل' : 'المخزون متوفر بالكامل'}</p>
                         </div>
                     </div>
 

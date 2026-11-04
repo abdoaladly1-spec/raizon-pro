@@ -333,10 +333,21 @@ const MainContent = () => {
                     {/* Left Side Placeholder */}
                 </div>
 
-                <div className="flex-1">
-                    <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
-                        {navItems.find(i => i.id === activeTab)?.label}
+                <div className="flex-1 flex items-center justify-between gap-4 mr-2">
+                    <h2 className="text-base font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <span>{navItems.find(i => i.id === activeTab)?.label}</span>
                     </h2>
+
+                    <button
+                        type="button"
+                        onClick={() => setShowSearch(true)}
+                        className="hidden md:flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-100/70 hover:bg-slate-200/70 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-semibold transition-all cursor-pointer shadow-inner group"
+                        title={language === 'ar' ? 'بحث فوري في كل الصفحات والفواتير والعملاء (Ctrl + K)' : 'Quick Search (Ctrl + K)'}
+                    >
+                        <Search size={14} className="text-primary-500 group-hover:scale-110 transition-transform" />
+                        <span>{language === 'ar' ? 'بحث سريع وتنقل بين الصفحات...' : 'Quick search...'}</span>
+                        <kbd className="px-1.5 py-0.5 rounded-md bg-white dark:bg-slate-700 text-[10px] font-mono text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-600 shadow-2xs">Ctrl K</kbd>
+                    </button>
                 </div>
                 
                 <div className="flex items-center gap-4">
