@@ -22,10 +22,22 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
         return () => clearInterval(timer);
     }, []);
 
+    // تصفية الفروع في لوحة التحكم
+    const [dashboardBranchFilter, setDashboardBranchFilter] = useState('');
+    const isNonAdmin = currentUser?.role !== 'admin';
+    const cashierBranch = currentUser?.locationId ? state.locations.find(l => l.id === currentUser.locationId)?.name : null;
+    const activeBranchName = isNonAdmin ? cashierBranch : (dashboardBranchFilter || null);
+
     // الحسابات العامة
     const today = new Date().toLocaleDateString();
     const todaysReservations = state.reservations.filter(r => r.date === new Date().toISOString().split('T')[0] || r.date === today).length;
-    const countableInvoices = useMemo(() => state.invoices.filter(countableInvoice), [state.invoices]);
+    const countableInvoices = useMemo(() => {
+        return state.invoices.filter(inv => {
+            if (!countableInvoice(inv)) return false;
+            if (activeBranchName && (inv.branchName || 'الرئيسي') !== activeBranchName) return false;
+            return true;
+        });
+    }, [state.invoices, activeBranchName]);
     const totalRevenue = useMemo(() => sumRevenue(countableInvoices), [countableInvoices]);
     const approvedReturns = useMemo(() => (state.returns || []).filter(r => r.status === 'approved' && !r.deleted), [state.returns]);
     const totalReturns = useMemo(() => sumReturns(approvedReturns), [approvedReturns]);
@@ -256,14 +268,37 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                 </div>
             </div>
 
-            {/* 2. فلتر الفترة الزمنية بشكل مدمج وهادئ */}
-            <div className="flex justify-between items-center bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2 shadow-xs">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                    {range === 'day' ? (language === 'ar' ? 'إحصائيات اليوم' : "Today") :
-                     range === 'week' ? (language === 'ar' ? 'آخر 7 أيام' : "Last 7 days") :
-                     range === 'month' ? (language === 'ar' ? 'آخر 30 يوماً' : "Last 30 days") :
-                     (language === 'ar' ? 'السنة المالية' : "Annual")}
-                </span>
+            {/* 2. فلتر الفترة الزمنية والفروع بشكل مدمج وهادئ */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2 shadow-xs">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                        {range === 'day' ? (language === 'ar' ? 'إحصائيات اليوم' : "Today") :
+                         range === 'week' ? (language === 'ar' ? 'آخر 7 أيام' : "Last 7 days") :
+                         range === 'month' ? (language === 'ar' ? 'آخر 30 يوماً' : "Last 30 days") :
+                         (language === 'ar' ? 'السنة المالية' : "Annual")}
+                    </span>
+
+                    {/* فلتر الفروع للمسؤول */}
+                    {currentUser?.role === 'admin' && state.locations.length > 1 && (
+                        <select
+                            value={dashboardBranchFilter}
+                            onChange={(e) => setDashboardBranchFilter(e.target.value)}
+                            className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-primary-500 cursor-pointer shadow-2xs"
+                        >
+                            <option value="">{language === 'ar' ? '🏢 كل الفروع' : 'All Branches'}</option>
+                            {state.locations.map(loc => (
+                                <option key={loc.id} value={loc.name}>فرع {loc.name}</option>
+                            ))}
+                        </select>
+                    )}
+
+                    {/* وسم الفرع للكاشير العادي */}
+                    {isNonAdmin && cashierBranch && (
+                        <span className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-xs font-bold border border-purple-200 dark:border-purple-800">
+                            فرع {cashierBranch}
+                        </span>
+                    )}
+                </div>
                 <div className="inline-flex bg-slate-100 dark:bg-slate-900/60 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 gap-1">
                     {(['day', 'week', 'month', 'year'] as const).map(r => (
                         <button

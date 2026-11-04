@@ -1,7 +1,7 @@
 /* تم فصل هذا الملف من App.tsx (نظام ProCashier) */
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw } from '../components/Icons';
+import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Building } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from '../types';
 import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, EmptyState, useSound, useLiveTick } from '../components/ui';
 import { FilterModal } from '../components/FilterModal';
@@ -18,7 +18,7 @@ import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fe
 export const InvoicesList = () => {
     const { state, t, language, currentUser, addToast } = useApp();
     const [showFilterModal, setShowFilterModal] = useState(false);
-    const [activeFilters, setActiveFilters] = useState({ search: '', startDate: '', endDate: '', staffId: '' });
+    const [activeFilters, setActiveFilters] = useState({ search: '', startDate: '', endDate: '', staffId: '', branchName: '' });
     // إعادة طباعة فاتورة سابقة بهويتها التاريخية (لوحة معاينة مستقلة)
     const [printInvoice, setPrintInvoice] = useState(null as Invoice | null);
     const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
@@ -37,7 +37,18 @@ export const InvoicesList = () => {
         setPrintInvoice(invoice);
     };
     
+    const isNonAdmin = currentUser?.role !== 'admin';
+    const assignedBranch = currentUser?.locationId ? state.locations.find(l => l.id === currentUser.locationId)?.name : null;
+
     const filtered = state.invoices.filter(i => {
+        // حصر الكاشير على فرعه المخصص
+        if (isNonAdmin && assignedBranch && i.branchName && i.branchName !== assignedBranch) {
+            return false;
+        }
+        // فلتر الفرع للمدير
+        if (activeFilters.branchName && (i.branchName || 'الرئيسي') !== activeFilters.branchName) {
+            return false;
+        }
         const matchesSearch = activeFilters.search ? (i.customerName.toLowerCase().includes(activeFilters.search.toLowerCase()) || i.id.toString().includes(activeFilters.search)) : true;
         
         let matchesDate = true;
@@ -107,10 +118,11 @@ export const InvoicesList = () => {
                     <Button onClick={handleExportPDF} variant="secondary" className="px-3 hidden md:flex" title={t('export_pdf')}><FileText size={16} className="mr-1.5"/> {t('export_pdf')}</Button>
                     <Button 
                         onClick={() => {
-                            const headers = ['رقم الفاتورة', 'اسم العميل', 'التاريخ', 'الإجمالي', 'طريقة الدفع', 'الموظف', 'بواسطة'];
+                            const headers = ['رقم الفاتورة', 'اسم العميل', 'الفرع', 'التاريخ', 'الإجمالي', 'طريقة الدفع', 'الموظف', 'بواسطة'];
                             const rows = filtered.map(inv => [
                                 `#${inv.id}`,
                                 inv.customerName,
+                                inv.branchName || 'الرئيسي',
                                 inv.date,
                                 inv.total,
                                 t(inv.paymentMethod),
@@ -125,6 +137,19 @@ export const InvoicesList = () => {
                     >
                         <FileText size={16} className="mr-1.5 text-emerald-600"/> Excel
                     </Button>
+                     {/* فلتر الفروع للمسؤول */}
+                     {currentUser?.role === 'admin' && state.locations.length > 1 && (
+                        <select
+                            value={activeFilters.branchName}
+                            onChange={(e) => setActiveFilters(prev => ({ ...prev, branchName: e.target.value }))}
+                            className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary-500 shadow-sm cursor-pointer"
+                        >
+                            <option value="">{language === 'ar' ? '🏢 كل الفروع' : 'All Branches'}</option>
+                            {state.locations.map(loc => (
+                                <option key={loc.id} value={loc.name}>فرع {loc.name}</option>
+                            ))}
+                        </select>
+                     )}
                      <div className="relative flex-1 md:w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                         <input 
@@ -166,6 +191,9 @@ export const InvoicesList = () => {
                                 <tr>
                                     <th className="px-5 py-3.5">#</th>
                                     <th className="px-5 py-3.5">{t('customer_name')}</th>
+                                    {state.locations.length > 1 && (
+                                        <th className="px-5 py-3.5">{language === 'ar' ? 'الفرع' : 'Branch'}</th>
+                                    )}
                                     <th className="px-5 py-3.5">{t('date')}</th>
                                     <th className="px-5 py-3.5">{t('total')}</th>
                                     <th className="px-5 py-3.5">{t('payment_details')}</th>
@@ -189,6 +217,14 @@ export const InvoicesList = () => {
                                                 <Eye size={13} className="text-primary-400 opacity-60 group-hover:opacity-100 transition-opacity" />
                                             </button>
                                         </td>
+                                        {state.locations.length > 1 && (
+                                            <td className="px-5 py-3.5 whitespace-nowrap">
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/50">
+                                                    <Building size={11} className="text-purple-500" />
+                                                    <span>{invoice.branchName || 'الرئيسي'}</span>
+                                                </span>
+                                            </td>
+                                        )}
                                         <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 text-xs font-mono">{invoice.date}</td>
                                         <td className="px-5 py-3.5 font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{invoice.total} {t('egp')}</td>
                                         <td className="px-5 py-3.5 text-slate-700 dark:text-slate-300">
