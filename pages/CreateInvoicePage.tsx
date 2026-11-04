@@ -593,10 +593,12 @@ export const CreateInvoice = ({ onClose }: any) => {
       }
       
       const selectedStaff = state.staff.find(s => s.id === selectedStaffId);
+      const activeBranch = state.locations.find(l => l.id === state.settings.currentLocationId) || state.locations[0];
 
       const invoiceData = {
           customerId,
           customerName,
+          branchName: activeBranch?.name || state.settings.shopName || '',
           items: selectedItems.map(i => ({ 
               itemId: i.item.id, 
               name: language === 'ar' ? i.item.nameAr : i.item.nameEn,

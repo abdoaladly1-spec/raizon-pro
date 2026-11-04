@@ -151,6 +151,7 @@ class InvoiceIn(BaseModel):
     staff_name: Optional[str] = None
     created_by: Optional[str] = None
     location_id: Optional[str] = None
+    branch_name: Optional[str] = None
     notes: Optional[str] = None
     date: Optional[str] = None
     timestamp: Optional[int] = None
@@ -193,6 +194,7 @@ class ReturnIn(BaseModel):
     customer_id: Optional[int] = None
     customer_name: Optional[str] = None
     location_id: Optional[str] = None
+    branch_name: Optional[str] = None
     points_reversed: int = 0
     commission_reversed: float = 0
     date: Optional[str] = None

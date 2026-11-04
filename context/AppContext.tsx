@@ -96,7 +96,7 @@ interface AppContextType {
   toggleGlassNeon: () => void;
   experimentalMode: boolean;
   toggleExperimentalMode: () => void;
-  updateSettings: (settings: AppState['settings']) => void;
+  updateSettings: (settings: Partial<AppState['settings']> | AppState['settings']) => void;
   toasts: { id: string; message: string; type: 'success' | 'error' | 'info'; action?: { label: string, onClick: () => void } }[];
   addToast: (message: string, type?: 'success' | 'error' | 'info', action?: { label: string, onClick: () => void }) => void;
   removeToast: (id: string) => void;
@@ -3081,8 +3081,8 @@ export const AppProvider = ({ children }: any) => {
     addAuditLog('User', `Deleted user #${id}`);
   };
 
-  const updateSettings = (settings: AppState['settings']) => {
-    setState(prev => ({ ...prev, settings }));
+  const updateSettings = (settings: Partial<AppState['settings']> | AppState['settings']) => {
+    setState(prev => ({ ...prev, settings: { ...prev.settings, ...settings } }));
     addAuditLog('Settings', 'Updated system settings');
   };
 

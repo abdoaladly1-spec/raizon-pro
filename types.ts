@@ -218,6 +218,7 @@ export interface Invoice {
   uid?: string;
   id: number;
   locationId: string;
+  branchName?: string;
   customerId: number;
   customerName: string;
   items: InvoiceItem[];

@@ -119,6 +119,7 @@ export const buildInvoicePayload = (
     staff_name: invoice.staffName || '',
     created_by: invoice.createdBy || '',
     location_id: invoice.locationId || settings?.currentLocationId || '1',
+    branch_name: (invoice as any).branchName || (invoice as any).branch_name || '',
     notes: invoice.notes || '',
     date: invoice.date,
     timestamp: invoice.timestamp,

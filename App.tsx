@@ -7,7 +7,7 @@
 import React, { useState, useRef, useMemo, useEffect, lazy, Suspense } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Intro } from './components/Intro';
-import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, ChevronDown, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Truck, Bell, AlertTriangle, Shield, Phone, Copy } from './components/Icons';
+import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, ChevronDown, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Truck, Bell, AlertTriangle, Shield, Phone, Copy, Building } from './components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from './types';
 import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, type SyncStatus } from './lib/serverSync';
 import { Card, Button, Input, ToastContainer, SimpleBarChart, useSound, useLiveTick } from './components/ui';
@@ -91,11 +91,12 @@ const PageLoader = () => (
 
 const MainContent = () => {
   const { 
-    logout, t, toggleLanguage, language, currentUser, theme, toggleTheme, 
+    logout, t, toggleLanguage, language, currentUser, theme, toggleTheme, updateSettings, 
     glassNeon, toggleGlassNeon, state, addToast,
     settingsDirty, saveSettingsHandlerRef, discardSettingsHandlerRef 
   } = useApp();
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+  const [showBranchSwitcherModal, setShowBranchSwitcherModal] = useState(false);
   const [isNavSaving, setIsNavSaving] = useState(false);
 
   const handleNavigate = (targetTab: string) => {
@@ -205,8 +206,10 @@ const MainContent = () => {
       { id: 'staff', icon: Users, label: t('staff_management'), group: t('nav_group_inventory') },
       { id: 'stats', icon: BarChart2, label: t('analytics'), group: t('nav_group_system') },
       { id: 'notes', icon: FileText, label: t('notes'), group: t('nav_group_system') },
+      { id: 'locations', icon: MapPin, label: language === 'ar' ? 'الفروع' : 'Branches', group: t('nav_group_system') },
       { id: 'settings', icon: Settings, label: t('settings'), group: t('nav_group_system') },
   ].filter(item => {
+      if (item.id === 'locations') return currentUser?.role === 'admin';
       if (currentUser?.role === 'admin') return true;
       if (!currentUser?.permissions) return true;
       return currentUser.permissions.includes(item.id) || ['dashboard', 'create_invoice', 'stats'].includes(item.id);
@@ -219,7 +222,12 @@ const MainContent = () => {
           case 'returns': return <ReturnsPage />;
           case 'inventory': return <Inventory />;
           case 'categories': return <CategoriesPage />;
-          case 'locations': return <LocationsPage />;
+          case 'locations': {
+              if (currentUser?.role !== 'admin') {
+                  return <Dashboard onNewInvoice={() => setActiveTab('create_invoice')} />;
+              }
+              return <LocationsPage />;
+          }
           case 'suppliers': return <SuppliersPage />;
           case 'purchase_orders': return <PurchaseOrdersPage />;
           case 'inventory_history': return <InventoryHistoryPage />;
@@ -453,6 +461,37 @@ const MainContent = () => {
                      </button>
 
                      {/* Glass Toggle Removed as requested */}
+
+                     {/* مؤشر الفرع الحالي وتبديل الفروع للمدير */}
+                     {(() => {
+                        const activeBranch = state.locations.find(l => l.id === state.settings.currentLocationId) || state.locations[0];
+                        if (!activeBranch) return null;
+                        const isAdmin = currentUser?.role === 'admin';
+                        const hasMultipleBranches = state.locations.filter(l => l.active !== false).length > 1;
+
+                        if (isAdmin && hasMultipleBranches) {
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => setShowBranchSwitcherModal(true)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 transition-all shadow-xs cursor-pointer group"
+                              title={language === 'ar' ? 'تبديل الفرع المدار' : 'Switch managed branch'}
+                            >
+                              <Building size={14} className="text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
+                              <span className="hidden sm:inline text-slate-500 dark:text-slate-400">{language === 'ar' ? 'فرع:' : 'Branch:'}</span>
+                              <span className="font-extrabold text-slate-900 dark:text-white max-w-[120px] truncate">{activeBranch.name}</span>
+                              <ChevronDown size={13} className="text-purple-500 opacity-70 group-hover:opacity-100 transition-opacity" />
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
+                            <Building size={13} className="text-slate-400" />
+                            <span className="max-w-[120px] truncate">{activeBranch.name}</span>
+                          </div>
+                        );
+                     })()}
                      
                      <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
                          <div className="text-right hidden md:block">
@@ -732,6 +771,189 @@ const ActivationScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => 
                     </div>
                 </div>
             )}
+
+            {/* نافذة تبديل الفرع السريعة للمدير */}
+            <AdminBranchSwitcherModal
+                isOpen={showBranchSwitcherModal}
+                onClose={() => setShowBranchSwitcherModal(false)}
+                locations={state.locations.filter(l => l.active !== false)}
+                currentLocationId={state.settings.currentLocationId || (state.locations[0]?.id || '')}
+                onSelectBranch={(loc) => {
+                    updateSettings({ currentLocationId: loc.id });
+                    if (currentUser) {
+                        sessionStorage.setItem('admin_branch_selected_' + currentUser.id, loc.id);
+                    }
+                    addToast(language === 'ar' ? `تم تحويل النظام لإدارة فرع «${loc.name}» ✓` : `Switched to branch: ${loc.name}`, 'success');
+                }}
+            />
+        </div>
+    );
+};
+
+// نافذة تبديل الفرع المدار للمدير
+const AdminBranchSwitcherModal = ({
+    isOpen,
+    onClose,
+    locations,
+    currentLocationId,
+    onSelectBranch
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    locations: Location[];
+    currentLocationId: string;
+    onSelectBranch: (loc: Location) => void;
+}) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" dir="rtl">
+            <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-6 space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                        <span className="p-2 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400">
+                            <Building size={20} />
+                        </span>
+                        <div>
+                            <h3 className="font-black text-slate-900 dark:text-white text-base">تبديل الفرع المدار</h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">اختر الفرع الذي ترغب في متابعة عملياته وفواتيره</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <div className="space-y-2.5 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    {locations.map(loc => {
+                        const isSelected = loc.id === currentLocationId;
+                        return (
+                            <div
+                                key={loc.id}
+                                onClick={() => {
+                                    onSelectBranch(loc);
+                                    onClose();
+                                }}
+                                className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                                    isSelected
+                                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/40 shadow-xs'
+                                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${
+                                        isSelected ? 'bg-purple-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                                    }`}>
+                                        <Building size={18} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">{loc.name}</h4>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">{loc.address || 'العنوان المسجل للفرع'}</p>
+                                    </div>
+                                </div>
+                                {isSelected ? (
+                                    <span className="flex items-center gap-1 text-xs font-bold text-purple-600 dark:text-purple-400">
+                                        <Check size={16} />
+                                        <span>الفرع النشط</span>
+                                    </span>
+                                ) : (
+                                    <span className="text-xs text-slate-400 font-medium">اختيار الفرع ←</span>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// شاشة اختيار الفرع الإداري للمدير عند تسجيل الدخول
+const AdminBranchSelectionScreen = ({
+    locations,
+    onSelectBranch,
+    userName,
+    onLogout
+}: {
+    locations: Location[];
+    onSelectBranch: (loc: Location) => void;
+    userName: string;
+    onLogout: () => void;
+}) => {
+    return (
+        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-slate-950 font-sans" dir="rtl">
+            <div className="absolute top-1/4 -right-20 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-1/4 -left-20 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="w-full max-w-2xl relative z-10 animate-fade-in space-y-6">
+                <div className="text-center space-y-3">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-bold tracking-wide">
+                        <Building size={14} className="text-purple-400" />
+                        <span>نظام الفروع المتعددة</span>
+                    </div>
+
+                    <h1 className="text-3xl md:text-4xl font-black text-white">
+                        تحديد الفرع المُراد إدارته
+                    </h1>
+                    <p className="text-sm md:text-base text-slate-400 max-w-lg mx-auto">
+                        مرحباً <span className="font-bold text-amber-400">{userName}</span>، بصفتك مسؤول النظام يتوفر لديك عدة فروع مسجلة. حدد الفرع الذي ترغب في متابعة مبيعاته وإدارته الآن:
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {locations.map((loc) => (
+                        <div
+                            key={loc.id}
+                            onClick={() => onSelectBranch(loc)}
+                            className="group p-5 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-slate-800 hover:border-purple-500/60 hover:shadow-[0_0_25px_rgba(168,85,247,0.25)] transition-all cursor-pointer flex flex-col justify-between space-y-4"
+                        >
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center font-bold text-xl group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                                        <Building size={22} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base md:text-lg font-black text-white group-hover:text-purple-300 transition-colors">
+                                            {loc.name}
+                                        </h3>
+                                        <p className="text-xs text-slate-400 mt-0.5">
+                                            {loc.address || 'العنوان المسجل للفرع'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                    نشط ✓
+                                </span>
+                            </div>
+
+                            {loc.phone && (
+                                <div className="flex items-center gap-2 text-xs text-slate-400">
+                                    <Phone size={13} className="text-slate-500" />
+                                    <span className="font-mono">{loc.phone}</span>
+                                </div>
+                            )}
+
+                            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                                <span className="text-xs text-slate-400 group-hover:text-slate-200">
+                                    دخول ومتابعة الفرع
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 group-hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-md group-hover:shadow-purple-500/30">
+                                    <span>إدارة</span>
+                                    <span>←</span>
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="text-center pt-2">
+                    <button
+                        onClick={onLogout}
+                        className="text-xs text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                    >
+                        تسجيل خروج أو تبديل الحساب
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };
@@ -751,8 +973,26 @@ const AppContent = () => {
     );
   }
 
-  const { currentUser, state } = useApp();
+  const { currentUser, state, updateSettings, addToast, language, logout } = useApp();
   const [introFinished, setIntroFinished] = useState(false);
+  const [adminBranchSelected, setAdminBranchSelected] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('admin_branch_selected_' + (currentUser?.id || ''));
+    }
+    return null;
+  });
+
+  // قفل الكاشير والموظفين تلقائياً على الفرع المخصص لهم دون إمكانية اختيار فروع أخرى
+  useEffect(() => {
+    if (currentUser && currentUser.role !== 'admin') {
+      const assignedLoc = currentUser.locationId 
+        ? state.locations.find(l => l.id === currentUser.locationId) 
+        : (state.locations[0] || null);
+      if (assignedLoc && state.settings.currentLocationId !== assignedLoc.id) {
+        updateSettings({ currentLocationId: assignedLoc.id });
+      }
+    }
+  }, [currentUser?.id, currentUser?.locationId, state.locations]);
   const [isIdle, setIsIdle] = useState(false);
   const [isActivated, setIsActivated] = useState(null as boolean | null);
   const [showPatcher, setShowPatcher] = useState(false);
@@ -868,6 +1108,30 @@ const AppContent = () => {
   // إجبار تغيير كلمة المرور الافتراضية قبل استخدام النظام
   if (currentUser.mustChangePassword) {
     return <ForcePasswordChange />;
+  }
+
+  // عند وجود أكثر من فرع: يظهر للمدير فقط اختيار الفرع عند تسجيل الدخول
+  const activeLocations = (state.locations || []).filter(l => l.active !== false);
+  const requiresAdminBranchSelection = currentUser.role === 'admin' && activeLocations.length > 1 && !adminBranchSelected;
+
+  if (requiresAdminBranchSelection) {
+    return (
+      <AdminBranchSelectionScreen
+        locations={activeLocations}
+        userName={currentUser.name}
+        onSelectBranch={(loc) => {
+          updateSettings({ currentLocationId: loc.id });
+          sessionStorage.setItem('admin_branch_selected_' + currentUser.id, loc.id);
+          setAdminBranchSelected(loc.id);
+          addToast(language === 'ar' ? `تم الدخول لإدارة فرع «${loc.name}» بنجاح ✓` : `Managing branch: ${loc.name}`, 'success');
+        }}
+        onLogout={() => {
+          sessionStorage.removeItem('admin_branch_selected_' + (currentUser?.id || ''));
+          setAdminBranchSelected(null);
+          logout();
+        }}
+      />
+    );
   }
 
   return (

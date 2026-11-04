@@ -103,16 +103,24 @@ def _format_items_rows(items: List[Dict[str, Any]]) -> str:
 
 
 def build_invoice_email(inv: Dict[str, Any]) -> Dict[str, str]:
-    """بناء إيميل الفاتورة بنفس النمط الفاخر المخصص لنظام Rizon Pro System Cashier."""
+    """بناء إيميل الفاتورة المختصر والأنيق والخالي من التزاحم، مع إظهار الفرع وبيانات الفاتورة بوضوح."""
     inv_num = str(inv.get("local_id") or inv.get("id") or "0000")
     total = float(inv.get("total", 0) or 0)
     subtotal = float(inv.get("subtotal", 0) or total)
     discount = float(inv.get("discount", 0) or 0)
     tax = float(inv.get("tax", 0) or 0)
 
-    customer_name = inv.get("customer_name") or "عميل نقدي / زائر"
+    # تحديد اسم الفرع إن وجد
+    branch_name = (
+        inv.get("branch_name") 
+        or inv.get("location_name") 
+        or inv.get("branch") 
+        or ""
+    ).strip()
+
+    customer_name = inv.get("customer_name") or "عميل نقدي"
     phone = inv.get("phone") or "-"
-    cashier = inv.get("created_by") or inv.get("cashier") or "كاشير المحل"
+    cashier = inv.get("created_by") or inv.get("staff_name") or inv.get("cashier") or "كاشير المحل"
     raw_payment = str(inv.get("payment_method") or "cash").lower()
     payment_method_arabic = PAYMENT_METHODS.get(raw_payment, raw_payment)
 
@@ -125,122 +133,83 @@ def build_invoice_email(inv: Dict[str, Any]) -> Dict[str, str]:
     items = inv.get("items") or []
     items_html = _format_items_rows(items)
 
-    subject = f"[{config.EMAIL_SUBJECT_PREFIX.strip('[] ')}] فاتورة جديدة #{inv_num} - {total:,.2f} ج.م"
+    # عنوان البريد: إذا وجد فرع محدد يُكتب "فاتورة جديدة في فرع (اسم الفرع)"
+    prefix = config.EMAIL_SUBJECT_PREFIX.strip('[] ')
+    prefix_str = f"[{prefix}] " if prefix else ""
+    if branch_name and branch_name not in ("الافتراضي", "Default", "default", ""):
+        subject = f"{prefix_str}فاتورة جديدة في فرع {branch_name} #{inv_num} - {total:,.2f} ج.م"
+        branch_badge = f"""<span style="display: inline-block; background-color: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; color: #38bdf8;">📍 فرع {branch_name}</span>"""
+        branch_row = f"""<tr>
+            <td style="padding: 8px 14px; color: #94a3b8; font-size: 12px; border-bottom: 1px solid #201833;">الفرع</td>
+            <td style="padding: 8px 14px; color: #38bdf8; font-size: 13px; font-weight: 700; border-bottom: 1px solid #201833; text-align: left;">{branch_name}</td>
+          </tr>"""
+    else:
+        subject = f"{prefix_str}فاتورة جديدة #{inv_num} - {total:,.2f} ج.م"
+        branch_badge = ""
+        branch_row = ""
 
     body_html = f"""<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>فاتورة جديدة #{inv_num}</title>
+  <title>فاتورة #{inv_num}</title>
 </head>
-<body style="margin: 0; padding: 24px 12px; background-color: #07060b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Tahoma, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
-  <div dir="rtl" style="max-width: 620px; margin: 0 auto; background-color: #0f0c1b; border: 1px solid #28203d; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65);">
+<body style="margin: 0; padding: 16px 8px; background-color: #0b0914; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Tahoma, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+  <div dir="rtl" style="max-width: 560px; margin: 0 auto; background-color: #120e22; border: 1px solid #28203d; border-radius: 14px; overflow: hidden; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);">
     
-    <!-- Top Accent Gradient Bar -->
-    <div style="height: 4px; background: linear-gradient(90deg, #f59e0b 0%, #ec4899 50%, #8b5cf6 100%);"></div>
+    <!-- Top Accent Bar -->
+    <div style="height: 3px; background: linear-gradient(90deg, #a855f7, #38bdf8, #10b981);"></div>
 
-    <div style="padding: 28px 24px;">
+    <div style="padding: 20px 18px;">
       
-      <!-- Header Table -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <!-- Compact Header -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
         <tr>
-          <!-- Info Column (Right in RTL) -->
           <td style="vertical-align: middle; text-align: right;">
-            <div style="color: #a855f7; font-size: 13px; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.5px;">نظام إدارة المبيعات الذكي</div>
-            <div style="color: #ffffff; font-size: 24px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.5px;">Rizon Pro System Cashier</div>
-            <div style="color: #94a3b8; font-size: 13px; margin-bottom: 12px;">إشعار تسجيل فاتورة مبيعات جديدة</div>
+            <div style="color: #ffffff; font-size: 18px; font-weight: 800; margin-bottom: 4px;">
+              فاتورة مبيعات #{inv_num}
+            </div>
             <div>
-              <span style="display: inline-block; background-color: rgba(147, 51, 234, 0.15); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 9999px; padding: 4px 14px; font-size: 11px; font-weight: 600; color: #d8b4fe;">✓ إشعار رسمي صادر من النظام</span>
+              <span style="display: inline-block; background-color: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; color: #34d399;">✓ مدفوعة</span>
+              {branch_badge}
             </div>
           </td>
-          <!-- 3D Logo Column (Left in RTL) -->
-          <td style="vertical-align: middle; text-align: left; width: 105px;">
-            <div style="width: 96px; height: 96px; background-color: #08060f; border: 1px solid #2b2342; border-radius: 16px; padding: 4px; box-sizing: border-box; display: inline-block; text-align: center;">
-              <img src="cid:rizon_logo" alt="Rizon Pro Logo" width="86" height="86" style="display: block; width: 86px; height: 86px; border: 0; object-fit: contain; margin: auto;" />
+          <td style="vertical-align: middle; text-align: left; width: 64px;">
+            <div style="width: 56px; height: 56px; background-color: #08060f; border: 1px solid #2b2342; border-radius: 12px; padding: 2px; box-sizing: border-box; display: inline-block; text-align: center;">
+              <img src="cid:rizon_logo" alt="Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border: 0; object-fit: contain; margin: auto;" />
             </div>
           </td>
         </tr>
       </table>
 
-      <!-- Success Notification Banner -->
-      <div style="margin-top: 10px; margin-bottom: 20px; text-align: right;">
-        <div style="color: #ffffff; font-size: 18px; font-weight: 800; margin-bottom: 6px;">
-          تم تسجيل الفاتورة بنجاح <span style="color: #facc15;">✓</span>
-        </div>
-        <div style="color: #94a3b8; font-size: 13px; line-height: 1.6;">
-          نؤكد لك أن عملية البيع التالية تم حفظها في نظام <span style="color: #cbd5e1; font-weight: 600;">Rizon Pro System Cashier</span>.
-        </div>
-      </div>
+      <!-- Invoice Info Table (Compact) -->
+      <table style="width: 100%; border-collapse: collapse; background-color: #16122a; border: 1px solid #292044; border-radius: 10px; overflow: hidden; margin-bottom: 16px;">
+        {branch_row}
+        <tr>
+          <td style="padding: 8px 14px; color: #94a3b8; font-size: 12px; border-bottom: 1px solid #201833;">التاريخ والوقت</td>
+          <td style="padding: 8px 14px; color: #ffffff; font-size: 12px; font-weight: 600; border-bottom: 1px solid #201833; text-align: left;">{datetime_formatted}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 14px; color: #94a3b8; font-size: 12px; border-bottom: 1px solid #201833;">العميل</td>
+          <td style="padding: 8px 14px; color: #ffffff; font-size: 13px; font-weight: 700; border-bottom: 1px solid #201833; text-align: left;">{customer_name} {f"({phone})" if phone and phone != "-" else ""}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 14px; color: #94a3b8; font-size: 12px;">الكاشير / طريقة الدفع</td>
+          <td style="padding: 8px 14px; color: #cbd5e1; font-size: 12px; text-align: left;">
+            <span style="font-weight: 600; color: #ffffff;">{cashier}</span> • <span style="color: #facc15; font-weight: 700;">{payment_method_arabic}</span>
+          </td>
+        </tr>
+      </table>
 
-      <!-- Invoice Number Box -->
-      <div style="background-color: #151124; border: 1px solid #2c2447; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="text-align: right; vertical-align: middle;">
-              <div style="color: #94a3b8; font-size: 12px; margin-bottom: 4px;">رقم الفاتورة</div>
-              <div style="color: #facc15; font-size: 28px; font-weight: 900; font-family: 'Courier New', Courier, monospace, sans-serif; letter-spacing: 1px;">#{inv_num}</div>
-            </td>
-            <td style="text-align: left; vertical-align: middle;">
-              <span style="display: inline-block; background-color: rgba(147, 51, 234, 0.2); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 9999px; padding: 5px 14px; font-size: 12px; font-weight: 700; color: #e9d5ff;">✓ مكتملة</span>
-            </td>
-          </tr>
-        </table>
-      </div>
-
-      <!-- Invoice Details Section -->
-      <div style="text-align: right; margin-bottom: 10px;">
-        <span style="color: #ffffff; font-size: 16px; font-weight: 800;">بيانات الفاتورة</span>
-      </div>
-      <div style="background-color: #131021; border: 1px solid #251d3b; border-radius: 12px; overflow: hidden; margin-bottom: 24px;">
-        <table style="width: 100%; border-collapse: collapse; text-align: right;">
-          <!-- Row 1: العميل & الهاتف -->
-          <tr style="border-bottom: 1px solid #201833;">
-            <td style="padding: 14px 18px; width: 50%; vertical-align: top;">
-              <div style="color: #94a3b8; font-size: 11px; margin-bottom: 5px;">اسم العميل</div>
-              <div style="color: #ffffff; font-size: 14px; font-weight: 700;">{customer_name}</div>
-            </td>
-            <td style="padding: 14px 18px; width: 50%; vertical-align: top; text-align: left;">
-              <div style="color: #94a3b8; font-size: 11px; margin-bottom: 5px; text-align: left;">رقم الهاتف</div>
-              <div style="color: #ffffff; font-size: 14px; font-family: monospace; font-weight: 600; text-align: left;">{phone}</div>
-            </td>
-          </tr>
-          <!-- Row 2: تاريخ ووقت الفاتورة & الكاشير -->
-          <tr style="border-bottom: 1px solid #201833;">
-            <td style="padding: 14px 18px; vertical-align: top;">
-              <div style="color: #94a3b8; font-size: 11px; margin-bottom: 5px;">تاريخ ووقت الفاتورة</div>
-              <div style="color: #ffffff; font-size: 13px; font-weight: 600;">{datetime_formatted}</div>
-            </td>
-            <td style="padding: 14px 18px; vertical-align: top; text-align: left;">
-              <div style="color: #94a3b8; font-size: 11px; margin-bottom: 5px; text-align: left;">الكاشير</div>
-              <div style="color: #ffffff; font-size: 13px; font-weight: 600; text-align: left;">{cashier}</div>
-            </td>
-          </tr>
-          <!-- Row 3: حالة الفاتورة & طريقة الدفع -->
-          <tr>
-            <td style="padding: 14px 18px; vertical-align: top;">
-              <div style="color: #94a3b8; font-size: 11px; margin-bottom: 5px;">حالة الفاتورة</div>
-              <div style="color: #a855f7; font-size: 13px; font-weight: 700;">تم الحفظ بنجاح</div>
-            </td>
-            <td style="padding: 14px 18px; vertical-align: top; text-align: left;">
-              <div style="color: #94a3b8; font-size: 11px; margin-bottom: 5px; text-align: left;">طريقة الدفع</div>
-              <div style="color: #facc15; font-size: 14px; font-weight: 800; text-align: left;">{payment_method_arabic}</div>
-            </td>
-          </tr>
-        </table>
-      </div>
-
-      <!-- Items Section -->
-      <div style="text-align: right; margin-bottom: 10px;">
-        <span style="color: #ffffff; font-size: 16px; font-weight: 800;">تفاصيل الأصناف والخدمات</span>
-      </div>
-      <table style="width: 100%; border-collapse: separate; border-spacing: 0; background-color: #131021; border: 1px solid #251d3b; border-radius: 12px; overflow: hidden; margin-bottom: 16px;">
+      <!-- Items Table (Compact) -->
+      <table style="width: 100%; border-collapse: separate; border-spacing: 0; background-color: #16122a; border: 1px solid #292044; border-radius: 10px; overflow: hidden; margin-bottom: 14px;">
         <thead>
-          <tr style="background-color: #241743;">
-            <th style="padding: 12px 16px; text-align: right; color: #ffffff; font-size: 12px; font-weight: 700; border-bottom: 1px solid #2e2052;">الصنف / الخدمة</th>
-            <th style="padding: 12px 10px; text-align: center; color: #ffffff; font-size: 12px; font-weight: 700; border-bottom: 1px solid #2e2052;">الكمية</th>
-            <th style="padding: 12px 14px; text-align: center; color: #ffffff; font-size: 12px; font-weight: 700; border-bottom: 1px solid #2e2052;">السعر</th>
-            <th style="padding: 12px 16px; text-align: left; color: #facc15; font-size: 12px; font-weight: 700; border-bottom: 1px solid #2e2052;">الإجمالي</th>
+          <tr style="background-color: #21193d;">
+            <th style="padding: 10px 14px; text-align: right; color: #ffffff; font-size: 11px; font-weight: 700; border-bottom: 1px solid #2c2250;">الصنف</th>
+            <th style="padding: 10px 8px; text-align: center; color: #cbd5e1; font-size: 11px; font-weight: 700; border-bottom: 1px solid #2c2250;">الكمية</th>
+            <th style="padding: 10px 10px; text-align: center; color: #cbd5e1; font-size: 11px; font-weight: 700; border-bottom: 1px solid #2c2250;">السعر</th>
+            <th style="padding: 10px 14px; text-align: left; color: #facc15; font-size: 11px; font-weight: 700; border-bottom: 1px solid #2c2250;">الإجمالي</th>
           </tr>
         </thead>
         <tbody>
@@ -248,69 +217,31 @@ def build_invoice_email(inv: Dict[str, Any]) -> Dict[str, str]:
         </tbody>
       </table>
 
-      <!-- Subtotals Table -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
-        <tr>
-          <td style="vertical-align: middle; text-align: right; color: #94a3b8; font-size: 12px;">
-            جميع المبالغ بالجنيه المصري
-          </td>
-          <td style="vertical-align: middle; text-align: left;">
-            <table style="border-collapse: collapse; margin-right: auto; text-align: left;">
-              <tr>
-                <td style="padding: 4px 14px; color: #94a3b8; font-size: 12px;">المجموع الفرعي</td>
-                <td style="padding: 4px 0; color: #ffffff; font-size: 13px; font-weight: 600; text-align: left;">{subtotal:,.2f} ج.م</td>
-              </tr>
-              <tr>
-                <td style="padding: 4px 14px; color: #94a3b8; font-size: 12px;">الخصم</td>
-                <td style="padding: 4px 0; color: #ffffff; font-size: 13px; font-weight: 600; text-align: left;">{discount:,.2f} ج.م</td>
-              </tr>
-              <tr>
-                <td style="padding: 4px 14px; color: #94a3b8; font-size: 12px;">الضريبة</td>
-                <td style="padding: 4px 0; color: #ffffff; font-size: 13px; font-weight: 600; text-align: left;">{tax:,.2f} ج.م</td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
+      <!-- Subtotals & Discounts (Only if discount or tax exists) -->
+      {f"""<div style="margin-bottom: 10px; text-align: left; font-size: 12px; color: #94a3b8;">
+        المجموع الفرعي: <span style="color: #ffffff; font-weight: 600;">{subtotal:,.2f} ج.م</span>
+        {f' | الخصم: <span style="color: #f87171; font-weight: 600;">-{discount:,.2f} ج.م</span>' if discount > 0 else ''}
+        {f' | الضريبة: <span style="color: #cbd5e1; font-weight: 600;">+{tax:,.2f} ج.م</span>' if tax > 0 else ''}
+      </div>""" if (discount > 0 or tax > 0) else ""}
 
-      <!-- Final Total Box -->
-      <div style="background-color: #17122b; border: 1px solid #eab308; border-radius: 12px; padding: 18px 24px; margin-bottom: 24px;">
+      <!-- Final Total Box (Clean, High Contrast) -->
+      <div style="background-color: #1a1433; border: 1px solid rgba(250, 204, 21, 0.4); border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;">
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="text-align: right; vertical-align: middle;">
-              <span style="color: #ffffff; font-size: 18px; font-weight: 800;">الإجمالي النهائي</span>
+              <span style="color: #94a3b8; font-size: 12px;">المبلغ الصافي:</span>
+              <div style="color: #ffffff; font-size: 16px; font-weight: 800;">إجمالي الفاتورة</div>
             </td>
             <td style="text-align: left; vertical-align: middle;">
-              <span style="color: #facc15; font-size: 26px; font-weight: 900; font-family: -apple-system, BlinkMacSystemFont, Tahoma, Arial, sans-serif;">{total:,.2f} ج.م</span>
+              <span style="color: #facc15; font-size: 24px; font-weight: 900; font-family: monospace;">{total:,.2f} ج.م</span>
             </td>
           </tr>
         </table>
       </div>
 
-      <!-- Automated Notice Box -->
-      <div style="background-color: #131021; border: 1px solid #251d3b; border-radius: 12px; padding: 14px 18px; margin-bottom: 24px; text-align: right;">
-        <div style="color: #ffffff; font-size: 13px; font-weight: 700; margin-bottom: 5px;">
-          ✓ إشعار آلي من Rizon Pro System Cashier
-        </div>
-        <div style="color: #94a3b8; font-size: 11px; line-height: 1.6;">
-          تم إنشاء هذه الرسالة تلقائياً لتأكيد حفظ بيانات الفاتورة في النظام. لا تشارك كلمة المرور أو رموز التحقق مع أي شخص.
-        </div>
-      </div>
-
-      <!-- Footer Section -->
-      <div style="text-align: center; padding-top: 14px; border-top: 1px solid #1f1832;">
-        <div style="color: #94a3b8; font-size: 13px; margin-bottom: 4px;">
-          شكراً لاستخدامك <span style="color: #facc15; font-weight: 700;">Rizon Pro System Cashier</span>
-        </div>
-        <div style="color: #64748b; font-size: 11px; margin-bottom: 4px;">
-          نظامك لإدارة المبيعات والفواتير بسهولة واحترافية
-        </div>
-        <div style="color: #475569; font-size: 10px; margin-bottom: 16px;">
-          هذه رسالة تلقائية، يرجى عدم الرد عليها
-        </div>
-        <div style="color: #475569; font-size: 11px;">
-          © Rizon Pro System Cashier جميع الحقوق محفوظة
-        </div>
+      <!-- Minimal Quiet Footer -->
+      <div style="text-align: center; color: #64748b; font-size: 11px; padding-top: 8px; border-top: 1px solid #1c1630;">
+        تم الإصدار آلياً بواسطة نظام الكاشير
       </div>
 
     </div>
@@ -318,16 +249,15 @@ def build_invoice_email(inv: Dict[str, Any]) -> Dict[str, str]:
 </body>
 </html>"""
 
-    plain = (
-        f"فاتورة مبيعات جديدة #{inv_num}\n"
-        f"العميل: {customer_name}\n"
-        f"الهاتف: {phone}\n"
-        f"التاريخ: {datetime_formatted}\n"
-        f"طريقة الدفع: {payment_method_arabic}\n"
-        f"الكاشير: {cashier}\n"
-        f"الإجمالي: {total:,.2f} ج.م\n"
-        f"-- Rizon Pro System Cashier --\n"
-    )
+    plain = f"""فاتورة مبيعات جديدة #{inv_num}
+الفرع: {branch_name or "الرئيسي"}
+العميل: {customer_name}
+الهاتف: {phone}
+التاريخ: {datetime_formatted}
+طريقة الدفع: {payment_method_arabic}
+الكاشير: {cashier}
+الإجمالي: {total:,.2f} ج.م
+"""
 
     return {"subject": subject, "html": body_html, "plain": plain}
 
@@ -529,10 +459,15 @@ def build_closing_email(rep: Dict[str, Any]) -> Dict[str, str]:
 </body>
 </html>"""
 
-    plain = (
-        f"إقفال وردية - التاريخ: {date_str} - المسؤول: {performed_by} - "
-        f"الفعلي: {actual:,.2f} ج.م - المتوقع: {expected:,.2f} ج.م - الحالة: {status_arabic}"
-    )
+    plain = f"""فاتورة مبيعات جديدة #{inv_num}
+الفرع: {branch_name or "الرئيسي"}
+العميل: {customer_name}
+الهاتف: {phone}
+التاريخ: {datetime_formatted}
+طريقة الدفع: {payment_method_arabic}
+الكاشير: {cashier}
+الإجمالي: {total:,.2f} ج.م
+"""
 
     return {"subject": subject, "html": body_html, "plain": plain}
 
