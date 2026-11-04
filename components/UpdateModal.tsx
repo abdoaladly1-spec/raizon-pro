@@ -61,8 +61,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
           setDownloading(false);
           setProgress(100);
           setIsReadyToInstall(true);
-          setStatusMessage('تم اكتمال التنزيل! جاري التحضير للتثبيت...');
-          // تشغيل التثبيت تلقائياً بعد ثانية ونصف
+          setStatusMessage('تم اكتمال التنزيل بنجاح! جاري التثبيت الآن...');
           setTimeout(async () => {
             try {
               if (window.procashier?.installUpdate) {
@@ -91,7 +90,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
 
     setError(null);
     setDownloading(true);
-    setStatusMessage('جاري بدء التنزيل...');
+    setStatusMessage('بدء الاتصال وتحميل التحديث...');
 
     if (window.procashier?.downloadUpdate) {
       try {
@@ -110,7 +109,6 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
         setDownloading(false);
       }
     } else {
-      // فتح الرابط خارجياً إذا لم يكن متاحاً في Electron
       if (updateInfo.downloadUrl) {
         window.open(updateInfo.downloadUrl, '_blank');
       }
@@ -132,141 +130,235 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
     }
   };
 
+  // عنوان التحديث الرئيسي
+  const releaseTitle = updateInfo.releaseName || `تحديث جديد ${updateInfo.latestVersion}`;
+
   return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-fade-in">
-      <div className="relative w-full max-w-lg bg-slate-900 border border-purple-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-purple-950/60 text-slate-100 overflow-hidden">
-        {/* Glow ambient background effects */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in font-sans select-none">
+      {/* نافذة مطابقة تماماً لثيم برنامج تثبيت التطبيق (Setup Wizard) */}
+      <div 
+        className="relative w-full max-w-2xl rounded-[18px] border-[1.5px] border-[#482278] shadow-[0_0_50px_rgba(88,28,135,0.55)] flex flex-col overflow-hidden text-slate-100"
+        style={{
+          background: 'linear-gradient(180deg, #120921 0%, #090510 100%)'
+        }}
+      >
+        {/* 1. شريط العنوان العلوي (Title Bar) كالمثبت تماماً */}
+        <div className="h-[44px] bg-[#10081d] border-b border-[#24133d] flex items-center justify-between px-4">
+          {/* الجانب الأيمن (بالعربية): أيقونة وعنوان النافذة */}
+          <div className="flex items-center gap-2.5">
+            <img 
+              src="/public/installer-logo.png" 
+              onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+              alt="Logo" 
+              className="w-5 h-5 object-contain" 
+            />
+            <span className="text-[13px] font-semibold text-[#ded7f7]">
+              مساعد تحديث RaiZon Pro — التحديث التلقائي
+            </span>
+          </div>
 
-        {/* Close / Skip button */}
-        {!downloading && !isReadyToInstall && (
-          <button
-            onClick={handleSkip}
-            className="absolute top-5 left-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-all cursor-pointer"
-            title="تخطي التحديث الآن"
-          >
-            <X size={20} />
-          </button>
-        )}
+          {/* الجانب الأيسر: أزرار التحكم بالنافذة (— و ✕) */}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleSkip}
+              disabled={downloading}
+              className="w-8 h-7 flex items-center justify-center rounded text-[#8a80a8] hover:text-white hover:bg-[#291745] transition-colors disabled:opacity-40"
+              title="تصغير"
+            >
+              <span className="text-xs">─</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleSkip}
+              disabled={downloading}
+              className="w-8 h-7 flex items-center justify-center rounded text-[#8a80a8] hover:text-white hover:bg-[#dc2626] transition-colors disabled:opacity-40"
+              title="إغلاق وتخطي التحديث"
+            >
+              <span className="text-sm">✕</span>
+            </button>
+          </div>
+        </div>
 
-        {/* Header Icon + Title */}
-        <div className="text-center mb-6">
-          <div className="relative w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-2xl bg-gradient-to-tr from-purple-600 to-amber-500 p-0.5 shadow-lg shadow-purple-500/30">
-            <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center text-amber-400">
-              {isReadyToInstall ? (
-                <CheckCircle size={32} className="text-emerald-400 animate-bounce" />
-              ) : (
-                <Sparkles size={32} className="animate-pulse" />
+        {/* 2. جسم النافذة (Body Content) مقسم إلى شعار فني + نصوص ومعلومات */}
+        <div className="p-6 sm:p-7 flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            
+            {/* الشعار الفني للمثبت (Left Emblem / 3D Art) */}
+            <div className="hidden md:flex md:col-span-4 flex-col items-center justify-center relative">
+              <div className="relative w-36 h-36 flex items-center justify-center">
+                <div className="absolute inset-0 bg-[#9333ea]/25 rounded-full blur-2xl animate-pulse"></div>
+                <img 
+                  src="/public/img/pos-bg.jpg" 
+                  onError={(e) => {
+                    // Fallback to logo transparent
+                    (e.target as HTMLImageElement).src = '/img/logo-transparent.png';
+                  }}
+                  alt="RaiZon Pro Art" 
+                  className="relative z-10 w-32 h-32 object-contain rounded-2xl drop-shadow-[0_0_20px_rgba(147,51,244,0.6)]"
+                />
+              </div>
+              <div className="mt-3 text-center">
+                <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold bg-[#1c112e] text-[#c084fc] border border-[#522480]">
+                  RaiZon Pro Updater
+                </span>
+              </div>
+            </div>
+
+            {/* تفاصيل التحديث ومميزاته */}
+            <div className="md:col-span-8 text-right flex flex-col justify-center space-y-4">
+              
+              {/* الرأس: يتوفر تحديث جديد */}
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#8b5cf6]/20 text-[#d8b4fe] border border-[#8b5cf6]/40 mb-2">
+                  <Sparkles size={13} className="text-amber-400 animate-pulse" />
+                  <span>يتوفر تحديث جديد</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-wide">
+                  يتوفر تحديث جديد لـ RaiZon Pro
+                </h1>
+                
+                {/* شارة الإصدارات */}
+                <div className="flex items-center gap-2 mt-2 text-xs font-mono text-[#aba5cc]">
+                  <span>الإصدار المثبت: <strong className="text-slate-300">{updateInfo.currentVersion}</strong></span>
+                  <ArrowRight size={13} className="text-[#c084fc]" />
+                  <span>الإصدار الجديد: <strong className="text-amber-400 text-sm">{updateInfo.latestVersion}</strong></span>
+                  {updateInfo.installerAsset?.size && (
+                    <span className="text-[11px] bg-[#11091f] px-2 py-0.5 rounded border border-[#3d2166] text-[#c084fc]">
+                      {(updateInfo.installerAsset.size / (1024 * 1024)).toFixed(1)} MB
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* قسم مميزات التحديث */}
+              <div className="space-y-1.5">
+                <span className="text-xs font-bold text-[#ded7f7] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#a855f7]"></span>
+                  مميزات التحديث:
+                </span>
+                <div className="bg-[#11091f] border border-[#3d2166] rounded-xl p-3.5 max-h-36 overflow-y-auto custom-scrollbar text-xs leading-relaxed text-[#b2a8d1]">
+                  {updateInfo.releaseNotes ? (
+                    <div className="whitespace-pre-wrap">{updateInfo.releaseNotes}</div>
+                  ) : (
+                    <ul className="space-y-1 list-disc list-inside text-slate-300">
+                      <li>تحسينات في سرعة وأداء النظام ومعالجة الفواتير.</li>
+                      <li>إصلاحات لاستقرار النظام وتزامن البيانات.</li>
+                      <li>تحديث محرك الطباعة والتقارير اليومية والشهرية.</li>
+                    </ul>
+                  )}
+                </div>
+              </div>
+
+              {/* قسم شريط التقدم: وفوق الشريط عنوان التحديث */}
+              {downloading && (
+                <div className="space-y-2 pt-1 animate-fade-in">
+                  {/* فوق الشريط: عنوان التحديث والنسبة المئوية */}
+                  <div className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-[#ded7f7] font-bold truncate max-w-[70%]" title={releaseTitle}>
+                      {releaseTitle}
+                    </span>
+                    <span className="text-[#c084fc] font-mono font-bold text-sm">
+                      {progress}%
+                    </span>
+                  </div>
+
+                  {/* شريط التقدم بتصميم متطابق تماماً مع Setup Wizard */}
+                  <div className="h-4 rounded-lg bg-[#11091f] border border-[#3d2166] p-0.5 overflow-hidden">
+                    <div 
+                      className="h-full rounded-md transition-all duration-200 relative overflow-hidden shadow-[0_0_12px_rgba(168,85,247,0.8)]"
+                      style={{
+                        width: `${progress}%`,
+                        background: 'linear-gradient(90deg, #8b5cf6 0%, #c084fc 100%)'
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                    </div>
+                  </div>
+
+                  {/* تفاصيل التنزيل والحجم المنقول */}
+                  <div className="flex items-center justify-between text-[11px] text-[#aba5cc] font-mono">
+                    <span>{statusMessage}</span>
+                    {totalMB > 0 && (
+                      <span>{transferredMB} MB / {totalMB} MB</span>
+                    )}
+                  </div>
+                </div>
               )}
+
+              {/* في حال تم التنزيل وجاهز للتثبيت */}
+              {isReadyToInstall && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2 animate-fade-in">
+                  <CheckCircle size={18} className="shrink-0" />
+                  <span>اكتمل تنزيل ملف التحديث بنجاح! جاري التثبيت وإعادة التشغيل...</span>
+                </div>
+              )}
+
+              {/* في حال وجود خطأ */}
+              {error && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2 animate-fade-in">
+                  <AlertTriangle size={18} className="shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
             </div>
-          </div>
-
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-300 via-purple-300 to-white bg-clip-text text-transparent">
-            تحديث جديد متوفر للنظام!
-          </h2>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1">
-            تم إطلاق إصدار جديد من RaiZon Pro يتضمن تحسينات وميزات جديدة.
-          </p>
-
-          {/* Versions Pill */}
-          <div className="inline-flex items-center gap-3 mt-3 px-4 py-1.5 rounded-full bg-slate-800/90 border border-slate-700 text-xs font-mono">
-            <span className="text-slate-400">الإصدار الحالي: <span className="text-slate-200 font-bold">{updateInfo.currentVersion}</span></span>
-            <ArrowRight size={14} className="text-purple-400" />
-            <span className="text-amber-400 font-bold">الجديد: {updateInfo.latestVersion}</span>
           </div>
         </div>
 
-        {/* Release Notes */}
-        <div className="bg-slate-950/60 rounded-2xl p-4 border border-slate-800 mb-6 max-h-44 overflow-y-auto text-right text-xs leading-relaxed custom-scrollbar">
-          <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-800 text-slate-400 font-semibold">
-            <span>{updateInfo.releaseName || 'ملاحظات وتفاصيل التحديث'}</span>
-            {updateInfo.installerAsset?.size && (
-              <span className="text-[11px] font-mono text-slate-500">
-                {(updateInfo.installerAsset.size / (1024 * 1024)).toFixed(1)} MB
-              </span>
-            )}
-          </div>
-          {updateInfo.releaseNotes ? (
-            <div className="text-slate-300 whitespace-pre-wrap font-sans text-xs">
-              {updateInfo.releaseNotes}
-            </div>
-          ) : (
-            <p className="text-slate-500 italic">يتضمن هذا التحديث تحسينات في الأداء وإصلاحات للنظام واستقرار التشغيل.</p>
-          )}
-        </div>
+        {/* 3. الشريط السفلي (Footer Bar) مطابق للمثبت مع زري التحديث والتخطي */}
+        <div className="h-[64px] bg-[#0b0615] border-t border-[#24133d] flex items-center justify-between px-6">
+          {/* زر التخطي (يسار) */}
+          <button
+            type="button"
+            onClick={handleSkip}
+            disabled={downloading}
+            className="px-6 py-2.5 rounded-[10px] bg-[#1c112e] hover:bg-[#2d1748] border border-[#522480] hover:border-[#8b5cf6] text-white text-[13.5px] font-semibold transition-all cursor-pointer disabled:opacity-40"
+          >
+            تخطي
+          </button>
 
-        {/* Progress bar when downloading */}
-        {downloading && (
-          <div className="mb-6 space-y-2">
-            <div className="flex justify-between text-xs font-mono text-purple-300">
-              <span>{statusMessage}</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-purple-500/20">
-              <div
-                className="bg-gradient-to-r from-amber-400 via-purple-500 to-indigo-500 h-full rounded-full transition-all duration-200 relative"
-                style={{ width: `${progress}%` }}
-              >
-                <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
-              </div>
-            </div>
-            {totalMB > 0 && (
-              <div className="text-right text-[11px] font-mono text-slate-400">
-                تم تنزيل {transferredMB} MB من أصل {totalMB} MB
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Error notice */}
-        {error && (
-          <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
-            <AlertTriangle size={16} className="shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 items-center">
+          {/* زر التحديث (يمين) */}
           {isReadyToInstall ? (
             <button
+              type="button"
               onClick={handleManualInstall}
-              className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-900/40 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              className="px-7 py-2.5 rounded-[10px] bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[13.5px] font-bold shadow-[0_0_14px_rgba(16,185,129,0.5)] transition-all cursor-pointer flex items-center gap-2"
             >
-              <CheckCircle size={18} />
-              <span>إعادة التشغيل وتثبيت التحديث الآن</span>
+              <CheckCircle size={16} />
+              <span>تثبيت التحديث الآن</span>
             </button>
           ) : (
-            <>
-              {/* زر التحديث */}
-              <button
-                onClick={handleStartUpdate}
-                disabled={downloading}
-                className="w-full sm:flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-purple-900/40 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-              >
-                {downloading ? (
-                  <>
-                    <RefreshCw size={18} className="animate-spin" />
-                    <span>جاري التنزيل ({progress}%)...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download size={18} />
-                    <span>تحديث الآن (مجاناً)</span>
-                  </>
-                )}
-              </button>
-
-              {/* زر التخطي */}
-              <button
-                onClick={handleSkip}
-                disabled={downloading}
-                className="w-full sm:w-auto py-3.5 px-6 rounded-2xl bg-slate-800 hover:bg-slate-700/80 text-slate-300 hover:text-white font-bold text-sm border border-slate-700 transition-all active:scale-95 disabled:opacity-40 cursor-pointer"
-              >
-                تخطي
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={handleStartUpdate}
+              disabled={downloading}
+              className="px-7 py-2.5 rounded-[10px] text-white text-[13.5px] font-bold transition-all cursor-pointer flex items-center gap-2 shadow-[0_0_14px_rgba(168,85,247,0.65)] disabled:opacity-50"
+              style={{
+                background: downloading 
+                  ? '#3d2166' 
+                  : 'linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%)',
+                border: '1px solid #c084fc'
+              }}
+              onMouseEnter={(e) => {
+                if (!downloading) e.currentTarget.style.background = 'linear-gradient(90deg, #a855f7 0%, #7c3aed 100%)';
+              }}
+              onMouseLeave={(e) => {
+                if (!downloading) e.currentTarget.style.background = 'linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%)';
+              }}
+            >
+              {downloading ? (
+                <>
+                  <RefreshCw size={15} className="animate-spin text-[#c084fc]" />
+                  <span>جاري التحديث ({progress}%)...</span>
+                </>
+              ) : (
+                <>
+                  <Download size={15} />
+                  <span>تحديث</span>
+                </>
+              )}
+            </button>
           )}
         </div>
       </div>
