@@ -1275,6 +1275,15 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState(false);
+    const [isShaking, setIsShaking] = useState(false);
+
+    const triggerShake = () => {
+      setIsShaking(false);
+      setTimeout(() => {
+        setIsShaking(true);
+        setTimeout(() => setIsShaking(false), 500);
+      }, 10);
+    };
 
     // حالة الترخيص والمدة المتبقية المعروضة للمستخدم
     const [licenseInfo, setLicenseInfo] = useState<{
@@ -1356,10 +1365,16 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
     const handleLogin = async (e: any) => {
       e.preventDefault();
       if (busy) return;
+      if (!username.trim() || !password) {
+        setError(true);
+        triggerShake();
+        return;
+      }
       setBusy(true);
       try {
         if (await login(username, password)) {
           setError(false);
+          setIsShaking(false);
           const cleanUser = username.trim();
           if (rememberMe && cleanUser) {
             localStorage.setItem('savedUsername', cleanUser);
@@ -1382,7 +1397,11 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
           }
         } else {
           setError(true);
+          triggerShake();
         }
+      } catch {
+        setError(true);
+        triggerShake();
       } finally {
         setBusy(false);
       }
@@ -1449,8 +1468,20 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
   
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-950 relative overflow-hidden transition-colors duration-300 p-4 font-sans" dir="rtl">
-        {/* Clean Neutral Background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-200/20 to-slate-200/40 dark:via-slate-900/40 dark:to-slate-900/80 pointer-events-none"></div>
+        {/* Animated Colorful Background Effects */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-100/40 via-slate-50 to-slate-100 dark:from-purple-950/40 dark:via-slate-950 dark:to-slate-900 pointer-events-none z-0" />
+        <div className="absolute top-[-15%] right-[-10%] w-[550px] h-[550px] bg-gradient-to-br from-purple-600/25 via-fuchsia-600/20 to-transparent rounded-full blur-[110px] animate-pulse pointer-events-none" />
+        <div className="absolute bottom-[-15%] left-[-10%] w-[550px] h-[550px] bg-gradient-to-tr from-indigo-600/25 via-sky-600/20 to-transparent rounded-full blur-[110px] animate-pulse pointer-events-none" style={{ animationDelay: '1.5s', animationDuration: '6s' }} />
+        <div className="absolute top-[35%] left-[15%] w-[380px] h-[380px] bg-gradient-to-r from-amber-500/15 to-purple-500/15 rounded-full blur-[100px] animate-float pointer-events-none" />
+
+        {/* Ambient Grid overlay */}
+        <div 
+          className="absolute inset-0 opacity-[0.03] dark:opacity-[0.06] pointer-events-none"
+          style={{
+            backgroundImage: `radial-gradient(currentColor 1px, transparent 1px)`,
+            backgroundSize: '24px 24px'
+          }}
+        />
 
         {/* Theme Toggle */}
         <button 
@@ -1460,8 +1491,12 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </button>
 
-        {/* Card Container */}
-        <div className="relative z-10 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 p-8 rounded-3xl shadow-xl w-full max-w-md animate-scale-in">
+        {/* Card Container with Left-Right Shake Animation on Error */}
+        <div className={`relative z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800/90 p-8 rounded-3xl shadow-2xl w-full max-w-md transition-all ${
+          isShaking 
+            ? 'animate-shake ring-2 ring-red-500/50 border-red-500/50 shadow-red-500/10' 
+            : 'animate-scale-in'
+        }`}>
           
           {/* Header with Logo */}
           <div className="text-center mb-8">
@@ -1629,33 +1664,19 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
               <span className="group-hover:translate-x-1 transition-transform">→</span>
             </button>
 
-            <div className="flex items-center justify-between mt-6">
-                <button type="button" onClick={() => { setShowPinPad(true); setPin(''); setPinError(false); setPinHint(''); }} className="text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 text-sm transition-colors flex items-center gap-2">
-                    <Keypad size={16} /> {t('quick_pin')}
+            {state.settings.enableBiometricLogin && (
+              <div className="flex items-center justify-center mt-6">
+                <button type="button" onClick={handleBiometricLogin} className="text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 text-sm transition-colors flex items-center gap-2 animate-pulse">
+                  <Fingerprint size={24} />
                 </button>
-                {state.settings.enableBiometricLogin && (
-                    <button type="button" onClick={handleBiometricLogin} className="text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 text-sm transition-colors flex items-center gap-2 animate-pulse">
-                        <Fingerprint size={24} />
-                    </button>
-                )}
-            </div>
+              </div>
+            )}
           </form>
           
-          <div className="mt-8 text-center space-y-2">
+          <div className="mt-8 text-center">
             <p className="text-xs text-slate-500">
                 {t('developed_by')}
             </p>
-            {onOpenPatcher && (
-              <button
-                type="button"
-                onClick={onOpenPatcher}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
-                title="لوحة تحكم وتوليد تراخيص المطور (Patcher) - اختصار: Ctrl+Shift+P"
-              >
-                <Shield size={13} className="text-amber-500" />
-                <span>Patcher Pro (المطور)</span>
-              </button>
-            )}
           </div>
         </div>
 
