@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2025 Ibrahim Nawar Salon. All Rights Reserved.
  * This software is the confidential and proprietary information of Ibrahim Nawar Salon.
  * Unauthorized copying of this file, via any medium is strictly prohibited.
@@ -7,11 +7,16 @@
 import React, { useState, useRef, useMemo, useEffect, lazy, Suspense } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Intro } from './components/Intro';
-import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Truck } from './components/Icons';
+import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, ChevronDown, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Truck, Bell, AlertTriangle, Shield, Phone, Copy } from './components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from './types';
 import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, type SyncStatus } from './lib/serverSync';
 import { Card, Button, Input, ToastContainer, SimpleBarChart, useSound, useLiveTick } from './components/ui';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { FilterModal } from './components/FilterModal';
+import { CommandPalette } from './components/CommandPalette';
+import { PatcherModal } from './components/PatcherModal';
+import { UnsavedChangesModal } from './components/UnsavedChangesModal';
+import { UpdateModal, type UpdateInfo } from './components/UpdateModal';
 // الصفحات تُحمَّل عند الطلب (code-splitting) لتقليل حجم الحزمة الأولية
 const Dashboard = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.Dashboard })));
 const CreateInvoice = lazy(() => import('./pages/CreateInvoicePage').then(m => ({ default: m.CreateInvoice })));
@@ -83,11 +88,60 @@ const PageLoader = () => (
 );
 
 const MainContent = () => {
-  const { logout, t, toggleLanguage, language, currentUser, theme, toggleTheme, glassNeon, toggleGlassNeon, state, addToast } = useApp();
+  const { 
+    logout, t, toggleLanguage, language, currentUser, theme, toggleTheme, 
+    glassNeon, toggleGlassNeon, state, addToast,
+    settingsDirty, saveSettingsHandlerRef, discardSettingsHandlerRef 
+  } = useApp();
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+  const [isNavSaving, setIsNavSaving] = useState(false);
+
+  const handleNavigate = (targetTab: string) => {
+    if (targetTab === activeTab) return;
+    if (activeTab === 'settings' && settingsDirty) {
+      setPendingNavigation(targetTab);
+      return;
+    }
+    setActiveTab(targetTab as any);
+  };
+
+  const handleConfirmSaveAndNavigate = async () => {
+    setIsNavSaving(true);
+    try {
+      if (saveSettingsHandlerRef.current) {
+        await saveSettingsHandlerRef.current();
+      }
+    } finally {
+      setIsNavSaving(false);
+      const next = pendingNavigation;
+      setPendingNavigation(null);
+      if (next) setActiveTab(next as any);
+    }
+  };
+
+  const handleConfirmDiscardAndNavigate = () => {
+    if (discardSettingsHandlerRef.current) {
+      discardSettingsHandlerRef.current();
+    }
+    const next = pendingNavigation;
+    setPendingNavigation(null);
+    if (next) setActiveTab(next as any);
+  };
   const [activeTab, setActiveTab] = useState('dashboard' as 'dashboard' | 'create_invoice' | 'invoices' | 'returns' | 'inventory' | 'categories' | 'locations' | 'suppliers' | 'purchase_orders' | 'inventory_history' | 'clients' | 'reservations' | 'stats' | 'settings' | 'expenses' | 'staff' | 'closing' | 'notes' | 'users' | 'audit_logs');
   const [showStats, setShowStats] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // حساب التنبيهات الذكية الحية
+  const lowStockItems = useMemo(() => state.items.filter(i => i.trackStock && i.quantity <= i.alertThreshold), [state.items]);
+  const heldCount = (state.heldInvoices || []).length;
+  const todayIso = new Date().toISOString().split('T')[0];
+  const upcomingReservations = useMemo(() => {
+    return (state.reservations || []).filter(r => r.date === todayIso && r.status !== 'completed' && r.status !== 'cancelled');
+  }, [state.reservations, todayIso]);
+  const totalNotifications = lowStockItems.length + (heldCount > 0 ? 1 : 0) + upcomingReservations.length;
   const { playBeep } = useSound();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncStatus, setSyncStatus] = useState({ pending: 0, lastSyncAt: null as number | null, lastError: null as string | null, syncing: false } as SyncStatus);
@@ -141,20 +195,13 @@ const MainContent = () => {
       { id: 'invoices', icon: FileText, label: t('invoices'), group: t('nav_group_daily') },
       { id: 'returns', icon: RefreshCw, label: t('returns'), group: t('nav_group_daily') },
       { id: 'expenses', icon: TrendingUp, label: t('expenses'), group: t('nav_group_daily') },
+      { id: 'closing', icon: Wallet, label: t('closing'), group: t('nav_group_daily') },
       { id: 'clients', icon: Users, label: t('clients'), group: t('nav_group_daily') },
       { id: 'reservations', icon: Calendar, label: t('reservations'), group: t('nav_group_daily') },
-      { id: 'closing', icon: Wallet, label: t('closing'), group: t('nav_group_daily') },
       { id: 'inventory', icon: Package, label: t('inventory'), group: t('nav_group_inventory') },
-      { id: 'categories', icon: Tag, label: t('categories'), group: t('nav_group_inventory') },
-      { id: 'locations', icon: MapPin, label: t('locations'), group: t('nav_group_inventory') },
-      { id: 'suppliers', icon: Truck, label: t('suppliers'), group: t('nav_group_inventory') },
-      { id: 'purchase_orders', icon: Package, label: t('purchase_orders'), group: t('nav_group_inventory') },
-      { id: 'inventory_history', icon: Activity, label: t('inventory_history'), group: t('nav_group_inventory') },
       { id: 'staff', icon: Users, label: t('staff_management'), group: t('nav_group_inventory') },
       { id: 'stats', icon: BarChart2, label: t('analytics'), group: t('nav_group_system') },
       { id: 'notes', icon: FileText, label: t('notes'), group: t('nav_group_system') },
-      { id: 'users', icon: User, label: t('users'), group: t('nav_group_system') },
-      { id: 'audit_logs', icon: Fingerprint, label: t('audit_logs'), group: t('nav_group_system') },
       { id: 'settings', icon: Settings, label: t('settings'), group: t('nav_group_system') },
   ].filter(item => {
       if (currentUser?.role === 'admin') return true;
@@ -185,7 +232,7 @@ const MainContent = () => {
           case 'audit_logs': return <AuditLogs />;
           case 'dashboard': 
           default:
-              return <Dashboard onNavigate={setActiveTab} showStats={showStats} />;
+              return <Dashboard onNavigate={handleNavigate} showStats={showStats} />;
       }
   };
 
@@ -193,12 +240,23 @@ const MainContent = () => {
     <div className={`flex h-screen bg-neon-gradient text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 ${language === 'ar' ? 'font-cairo' : ''}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <ToastContainer />
         {/* Sidebar */}
-        <aside className="w-20 lg:w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col transition-all duration-300 z-20 shadow-xl">
-            <div className="h-24 flex items-center justify-center gap-2 border-b border-slate-100 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm px-3">
-                <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-10 h-10 lg:w-11 lg:h-11 object-contain drop-shadow-[0_0_8px_rgba(168,85,247,0.4)] shrink-0" />
-                <span className="hidden lg:block font-bold text-xl drop-shadow-sm font-cairo tracking-wide animate-fade-in">
-                    <span className="text-amber-500 dark:text-amber-400">RaiZon</span> <span className="text-purple-500 dark:text-purple-400">Pro</span>
-                </span>
+        <aside className={`${sidebarCollapsed ? "w-16" : "w-20 lg:w-60"} bg-white dark:bg-slate-900 border-e border-slate-200 dark:border-slate-700/80 flex flex-col transition-all duration-300 z-20 flex-shrink-0`}>
+            <div className="h-16 flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700/80 px-3 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                    <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-8 h-8 object-contain shrink-0" />
+                    {!sidebarCollapsed && (
+                        <span className="hidden lg:block font-bold text-base font-cairo truncate animate-fade-in">
+                            <span className="text-amber-500 dark:text-amber-400">RaiZon</span> <span className="text-purple-500 dark:text-purple-400">Pro</span>
+                        </span>
+                    )}
+                </div>
+                <button
+                    onClick={() => setSidebarCollapsed(p => !p)}
+                    className="hidden lg:flex w-7 h-7 rounded-md items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shrink-0"
+                    aria-label="طي الشريط"
+                >
+                    <ChevronRight size={16} className={`transition-transform duration-300 ${sidebarCollapsed ? "" : "rotate-180"}`} />
+                </button>
             </div>
             
             <nav className="flex-1 overflow-y-auto py-4 space-y-1 px-2 custom-scrollbar">
@@ -213,11 +271,12 @@ const MainContent = () => {
                                 </div>
                             )}
                             <button
-                                onClick={() => { setActiveTab(item.id as any); playBeep(); }}
-                                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative
+                                onClick={() => { handleNavigate(item.id as any); playBeep(); }}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-150 group relative
+                                    ${sidebarCollapsed ? 'justify-center' : '' }
                                     ${isActive 
-                                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-bold shadow-sm' 
-                                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-200'
+                                        ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-bold' 
+                                        : 'text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white'
                                     }`}
                             >
                                 {(() => {
@@ -225,7 +284,7 @@ const MainContent = () => {
                                     return activeItem ? (
                                         <>
                                             <activeItem.icon size={24} className={isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'} />
-                                            <span className="hidden lg:block">{activeItem.label}</span>
+                                            {!sidebarCollapsed && <span className="hidden lg:block">{activeItem.label}</span>}
                                         </>
                                     ) : null;
                                 })()}
@@ -255,13 +314,13 @@ const MainContent = () => {
         {/* Main Content */}
         <main className="flex-1 flex flex-col h-full overflow-hidden relative">
             {/* Header */}
-            <header className="h-20 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-6 z-10 sticky top-0 relative">
+            <header className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700/80 flex items-center justify-between px-5 z-10 sticky top-0">
                 <div className="flex items-center gap-4">
                     {/* Left Side Placeholder */}
                 </div>
 
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                <div className="flex-1">
+                    <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
                         {navItems.find(i => i.id === activeTab)?.label}
                     </h2>
                 </div>
@@ -300,8 +359,93 @@ const MainContent = () => {
                         </div>
                      )}
                      
+                     {/* Smart Notification Center */}
+                     <div className="relative">
+                         <button
+                             onClick={() => setShowNotifications(prev => !prev)}
+                             className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors relative"
+                             title="مركز التنبيهات الذكية"
+                         >
+                             <Bell size={18} />
+                             {totalNotifications > 0 && (
+                                 <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                                     {totalNotifications}
+                                 </span>
+                             )}
+                         </button>
+
+                         {showNotifications && (
+                             <div 
+                                 className="absolute left-0 sm:right-auto sm:left-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700/80 p-3 z-50 animate-scale-in"
+                                 onClick={(e) => e.stopPropagation()}
+                             >
+                                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/80 pb-2 mb-2">
+                                     <h4 className="font-bold text-xs text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                         <Bell size={14} className="text-primary-500" />
+                                         مركز التنبيهات المباشرة ({totalNotifications})
+                                     </h4>
+                                     <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-600">
+                                         <X size={14} />
+                                     </button>
+                                 </div>
+                                 <div className="max-h-64 overflow-y-auto space-y-2 text-xs custom-scrollbar">
+                                     {totalNotifications === 0 ? (
+                                         <div className="py-6 text-center text-slate-400">
+                                             ✓ كل شيء تمام، لا توجد تنبيهات عاجلة
+                                         </div>
+                                     ) : (
+                                         <>
+                                             {lowStockItems.length > 0 && (
+                                                 <div 
+                                                     onClick={() => { handleNavigate('inventory'); setShowNotifications(false); }}
+                                                     className="p-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 cursor-pointer hover:bg-red-100/50 transition-colors"
+                                                 >
+                                                     <div className="font-bold text-red-700 dark:text-red-400 flex items-center gap-1">
+                                                         <AlertTriangle size={13} />
+                                                         تنبيه نفاد مخزون ({lowStockItems.length} صنف)
+                                                     </div>
+                                                     <p className="text-[11px] text-red-600/80 dark:text-red-300/80 mt-0.5">
+                                                         الأصناف وصلت لحد الخطر وتحتاج إعادة طلب فوراً.
+                                                     </p>
+                                                 </div>
+                                             )}
+                                             {heldCount > 0 && (
+                                                 <div 
+                                                     onClick={() => { handleNavigate('create_invoice'); setShowNotifications(false); }}
+                                                     className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 cursor-pointer hover:bg-amber-100/50 transition-colors"
+                                                 >
+                                                     <div className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                                                         <Clock size={13} />
+                                                         فواتير معلقة ({heldCount})
+                                                     </div>
+                                                     <p className="text-[11px] text-amber-600/80 dark:text-amber-300/80 mt-0.5">
+                                                         يوجد فواتير قيد الانتظار لم تُستكمل بعد.
+                                                     </p>
+                                                 </div>
+                                             )}
+                                             {upcomingReservations.length > 0 && (
+                                                 <div 
+                                                     onClick={() => { handleNavigate('reservations'); setShowNotifications(false); }}
+                                                     className="p-2.5 rounded-lg bg-purple-50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-900/30 cursor-pointer hover:bg-purple-100/50 transition-colors"
+                                                 >
+                                                     <div className="font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1">
+                                                         <Calendar size={13} />
+                                                         حجوزات اليوم القادمة ({upcomingReservations.length})
+                                                     </div>
+                                                     <p className="text-[11px] text-purple-600/80 dark:text-purple-300/80 mt-0.5">
+                                                         تأكد من جاهزية الموظفين لاستقبال العملاء.
+                                                     </p>
+                                                 </div>
+                                             )}
+                                         </>
+                                     )}
+                                 </div>
+                             </div>
+                         )}
+                     </div>
+
                      <button onClick={() => setShowShortcuts(true)} className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors" title={t('shortcuts')}>
-                        <Keyboard size={20} />
+                        <Keyboard size={18} />
                      </button>
 
                      {/* Glass Toggle Removed as requested */}
@@ -324,12 +468,14 @@ const MainContent = () => {
             </header>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-auto p-6 relative flex flex-col">
+            <div className="flex-1 overflow-auto p-5 relative flex flex-col bg-slate-50 dark:bg-slate-900/50">
                  {/* Page Transition Wrapper */}
                  <div className="max-w-7xl mx-auto w-full animate-fade-in-up flex-1">
-                    <Suspense fallback={<PageLoader />}>
-                        {renderContent()}
-                    </Suspense>
+                    <ErrorBoundary onReset={() => setActiveTab('dashboard')}>
+                        <Suspense fallback={<PageLoader />}>
+                            {renderContent()}
+                        </Suspense>
+                    </ErrorBoundary>
                  </div>
                  
                  {/* Copyright Footer */}
@@ -338,35 +484,22 @@ const MainContent = () => {
                  </footer>
             </div>
             
-            {/* Global Search Modal */}
-            {showSearch && (
-                <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/20 backdrop-blur-sm animate-fade-in" onClick={() => setShowSearch(false)}>
-                    <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-                            <Search className="text-slate-400 mr-3" size={20} />
-                            <input 
-                                autoFocus
-                                type="text" 
-                                placeholder={t('search')} 
-                                className="flex-1 bg-transparent border-none outline-none text-lg text-slate-800 dark:text-slate-100 placeholder-slate-400"
-                            />
-                            <button onClick={() => setShowSearch(false)} className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-500">ESC</button>
-                        </div>
-                        <div className="p-2">
-                            <p className="text-xs text-slate-400 px-4 py-2 uppercase font-bold tracking-wider">{t('quick_access')}</p>
-                            {navItems.slice(0, 3).map(item => (
-                                <button key={item.id} onClick={() => { setActiveTab(item.id as any); setShowSearch(false); }} className="w-full text-left flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors group">
-                                    <div className="bg-slate-100 dark:bg-slate-700 p-2 rounded-lg text-slate-500 group-hover:text-primary-600 group-hover:bg-primary-50 transition-colors">
-                                        {/* Since icons are components, we need to render them */}
-                                        {React.createElement(item.icon as any, { size: 18 })}
-                                    </div>
-                                    <span className="font-medium text-slate-700 dark:text-slate-200">{item.label}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
+                        {/* Modal تأكيد حفظ التعديلات عند الانتقال لصفحة أخرى */}
+            <UnsavedChangesModal
+                isOpen={!!pendingNavigation}
+                onSave={handleConfirmSaveAndNavigate}
+                onDiscard={handleConfirmDiscardAndNavigate}
+                onCancel={() => setPendingNavigation(null)}
+                isSaving={isNavSaving}
+            />
+            {/* Smart Command Palette (Ctrl + K) */}
+            <CommandPalette
+                isOpen={showSearch}
+                onClose={() => setShowSearch(false)}
+                onNavigate={(tab) => handleNavigate(tab as any)}
+                items={state.items}
+                customers={state.customers}
+            />
             
             {/* Keyboard Shortcuts Modal */}
             {showShortcuts && (
@@ -398,11 +531,13 @@ const MainContent = () => {
   );
 };
 
-const ActivationScreen = () => {
+const ActivationScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
     const [key, setKey] = useState('');
     const [error, setError] = useState('');
     const [machineId, setMachineId] = useState(localStorage.getItem('machineId') || '');
     const [copied, setCopied] = useState(false);
+    const [showContactDev, setShowContactDev] = useState(false);
+    const [copiedPhone, setCopiedPhone] = useState(false);
     const { t } = useApp();
 
     useEffect(() => {
@@ -514,6 +649,26 @@ const ActivationScreen = () => {
                 >
                     {t('activate_system')}
                 </button>
+
+                {onOpenPatcher && (
+                    <button
+                        type="button"
+                        onClick={onOpenPatcher}
+                        className="w-full py-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                        <Shield size={16} />
+                        <span>فتح أداة الترخيص المباشر (Patcher للمطور)</span>
+                    </button>
+                )}
+
+                <button
+                    type="button"
+                    onClick={() => setShowContactDev(true)}
+                    className="w-full py-2.5 rounded-xl border border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 dark:text-purple-300 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                    <Phone size={15} />
+                    <span>تواصل مع المطور</span>
+                </button>
                 
                 <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
                     <p className="text-[10px] text-slate-400 uppercase tracking-widest">
@@ -521,16 +676,97 @@ const ActivationScreen = () => {
                     </p>
                 </div>
             </div>
+
+            {/* نافذة التواصل مع المطور */}
+            {showContactDev && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-scale-in" dir="rtl">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl max-w-xs w-full border border-purple-500/40 text-center space-y-4">
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-purple-500/30">
+                            <Phone size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-black text-slate-800 dark:text-slate-100">تواصل مع المطور</h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">للحصول على كود التفعيل والدعم الفني</p>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 space-y-1">
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold block">رقم الهاتف / واتساب:</span>
+                            <div className="font-mono text-xl font-black text-purple-600 dark:text-purple-300 tracking-wider" dir="ltr">
+                                01026695879
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    navigator.clipboard.writeText('01026695879');
+                                    setCopiedPhone(true);
+                                    setTimeout(() => setCopiedPhone(false), 2000);
+                                }}
+                                className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
+                            >
+                                {copiedPhone ? <Check size={14} /> : <Copy size={14} />}
+                                <span>{copiedPhone ? 'تم النسخ!' : 'نسخ الرقم'}</span>
+                            </button>
+                            <a
+                                href="tel:01026695879"
+                                className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"
+                            >
+                                <Phone size={14} />
+                                <span>اتصال</span>
+                            </a>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => setShowContactDev(false)}
+                            className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 font-bold text-xs transition-colors cursor-pointer"
+                        >
+                            إغلاق
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
 // Root Component
 const AppContent = () => {
+  const isPatcherMode = typeof window !== 'undefined' && window.location.search.includes('mode=patcher');
+
+  // عند تشغيل الباتشر المباشر يتم تجاوز شاشة الإنترو فوراً وفتح الباتشر مباشرة بدون أي تأخير
+  if (isPatcherMode) {
+    return (
+      <PatcherModal
+        isOpen={true}
+        onClose={() => {}}
+        onActivationSuccess={() => {}}
+      />
+    );
+  }
+
   const { currentUser, state } = useApp();
   const [introFinished, setIntroFinished] = useState(false);
   const [isIdle, setIsIdle] = useState(false);
   const [isActivated, setIsActivated] = useState(null as boolean | null);
+  const [showPatcher, setShowPatcher] = useState(false);
+
+  // اختصار لوحة المفاتيح للمطور Ctrl+Shift+P أو رابط الباتشر
+  useEffect(() => {
+    if (window.location.search.includes('mode=patcher')) {
+      setShowPatcher(true);
+    }
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'P' || e.key === 'p')) {
+        e.preventDefault();
+        setShowPatcher(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
 
   useEffect(() => {
       // Check License on Mount
@@ -584,7 +820,20 @@ const AppContent = () => {
   }, [state.settings.enableScreenSaver]);
 
   if (isActivated === false) {
-      return <ActivationScreen />;
+      return (
+        <>
+          <ActivationScreen onOpenPatcher={() => setShowPatcher(true)} />
+          <PatcherModal
+            isOpen={showPatcher}
+            onClose={() => setShowPatcher(false)}
+            onActivationSuccess={() => {
+              setIsActivated(true);
+              setShowPatcher(false);
+              window.location.reload();
+            }}
+          />
+        </>
+      );
   }
 
   if (isIdle && state.settings.enableScreenSaver) {
@@ -596,7 +845,20 @@ const AppContent = () => {
   }
 
   if (!currentUser) {
-    return <LoginScreen />;
+    return (
+      <>
+        <LoginScreen onOpenPatcher={() => setShowPatcher(true)} />
+        <PatcherModal
+          isOpen={showPatcher}
+          onClose={() => setShowPatcher(false)}
+          onActivationSuccess={() => {
+            setIsActivated(true);
+            setShowPatcher(false);
+            window.location.reload();
+          }}
+        />
+      </>
+    );
   }
 
   // إجبار تغيير كلمة المرور الافتراضية قبل استخدام النظام
@@ -604,7 +866,19 @@ const AppContent = () => {
     return <ForcePasswordChange />;
   }
 
-  return <MainContent />;
+  return (
+    <ErrorBoundary>
+      <MainContent />
+      <PatcherModal
+        isOpen={showPatcher}
+        onClose={() => setShowPatcher(false)}
+        onActivationSuccess={() => {
+          setShowPatcher(false);
+          window.location.reload();
+        }}
+      />
+    </ErrorBoundary>
+  );
 };
 
 const ForcePasswordChange = () => {
@@ -648,12 +922,102 @@ const ForcePasswordChange = () => {
   );
 };
 
-const LoginScreen = () => {
-    const { login, loginWithPin, t, state, theme, toggleTheme } = useApp();
+interface RememberedUser {
+    username: string;
+    name?: string;
+    role?: string;
+    lastLogin?: number;
+}
+
+const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
+    const { login, loginWithPin, t, state, theme, toggleTheme, language } = useApp();
+    // حالة التحديث التلقائي ونافذة التحديث بعد الانترو
+    const [pendingUpdate, setPendingUpdate] = useState<UpdateInfo | null>(null);
+    const [showUpdateModal, setShowUpdateModal] = useState(false);
+
+    useEffect(() => {
+        if (state.settings?.autoCheckUpdates === false) return;
+        const timer = setTimeout(async () => {
+            try {
+                const repo = state.settings?.githubRepo || 'abdoaladly1-spec/raizon-pro';
+                const token = state.settings?.githubToken || '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';
+                if (window.procashier?.checkForUpdates) {
+                    const res = await window.procashier.checkForUpdates({ repo, token });
+                    if (res && res.ok && res.hasUpdate) {
+                        const skipped = sessionStorage.getItem('skipped_update_version');
+                        if (skipped !== res.latestVersion) {
+                            setPendingUpdate({
+                                currentVersion: res.currentVersion || 'v1.0.0',
+                                latestVersion: res.latestVersion || 'v1.0.1',
+                                releaseName: res.releaseName,
+                                releaseNotes: res.releaseNotes,
+                                downloadUrl: res.downloadUrl,
+                                installerAsset: res.installerAsset,
+                                htmlUrl: res.htmlUrl
+                            });
+                            setShowUpdateModal(true);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('[Updater] Auto check failed:', e);
+            }
+        }, 1200);
+        return () => clearTimeout(timer);
+    }, [state.settings?.autoCheckUpdates, state.settings?.githubRepo, state.settings?.githubToken]);
+
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState(false);
+
+    // حالة الترخيص والمدة المتبقية المعروضة للمستخدم
+    const [licenseInfo, setLicenseInfo] = useState<{
+        valid?: boolean;
+        isPerpetual?: boolean;
+        expiresAt?: string | null;
+        remainingMs?: number | null;
+    } | null>(null);
+    const [liveRemainingText, setLiveRemainingText] = useState('');
+
+    useEffect(() => {
+        const updateLicenseStatus = async () => {
+            const bridge = window.procashier;
+            if (bridge?.getLicenseStatus) {
+                try {
+                    const st = await bridge.getLicenseStatus();
+                    setLicenseInfo(st);
+                    if (st.isPerpetual) {
+                        setLiveRemainingText('ترخيص دائم طوال الحياة 👑');
+                    } else if (st.expiresAt) {
+                        const diff = Date.parse(st.expiresAt) - Date.now();
+                        if (diff <= 0) {
+                            setLiveRemainingText('انتهت صلاحية الترخيص - يرجى التجديد ⚠️');
+                        } else {
+                            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                            const minutes = Math.floor((diff / (1000 * 60)) % 60);
+                            const seconds = Math.floor((diff / 1000) % 60);
+
+                            if (days > 0) {
+                                setLiveRemainingText(`صالح لمدة: ${days} يوم و ${hours} ساعة`);
+                            } else if (hours > 0) {
+                                setLiveRemainingText(`صالح لمدة: ${hours} ساعة و ${minutes} دقيقة`);
+                            } else {
+                                setLiveRemainingText(`صالح لمدة: ${minutes} دقيقة و ${seconds} ثانية`);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        };
+
+        updateLicenseStatus();
+        const interval = setInterval(updateLicenseStatus, 1000);
+        return () => clearInterval(interval);
+    }, []);
     const [busy, setBusy] = useState(false);
     const [isFocusedUser, setIsFocusedUser] = useState(false);
     const [isFocusedPass, setIsFocusedPass] = useState(false);
@@ -663,6 +1027,12 @@ const LoginScreen = () => {
     const [pin, setPin] = useState('');
     const [pinError, setPinError] = useState(false);
     const [pinHint, setPinHint] = useState('');
+
+    // قائمة المستخدمين المسجلين مسبقاً (تذكرني)
+    const [rememberedUsers, setRememberedUsers] = useState<RememberedUser[]>([]);
+    const [showUserDropdown, setShowUserDropdown] = useState(false);
+    const userDropdownRef = useRef<HTMLDivElement>(null);
+    const passwordInputRef = useRef<HTMLInputElement>(null);
 
     const handlePinLogin = async () => {
       const res = await loginWithPin(pin);
@@ -685,10 +1055,25 @@ const LoginScreen = () => {
       try {
         if (await login(username, password)) {
           setError(false);
-          if (rememberMe) {
-            localStorage.setItem('savedUsername', username);
-          } else {
-            localStorage.removeItem('savedUsername');
+          const cleanUser = username.trim();
+          if (rememberMe && cleanUser) {
+            localStorage.setItem('savedUsername', cleanUser);
+            try {
+              const matched = state.users.find(u => u.username.toLowerCase() === cleanUser.toLowerCase());
+              const raw = localStorage.getItem('remembered_users_list');
+              let list: RememberedUser[] = raw ? JSON.parse(raw) : [];
+              list = list.filter(u => u.username.toLowerCase() !== cleanUser.toLowerCase());
+              list.unshift({
+                username: cleanUser,
+                name: matched?.name || cleanUser,
+                role: matched?.role || 'user',
+                lastLogin: Date.now()
+              });
+              localStorage.setItem('remembered_users_list', JSON.stringify(list));
+              setRememberedUsers(list);
+            } catch (err) {
+              console.error(err);
+            }
           }
         } else {
           setError(true);
@@ -698,17 +1083,63 @@ const LoginScreen = () => {
       }
     };
 
+    const handleSelectRememberedUser = (u: RememberedUser) => {
+      setUsername(u.username);
+      setRememberMe(true);
+      setShowUserDropdown(false);
+      setError(false);
+      setTimeout(() => {
+        passwordInputRef.current?.focus();
+      }, 50);
+    };
+
+    const handleDeleteRememberedUser = (e: React.MouseEvent, targetUsername: string) => {
+      e.stopPropagation();
+      const nextList = rememberedUsers.filter(u => u.username.toLowerCase() !== targetUsername.toLowerCase());
+      setRememberedUsers(nextList);
+      localStorage.setItem('remembered_users_list', JSON.stringify(nextList));
+      if (username.toLowerCase() === targetUsername.toLowerCase()) {
+        if (nextList.length > 0) {
+          setUsername(nextList[0].username);
+        } else {
+          setUsername('');
+          localStorage.removeItem('savedUsername');
+        }
+      }
+    };
+
     const handleBiometricLogin = () => {
         // غير مفعّل: لا يمكن اعتبار البصمة تحققاً حقيقياً بدون WebAuthn/backend
         alert(t('biometric_unavailable'));
     };
 
+    // تحميل المستخدمين المحفوظين وإغلاق القائمة عند النقر خارجها
     useEffect(() => {
-      const saved = localStorage.getItem('savedUsername');
-      if (saved) {
-        setUsername(saved);
-        setRememberMe(true);
+      try {
+        const raw = localStorage.getItem('remembered_users_list');
+        let list: RememberedUser[] = raw ? JSON.parse(raw) : [];
+        const saved = localStorage.getItem('savedUsername');
+        if (saved && !list.some(u => u.username.toLowerCase() === saved.toLowerCase())) {
+          list.unshift({ username: saved, lastLogin: Date.now() });
+        }
+        setRememberedUsers(list);
+        if (list.length > 0) {
+          setUsername(list[0].username);
+          setRememberMe(true);
+        }
+      } catch (e) {
+        console.error('Failed to load remembered users', e);
       }
+    }, []);
+
+    useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+        if (userDropdownRef.current && !userDropdownRef.current.contains(e.target as Node)) {
+          setShowUserDropdown(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
   
     return (
@@ -739,47 +1170,136 @@ const LoginScreen = () => {
             </div>
             <h1 className="text-3xl font-bold mb-2 translate-x-[2%]"><span className="text-amber-400 dark:text-amber-300">RaiZon</span> <span className="text-purple-500 dark:text-purple-400">Pro</span> <span className="text-xl align-super opacity-80">v1</span></h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm tracking-wide uppercase">{t('login_title')}</p>
+
+            
+            {/* شارة توفر التحديث في حال التخطي */}
+            {pendingUpdate && !showUpdateModal && (
+              <div className="mt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowUpdateModal(true)}
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30 hover:bg-purple-500/25 transition-all cursor-pointer animate-pulse"
+                >
+                  <span>🚀 يتوفر تحديث جديد ({pendingUpdate.latestVersion}) — اضغط للتحديث</span>
+                </button>
+              </div>
+            )}
+
+            {/* عرض المدة المتبقية على انتهاء الترخيص */}
+            {liveRemainingText && (
+              <div className="mt-4 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-sm">
+                <Clock size={14} className="animate-pulse text-amber-500" />
+                <span>{liveRemainingText}</span>
+              </div>
+            )}
           </div>
           
-          <form onSubmit={handleLogin} className="space-y-6">
-            {/* Animated Floating Label Input - Username */}
-            <div className="relative group">
-              <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all duration-300 pointer-events-none ${isFocusedUser || username ? '-top-3 text-xs text-amber-500 dark:text-amber-400 bg-white/90 dark:bg-slate-900/80 px-2 rounded font-medium' : 'text-slate-400'}`}>
-                {t('username')}
+          <form onSubmit={handleLogin} className="space-y-5 text-right">
+            {/* Username Input with User Dropdown Arrow */}
+            <div className="relative" ref={userDropdownRef}>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center justify-between">
+                <span>{t('username')}</span>
+                {rememberedUsers.length > 0 && (
+                  <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">
+                    {language === 'ar' ? 'حسابات محفوظة' : 'Saved accounts'}
+                  </span>
+                )}
+              </label>
+              <div className="relative flex items-center">
+                <input 
+                  type="text" 
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full px-4 py-3.5 pe-20 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-bold outline-none focus:border-purple-600 focus:ring-4 focus:ring-purple-500/15 shadow-sm transition-all placeholder:text-slate-400 placeholder:font-normal"
+                  placeholder={t('ph_username_login') || 'ادخل اسم المستخدم'}
+                />
+
+                {/* Arrow & User icons */}
+                <div className="absolute inset-y-0 end-0 pe-2.5 flex items-center gap-1">
+                  {rememberedUsers.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowUserDropdown(!showUserDropdown)}
+                      className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-purple-600 transition-colors cursor-pointer"
+                      title={language === 'ar' ? 'عرض المستخدمين المسجلين مسبقاً' : 'Show saved users'}
+                    >
+                      <ChevronDown size={18} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180 text-purple-600' : ''}`} />
+                    </button>
+                  )}
+                  <div className="pe-1 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
+                    <Users size={18} />
+                  </div>
+                </div>
               </div>
-              <input 
-                type="text" 
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                onFocus={() => setIsFocusedUser(true)}
-                onBlur={() => setIsFocusedUser(false)}
-                className="w-full px-4 py-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 text-slate-900 dark:text-white outline-none focus:border-amber-500/50 dark:focus:border-amber-400/50 focus:ring-1 focus:ring-amber-500/50 dark:focus:ring-amber-400/50 transition-all placeholder-transparent pr-12"
-                placeholder={t('ph_username_login')}
-              />
-              <Users className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none" size={20} />
+
+              {/* Dropdown Menu of Remembered Users */}
+              {showUserDropdown && rememberedUsers.length > 0 && (
+                <div className="absolute top-full start-0 end-0 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 overflow-hidden animate-scale-in">
+                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                    <span>{language === 'ar' ? 'المستخدمين المحفوظين (تذكرني)' : 'Saved Accounts'}</span>
+                    <span className="text-[10px] bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full font-mono font-bold">
+                      {rememberedUsers.length}
+                    </span>
+                  </div>
+                  <div className="max-h-52 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/60 p-1">
+                    {rememberedUsers.map((u) => (
+                      <div
+                        key={u.username}
+                        onClick={() => handleSelectRememberedUser(u)}
+                        className={`p-2.5 rounded-xl flex items-center justify-between gap-3 cursor-pointer transition-colors ${
+                          username.toLowerCase() === u.username.toLowerCase()
+                            ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200'
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 text-white flex items-center justify-center text-xs font-black shrink-0">
+                            {u.name ? u.name.charAt(0).toUpperCase() : u.username.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="truncate text-right">
+                            <div className="text-xs font-black truncate">{u.name || u.username}</div>
+                            <div className="text-[11px] text-slate-400 font-mono truncate">@{u.username}</div>
+                          </div>
+                        </div>
+
+                        {/* Trash Button to delete user from list */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteRememberedUser(e, u.username)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors shrink-0 cursor-pointer"
+                          title={language === 'ar' ? 'حذف من القائمة' : 'Remove from list'}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Animated Floating Label Input - Password */}
-            <div className="relative group">
-              <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all duration-300 pointer-events-none ${isFocusedPass || password ? '-top-3 text-xs text-amber-500 dark:text-amber-400 bg-white/90 dark:bg-slate-900/80 px-2 rounded font-medium' : 'text-slate-400'}`}>
+            {/* Password Input */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
                 {t('password')}
+              </label>
+              <div className="relative">
+                <input 
+                  ref={passwordInputRef}
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3.5 pe-12 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-bold outline-none focus:border-purple-600 focus:ring-4 focus:ring-purple-500/15 shadow-sm transition-all placeholder:text-slate-400 placeholder:font-normal"
+                  placeholder={t('ph_password_login') || 'ادخل كلمة المرور'}
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 end-0 pe-3.5 flex items-center text-slate-400 dark:text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors outline-none"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
-              <input 
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onFocus={() => setIsFocusedPass(true)}
-                onBlur={() => setIsFocusedPass(false)}
-                className="w-full px-4 py-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 text-slate-900 dark:text-white outline-none focus:border-amber-500/50 dark:focus:border-amber-400/50 focus:ring-1 focus:ring-amber-500/50 dark:focus:ring-amber-400/50 transition-all placeholder-transparent pr-12"
-                placeholder={t('ph_password_login')}
-              />
-              <button 
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-[2%] top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-white transition-colors outline-none"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
             </div>
             
             {error && (
@@ -791,13 +1311,13 @@ const LoginScreen = () => {
             
             <div className="flex items-center justify-between mb-6">
               <label className="flex items-center gap-2 cursor-pointer group">
-                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${rememberMe ? 'bg-amber-500 border-amber-500' : 'border-slate-400 dark:border-slate-500 group-hover:border-slate-600 dark:group-hover:border-slate-400'}`}>
+                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${rememberMe ? 'bg-purple-600 border-purple-600' : 'border-slate-300 dark:border-slate-600 group-hover:border-purple-500'}`}>
                   {rememberMe && <div className="w-3 h-2 border-b-2 border-l-2 border-white rotate-[-45deg] translate-y-[-1px]"></div>}
                 </div>
                 <input type="checkbox" className="hidden" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-                <span className={`text-sm transition-colors ${rememberMe ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`}>{t('remember_me')}</span>
+                <span className={`text-sm transition-colors ${rememberMe ? 'text-purple-600 dark:text-purple-400 font-bold' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`}>{t('remember_me')}</span>
               </label>
-              <button type="button" onClick={() => alert(t('contact_admin_reset_pwd'))} className="text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 text-sm transition-colors">
+              <button type="button" onClick={() => alert(t('contact_admin_reset_pwd'))} className="text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 text-sm transition-colors">
                   {t('forgot_password')}
               </button>
             </div>
@@ -808,23 +1328,49 @@ const LoginScreen = () => {
             </button>
 
             <div className="flex items-center justify-between mt-6">
-                <button type="button" onClick={() => { setShowPinPad(true); setPin(''); setPinError(false); setPinHint(''); }} className="text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 text-sm transition-colors flex items-center gap-2">
+                <button type="button" onClick={() => { setShowPinPad(true); setPin(''); setPinError(false); setPinHint(''); }} className="text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 text-sm transition-colors flex items-center gap-2">
                     <Keypad size={16} /> {t('quick_pin')}
                 </button>
                 {state.settings.enableBiometricLogin && (
-                    <button type="button" onClick={handleBiometricLogin} className="text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 text-sm transition-colors flex items-center gap-2 animate-pulse">
+                    <button type="button" onClick={handleBiometricLogin} className="text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 text-sm transition-colors flex items-center gap-2 animate-pulse">
                         <Fingerprint size={24} />
                     </button>
                 )}
             </div>
           </form>
           
-          <div className="mt-8 text-center">
+          <div className="mt-8 text-center space-y-2">
             <p className="text-xs text-slate-500">
                 {t('developed_by')}
             </p>
+            {onOpenPatcher && (
+              <button
+                type="button"
+                onClick={onOpenPatcher}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                title="لوحة تحكم وتوليد تراخيص المطور (Patcher) - اختصار: Ctrl+Shift+P"
+              >
+                <Shield size={13} className="text-amber-500" />
+                <span>Patcher Pro (المطور)</span>
+              </button>
+            )}
           </div>
         </div>
+
+        
+        {/* نافذة التحديث التلقائي (زر تحديث وزر تخطي) */}
+        <UpdateModal
+          isOpen={showUpdateModal}
+          updateInfo={pendingUpdate}
+          token={state.settings?.githubToken || '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'}
+          onClose={() => setShowUpdateModal(false)}
+          onSkip={() => {
+            if (pendingUpdate?.latestVersion) {
+              sessionStorage.setItem('skipped_update_version', pendingUpdate.latestVersion);
+            }
+            setShowUpdateModal(false);
+          }}
+        />
 
         {/* Quick PIN Keypad */}
         {showPinPad && (

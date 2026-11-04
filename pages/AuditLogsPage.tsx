@@ -5,7 +5,8 @@ import { Search, FileText } from '../components/Icons';
 import { Card } from '../components/ui';
 
 export const AuditLogs = () => {
-  const { state, t, formatDateTime } = useApp();
+  const { state, t, language, formatDateTime, formatNumber } = useApp();
+  const [activeTab, setActiveTab] = useState<'all' | 'suspicious'>('suspicious');
   const [query, setQuery] = useState('');
   const [action, setAction] = useState('all');
 
@@ -14,7 +15,135 @@ export const AuditLogs = () => {
     return Array.from(set).sort();
   }, [state.auditLogs]);
 
-  const logs = useMemo(() => {
+  // استخراج العمليات الحساسة والمشبوهة من النظام
+  const suspiciousLogs = useMemo(() => {
+    type SuspiciousItem = {
+      id: string;
+      timestamp: number;
+      type: 'void_invoice' | 'refund' | 'drawer_withdrawal' | 'shortage' | 'system_reset';
+      titleAr: string;
+      titleEn: string;
+      user: string;
+      amount?: number;
+      reason: string;
+      badgeColor: string;
+    };
+
+    const items: SuspiciousItem[] = [];
+
+    // 1. الفواتير الملغاة
+    (state.invoices || []).filter(inv => inv.status === 'void').forEach(inv => {
+      items.push({
+        id: `void-${inv.id}`,
+        timestamp: inv.timestamp || (inv.date ? new Date(inv.date).getTime() : Date.now()),
+        type: 'void_invoice',
+        titleAr: 'إلغاء فاتورة مبيعات',
+        titleEn: 'Voided Invoice',
+        user: (inv as any).voidedBy || (inv as any).createdBy || 'كاشير',
+        amount: inv.total,
+        reason: (inv as any).voidReason || `إلغاء الفاتورة #${inv.id}`,
+        badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+      });
+    });
+
+    // 2. عمليات المرتجع
+    (state.returns || []).forEach(ret => {
+      items.push({
+        id: `ret-${ret.id || ret.uid}`,
+        timestamp: ret.timestamp || (ret.date ? new Date(ret.date).getTime() : Date.now()),
+        type: 'refund',
+        titleAr: 'مرتجع مالي للعميل',
+        titleEn: 'Return / Refund',
+        user: ret.createdBy || 'كاشير',
+        amount: ret.refundAmount,
+        reason: ret.reason || `مرتجع للفاتورة #${ret.invoiceId}`,
+        badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+      });
+    });
+
+    // 3. مسحوبات الدرج اليدوية
+    (state.drawerMovements || []).filter(m => m.type === 'withdrawal').forEach(mov => {
+      items.push({
+        id: `draw-${mov.id}`,
+        timestamp: mov.timestamp || (mov.date ? new Date(mov.date).getTime() : Date.now()),
+        type: 'drawer_withdrawal',
+        titleAr: 'سحب نقدي من الدرج',
+        titleEn: 'Drawer Cash Withdrawal',
+        user: mov.user || 'كاشير',
+        amount: mov.amount,
+        reason: mov.reason || 'سحب يدوي من الخزينة',
+        badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+      });
+    });
+
+    // 4. تقفيلات اليومية التي تحتوي على عجز في الخزينة
+    (state.closingReports || []).filter(c => (c.difference || 0) < 0).forEach(c => {
+      items.push({
+        id: `closing-diff-${c.id}`,
+        timestamp: c.timestamp || (c.date ? new Date(c.date).getTime() : Date.now()),
+        type: 'shortage',
+        titleAr: 'عجز في إقفال الوردية',
+        titleEn: 'Shift Closing Shortage',
+        user: (c as any).closedBy || (c as any).cashierName || 'كاشير',
+        amount: Math.abs(c.difference || 0),
+        reason: `عجز مسجل عند إقفال الدرج (المتوقع: ${c.expectedCash} ج.م، الفعلي: ${c.actualCash} ج.م)`,
+        badgeColor: 'bg-red-500/20 text-red-300 border-red-500/40'
+      });
+    });
+
+    // 5. سجلات التدقيق الخاصة باستعادة النظام أو تصفير البيانات
+    (state.auditLogs || []).filter(l => 
+      l.action === 'Reset' || 
+      l.details?.toLowerCase().includes('reset') || 
+      l.details?.toLowerCase().includes('delete') ||
+      l.details?.toLowerCase().includes('void') ||
+      l.details?.toLowerCase().includes('drawer')
+    ).forEach(l => {
+      // تجنب التكرار مع ما أضفناه أعلاه
+      if (!items.some(i => i.id === `audit-${l.id}`)) {
+        items.push({
+          id: `audit-${l.id}`,
+          timestamp: l.timestamp,
+          type: 'system_reset',
+          titleAr: l.action === 'Reset' ? 'تصفير نظام / استعادة' : `إجراء نظام (${l.action})`,
+          titleEn: `System Action (${l.action})`,
+          user: l.user || 'المدير',
+          reason: l.details,
+          badgeColor: 'bg-slate-700 text-slate-300 border-slate-600'
+        });
+      }
+    });
+
+    // ترتيب تنازلي حسب التاريخ
+    return items.sort((a, b) => b.timestamp - a.timestamp);
+  }, [state.invoices, state.returns, state.drawerMovements, state.closingReports, state.auditLogs]);
+
+  // إحصائيات سريعة للعمليات الحساسة
+  const metrics = useMemo(() => {
+    const voidInvoices = (state.invoices || []).filter(i => i.status === 'void');
+    const voidTotal = voidInvoices.reduce((sum, i) => sum + (i.total || 0), 0);
+    const returnsTotal = (state.returns || []).reduce((sum, r) => sum + (r.refundAmount || 0), 0);
+    const withdrawalsTotal = (state.drawerMovements || [])
+      .filter(m => m.type === 'withdrawal')
+      .reduce((sum, m) => sum + (m.amount || 0), 0);
+    const shortagesTotal = (state.closingReports || [])
+      .filter(c => (c.difference || 0) < 0)
+      .reduce((sum, c) => sum + Math.abs(c.difference || 0), 0);
+
+    return {
+      voidCount: voidInvoices.length,
+      voidTotal,
+      returnsCount: (state.returns || []).length,
+      returnsTotal,
+      withdrawalsCount: (state.drawerMovements || []).filter(m => m.type === 'withdrawal').length,
+      withdrawalsTotal,
+      shortagesCount: (state.closingReports || []).filter(c => (c.difference || 0) < 0).length,
+      shortagesTotal
+    };
+  }, [state.invoices, state.returns, state.drawerMovements, state.closingReports]);
+
+  // فلترة السجلات العادية
+  const standardLogs = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (state.auditLogs || []).filter(log => {
       if (action !== 'all' && log.action !== action) return false;
@@ -23,61 +152,229 @@ export const AuditLogs = () => {
     });
   }, [state.auditLogs, query, action]);
 
+  // فلترة السجلات المشبوهة
+  const filteredSuspiciousLogs = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return suspiciousLogs;
+    return suspiciousLogs.filter(item => 
+      item.user.toLowerCase().includes(q) || 
+      item.reason.toLowerCase().includes(q) ||
+      item.titleAr.includes(q) ||
+      item.titleEn.toLowerCase().includes(q)
+    );
+  }, [suspiciousLogs, query]);
+
   return (
     <div className="space-y-6">
-        <div className="flex flex-wrap items-center gap-3 justify-between">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-                <FileText className="text-primary-600" /> {t('audit_logs')}
-                <span className="text-sm font-normal text-slate-400">({logs.length})</span>
-            </h2>
-            <div className="flex items-center gap-2">
-                <div className="relative">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder={t('search_placeholder')}
-                        className="pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 w-56"
-                    />
-                </div>
-                <select
-                    value={action}
-                    onChange={(e) => setAction(e.target.value)}
-                    className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
-                >
-                    <option value="all">{t('all_actions')}</option>
-                                {actions.map(a => <option key={a} value={a}>{t(a.toLowerCase()) || a}</option>)}
-                </select>
-            </div>
+      {/* الترويسة الرئيسية + تبديل التبويبات */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <span>{activeTab === 'suspicious' ? '🚨' : '📋'}</span>
+            <span>{activeTab === 'suspicious' ? (language === 'ar' ? 'سجل العمليات المشبوهة والحساسة' : 'Suspicious Activity Log') : t('audit_logs')}</span>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+              {activeTab === 'suspicious' ? filteredSuspiciousLogs.length : standardLogs.length}
+            </span>
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            {activeTab === 'suspicious' 
+              ? (language === 'ar' ? 'تقرير للمدير يعرض بنقرة واحدة كل محاولات فتح وسحب الدرج، الفواتير الملغاة، المرتجعات، وعجز الخزينة مع اسم المستخدم والسبب.' : 'One-click executive report tracking drawer withdrawals, voided invoices, refunds, and shortages.')
+              : (language === 'ar' ? 'سجل النظام الشامل لكافة الأنشطة والعمليات التي تمت على التطبيق.' : 'Comprehensive system audit log for all application events.')}
+          </p>
         </div>
 
-        <Card>
-            <table className="w-full text-sm text-left rtl:text-right">
-                <thead className="text-xs text-slate-700 dark:text-slate-200 uppercase bg-slate-100 dark:bg-slate-700">
-                    <tr>
-                        <th className="px-4 py-2">{t('time')}</th>
-                        <th className="px-4 py-2">{t('user_header')}</th>
-                        <th className="px-4 py-2">{t('action_header')}</th>
-                        <th className="px-4 py-2">{t('details_header')}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {logs.map(log => (
-                        <tr key={log.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60">
-                            <td className="px-4 py-2 text-slate-500 dark:text-slate-400 font-mono text-xs">{formatDateTime(log.timestamp)}</td>
-                            <td className="px-4 py-2 font-bold text-slate-800 dark:text-slate-100">{log.user}</td>
-                            <td className="px-4 py-2">
-                                <span className="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded text-xs">{t(log.action.toLowerCase()) || log.action}</span>
-                            </td>
-                            <td className="px-4 py-2 text-slate-600 dark:text-slate-300">{log.details}</td>
-                        </tr>
-                    ))}
-                    {logs.length === 0 && (
-                        <tr><td colSpan={4} className="text-center py-8 text-slate-500">{t('no_data')}</td></tr>
-                    )}
-                </tbody>
+        {/* أزرار التبديل */}
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80">
+          <button
+            type="button"
+            onClick={() => setActiveTab('suspicious')}
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${activeTab === 'suspicious' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            <span>🚨</span>
+            <span>{language === 'ar' ? 'العمليات الحساسة والمشبوهة' : 'Suspicious Logs'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('all')}
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${activeTab === 'all' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            <span>📋</span>
+            <span>{language === 'ar' ? 'جميع سجلات النظام' : 'All System Logs'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* بطاقات الإحصائيات الأربعة للعمليات المشبوهة */}
+      {activeTab === 'suspicious' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
+          {/* 1. الفواتير الملغاة */}
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-rose-500/30 shadow-sm relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-400">{language === 'ar' ? 'الفواتير الملغاة' : 'Voided Invoices'}</span>
+              <span className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-sm font-black">🚫</span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-2xl font-black text-rose-400">{metrics.voidCount}</span>
+              <span className="text-xs font-bold text-slate-400">({formatNumber(metrics.voidTotal)} {t('egp')})</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">{language === 'ar' ? 'إجمالي الفواتير التي قام الكاشير بإلغائها' : 'Invoices voided after creation'}</p>
+          </div>
+
+          {/* 2. المرتجعات المالية */}
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-amber-500/30 shadow-sm relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-400">{language === 'ar' ? 'المرتجعات المالية' : 'Refunds'}</span>
+              <span className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm font-black">↩️</span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-2xl font-black text-amber-400">{metrics.returnsCount}</span>
+              <span className="text-xs font-bold text-slate-400">({formatNumber(metrics.returnsTotal)} {t('egp')})</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">{language === 'ar' ? 'إجمالي المبالغ المستردة للعملاء' : 'Total money refunded to clients'}</p>
+          </div>
+
+          {/* 3. مسحوبات الدرج اليدوية */}
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-purple-500/30 shadow-sm relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-400">{language === 'ar' ? 'مسحوبات الدرج اليدوية' : 'Drawer Withdrawals'}</span>
+              <span className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm font-black">💸</span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-2xl font-black text-purple-400">{metrics.withdrawalsCount}</span>
+              <span className="text-xs font-bold text-slate-400">({formatNumber(metrics.withdrawalsTotal)} {t('egp')})</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">{language === 'ar' ? 'سحب نقدية بدون فاتورة أو مصروف رسمي' : 'Manual cash taken out of drawer'}</p>
+          </div>
+
+          {/* 4. عجز الخزينة */}
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-red-500/30 shadow-sm relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-400">{language === 'ar' ? 'عجز التقفيل والوردية' : 'Closing Shortages'}</span>
+              <span className="w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center text-sm font-black">⚠️</span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-2xl font-black text-red-400">{metrics.shortagesCount}</span>
+              <span className="text-xs font-bold text-slate-400">({formatNumber(metrics.shortagesTotal)} {t('egp')})</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">{language === 'ar' ? 'فارق النقدية الناقصة عند تسليم الوردية' : 'Cash discrepancy at shift close'}</p>
+          </div>
+        </div>
+      )}
+
+      {/* شريط البحث والتصفية */}
+      <div className="flex flex-wrap items-center gap-3 justify-between">
+        <div className="relative flex-1 max-w-sm">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={language === 'ar' ? 'بحث باسم الكاشير، السبب، أو التفاصيل...' : 'Search cashier, reason or details...'}
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-700 bg-slate-800 text-slate-200 outline-none focus:border-primary-500"
+          />
+        </div>
+
+        {activeTab === 'all' && (
+          <select
+            value={action}
+            onChange={(e) => setAction(e.target.value)}
+            className="px-3 py-2 text-xs rounded-xl border border-slate-700 bg-slate-800 text-slate-200 outline-none"
+          >
+            <option value="all">{t('all_actions')}</option>
+            {actions.map(a => <option key={a} value={a}>{t(a.toLowerCase()) || a}</option>)}
+          </select>
+        )}
+      </div>
+
+      {/* محتوى جدول العمليات المشبوهة */}
+      {activeTab === 'suspicious' && (
+        <Card className="border border-slate-700 bg-slate-900/80">
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-xs">
+              <thead>
+                <tr className="border-b border-slate-700 text-slate-400 font-bold">
+                  <th className="py-3 px-3">{language === 'ar' ? 'الوقت والتاريخ' : 'Time'}</th>
+                  <th className="py-3 px-3">{language === 'ar' ? 'نوع العملية' : 'Activity Type'}</th>
+                  <th className="py-3 px-3">{language === 'ar' ? 'المستخدم / الكاشير' : 'Cashier / User'}</th>
+                  <th className="py-3 px-3">{language === 'ar' ? 'المبلغ المعني' : 'Amount'}</th>
+                  <th className="py-3 px-3">{language === 'ar' ? 'السبب والتفاصيل' : 'Reason / Details'}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800 font-medium">
+                {filteredSuspiciousLogs.map(item => (
+                  <tr key={item.id} className="hover:bg-slate-800/60 transition-colors">
+                    <td className="py-3 px-3 font-mono text-[11px] text-slate-400">
+                      {formatDateTime(new Date(item.timestamp))}
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border ${item.badgeColor}`}>
+                        {language === 'ar' ? item.titleAr : item.titleEn}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 font-bold text-slate-200 flex items-center gap-1.5">
+                      <span className="text-slate-400">👤</span>
+                      <span>{item.user}</span>
+                    </td>
+                    <td className="py-3 px-3 font-mono font-bold">
+                      {item.amount !== undefined ? (
+                        <span className="text-amber-400">
+                          {formatNumber(item.amount)} {t('egp')}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500">—</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 text-slate-300">
+                      {item.reason}
+                    </td>
+                  </tr>
+                ))}
+                {filteredSuspiciousLogs.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="py-10 text-center text-slate-500 text-xs">
+                      {language === 'ar' ? '✨ سجل العمليات الحساسة نظيف تماماً! لا توجد فواتير ملغاة أو مسحوبات مشبوهة.' : 'No suspicious activities recorded.'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
             </table>
+          </div>
         </Card>
+      )}
+
+      {/* محتوى جدول السجلات العادية */}
+      {activeTab === 'all' && (
+        <Card className="border border-slate-700 bg-slate-900/80">
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-xs">
+              <thead>
+                <tr className="border-b border-slate-700 text-slate-400 font-bold">
+                  <th className="py-3 px-3">{t('time')}</th>
+                  <th className="py-3 px-3">{t('user_header')}</th>
+                  <th className="py-3 px-3">{t('action_header')}</th>
+                  <th className="py-3 px-3">{t('details_header')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800 font-medium">
+                {standardLogs.map(log => (
+                  <tr key={log.id} className="hover:bg-slate-800/60 transition-colors">
+                    <td className="py-3 px-3 text-slate-400 font-mono text-[11px]">{formatDateTime(new Date(log.timestamp))}</td>
+                    <td className="py-3 px-3 font-bold text-slate-200">{log.user}</td>
+                    <td className="py-3 px-3">
+                      <span className="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 text-[11px]">
+                        {t(log.action.toLowerCase()) || log.action}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-slate-300">{log.details}</td>
+                  </tr>
+                ))}
+                {standardLogs.length === 0 && (
+                  <tr><td colSpan={4} className="text-center py-8 text-slate-500">{t('no_data')}</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };

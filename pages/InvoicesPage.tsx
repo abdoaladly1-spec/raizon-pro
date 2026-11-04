@@ -3,12 +3,13 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from '../types';
-import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, useSound, useLiveTick } from '../components/ui';
+import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, EmptyState, useSound, useLiveTick } from '../components/ui';
 import { FilterModal } from '../components/FilterModal';
 import { paymentOf, round2 } from '../lib/payments';
 import { canReprint } from '../lib/printDesign';
+import { exportToCSV } from '../lib/exportUtils';
 import { InvoiceReceipt } from '../components/InvoiceReceipt';
-import { PrintActions } from '../components/PrintActions';
+import { PrintActions, openInvoiceWhatsApp } from '../components/PrintActions';
 import { CreateInvoice } from './CreateInvoicePage';
 import { AuditLogs } from './AuditLogsPage';
 import { AdminUsers } from './AdminUsersPage';
@@ -20,6 +21,13 @@ export const InvoicesList = () => {
     const [activeFilters, setActiveFilters] = useState({ search: '', startDate: '', endDate: '', staffId: '' });
     // إعادة طباعة فاتورة سابقة بهويتها التاريخية (لوحة معاينة مستقلة)
     const [printInvoice, setPrintInvoice] = useState(null as Invoice | null);
+    const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
+
+    useEffect(() => {
+        const handleOutsideClick = () => setActiveMenuId(null);
+        window.addEventListener('click', handleOutsideClick);
+        return () => window.removeEventListener('click', handleOutsideClick);
+    }, []);
 
     const openReprint = (invoice: Invoice) => {
         if (!canReprint(currentUser)) {
@@ -56,7 +64,7 @@ export const InvoicesList = () => {
         const tableContent = document.getElementById('invoices-table')?.outerHTML;
         
         if (!tableContent) {
-            alert(t('table_not_found'));
+            addToast(t('table_not_found'), 'error');
             printWindow.close();
             return;
         }
@@ -64,7 +72,7 @@ export const InvoicesList = () => {
         const html = `
             <html dir="${language === 'ar' ? 'rtl' : 'ltr'}">
             <head>
-                <title>{t('invoices_list_title')}</title>
+                <title>${t('invoices_list_title')}</title>
                 <style>
                     body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; }
                     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -96,7 +104,27 @@ export const InvoicesList = () => {
             <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
                 <h2 className="text-2xl font-bold">{t('invoices')}</h2>
                 <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                    <Button onClick={handleExportPDF} variant="secondary" className="px-3 hidden md:flex" title={t('export_pdf')}><FileText size={18} className="mr-2"/> {t('export_pdf')}</Button>
+                    <Button onClick={handleExportPDF} variant="secondary" className="px-3 hidden md:flex" title={t('export_pdf')}><FileText size={16} className="mr-1.5"/> {t('export_pdf')}</Button>
+                    <Button 
+                        onClick={() => {
+                            const headers = ['رقم الفاتورة', 'اسم العميل', 'التاريخ', 'الإجمالي', 'طريقة الدفع', 'الموظف', 'بواسطة'];
+                            const rows = filtered.map(inv => [
+                                `#${inv.id}`,
+                                inv.customerName,
+                                inv.date,
+                                inv.total,
+                                t(inv.paymentMethod),
+                                inv.staffName || '-',
+                                inv.createdBy || '-'
+                            ]);
+                            exportToCSV(`فواتير_${new Date().toISOString().slice(0, 10)}`, headers, rows);
+                        }} 
+                        variant="secondary" 
+                        className="px-3 hidden md:flex" 
+                        title="تصدير إكسل Excel"
+                    >
+                        <FileText size={16} className="mr-1.5 text-emerald-600"/> Excel
+                    </Button>
                      <div className="relative flex-1 md:w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                         <input 
@@ -124,46 +152,145 @@ export const InvoicesList = () => {
                 showSearch={false}
                 staffList={state.staff}
             />
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow overflow-hidden" id="invoices-table">
-                <table className="w-full text-sm text-left rtl:text-right text-slate-500 dark:text-slate-300">
-                    <thead className="text-xs text-slate-700 dark:text-slate-200 uppercase bg-slate-100 dark:bg-slate-700">
-                        <tr>
-                            <th className="px-6 py-3">#</th>
-                            <th className="px-6 py-3">{t('customer_name')}</th>
-                            <th className="px-6 py-3">{t('date')}</th>
-                            <th className="px-6 py-3">{t('total')}</th>
-                            <th className="px-6 py-3">{t('payment_details')}</th>
-                            <th className="px-6 py-3">{t('barber')}</th>
-                            <th className="px-6 py-3">{t('created_by')}</th>
-                            <th className="px-6 py-3">{t('actions')}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filtered.map(invoice => (
-                            <tr key={invoice.id} className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">
-                                <td className="px-6 py-4 font-mono font-bold text-slate-800 dark:text-slate-100">#{invoice.id}</td>
-                                <td className="px-6 py-4 text-slate-800 dark:text-slate-100">{invoice.customerName}</td>
-                                <td className="px-6 py-4 text-slate-800 dark:text-slate-100">{invoice.date}</td>
-                                <td className="px-6 py-4 font-bold text-primary-600 dark:text-primary-400">{invoice.total} {t('egp')}</td>
-                                <td className="px-6 py-4 text-slate-800 dark:text-slate-100">
-                                    {(() => {
-                                        const p = paymentOf(invoice);
-                                        const label = t(p.method);
-                                        if (p.parts.length > 1) {
-                                            return `${label} · ${p.parts.map(x => `${t(x.method)} ${round2(x.amount)}`).join(' + ')}`;
-                                        }
-                                        return label;
-                                    })()}
-                                </td>
-                                <td className="px-6 py-4 text-slate-800 dark:text-slate-100">{invoice.staffName || '-'}</td>
-                                <td className="px-6 py-4 text-slate-500 text-xs">{invoice.createdBy}</td>
-                                <td className="px-6 py-4">
-                                    <button onClick={() => openReprint(invoice)} className="font-medium text-blue-600 hover:underline">{t('save_print')}</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-sm overflow-hidden" id="invoices-table">
+                {filtered.length === 0 ? (
+                    <EmptyState
+                        icon={FileText}
+                        title={t('no_data')}
+                        description={activeFilters.search || activeFilters.startDate || activeFilters.endDate || activeFilters.staffId ? t('search_placeholder') : undefined}
+                    />
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-right text-slate-600 dark:text-slate-300">
+                            <thead className="text-xs text-slate-500 dark:text-slate-400 font-semibold bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700/80">
+                                <tr>
+                                    <th className="px-5 py-3.5">#</th>
+                                    <th className="px-5 py-3.5">{t('customer_name')}</th>
+                                    <th className="px-5 py-3.5">{t('date')}</th>
+                                    <th className="px-5 py-3.5">{t('total')}</th>
+                                    <th className="px-5 py-3.5">{t('payment_details')}</th>
+                                    <th className="px-5 py-3.5">{t('barber')}</th>
+                                    <th className="px-5 py-3.5">{t('created_by')}</th>
+                                    <th className="px-5 py-3.5 text-center">{t('actions')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                                {filtered.map(invoice => (
+                                    <tr key={invoice.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors">
+                                        <td className="px-5 py-3.5 font-mono font-semibold text-slate-900 dark:text-slate-100">#{invoice.id}</td>
+                                        <td className="px-5 py-3.5 font-medium">
+                                            <button
+                                                type="button"
+                                                onClick={() => openReprint(invoice)}
+                                                className="text-slate-900 dark:text-slate-100 hover:text-primary-600 dark:hover:text-primary-400 font-bold hover:underline cursor-pointer text-right flex items-center gap-1.5 transition-colors group"
+                                                title={language === 'ar' ? 'معاينة الفاتورة الكاملة' : 'Preview Invoice'}
+                                            >
+                                                <span>{invoice.customerName}</span>
+                                                <Eye size={13} className="text-primary-400 opacity-60 group-hover:opacity-100 transition-opacity" />
+                                            </button>
+                                        </td>
+                                        <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 text-xs font-mono">{invoice.date}</td>
+                                        <td className="px-5 py-3.5 font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{invoice.total} {t('egp')}</td>
+                                        <td className="px-5 py-3.5 text-slate-700 dark:text-slate-300">
+                                            {(() => {
+                                                const p = paymentOf(invoice);
+                                                const label = t(p.method);
+                                                if (p.parts.length > 1) {
+                                                    return (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
+                                                            {label} · {p.parts.map(x => `${t(x.method)} ${round2(x.amount)}`).join(' + ')}
+                                                        </span>
+                                                    );
+                                                }
+                                                return (
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200/50 dark:border-primary-800/40">
+                                                        {label}
+                                                    </span>
+                                                );
+                                            })()}
+                                        </td>
+                                        <td className="px-5 py-3.5 text-slate-700 dark:text-slate-300">{invoice.staffName || '-'}</td>
+                                        <td className="px-5 py-3.5 text-slate-400 text-xs">{invoice.createdBy}</td>
+                                        <td className="px-5 py-3.5 text-center relative">
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => openReprint(invoice)} 
+                                                    className="px-2.5 py-1 text-xs font-bold rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors border border-primary-200 dark:border-primary-800/50 cursor-pointer flex items-center gap-1"
+                                                >
+                                                    <Printer size={13} />
+                                                    <span>{t('save_print')}</span>
+                                                </button>
+
+                                                <div className="relative">
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setActiveMenuId(activeMenuId === invoice.id ? null : invoice.id);
+                                                        }}
+                                                        className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center cursor-pointer shadow-xs transition-colors"
+                                                        title={language === 'ar' ? 'خيارات إضافية' : 'More options'}
+                                                    >
+                                                        •••
+                                                    </button>
+
+                                                    {activeMenuId === invoice.id && (
+                                                        <div
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="absolute left-0 mt-1 w-44 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl z-50 py-1.5 text-right animate-scale-in text-xs font-bold"
+                                                        >
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setActiveMenuId(null); openReprint(invoice); }}
+                                                                className="w-full px-3 py-2 text-right hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 text-slate-700 dark:text-slate-200 cursor-pointer"
+                                                            >
+                                                                <Eye size={14} className="text-primary-500" />
+                                                                <span>{language === 'ar' ? 'معاينة' : 'Preview'}</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setActiveMenuId(null); openReprint(invoice); }}
+                                                                className="w-full px-3 py-2 text-right hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 text-slate-700 dark:text-slate-200 cursor-pointer"
+                                                            >
+                                                                <Printer size={14} className="text-blue-500" />
+                                                                <span>{language === 'ar' ? 'طباعة' : 'Print'}</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { setActiveMenuId(null); openReprint(invoice); }}
+                                                                className="w-full px-3 py-2 text-right hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 text-slate-700 dark:text-slate-200 cursor-pointer"
+                                                            >
+                                                                <FileText size={14} className="text-amber-500" />
+                                                                <span>{language === 'ar' ? 'حفظ PDF' : 'Save PDF'}</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setActiveMenuId(null);
+                                                                    const customer = (state.customers || []).find(c => c.id === invoice.customerId);
+                                                                    openInvoiceWhatsApp(invoice, customer?.phone || '', {
+                                                                        shopName: state.settings.shopName,
+                                                                        phone: state.settings.phone,
+                                                                        address: state.settings.address
+                                                                    });
+                                                                }}
+                                                                className="w-full px-3 py-2 text-right hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 text-emerald-600 dark:text-emerald-400 cursor-pointer"
+                                                            >
+                                                                <span>💬</span>
+                                                                <span>{language === 'ar' ? 'مشاركة واتس اب' : 'WhatsApp'}</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
 
             {printInvoice && (
@@ -172,7 +299,7 @@ export const InvoicesList = () => {
                     onClose={() => setPrintInvoice(null)}
                     maxWidth="max-w-3xl"
                 >
-                    <div className="overflow-auto" style={{ background: '#e5e7eb' }}>
+                    <div className="overflow-auto flex justify-center p-6" style={{ background: '#1e293b' }}>
                             <InvoiceReceipt invoice={printInvoice} />
                         </div>
                         <div className="no-print flex flex-wrap gap-3 justify-end px-4 py-3 border-t border-slate-200 dark:border-slate-700">

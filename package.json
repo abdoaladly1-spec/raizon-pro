@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "server:build": "node tools/build-server.mjs",
     "license:make": "node tools/make-license.mjs",
-    "electron:build": "npm run build && npm run server:build && electron-builder"
+    "installer:build": "powershell -ExecutionPolicy Bypass -File scripts/build-installer.ps1",
+    "electron:build": "npm run build && npm run server:build && electron-builder && npm run installer:build"
   },
   "build": {
     "appId": "com.raizon.pro",
@@ -22,21 +23,10 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "public/**/*",
-      "server/**/*",
-      "!server/*.db",
-      "!server/*.db-*",
-      "!server/.env",
-      "!server/__pycache__/**",
-      "!server/backups/**",
-      "!server/*.log",
-      "!server/smoke_test.py",
-      "!server/electron_sync_test.ts"
+      "!electron/resources/**",
+      "public/**/*"
     ],
     "asar": true,
-    "asarUnpack": [
-      "server/**"
-    ],
     "extraResources": [
       {
         "from": "electron/resources",
@@ -46,13 +36,44 @@
         ]
       }
     ],
+    "extraFiles": [
+      {
+        "from": "electron/resources",
+        "to": ".",
+        "filter": [
+          "Patcher.exe"
+        ]
+      }
+    ],
     "win": {
       "target": "nsis",
       "icon": "public/icon.ico"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "dolaa2",
+        "repo": "raizon-pro"
+      }
+    ],
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "RaiZon Pro",
+      "runAfterFinish": false,
+      "installerIcon": "public/icon.ico",
+      "uninstallerIcon": "public/icon.ico",
+      "installerHeaderIcon": "public/icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "differentialPackage": false
     }
   },
   "dependencies": {
     "astral-regex": "^2.0.0",
+    "electron-updater": "^6.8.11",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },

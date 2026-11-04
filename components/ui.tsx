@@ -38,27 +38,27 @@ export const useLiveTick = (ms: number = 5000) => {
 
 // --- Reusable UI Components ---
 export const Card = ({ children, className = "" }: any) => (
-  <div className={`glass-panel rounded-2xl p-6 card-hover transition-all duration-300 ${className}`}>
+  <div className={`bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl p-5 card-hover ${className}`}>
     {children}
   </div>
 );
 
 export const Button = ({ children, variant = "primary", className = "", ...props }: any) => {
   const variants = {
-    primary: "bg-gradient-to-r from-primary-600 to-primary-500 text-white border border-primary-400/20 glow-primary",
-    secondary: "bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-700 hover:border-primary-400/50 hover:text-primary-600 dark:hover:text-primary-400",
-    danger: "bg-gradient-to-r from-[#EF4444] to-[#DC2626] text-white border border-red-400/20 glow-danger",
-    success: "bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white border border-green-400/20 glow-success",
-    purple: "bg-gradient-to-r from-[#A855F7] to-[#9333EA] text-white border border-purple-400/20",
-    info: "bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white border border-blue-400/20",
-    warning: "bg-gradient-to-r from-[#F59E0B] to-[#D97706] text-white border border-amber-400/20",
-    gray: "bg-gradient-to-r from-[#6B7280] to-[#4B5563] text-white border border-gray-400/20",
-    ghost: "bg-transparent hover:bg-slate-100/50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400"
+    primary: "bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white shadow-sm border border-primary-700/20",
+    secondary: "bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 active:bg-slate-100 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm",
+    danger: "bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white shadow-sm border border-rose-700/20",
+    success: "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-sm border border-emerald-700/20",
+    purple: "bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white shadow-sm border border-purple-700/20",
+    info: "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-sm border border-blue-700/20",
+    warning: "bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white shadow-sm border border-amber-600/20",
+    gray: "bg-slate-600 hover:bg-slate-700 active:bg-slate-800 text-white shadow-sm border border-slate-700/20",
+    ghost: "bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 border border-transparent"
   };
   const v = variants[variant as keyof typeof variants] || variants.primary;
   return (
     <button 
-      className={`btn-pro px-4 py-2 rounded-xl font-medium flex items-center gap-2 ${v} ${className}`}
+      className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-150 inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none ${v} ${className}`}
       {...props}
     >
       {children}
@@ -73,29 +73,31 @@ export const ModalShell = ({ title, onClose, onBack, children, className = "", m
       className={`bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full ${maxWidth} max-h-[90vh] flex flex-col ${className}`}
       onClick={(e: any) => e.stopPropagation()}
     >
-      <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-700/80 shrink-0">
         <button
           onClick={onClose}
           aria-label="إغلاق"
-          className="w-10 h-10 rounded-full bg-[#EF4444] hover:bg-[#DC2626] text-white flex items-center justify-center transition-colors shadow-md"
+          className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center justify-center transition-colors"
         >
-          <X size={20} />
+          <X size={18} />
         </button>
-        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 px-3 truncate">{title}</h3>
-        <button
-          onClick={onBack || onClose}
-          aria-label="رجوع"
-          className="w-10 h-10 rounded-full bg-[#3B82F6] hover:bg-[#2563EB] text-white flex items-center justify-center transition-colors shadow-md"
-        >
-          <ArrowLeft size={20} />
-        </button>
+        <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 px-3 truncate">{title}</h3>
+        {onBack ? (
+          <button
+            onClick={onBack}
+            aria-label="رجوع"
+            className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center justify-center transition-colors"
+          >
+            <ArrowLeft size={18} />
+          </button>
+        ) : <div className="w-8" />}
       </div>
       <div className="p-4 overflow-y-auto">{children}</div>
     </div>
   </div>
 );
 
-export const Input = ({ label, error, validationRegex, onEnter, ...props }: any) => {
+export const Input = ({ label, error, validationRegex, onEnter, endAdornment, containerClassName = "mb-4", ...props }: any) => {
   const [localError, setLocalError] = useState('');
   const { t } = useApp();
   
@@ -120,13 +122,22 @@ export const Input = ({ label, error, validationRegex, onEnter, ...props }: any)
   }
 
   return (
-      <div className="mb-4 group">
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 transition-colors group-focus-within:text-primary-500">{label}</label>
-        <input 
-            {...props} 
-            onKeyDown={handleKeyDown}
-            className={`w-full px-4 py-2 rounded-lg border ${localError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-slate-600 focus:ring-primary-500 focus:border-primary-500'} bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 outline-none transition-all duration-300 hover:border-slate-400 dark:hover:border-slate-500`} 
-        />
+      <div className={`${containerClassName} group`}>
+        {label && <label className="block text-sm font-bold text-slate-800 dark:text-slate-200 mb-1.5 transition-colors group-focus-within:text-primary-600">{label}</label>}
+        <div className="relative">
+          <input 
+              autoComplete={props.autoComplete || "off"}
+              data-lpignore="true"
+              {...props} 
+              onKeyDown={handleKeyDown}
+              className={`w-full px-3.5 py-2.5 ${endAdornment ? 'pe-10' : ''} rounded-xl text-sm border ${localError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20'} bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none transition-all placeholder:text-slate-400`} 
+          />
+          {endAdornment && (
+            <div className="absolute top-1/2 -translate-y-1/2 end-2 flex items-center justify-center pointer-events-auto">
+              {endAdornment}
+            </div>
+          )}
+        </div>
         {localError && <p className="text-red-500 text-xs mt-1 animate-fade-in">{localError}</p>}
       </div>
   );
@@ -135,7 +146,7 @@ export const Input = ({ label, error, validationRegex, onEnter, ...props }: any)
 export const ToastContainer = () => {
   const { toasts, removeToast } = useApp();
   return (
-    <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
+    <div className="fixed bottom-4 end-4 z-[100] flex flex-col gap-2 pointer-events-none">
       {toasts.map(toast => (
         <div key={toast.id} className={`pointer-events-auto min-w-[300px] p-4 rounded-xl shadow-lg border backdrop-blur-md animate-fade-in-up flex items-center justify-between gap-3
           ${toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 
@@ -169,30 +180,73 @@ export const ToastContainer = () => {
 };
 
 // --- Chart Component ---
-export const SimpleBarChart = ({ data, color = "#0ea5e9" }: { data: { label: string, value: number }[], color?: string }) => {
+export const SimpleBarChart = ({ data, color = "#0ea5e9" }: { data: { label: string, value: number, isToday?: boolean }[], color?: string }) => {
     const maxValue = Math.max(...data.map(d => d.value), 100);
     return (
         <div className="w-full overflow-x-auto pb-2 custom-scrollbar">
-            <div className="flex items-end justify-between h-40 gap-2 min-w-[600px] pt-4 px-2">
-                {data.map((d, i) => (
-                    <div key={i} className="flex flex-col items-center gap-1 flex-1 group cursor-pointer min-w-[30px]">
-                        <div className="relative w-full flex justify-end flex-col items-center h-full">
-                            <div 
-                                style={{ height: `${(d.value / maxValue) * 100}%`, backgroundColor: color }} 
-                                className="w-full rounded-t-sm opacity-80 group-hover:opacity-100 transition-all duration-300 relative"
-                            >
-                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                    {d.value}
-                                </div>
+            <div className="flex items-end justify-between h-48 gap-3 min-w-[500px] pt-8 px-2">
+                {data.map((d, i) => {
+                    const pct = Math.min(100, Math.max(0, (d.value / maxValue) * 100));
+                    return (
+                        <div key={i} className="flex flex-col items-center gap-2 flex-1 group cursor-pointer min-w-[36px] relative">
+                            {/* Floating Tooltip outside overflow-hidden */}
+                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900/95 dark:bg-slate-700 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-30 shadow-xl border border-slate-700/50">
+                                {d.value.toLocaleString('en-US')} ج.م
                             </div>
+
+                            {/* Column / Pillar with background */}
+                            <div className={`relative w-full flex justify-end flex-col items-center h-32 rounded-xl overflow-hidden border transition-all ${
+                                d.isToday 
+                                    ? 'bg-primary-50/70 dark:bg-primary-950/30 border-primary-400 dark:border-primary-600/70 shadow-sm' 
+                                    : 'bg-slate-100/80 dark:bg-slate-800/80 border-slate-200/60 dark:border-slate-700/60'
+                            }`}>
+                                {d.value > 0 ? (
+                                    <div 
+                                        style={{ height: `${Math.max(10, pct)}%` }} 
+                                        className={`w-full rounded-t-xl transition-all duration-500 relative shadow-sm ${
+                                            d.isToday
+                                                ? 'bg-gradient-to-t from-primary-600 via-primary-500 to-sky-400 group-hover:from-primary-500 group-hover:to-sky-300 ring-1 ring-primary-300/50'
+                                                : 'bg-gradient-to-t from-sky-600 to-primary-500 dark:from-primary-700 dark:to-sky-400 group-hover:from-primary-500 group-hover:to-sky-300'
+                                        }`}
+                                    >
+                                        {/* Little shimmer on top */}
+                                        <div className="absolute top-0 inset-x-0 h-1 bg-white/40 rounded-t-xl"></div>
+                                    </div>
+                                ) : (
+                                    <div className="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-full" />
+                                )}
+                            </div>
+
+                            {/* Label */}
+                            <span className={`text-[11px] font-bold font-mono truncate w-full text-center transition-colors ${
+                                d.isToday 
+                                    ? 'text-primary-600 dark:text-primary-400 font-extrabold underline underline-offset-4 decoration-primary-500' 
+                                    : 'text-slate-700 dark:text-slate-300 font-extrabold group-hover:text-primary-600'
+                            }`} title={d.label}>
+                                {d.label}
+                            </span>
                         </div>
-                        <span className="text-[10px] text-slate-400 font-mono truncate w-full text-center" title={d.label}>{d.label}</span>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
 };
+
+
+// --- EmptyState Component ---
+export const EmptyState = ({ icon: Icon, title, description, action }: { icon?: any; title: string; description?: string; action?: React.ReactNode }) => (
+  <div className="flex flex-col items-center justify-center py-12 text-center gap-2">
+    {Icon && (
+      <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700/60 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-1">
+        <Icon size={24} />
+      </div>
+    )}
+    <p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{title}</p>
+    {description && <p className="text-slate-400 dark:text-slate-500 text-xs max-w-xs">{description}</p>}
+    {action && <div className="mt-2">{action}</div>}
+  </div>
+);
 
 // --- Feature Components ---
 

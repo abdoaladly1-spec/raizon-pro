@@ -311,7 +311,7 @@ else:
     html = mail.get("html", "")
     results.append(check(
         "emailer.build_invoice_email (الجسم)",
-        invoice["customer_name"] in html and "قص شعر" in html and "059669" in html and "dir=\"rtl\"" in html,
+        invoice["customer_name"] in html and "قص شعر" in html and "Rizon Pro System Cashier" in html and "dir=\"rtl\"" in html,
         f"len={len(html)}",
     ))
     results.append(check(

@@ -29,7 +29,14 @@ HOST = os.environ.get("SERVER_HOST", "0.0.0.0")
 PORT = int(os.environ.get("SERVER_PORT", "8087"))
 DB_PATH = os.environ.get("DB_PATH", str(BASE_DIR / "procashier.db"))
 # مجلد النسخ الاحتياطية (يُقدر للنسخة المثبتة لأن مجلد التنصيب قد يكون للقراءة فقط)
-BACKUP_DIR = Path(os.environ.get("PROCASHIER_BACKUP_DIR") or (BASE_DIR / "backups"))
+# مجلد النسخ الاحتياطية (يُوجّه تلقائياً إلى مجلد Backup الرئيسي)
+_backup_env = os.environ.get("PROCASHIER_BACKUP_DIR")
+if _backup_env:
+    BACKUP_DIR = Path(_backup_env)
+else:
+    _root_backup = BASE_DIR.parent / "Backup"
+    _root_backup.mkdir(parents=True, exist_ok=True)
+    BACKUP_DIR = _root_backup
 
 # مفتاح API: لو مش موجود يتم توليده عشوائياً وحفظه في .env
 # عشان تعطّل المصادقة: ضع API_KEY=off
@@ -70,19 +77,22 @@ if not API_KEY:
 # --- البريد الإلكتروني (Gmail SMTP) ---
 SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
-SMTP_USER = os.environ.get("SMTP_USER", "").strip()      # حساب Gmail المخصص للتطبيق
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "").strip()  # App Password (16 خانة)
-EMAIL_FROM = os.environ.get("EMAIL_FROM", "").strip() or SMTP_USER
+SMTP_USER = os.environ.get("SMTP_USER", "rizon.pro.app@gmail.com").strip()      # حساب Gmail المخصص للتطبيق
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "udgddndyondosvxk").strip()  # App Password (16 خانة)
+EMAIL_FROM = os.environ.get("EMAIL_FROM", "rizon.pro.app@gmail.com").strip() or SMTP_USER
 EMAIL_TO = os.environ.get("EMAIL_TO", "").strip()        # إيميل صاحب المشروع
-EMAIL_SUBJECT_PREFIX = os.environ.get("EMAIL_SUBJECT_PREFIX", "[ProCashier]")
+EMAIL_SUBJECT_PREFIX = os.environ.get("EMAIL_SUBJECT_PREFIX", "[Rizon Pro]")
 
 # auto  => يبعت فعلي لو Gmail متعملة، غير كده يسجّل محاكاة
 # simulation => دايماً يسجّل بدون إرسال
 # off => مفيش إيميلات
 EMAIL_MODE = os.environ.get("EMAIL_MODE", "auto").strip().lower()
 
-# إرسال إشعار عند كل فاتورة جديدة
+# إرسال الإشعارات الفورية بحسب الخدمات المفعلة
 NOTIFY_ON_INVOICE = os.environ.get("NOTIFY_ON_INVOICE", "true").strip().lower() in ("1", "true", "yes", "on")
+NOTIFY_ON_CLOSING = os.environ.get("NOTIFY_ON_CLOSING", "true").strip().lower() in ("1", "true", "yes", "on")
+NOTIFY_ON_RETURN = os.environ.get("NOTIFY_ON_RETURN", "true").strip().lower() in ("1", "true", "yes", "on")
+NOTIFY_ON_EXPENSE = os.environ.get("NOTIFY_ON_EXPENSE", "true").strip().lower() in ("1", "true", "yes", "on")
 
 
 def email_mode() -> str:

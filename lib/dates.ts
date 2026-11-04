@@ -1,13 +1,13 @@
 // تواريخ الفواتير بصيغة موحّدة YYYY-MM-DD
 // السبب: المقارنة على السيرفر نصية (date_from/date_to) فتنكسر مع DD/MM/YYYY،
 // وأيضاً حتى تعمل محلياً `new Date(inv.date)` وفلاتر Flutter بنفس الشكل.
-const ISO_RE = /^\d{4}-\d{2}-\d{2}/;
+const ISO_RE = /^\d{4}[-/]\d{2}[-/]\d{2}/;
 const LEGACY_RE = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
 
 /** يُحوّل أي صيغة تاريخ معروفة إلى YYYY-MM-DD محلي (يقبل ISO و DD/MM/YYYY). */
 export const toIsoDate = (value?: string | null, timestamp?: number): string => {
     const text = (value || '').trim();
-    if (ISO_RE.test(text)) return text.slice(0, 10);
+    if (ISO_RE.test(text)) return text.slice(0, 10).replace(/\//g, '-');
     const legacy = LEGACY_RE.exec(text);
     if (legacy) {
         const [, day, month, year] = legacy;
@@ -27,8 +27,9 @@ export const localIsoToday = (): string => toIsoDate(null, Date.now());
 /** يُحوّل التاريخ إلى كائن Date محلي (ISO يُفسَّر كيوم محلي لا UTC). */
 export const parseInvoiceDate = (value: string): Date => {
     if (!value) return new Date();
-    if (ISO_RE.test(value)) {
-        const [y, m, d] = value.slice(0, 10).split('-').map(Number);
+    const normalized = (value || '').trim().replace(/\//g, '-');
+    if (ISO_RE.test(normalized)) {
+        const [y, m, d] = normalized.slice(0, 10).split('-').map(Number);
         return new Date(y, (m || 1) - 1, d || 1);
     }
     const legacy = LEGACY_RE.exec(value);

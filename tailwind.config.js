@@ -5,6 +5,8 @@ export default {
     "./*.{js,ts,jsx,tsx}",
     "./components/**/*.{js,ts,jsx,tsx}",
     "./context/**/*.{js,ts,jsx,tsx}",
+    "./pages/**/*.{js,ts,jsx,tsx}",
+    "./lib/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: 'class',
   theme: {
@@ -13,6 +15,10 @@ export default {
         sans: ['Cairo', 'sans-serif'],
       },
       colors: {
+        slate: {
+          750: '#232f3e',
+          850: '#141d2b',
+        },
         primary: {
           50: 'var(--color-primary-50)',
           100: 'var(--color-primary-100)',

@@ -17,6 +17,8 @@ SERVER_DIR = Path(SPECPATH).resolve()
 PROJECT_ROOT = SERVER_DIR.parent
 
 hiddenimports = [
+    'logging.config',
+    'sqlite3',
     'uvicorn.logging',
     'uvicorn.loops',
     'uvicorn.loops.auto',
@@ -32,6 +34,7 @@ hiddenimports = [
     'uvicorn.lifespan.off',
     'email.mime.text',
     'email.mime.multipart',
+    'email.mime.image',
     'email.utils',
     'smtplib',
 ]

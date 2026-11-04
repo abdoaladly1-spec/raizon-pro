@@ -75,6 +75,10 @@ export interface Item {
    * يُلقط وقت البيع في سجل المرتجع حتى لا يتغيّر القرار لاحقاً.
    */
   returnable?: boolean;
+  /** تاريخ انتهاء الصلاحية للمنتجات (YYYY-MM-DD) */
+  expiryDate?: string;
+  /** رقم التشغيلة أو الدفعة (Batch / Lot #) */
+  batchNumber?: string;
 }
 
 export interface Category {
@@ -92,10 +96,29 @@ export interface Customer {
   address?: string;
   totalSpent: number;
   lastVisit: string;
-  loyaltyPoints: number;
-  tier: 'Bronze' | 'Silver' | 'Gold';
+  loyaltyPoints?: number;
+  tier?: 'Bronze' | 'Silver' | 'Gold' | string;
   notes?: string;
   loyaltyCard?: string;
+  /** الحد الائتماني المسموح به للشراء الآجل (ج.م) */
+  creditLimit?: number;
+  /** الرصيد المدين الحالي / المديونية المستحقة على العميل */
+  balance?: number;
+  /** مؤهل للشراء الآجل (عميل VIP) */
+  isVip?: boolean;
+}
+
+export interface CustomerPayment {
+  id: string;
+  customerId: number;
+  customerName?: string;
+  amount: number;
+  date: string;
+  timestamp: number;
+  paymentMethod: 'cash' | 'card' | 'wallet';
+  notes?: string;
+  recordedBy?: string;
+  receiptNumber?: string;
 }
 
 export interface InvoiceItem {
@@ -210,7 +233,7 @@ export interface Invoice {
    * طريقة/طرق الدفع. القيم القديمة ('visa','split','loyalty') محفوظة للتوافق،
    * و'mixed' تعني دفعاً مختلراً ويجب وجود paymentParts.
    */
-  paymentMethod: 'cash' | 'card' | 'split' | 'loyalty' | 'wallet' | 'mixed' | 'visa';
+  paymentMethod: 'cash' | 'card' | 'split' | 'loyalty' | 'wallet' | 'mixed' | 'visa' | 'credit';
   /** تقسيم الفاتورة على الطرق (اختياري — الفواتير القديمة بلا تقسيم) */
   paymentParts?: PaymentPart[];
   /** الجزء المخصص من الكاش لسداد الفاتورة (لا يشمل الباقي للعميل) */
@@ -297,6 +320,8 @@ export interface ClosingReport {
   deposits?: number;
   /** دفعات الموظفين النقدية لليوم (سلف/مرتب/مكافآت) المخصومة من الدرج */
   staffCashPayouts?: number;
+  retainedInDrawer?: number;
+  transferredToSafe?: number;
 }
 
 /** حركة يدوية على درج النقدية (سحب/إيداع) مع سبب مسجَّل */
@@ -395,6 +420,7 @@ export interface AppState {
   suppliers: Supplier[];
   inventoryHistory: InventoryHistory[];
   purchaseOrders: PurchaseOrder[];
+  customerPayments?: CustomerPayment[];
   settings: {
     shopName: string;
     phone: string;
@@ -419,8 +445,23 @@ export interface AppState {
     serverApiKey?: string;
     /** الرصيد النقدي في الدرج عند بداية اليوم (أساس حساب الخزنة المتوقعة) */
     cashDrawerOpening?: number;
+    manualOpeningDate?: string;
     /** تم بذر خدمات الصالون في هذه القاعدة (مرة واحدة، إضافة فقط دون حذف) */
     salonServicesSeeded?: boolean;
+    timeFormat?: '12h' | '24h';
+    autoBackupOnClosing?: boolean;
+    managerEmail?: string;
+    emailConfig?: {
+      emailTo: string;
+      notifyOnInvoice?: boolean;
+      notifyOnClosing?: boolean;
+      notifyOnReturn?: boolean;
+      notifyOnExpense?: boolean;
+      smtpUser?: string;
+    };
+    githubRepo?: string;
+    autoCheckUpdates?: boolean;
+    githubToken?: string;
     printDesign: {
       pageSize: 'A4' | 'A5' | '80mm' | '58mm';
       marginMm: number;
@@ -429,16 +470,19 @@ export interface AppState {
       textColor: string;
       titleText: string;
       footerText: string;
+      greetingText?: string;
       baseFontSize: number;
       logoFrontDataUrl?: string;
       logoBackDataUrl?: string;
       logoSizePx: number;
-      template: 'classic' | 'professional' | 'thermal' | 'template1' | 'template2';
+      template: 'classic' | 'professional' | 'thermal' | 'luxury' | 'modern' | 'minimal' | 'custom' | 'template1' | 'template2';
       logoFrontAlign: 'left' | 'center' | 'right';
       logoBackAlign: 'left' | 'center' | 'right';
       showBarcode: boolean;
       maxItemsPerPage?: number;
       elements?: string[];
+      enableShading?: boolean;
+      visibleElements?: Record<string, boolean>;
     };
   };
 }
@@ -460,6 +504,7 @@ export interface InvoicePrintIdentity {
   textColor: string;
   titleText: string;
   footerText: string;
+  greetingText?: string;
   baseFontSize: number;
   logoSizePx: number;
   logoFrontAlign: string;

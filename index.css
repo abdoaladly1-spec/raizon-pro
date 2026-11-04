@@ -63,54 +63,27 @@ html[lang="en"] * {
 .btn-pro {
   position: relative;
   overflow: hidden;
-  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease, opacity 200ms ease;
   z-index: 1;
 }
 
-.btn-pro::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
-  transition: left 0.5s;
-  z-index: -1;
-}
-
-.btn-pro:hover::before {
-  left: 100%;
-}
-
 .btn-pro:hover {
-  transform: translateY(-5px) scale(1.05);
-  box-shadow: 0 0 20px rgba(14, 165, 233, 0.4); /* Primary glow */
+  /* No translateY: prevents layout jump in dense UIs */
+  filter: brightness(1.08);
 }
 
 .btn-pro:active {
-  transform: translateY(0) scale(0.95);
+  transform: scale(0.97);
+  filter: brightness(0.96);
 }
 
-/* Neon Backgrounds */
+/* خلفية التطبيق الرئيسية — هادئة بدون تأثيرات نيون */
 .bg-neon-gradient {
-  background: radial-gradient(circle at 50% 0%, rgba(14, 165, 233, 0.15) 0%, transparent 50%),
-              radial-gradient(circle at 0% 100%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-              radial-gradient(circle at 100% 100%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
-              var(--bg-base);
+  background: #f1f5f9; /* slate-100 */
 }
 
 .dark .bg-neon-gradient {
-  --bg-base: #0f172a; /* Slate 900 */
-}
-
-.bg-neon-gradient {
-  --bg-base: #f8fafc; /* Slate 50 */
+  background: #0f172a; /* slate-900 */
 }
 
 /* Specific Glows for Variants */
@@ -139,18 +112,17 @@ html[lang="en"] * {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* glass-panel: يستخدمه Card — بيضاء صلبة في الفاتح، داكنة في المظلم */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 1);
+  box-shadow: 0 1px 3px 0 rgba(0,0,0,0.07);
 }
 
 .dark .glass-panel {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  background: rgb(30, 41, 59); /* slate-800 */
+  border: 1px solid rgba(51, 65, 85, 0.8); /* slate-700 */
+  box-shadow: none;
 }
 
 /* Creative Utilities */
@@ -168,12 +140,12 @@ html[lang="en"] * {
   background-image: linear-gradient(135deg, #fbbf24, #d97706);
 }
 
+/* card-hover: ظل أخف وحركة أقل مزعجة */
 .card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
 }
 .card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 16px -2px rgba(0,0,0,0.10), 0 2px 6px -1px rgba(0,0,0,0.06);
 }
 
 .animate-float {
@@ -234,15 +206,16 @@ button:has(> svg):not(:has(> :not(svg))) {
 
 /* تأثيرات اللمس: تكبير/انكماش + انتقال سلس */
 button, .btn-pro, [role="button"], a.btn {
-  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 150ms ease, background-color 150ms ease, border-color 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, filter 150ms ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 button:active:not(:disabled), .btn-pro:active:not(:disabled), [role="button"]:active {
-  transform: scale(0.95);
+  transform: scale(0.97);
 }
+/* إزالة hover scale العام من الأزرار لمنع القفز المزعج في الجداول والنماذج */
 button:hover:not(:disabled), .btn-pro:hover:not(:disabled) {
-  transform: scale(1.03);
+  filter: brightness(1.06);
 }
 
 /* منطقة لمس أكبر في وضع اللمس */
@@ -302,4 +275,68 @@ button:hover:not(:disabled), .btn-pro:hover:not(:disabled) {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
   }
+}
+
+/* Cairo font and bold printing styling */
+.font-cairo {
+  font-family: 'Cairo', system-ui, -apple-system, sans-serif !important;
+}
+
+#printable-invoice, #printable-invoice-demo, #printable-invoice *, #printable-invoice-demo * {
+  font-family: 'Tahoma', Arial, sans-serif !important;
+  font-weight: 700 !important;
+}
+
+.invoice-header-shaded,
+#printable-invoice .invoice-header-shaded,
+#printable-invoice-demo .invoice-header-shaded,
+td.invoice-header-shaded,
+th.invoice-header-shaded {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+/* ==============================================================
+   تحسين وضوح وتباين النصوص في الوضع النهاري (Light Mode High Contrast)
+   ============================================================== */
+html:not(.dark) {
+  color-scheme: light;
+}
+
+html:not(.dark) body {
+  color: #0f172a; /* slate-900 */
+}
+
+/* رفع درجة التباين للنصوص الرمادية في الوضع النهاري لتكون مقروءة وواضحة جداً */
+html:not(.dark) .text-slate-400 {
+  color: #475569 !important; /* slate-600 عالي الوضوح بدلاً من 400 الباهت */
+}
+
+html:not(.dark) .text-slate-500 {
+  color: #334155 !important; /* slate-700 بدلاً من 500 المكتوم */
+}
+
+html:not(.dark) .text-slate-600 {
+  color: #1e293b !important; /* slate-800 فاحم ونقي */
+}
+
+/* حقول الإدخال في الوضع النهاري */
+html:not(.dark) input,
+html:not(.dark) select,
+html:not(.dark) textarea {
+  color: #0f172a !important;
+  font-weight: 600;
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #64748b !important;
+  font-weight: 500;
+}
+
+/* العناوين والبطاقات في الوضع النهاري */
+html:not(.dark) .glass-panel,
+html:not(.dark) .card-hover {
+  background-color: #ffffff;
+  border-color: #cbd5e1; /* slate-300 حدود واضحة تماماً */
 }

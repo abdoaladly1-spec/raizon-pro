@@ -43,9 +43,9 @@ const baseDesign = (): PrintDesign => normalizePrintDesign({});
 check('4 paper sizes (A4/A5/80mm/58mm)',
   PAGE_SIZES.length === 4 && PAGE_SIZES.map(p => p.id).join(',') === 'A4,A5,80mm,58mm');
 
-check('exactly 3 templates',
-  Object.keys(TEMPLATE_PRESETS).length === 3 &&
-  ['classic', 'professional', 'thermal'].every(t => t in TEMPLATE_PRESETS));
+check('all 7 template presets defined',
+  Object.keys(TEMPLATE_PRESETS).length >= 7 &&
+  ['classic', 'professional', 'thermal', 'luxury', 'modern', 'minimal', 'custom'].every(t => t in TEMPLATE_PRESETS));
 
 check('legacy template1/template2 mapped',
   normalizeTemplate('template1') === 'classic' && normalizeTemplate('template2') === 'professional' &&

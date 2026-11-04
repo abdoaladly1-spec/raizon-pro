@@ -27,12 +27,15 @@ server/.env.*
 !server/.env.example
 
 # ===== Databases & backups (بيانات عملاء حقيقية) =====
+Backup/
 server/*.db
 server/*.db-*
 server/*.sqlite
 server/*.sqlite-*
 server/backups/
 server/*.log
+Patcher.exe
+electron/resources/Patcher.exe
 
 # ===== مفاتيح الترخيص الخاصة (لا تُرفع أبداً) =====
 tools/keys/

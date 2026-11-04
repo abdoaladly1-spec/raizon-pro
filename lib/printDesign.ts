@@ -6,7 +6,7 @@
 import type { Invoice, InvoicePrintIdentity } from '../types.ts';
 
 export type PageSizeId = 'A4' | 'A5' | '80mm' | '58mm';
-export type TemplateId = 'classic' | 'professional' | 'thermal';
+export type TemplateId = 'classic' | 'professional' | 'thermal' | 'luxury' | 'modern' | 'minimal' | 'custom';
 export type LogoAlign = 'left' | 'center' | 'right';
 
 export interface PrintDesign {
@@ -17,6 +17,7 @@ export interface PrintDesign {
   textColor: string;
   titleText: string;
   footerText: string;
+  greetingText?: string;
   baseFontSize: number;
   logoFrontDataUrl?: string;
   logoBackDataUrl?: string;
@@ -27,6 +28,8 @@ export interface PrintDesign {
   showBarcode: boolean;
   maxItemsPerPage?: number;
   elements?: string[];
+  enableShading?: boolean;
+  visibleElements?: Record<string, boolean>;
 }
 
 export interface PageSpec {
@@ -62,6 +65,10 @@ export const TEMPLATE_PRESETS: Record<
   classic: { pageSize: 'A4', marginMm: 12, primaryColor: '#0ea5e9', accentColor: '#4facfe', textColor: '#000000', baseFontSize: 14 },
   professional: { pageSize: 'A4', marginMm: 10, primaryColor: '#0369a1', accentColor: '#0ea5e9', textColor: '#0b1323', baseFontSize: 13 },
   thermal: { pageSize: '80mm', marginMm: 4, primaryColor: '#000000', accentColor: '#333333', textColor: '#000000', baseFontSize: 12 },
+  luxury: { pageSize: 'A4', marginMm: 12, primaryColor: '#b45309', accentColor: '#d97706', textColor: '#1c1917', baseFontSize: 13 },
+  modern: { pageSize: '80mm', marginMm: 3, primaryColor: '#4f46e5', accentColor: '#6366f1', textColor: '#0f172a', baseFontSize: 12 },
+  minimal: { pageSize: '80mm', marginMm: 2, primaryColor: '#1e293b', accentColor: '#64748b', textColor: '#0f172a', baseFontSize: 11 },
+  custom: { pageSize: '80mm', marginMm: 4, primaryColor: '#0284c7', accentColor: '#0369a1', textColor: '#0f172a', baseFontSize: 12 },
 };
 
 /** أسماء القوالب القديمة (مخزّنة في بيانات سابقة) → أقرب قالب حديث */
@@ -72,7 +79,8 @@ export const LEGACY_TEMPLATE_MAP: Record<string, TemplateId> = {
 
 /** يحوّل أي قيمة قالب (حتى القديمة/المجهولة) لقالب من الثلاثة المدعومة */
 export const normalizeTemplate = (tpl: string | undefined): TemplateId => {
-  if (tpl === 'classic' || tpl === 'professional' || tpl === 'thermal') return tpl;
+  const valid: TemplateId[] = ['classic', 'professional', 'thermal', 'luxury', 'modern', 'minimal', 'custom'];
+  if (tpl && valid.includes(tpl as TemplateId)) return tpl as TemplateId;
   if (tpl && LEGACY_TEMPLATE_MAP[tpl]) return LEGACY_TEMPLATE_MAP[tpl];
   return 'thermal';
 };
@@ -153,6 +161,7 @@ export const buildPrintIdentity = (
     textColor: d?.textColor || '#000000',
     titleText: d?.titleText || '',
     footerText: d?.footerText || '',
+    greetingText: d?.greetingText || '',
     baseFontSize: Number.isFinite(d?.baseFontSize) ? d.baseFontSize : 10,
     logoSizePx: Number.isFinite(d?.logoSizePx) ? d.logoSizePx : 80,
     logoFrontAlign: d?.logoFrontAlign || 'center',
@@ -182,6 +191,7 @@ export const resolvePrintDesign = (
     textColor: snap.textColor,
     titleText: snap.titleText,
     footerText: snap.footerText,
+    greetingText: snap.greetingText,
     baseFontSize: snap.baseFontSize,
     logoSizePx: snap.logoSizePx,
     logoFrontAlign: snap.logoFrontAlign as LogoAlign,
@@ -218,6 +228,19 @@ export const normalizePrintDesign = (raw: Partial<PrintDesign> | undefined): Pri
   out.baseFontSize = Number.isFinite(out.baseFontSize) ? out.baseFontSize : 10;
   out.logoSizePx = Number.isFinite(out.logoSizePx) ? out.logoSizePx : 80;
   out.elements = filterElements(raw.elements);
+  out.enableShading = raw.enableShading ?? true;
+  out.visibleElements = {
+    logo: raw.visibleElements?.logo ?? true,
+    shopName: raw.visibleElements?.shopName ?? true,
+    address: raw.visibleElements?.address ?? true,
+    phone: raw.visibleElements?.phone ?? true,
+    dateTime: raw.visibleElements?.dateTime ?? true,
+    customer: raw.visibleElements?.customer ?? true,
+    items: raw.visibleElements?.items ?? true,
+    totals: raw.visibleElements?.totals ?? true,
+    footer: raw.visibleElements?.footer ?? true,
+    ...(raw.visibleElements || {}),
+  };
   if (out.maxItemsPerPage != null) {
     out.maxItemsPerPage = itemsPerPageOf(out);
   }

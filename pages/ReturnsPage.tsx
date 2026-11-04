@@ -671,79 +671,122 @@ export const ReturnsPage = () => {
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="text-xs uppercase bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200">
+                            <thead className="text-xs font-bold uppercase bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-200 border-b border-slate-200 dark:border-slate-600">
                                 <tr>
-                                    <th className="px-3 py-2 text-left rtl:text-right">#</th>
-                                    <th className="px-3 py-2">{t('return_invoice_no')}</th>
-                                    <th className="px-3 py-2">{t('date')}</th>
-                                    <th className="px-3 py-2">{t('return_refund_amount')}</th>
-                                    <th className="px-3 py-2">{t('cash_refunds')}</th>
-                                    <th className="px-3 py-2">{t('status')}</th>
-                                    <th className="px-3 py-2">{t('created_by')}</th>
-                                    <th className="px-3 py-2">{t('actions')}</th>
+                                    <th className="px-3.5 py-3 text-right">#</th>
+                                    <th className="px-3.5 py-3 text-right">{t('return_invoice_no')}</th>
+                                    <th className="px-3.5 py-3 text-center">{t('date')}</th>
+                                    <th className="px-3.5 py-3 text-center">{t('return_refund_amount')}</th>
+                                    <th className="px-3.5 py-3 text-center">{t('cash_refunds')}</th>
+                                    <th className="px-3.5 py-3 text-center">{t('status')}</th>
+                                    <th className="px-3.5 py-3 text-center">{t('created_by')}</th>
+                                    <th className="px-3.5 py-3 text-center">{t('actions')}</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60 font-medium">
                                 {logRows.map(rec => (
                                     <React.Fragment key={rec.uid}>
                                         <tr
-                                            className="border-b border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                                            className={`cursor-pointer transition-colors ${expanded === rec.uid ? 'bg-primary-50/30 dark:bg-slate-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
                                             onClick={() => setExpanded(expanded === rec.uid ? '' : rec.uid)}
                                         >
-                                            <td className="px-3 py-2 font-mono">{rec.id}</td>
-                                            <td className="px-3 py-2">#{rec.invoiceId} · {rec.type === 'full' ? t('return_full') : t('return_partial')}</td>
-                                            <td className="px-3 py-2">{rec.date}</td>
-                                            <td className="px-3 py-2 font-bold text-red-600 dark:text-red-400">{round2(rec.refundAmount)} {t('egp')}</td>
-                                            <td className="px-3 py-2">{round2(rec.cashRefund)}</td>
-                                            <td className="px-3 py-2">
-                                                <span className={`px-2 py-0.5 rounded-full text-xs ${statusTone(rec.status)}`}>
+                                            <td className="px-3.5 py-3 text-right font-mono font-bold text-slate-400">{rec.id}</td>
+                                            <td className="px-3.5 py-3 text-right font-bold text-slate-800 dark:text-slate-100">
+                                                <span>#{rec.invoiceId}</span>
+                                                <span className="text-slate-400 mx-1.5">•</span>
+                                                <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                                                    {rec.type === 'full' ? t('return_full') : t('return_partial')}
+                                                </span>
+                                            </td>
+                                            <td className="px-3.5 py-3 text-center font-mono text-xs text-slate-600 dark:text-slate-300">{rec.date}</td>
+                                            <td className="px-3.5 py-3 text-center font-mono font-black text-rose-600 dark:text-rose-400">{round2(rec.refundAmount)} {t('egp')}</td>
+                                            <td className="px-3.5 py-3 text-center font-mono font-bold text-slate-700 dark:text-slate-200">{round2(rec.cashRefund)}</td>
+                                            <td className="px-3.5 py-3 text-center">
+                                                <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${statusTone(rec.status)}`}>
                                                     {t(`return_status_${rec.status}`)}
                                                 </span>
-                                                {rec.error && <div className="text-xs text-red-500 mt-1">{rec.error}</div>}
+                                                {rec.error && <div className="text-[11px] text-red-500 mt-1">{rec.error}</div>}
                                             </td>
-                                            <td className="px-3 py-2 text-slate-500">{rec.staffName || rec.createdBy}</td>
-                                            <td className="px-3 py-2">
+                                            <td className="px-3.5 py-3 text-center text-slate-600 dark:text-slate-300 font-semibold">{rec.staffName || rec.createdBy}</td>
+                                            <td className="px-3.5 py-3 text-center">
                                                 <button
                                                     onClick={e => { e.stopPropagation(); printReceipt(rec, state.invoices.find(i => i.uid === rec.invoiceUid)); }}
-                                                    className="text-blue-600 hover:underline flex items-center gap-1"
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-xs font-bold transition cursor-pointer"
                                                 >
-                                                    <Printer size={14} /> {t('return_receipt')}
+                                                    <Printer size={14} /> <span>{t('return_receipt')}</span>
                                                 </button>
                                             </td>
                                         </tr>
                                         {expanded === rec.uid && (
-                                            <tr className="bg-slate-50 dark:bg-slate-900/40">
-                                                <td colSpan={8} className="px-4 py-3">
-                                                    <div className="text-xs text-slate-500 mb-2">
-                                                        {t('return_reason')}: {rec.reason || '-'}
-                                                        {rec.notes ? ` · ${rec.notes}` : ''}
-                                                    </div>
-                                                    <table className="w-full text-xs">
-                                                        <thead>
-                                                            <tr className="text-slate-500">
-                                                                <th className="text-left rtl:text-right px-2 py-1">{t('items')}</th>
-                                                                <th className="px-2 py-1">{t('return_qty')}</th>
-                                                                <th className="px-2 py-1">{t('return_refund_amount')}</th>
-                                                                <th className="px-2 py-1">{t('return_restocked')}</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {(rec.items || []).map(it => (
-                                                                <tr key={it.itemId}>
-                                                                    <td className="px-2 py-1">{it.name}</td>
-                                                                    <td className="px-2 py-1">{it.quantity}</td>
-                                                                    <td className="px-2 py-1">{round2(it.refundAmount)}</td>
-                                                                    <td className="px-2 py-1">{it.restocked ? <Check size={12} className="inline text-emerald-500" /> : '-'}</td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
-                                                    <div className="flex flex-wrap gap-4 text-xs mt-2 text-slate-500">
-                                                        <span>{t('return_points')}: {rec.pointsReversed || 0}</span>
-                                                        <span>{t('return_commission')}: {round2(rec.commissionReversed || 0)} {t('egp')}</span>
-                                                        {(rec.refundParts || []).map(p => (
-                                                            <span key={p.method}>{t(p.method)}: {round2(p.amount)}</span>
-                                                        ))}
+                                            <tr className="bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700">
+                                                <td colSpan={8} className="p-4">
+                                                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3 shadow-xs">
+                                                        {/* سبب المرتجع ومعلومات العمولة */}
+                                                        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-700/60 text-xs">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-bold text-slate-500 dark:text-slate-400">{t('return_reason')}:</span>
+                                                                <span className="font-black text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-700 px-2.5 py-0.5 rounded-md">
+                                                                    {rec.reason || '-'}
+                                                                </span>
+                                                                {rec.notes && <span className="text-slate-500 dark:text-slate-400">• {rec.notes}</span>}
+                                                            </div>
+                                                            <div className="flex items-center gap-2.5 text-xs">
+                                                                {Boolean(rec.pointsReversed) && (
+                                                                    <span className="bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 px-2.5 py-1 rounded-md font-bold border border-amber-200/50">
+                                                                        نقاط معكوسة: {rec.pointsReversed}
+                                                                    </span>
+                                                                )}
+                                                                {Boolean(rec.commissionReversed) && (
+                                                                    <span className="bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 px-2.5 py-1 rounded-md font-bold border border-purple-200/50">
+                                                                        عمولة معكوسة: {round2(rec.commissionReversed)} ج.م
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* جدول الأصناف المرتجعة متناسق الأعمدة بالكامل */}
+                                                        <div className="overflow-x-auto rounded-lg border border-slate-100 dark:border-slate-700/60">
+                                                            <table className="w-full text-xs">
+                                                                <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100 dark:border-slate-700">
+                                                                    <tr>
+                                                                        <th className="text-right py-2.5 px-3">{t('items')}</th>
+                                                                        <th className="text-center py-2.5 px-3">{t('return_qty')}</th>
+                                                                        <th className="text-center py-2.5 px-3">{t('return_refund_amount')}</th>
+                                                                        <th className="text-center py-2.5 px-3">{t('return_restocked')}</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                                                    {(rec.items || []).map(it => (
+                                                                        <tr key={it.itemId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                                                            <td className="py-2.5 px-3 font-bold text-slate-800 dark:text-slate-200 text-right">{it.name}</td>
+                                                                            <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-700 dark:text-slate-300">{it.quantity}</td>
+                                                                            <td className="py-2.5 px-3 text-center font-mono font-black text-rose-600 dark:text-rose-400">{round2(it.refundAmount)} ج.م</td>
+                                                                            <td className="py-2.5 px-3 text-center">
+                                                                                {it.restocked ? (
+                                                                                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full text-[11px]">
+                                                                                        <Check size={12} /> أُعيد للمخزون
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    <span className="text-slate-400">-</span>
+                                                                                )}
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+
+                                                        {/* تفاصيل طرق الدفع المستردة */}
+                                                        {(rec.refundParts || []).length > 0 && (
+                                                            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-600 dark:text-slate-300">
+                                                                <span className="font-bold text-slate-500">طريقة استرداد المبلغ:</span>
+                                                                {(rec.refundParts || []).map(p => (
+                                                                    <span key={p.method} className="bg-slate-100 dark:bg-slate-700/80 px-2.5 py-1 rounded-md font-mono font-bold text-slate-800 dark:text-slate-200">
+                                                                        {t(p.method)}: {round2(p.amount)} ج.م
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>

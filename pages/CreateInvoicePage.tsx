@@ -1,7 +1,8 @@
+import { normalizeBarcode, useBarcodeScanner } from '../lib/barcode';
 /* تم فصل هذا الملف من App.tsx (نظام ProCashier) */
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw } from '../components/Icons';
+import { ChevronDown, LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from '../types';
 import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, useSound, useLiveTick } from '../components/ui';
 import { FilterModal } from '../components/FilterModal';
@@ -12,16 +13,133 @@ import { localIsoToday, parseInvoiceDate } from '../lib/dates';
 import { round2, validatePayment, paymentOf, type PaymentPart } from '../lib/payments';
 import { buildPrintIdentity } from '../lib/printDesign';
 import { InvoiceReceipt } from '../components/InvoiceReceipt';
-import { PrintActions } from '../components/PrintActions';
+import { PrintActions, openInvoiceWhatsApp } from '../components/PrintActions';
+
+const DRAFT_KEY = 'procashier_active_invoice_draft_v1';
+
+const getInitialInvoiceDraft = () => {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error('Failed to parse invoice draft', e);
+  }
+  return null;
+};
 
 export const CreateInvoice = ({ onClose }: any) => {
   const { state, addInvoice, holdInvoice, restoreInvoice, deleteHeldInvoice, t, addToast, addCustomer, updateSettings, language, addItem, formatNumber, formatDate, formatTime, formatDateTime } = useApp();
-  const [phone, setPhone] = useState('');
-  const [customerName, setCustomerName] = useState('');
-  const [customerIdInput, setCustomerIdInput] = useState('');
-  const [notes, setNotes] = useState('');
-  const [selectedStaffId, setSelectedStaffId] = useState('');
+  const { playBeep } = useSound();
+  
+  // استرجاع المسودة المحفوظة تلقائياً إذا وجدت حتى لا تضيع عند مغادرة الصفحة
+  const initialDraft = useMemo(() => getInitialInvoiceDraft(), []);
+  
+  const [phone, setPhone] = useState(initialDraft?.phone || '');
+  const [customerName, setCustomerName] = useState(initialDraft?.customerName || '');
+  const [customerIdInput, setCustomerIdInput] = useState(initialDraft?.customerIdInput || '');
+  const [notes, setNotes] = useState(initialDraft?.notes || '');
+  const [selectedStaffId, setSelectedStaffId] = useState(initialDraft?.selectedStaffId || '');
   const [showHeldInvoices, setShowHeldInvoices] = useState(false);
+  const [itemSearch, setItemSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // ماسح الباركود العام: يعمل في أي مكان بالصفحة عند استخدام جهاز الباركود USB أو البلوتوث
+  useBarcodeScanner((scannedCode) => {
+    const code = normalizeBarcode(scannedCode);
+    if (!code) return;
+
+    const found = state.items.find(i => 
+      (i.barcode && normalizeBarcode(i.barcode).toLowerCase() === code.toLowerCase()) ||
+      (i.sku && normalizeBarcode(i.sku).toLowerCase() === code.toLowerCase()) ||
+      (i.id && i.id.toLowerCase() === code.toLowerCase())
+    );
+
+    if (found) {
+      playBeep();
+      addToInvoice(found);
+      const itemName = language === 'ar' ? found.nameAr : (found.nameEn || found.nameAr);
+      addToast(`📦 ${itemName} (+1)`, 'success');
+    } else {
+      addToast(language === 'ar' ? `الباركود [${code}] غير مسجل في المخزون` : `Barcode [${code}] not found`, 'error');
+    }
+  });
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const customerDropdownRef = useRef<HTMLDivElement>(null);
+
+  // إغلاق قائمة العملاء التلقائية عند النقر خارجها
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(e.target as Node)) {
+        setShowCustomerDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredCustomerSuggestions = useMemo(() => {
+    const qPhone = (phone || '').trim().toLowerCase();
+    const qName = (customerName || '').trim().toLowerCase();
+    const qId = (customerIdInput || '').trim().toLowerCase();
+    const activeQuery = qPhone || qName || qId;
+    if (!activeQuery) return state.customers.slice(0, 15);
+    return state.customers.filter(c => {
+      const matchPhone = c.phone && c.phone.includes(activeQuery);
+      const matchName = c.name && c.name.toLowerCase().includes(activeQuery);
+      const matchId = c.id && c.id.toString().includes(activeQuery);
+      return matchPhone || matchName || matchId;
+    }).slice(0, 20);
+  }, [phone, customerName, customerIdInput, state.customers]);
+
+  const updateItemQuantity = (id: string, delta: number) => {
+    setSelectedItems((prev: any[]) => {
+      return prev.map(i => {
+        if (i.item.id === id) {
+          const newQty = i.qty + delta;
+          if (delta > 0 && i.item.type === 'product' && i.item.trackStock) {
+            const stockItem = state.items.find(si => si.id === id);
+            const maxAvailable = stockItem ? stockItem.quantity : i.item.quantity;
+            if (newQty > maxAvailable) {
+              addToast(language === 'ar' ? `الكمية بالمخزن (${maxAvailable}) فقط` : `Stock limit reached (${maxAvailable})`, 'error');
+              return i;
+            }
+          }
+          return newQty > 0 ? { ...i, qty: newQty } : null;
+        }
+        return i;
+      }).filter(Boolean);
+    });
+  };
+
+  // Quick Add Customer State
+  const [isQuickAddingCustomer, setIsQuickAddingCustomer] = useState(false);
+  const [quickCustomerForm, setQuickCustomerForm] = useState({ name: '', phone: '' });
+
+  const handleQuickAddCustomer = (e: any) => {
+    e.preventDefault();
+    if (!quickCustomerForm.name.trim() || !quickCustomerForm.phone.trim()) return;
+    const phoneRegex = /^01\d{9}$/;
+    if (!phoneRegex.test(quickCustomerForm.phone)) {
+      addToast(t('invalid_phone_format'), 'error');
+      return;
+    }
+    const newCust = {
+      id: Date.now(),
+      name: quickCustomerForm.name.trim(),
+      phone: quickCustomerForm.phone.trim(),
+      tier: 'Bronze',
+      loyaltyPoints: 0,
+      totalSpent: 0,
+      lastVisit: new Date().toISOString()
+    };
+    addCustomer(newCust as any);
+    setPhone(newCust.phone);
+    setCustomerName(newCust.name);
+    setCustomerIdInput(String(newCust.id));
+    setIsQuickAddingCustomer(false);
+    setQuickCustomerForm({ name: '', phone: '' });
+    addToast(t('customer_added') || 'تمت إضافة العميل', 'success');
+  };
 
   // Quick Add Service State
   const [isQuickAddingService, setIsQuickAddingService] = useState(false);
@@ -71,14 +189,37 @@ export const CreateInvoice = ({ onClose }: any) => {
       }
   }, [customerIdInput, state.customers]);
 
-  const [selectedItems, setSelectedItems] = useState([] as any);
+  const [selectedItems, setSelectedItems] = useState((initialDraft?.selectedItems || []) as any);
   const [showPreview, setShowPreview] = useState(false);
   const [createdInvoice, setCreatedInvoice] = useState(null as any);
-  const [discountPercent, setDiscountPercent] = useState(state.settings.autoApplyDiscount ? state.settings.defaultDiscountPercent : 0);
-  const [taxPercent, setTaxPercent] = useState(state.settings.autoApplyTax ? state.settings.defaultTaxPercent : 0);
+  const [discountPercent, setDiscountPercent] = useState(
+    initialDraft?.discountPercent !== undefined ? initialDraft.discountPercent : (state.settings.autoApplyDiscount ? state.settings.defaultDiscountPercent : 0)
+  );
+  const [taxPercent, setTaxPercent] = useState(
+    initialDraft?.taxPercent !== undefined ? initialDraft.taxPercent : (state.settings.autoApplyTax ? state.settings.defaultTaxPercent : 0)
+  );
+
+  // حفظ مسودة الفاتورة تلقائياً عند أي تعديل لتبقى موجودة عند الخروج والرجوع
+  useEffect(() => {
+    if (selectedItems.length > 0 || customerName.trim() || phone.trim() || notes.trim()) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        phone,
+        customerName,
+        customerIdInput,
+        notes,
+        selectedStaffId,
+        selectedItems,
+        discountPercent,
+        taxPercent
+      }));
+    } else {
+      localStorage.removeItem(DRAFT_KEY);
+    }
+  }, [phone, customerName, customerIdInput, notes, selectedStaffId, selectedItems, discountPercent, taxPercent]);
   
   // Payment Modal State (دفع مختلط: كاش / بطاقة / محفظة)
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentMode, setPaymentMode] = useState<'normal' | 'credit'>('normal');
   const [partCash, setPartCash] = useState('');
   const [partCard, setPartCard] = useState('');
   const [partWallet, setPartWallet] = useState('');
@@ -94,13 +235,25 @@ export const CreateInvoice = ({ onClose }: any) => {
       if (e.ctrlKey && e.key.toLowerCase() === 'p') { e.preventDefault(); window.print(); }
       if (e.ctrlKey && e.key.toLowerCase() === 's') { e.preventDefault(); handleSave(); }
       if (e.key === 'Escape') { e.preventDefault(); onClose(); }
-      if (e.ctrlKey && e.key.toLowerCase() === 'n') { e.preventDefault(); setSelectedItems([]); setPhone(''); setCustomerName(''); setNotes(''); setShowPreview(false); setCreatedInvoice(null); }
+      if (e.ctrlKey && e.key.toLowerCase() === 'n') { e.preventDefault(); setSelectedItems([]); setPhone(''); setCustomerName(''); setNotes(''); setShowPreview(false); setCreatedInvoice(null); localStorage.removeItem(DRAFT_KEY); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [showPaymentModal]);
 
   const addToInvoice = (item: Item) => {
+    const isProduct = item.type === 'product';
+    if (isProduct && item.trackStock && item.quantity <= 0) {
+        addToast(language === 'ar' ? `المنتج [${item.nameAr}] نفد من المخزون تماماً (الكمية 0)` : `[${item.nameEn || item.nameAr}] is out of stock`, 'error');
+        return;
+    }
+
+    const existing = selectedItems.find(i => i.item.id === item.id);
+    if (isProduct && item.trackStock && existing && (existing.qty + 1) > item.quantity) {
+        addToast(language === 'ar' ? `الكمية المتوفرة بالمخزن (${item.quantity}) فقط` : `Only ${item.quantity} available in stock`, 'error');
+        return;
+    }
+
     setSelectedItems(prev => {
         const exists = prev.find(i => i.item.id === item.id);
         if(exists) {
@@ -114,11 +267,27 @@ export const CreateInvoice = ({ onClose }: any) => {
     setSelectedItems(prev => prev.filter(i => i.item.id !== id));
   };
 
-  const subtotal = selectedItems.reduce((acc, item) => acc + (item.item.price * item.qty), 0);
-  const discountAmount = Math.max(0, Math.min(100, discountPercent)) / 100 * subtotal;
-  const taxableBase = Math.max(0, subtotal - discountAmount);
-  const taxAmount = Math.max(0, Math.min(100, taxPercent)) / 100 * taxableBase;
-  const total = Math.max(0, taxableBase + taxAmount);
+  const displayedItems = useMemo(() => {
+    return state.items.filter(item => {
+      const q = itemSearch.toLowerCase().trim();
+      const matchesSearch = !q || 
+        (item.nameAr && item.nameAr.toLowerCase().includes(q)) || 
+        (item.nameEn && item.nameEn.toLowerCase().includes(q));
+      
+      if (!matchesSearch) return false;
+
+      if (selectedCategory === 'all') return true;
+      if (selectedCategory === 'services') return item.type === 'service';
+      if (selectedCategory === 'products') return item.type === 'product';
+      return item.categoryId === selectedCategory;
+    });
+  }, [state.items, itemSearch, selectedCategory]);
+
+  const subtotal = round2(selectedItems.reduce((acc, item) => acc + (item.item.price * item.qty), 0));
+  const discountAmount = round2((Math.max(0, Math.min(100, discountPercent)) / 100) * subtotal);
+  const taxableBase = round2(Math.max(0, subtotal - discountAmount));
+  const taxAmount = round2((Math.max(0, Math.min(100, taxPercent)) / 100) * taxableBase);
+  const total = round2(Math.max(0, taxableBase + taxAmount));
 
   // --- حالة الدفع المختلط (محسوبة لحظياً من حقول التقسيم) ---
   const num = (v: string) => { const n = parseFloat(v); return isFinite(n) && n > 0 ? round2(n) : 0; };
@@ -135,6 +304,7 @@ export const CreateInvoice = ({ onClose }: any) => {
   const paymentChange = paymentCheck.info.change;
 
   const openPaymentModal = () => {
+      setPaymentMode('normal');
       // افتراضي: كل المبلغ كاش والمستلم = الإجمالي (كاشير واحد بلمسة)
       setPartCash(String(round2(total)));
       setPartCard('0');
@@ -241,9 +411,23 @@ export const CreateInvoice = ({ onClose }: any) => {
   const handleHold = () => {
       if (selectedItems.length === 0) return addToast(t('no_items_to_hold'), 'error');
       
+      const defaultName = customerName?.trim() && customerName.trim() !== 'عميل نقدي' && customerName.trim() !== t('guest')
+          ? customerName.trim()
+          : (language === 'ar' ? `طلب معلق #${(state.heldInvoices || []).length + 1}` : `Held Order #${(state.heldInvoices || []).length + 1}`);
+
+      const inputName = window.prompt(
+          language === 'ar' 
+              ? 'تسمية الفاتورة المعلقة (اسم العميل / رقم الطاولة / ملاحظة الطلب):' 
+              : 'Name or note for held order:',
+          defaultName
+      );
+      if (inputName === null) return;
+
+      const finalHoldName = inputName.trim() || defaultName;
+
       const invoiceData: any = {
           customerId: existingCustomer ? existingCustomer.id : 0,
-          customerName: customerName || t('guest'),
+          customerName: finalHoldName,
           items: selectedItems.map((i: any) => ({
               itemId: i.item.id,
               name: language === 'ar' ? i.item.nameAr : i.item.nameEn,
@@ -257,8 +441,8 @@ export const CreateInvoice = ({ onClose }: any) => {
           total,
           date: localIsoToday(),
           timestamp: Date.now(),
-          status: 'pending',
-          notes,
+          status: 'held',
+          notes: notes ? `${notes}` : '',
           paymentMethod: 'cash'
       };
       
@@ -267,22 +451,30 @@ export const CreateInvoice = ({ onClose }: any) => {
       setSelectedItems([]);
       setPhone('');
       setCustomerName('');
+      setCustomerIdInput('');
       setNotes('');
+      addToast(language === 'ar' ? `تم تعليق الفاتورة "${finalHoldName}" بنجاح` : 'Invoice held successfully', 'info');
   };
 
   const handleSave = () => {
-      // Strict Validation
+      // Validation
       const phoneRegex = /^01\d{9}$/;
       const nameRegex = /^(\S+)\s+(\S+)\s+(\S+).*$/; // At least 3 parts
+      const isCashWalkIn = phone === '01000000000' || customerName.trim() === 'عميل نقدي' || customerName.trim().toLowerCase() === 'cash customer';
 
-      if(!phone || !customerName || selectedItems.length === 0) return alert(t('fill_all_fields'));
+      if (!phone || !customerName || selectedItems.length === 0) {
+          addToast(t('fill_all_fields'), 'error');
+          return;
+      }
       
-      if (!phoneRegex.test(phone)) {
-          return alert(t('invalid_phone_format'));
+      if (!isCashWalkIn && !phoneRegex.test(phone)) {
+          addToast(t('invalid_phone_format'), 'error');
+          return;
       }
       // Only validate name if it's a new customer or name is manually entered (to enforce 3 parts)
-      if (!existingCustomer && !nameRegex.test(customerName)) {
-           return alert(t('invalid_name_format'));
+      if (!isCashWalkIn && !existingCustomer && !nameRegex.test(customerName.trim())) {
+          addToast(t('invalid_name_format'), 'error');
+          return;
       }
 
       openPaymentModal();
@@ -290,12 +482,12 @@ export const CreateInvoice = ({ onClose }: any) => {
 
   const confirmSave = () => {
       if (!selectedStaffId) {
-          alert(t('select_barber_alert'));
+          addToast(t('select_barber_alert'), 'error');
           return;
       }
       // منع إتمام البيع: مجموع الأجزاء = الإجمالي والمستلم يغطي الجزء الكاش
       if (!paymentCheck.ok) {
-          alert(t(paymentCheck.error || 'payment_sum_mismatch'));
+          addToast(t(paymentCheck.error || 'payment_sum_mismatch'), 'error');
           return;
       }
       setShowPaymentModal(false);
@@ -339,6 +531,7 @@ export const CreateInvoice = ({ onClose }: any) => {
       };
       
       addInvoice(invoiceData as any);
+      localStorage.removeItem(DRAFT_KEY);
       // Hack to get the ID just generated (length + 1)
       setCreatedInvoice({ ...invoiceData, id: state.invoices.length + 1, printSnapshot: buildPrintIdentity(state.settings) });
       setShowPreview(true);
@@ -375,7 +568,7 @@ export const CreateInvoice = ({ onClose }: any) => {
 
                      // Format Date / Time (locale-aware: ص/م بالعربية، AM/PM بالإنجليزية)
                      const invoiceDate = formatDate(parseInvoiceDate(createdInvoice.date), { day: '2-digit', month: '2-digit', year: 'numeric' });
-                     const invoiceTime = formatTime(createdInvoice.timestamp || Date.now(), { hour: '2-digit', minute: '2-digit', hour12: true });
+                     const invoiceTime = formatTime(createdInvoice.timestamp || Date.now());
 
                      const msg = `💈 *${state.settings.shopName} - ${t('wa_einvoice_title')}* 💈
 
@@ -422,12 +615,16 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
   }
 
   const clearInvoice = () => {
-        if (confirm(t('confirm_delete'))) {
+        if (confirm(t('confirm_delete') || (language === 'ar' ? 'هل أنت متأكد من مسح الفاتورة الحالية؟' : 'Clear current invoice?'))) {
             setSelectedItems([]);
             setCustomerName('');
             setPhone('');
+            setCustomerIdInput('');
+            setNotes('');
+            setSelectedStaffId('');
             setDiscountPercent(0);
             setTaxPercent(0);
+            localStorage.removeItem(DRAFT_KEY);
         }
     };
 
@@ -437,65 +634,264 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
              <Card>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-bold flex items-center gap-2"><Users size={20} /> {t('customer_name')}</h3>
-                    {state.heldInvoices.length > 0 && (
-                        <button onClick={() => setShowHeldInvoices(true)} className="flex items-center gap-1 text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full hover:bg-amber-200 transition-colors font-bold animate-pulse-slow">
-                            <PauseCircle size={14}/> {state.heldInvoices.length} {t('held')}
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setCustomerName('عميل نقدي');
+                                setPhone('01000000000');
+                                setCustomerIdInput('');
+                                setShowCustomerDropdown(false);
+                            }}
+                            className="flex items-center gap-1 text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 transition-colors font-medium"
+                            title={language === 'ar' ? 'تعبئة سريعة لعميل نقدي عابر' : 'Quick Cash Customer'}
+                        >
+                            <span>⚡ {language === 'ar' ? 'عميل نقدي' : 'Cash Client'}</span>
                         </button>
-                    )}
+                        <button
+                            type="button"
+                            onClick={() => setIsQuickAddingCustomer(true)}
+                            className="flex items-center gap-1 text-xs bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-100 px-3 py-1.5 rounded-lg border border-primary-200 dark:border-primary-700 transition-colors font-medium"
+                        >
+                            <Plus size={14}/> {language === 'ar' ? 'عميل جديد' : 'New Client'}
+                        </button>
+                        {state.heldInvoices.length > 0 && (
+                            <button onClick={() => setShowHeldInvoices(true)} className="flex items-center gap-1 text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full hover:bg-amber-200 transition-colors font-bold animate-pulse-slow">
+                                <PauseCircle size={14}/> {state.heldInvoices.length} {t('held')}
+                            </button>
+                        )}
+                    </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input 
-                        label={t('customer_id')}
-                        value={customerIdInput}
-                        onChange={(e: any) => setCustomerIdInput(e.target.value)}
-                        placeholder={t('ph_invoice_id')}
-                    />
-                    <div>
+                <div ref={customerDropdownRef} className="relative">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <Input 
-                            list="customer-phones"
+                            containerClassName="mb-0"
+                            label={t('customer_id')}
+                            value={customerIdInput}
+                            onChange={(e: any) => setCustomerIdInput(e.target.value)}
+                            placeholder={t('ph_invoice_id')}
+                            autoComplete="off"
+                            data-lpignore="true"
+                        />
+                        <Input 
+                            containerClassName="mb-0"
                             label={t('phone')} 
                             value={phone} 
-                            onChange={(e: any) => setPhone(e.target.value)} 
+                            autoComplete="off"
+                            data-lpignore="true"
+                            onChange={(e: any) => {
+                                setPhone(e.target.value);
+                                setShowCustomerDropdown(true);
+                            }} 
+                            onFocus={() => setShowCustomerDropdown(true)}
                             placeholder={t('ph_phone')} 
                             validationRegex={/^01\d{9}$/}
                             error={t('invalid_phone_format')}
-                            onEnter={() => document.getElementById('customerNameInput')?.focus()}
+                            onEnter={() => {
+                                setShowCustomerDropdown(false);
+                                document.getElementById('customerNameInput')?.focus();
+                            }}
+                            endAdornment={
+                                <button
+                                    type="button"
+                                    tabIndex={-1}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setShowCustomerDropdown(prev => !prev);
+                                    }}
+                                    className="p-1.5 text-slate-400 hover:text-primary-600 transition-colors rounded-lg flex items-center justify-center cursor-pointer"
+                                    title={language === 'ar' ? 'عرض قائمة العملاء' : 'Show customers'}
+                                >
+                                    <ChevronDown size={18} className={`transition-transform duration-200 ${showCustomerDropdown ? 'rotate-180 text-primary-600' : ''}`} />
+                                </button>
+                            }
                         />
-                        <datalist id="customer-phones">
-                            {state.customers.map(c => (
-                                <option key={c.id} value={c.phone}>{c.name}</option>
-                            ))}
-                        </datalist>
+                        <Input 
+                            containerClassName="mb-0"
+                            id="customerNameInput"
+                            label={t('customer_name')} 
+                            value={customerName} 
+                            onChange={(e: any) => setCustomerName(e.target.value)} 
+                            placeholder={t('customer_name')} 
+                            validationRegex={/^.{2,}$/}
+                            error={t('invalid_name_format')}
+                            autoComplete="off"
+                            data-lpignore="true"
+                        />
                     </div>
-                    <Input 
-                        id="customerNameInput"
-                        label={t('customer_name')} 
-                        value={customerName} 
-                        onChange={(e: any) => setCustomerName(e.target.value)} 
-                        placeholder={t('customer_name')} 
-                        validationRegex={/^(\S+)\s+(\S+)\s+(\S+).*$/}
-                        error={t('invalid_name_format')}
-                    />
+
+                    {/* قائمة العملاء المنسدلة - تمتد بكامل عرض الحقول الثلاثة مع ظل ناعم */}
+                    {showCustomerDropdown && (
+                        <div className="absolute top-full mt-2 inset-x-0 z-[60] bg-white dark:bg-slate-800 border-2 border-primary-500/40 dark:border-primary-500/50 rounded-2xl shadow-2xl overflow-hidden max-h-72 overflow-y-auto animate-scale-in">
+                            {filteredCustomerSuggestions.length === 0 ? (
+                                <div className="p-4 text-center text-sm text-slate-400">
+                                    {language === 'ar' ? 'لا يوجد عميل مطابق للبحث' : 'No matching customers'}
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                                    {filteredCustomerSuggestions.map(c => (
+                                        <div
+                                            key={c.id}
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                setPhone(c.phone);
+                                                setCustomerName(c.name);
+                                                setCustomerIdInput(String(c.id));
+                                                setShowCustomerDropdown(false);
+                                            }}
+                                            className="p-3.5 px-4 hover:bg-primary-50/80 dark:hover:bg-primary-950/60 cursor-pointer flex justify-between items-center transition-colors group"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-600 to-sky-400 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                                                    {c.name ? c.name.charAt(0).toUpperCase() : '#'}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                                                        {c.name}
+                                                    </p>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 font-mono flex items-center gap-2 mt-0.5">
+                                                        <span className="font-semibold text-slate-800 dark:text-slate-200">{c.phone}</span>
+                                                        <span className="opacity-40">•</span>
+                                                        <span>كود: #{c.id}</span>
+                                                        {c.tier && (
+                                                            <>
+                                                                <span className="opacity-40">•</span>
+                                                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${c.tier === 'Gold' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300' : c.tier === 'Silver' ? 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200' : 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300'}`}>
+                                                                    {c.tier}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                {(c.balance || 0) > 0 && (
+                                                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-300/40">
+                                                        مدين: {Number(c.balance).toLocaleString('en-US')} ج.م
+                                                    </span>
+                                                )}
+                                                <span className="text-xs font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/40 px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {language === 'ar' ? 'اختيار ↵' : 'Select ↵'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
                 {existingCustomer && (
-                    <div className="mt-2 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 rounded-lg flex items-center justify-between animate-fade-in">
+                    <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl flex items-center justify-between animate-fade-in">
                         <div className="flex items-center gap-3">
-                             <div className="bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 p-2 rounded-full"><Award size={18}/></div>
+                             <div className="bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 p-2 rounded-xl border border-primary-200/50 dark:border-primary-800/50"><Award size={18}/></div>
                              <div>
-                                 <p className="font-bold text-purple-900 dark:text-purple-200">{t('loyalty_points')}: {existingCustomer.loyaltyPoints || 0}</p>
-                                 <p className="text-xs text-purple-600 dark:text-purple-400">{t('last_visit')}: {formatDate(new Date(existingCustomer.lastVisit))}</p>
+                                 <p className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                     <span>{language === 'ar' ? 'الرصيد المستحق (المديونية):' : 'Debt:'}</span>
+                                     <span className={`font-black ${((existingCustomer.balance || 0) > 0) ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                         {Number(existingCustomer.balance || 0).toLocaleString('en-US')} {t('egp')}
+                                     </span>
+                                     {existingCustomer.creditLimit ? (
+                                         <span className="text-xs text-slate-400">({language === 'ar' ? 'الحد:' : 'Limit:'} {Number(existingCustomer.creditLimit).toLocaleString('en-US')})</span>
+                                     ) : null}
+                                 </p>
+                                 <p className="text-xs text-slate-500 dark:text-slate-400">{t('last_visit')}: {formatDate(new Date(existingCustomer.lastVisit))}</p>
                              </div>
                         </div>
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${existingCustomer.tier === 'Gold' ? 'bg-yellow-100 text-yellow-700' : existingCustomer.tier === 'Silver' ? 'bg-slate-200 text-slate-700' : 'bg-orange-100 text-orange-800'}`}>
+                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${existingCustomer.tier === 'Gold' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' : existingCustomer.tier === 'Silver' ? 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600' : 'bg-amber-50/60 text-amber-800 border-amber-200/80 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900'}`}>
                             {t(existingCustomer.tier?.toLowerCase() || 'bronze')}
                         </span>
                     </div>
                 )}
              </Card>
-             <Card>
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Package size={20}/> {t('items')}</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {state.items.map((item, idx) => {
+             <Card className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <h3 className="text-lg font-bold flex items-center gap-2"><Package size={20}/> {t('items')}</h3>
+                    <div className="relative w-full sm:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder={language === 'ar' ? 'بحث بالاسم أو الباركود (Enter للإضافة)...' : 'Search name or barcode (Enter to add)...'}
+                            value={itemSearch}
+                            onChange={(e) => setItemSearch(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const raw = itemSearch.trim();
+                                    if (!raw) return;
+                                    const q = raw.toLowerCase();
+                                    const normalizedQ = normalizeBarcode(raw).toLowerCase();
+                                    const exactMatch = state.items.find(i => 
+                                        (i.barcode && normalizeBarcode(i.barcode).toLowerCase() === normalizedQ) ||
+                                        (i.sku && normalizeBarcode(i.sku).toLowerCase() === normalizedQ) ||
+                                        (i.nameAr && i.nameAr.toLowerCase() === q) ||
+                                        (i.nameEn && i.nameEn.toLowerCase() === q)
+                                    ) || (displayedItems.length === 1 ? displayedItems[0] : null);
+
+                                    if (exactMatch) {
+                                        playBeep();
+                                        addToInvoice(exactMatch);
+                                        setItemSearch('');
+                                        addToast(`${language === 'ar' ? exactMatch.nameAr : exactMatch.nameEn} +1`, 'success');
+                                    }
+                                }
+                            }}
+                            className="w-full pl-9 pr-4 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                        {itemSearch && (
+                            <button
+                                onClick={() => setItemSearch('')}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Category Filter Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+                    <button
+                        type="button"
+                        onClick={() => setSelectedCategory('all')}
+                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap ${selectedCategory === 'all' ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
+                    >
+                        {t('all')}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setSelectedCategory('services')}
+                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${selectedCategory === 'services' ? 'bg-purple-600 text-white shadow-sm' : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100'}`}
+                    >
+                        <Scissors size={12} /> {t('services')}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setSelectedCategory('products')}
+                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${selectedCategory === 'products' ? 'bg-blue-600 text-white shadow-sm' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100'}`}
+                    >
+                        <Package size={12} /> {t('products')}
+                    </button>
+                    {state.categories.map(cat => (
+                        <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setSelectedCategory(cat.id)}
+                            className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap ${selectedCategory === cat.id ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 shadow-sm' : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
+                        >
+                            {language === 'ar' ? cat.nameAr : cat.nameEn}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2.5 max-h-[440px] overflow-y-auto pr-1 custom-scrollbar">
+                    {displayedItems.length === 0 ? (
+                        <div className="col-span-full py-8 text-center text-slate-400 text-sm">
+                            {t('no_items')}
+                        </div>
+                    ) : (
+                        displayedItems.map((item, idx) => {
                         const palettes = [
                             { bg: 'from-emerald-500 to-teal-600', ring: 'ring-emerald-300/50', iconBg: 'bg-white/20', label: 'bg-white/20 border-white/30', badge: 'bg-emerald-600/40', shadow: 'shadow-emerald-500/20' },
                             { bg: 'from-rose-500 to-pink-600', ring: 'ring-rose-300/50', iconBg: 'bg-white/20', label: 'bg-white/20 border-white/30', badge: 'bg-rose-600/40', shadow: 'shadow-rose-500/20' },
@@ -513,46 +909,80 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
                         const styleIdx = hash % palettes.length;
                         const p = palettes[styleIdx];
                         const isService = item.type === 'service';
+                        const isOutOfStock = !isService && item.trackStock && item.quantity <= 0;
+                        const isLowStock = !isService && item.trackStock && item.quantity > 0 && item.quantity <= item.alertThreshold;
                         return (
-                            <button key={item.id} onClick={() => addToInvoice(item)} className={`relative overflow-hidden rounded-2xl p-4 min-h-[120px] flex flex-col items-start justify-between group transition-all duration-300 hover:scale-[1.03] hover:-translate-y-1 active:scale-95 shadow-lg ${p.shadow} bg-gradient-to-br ${p.bg} text-white ring-1 ${p.ring}`}>
-                                <div className="w-full flex items-start justify-between mb-2">
-                                    <div className={`w-10 h-10 rounded-xl ${p.iconBg} flex items-center justify-center backdrop-blur-sm shadow-inner ring-1 ring-white/20 transition-transform group-hover:scale-110 duration-300`}>
-                                        {isService ? <Scissors size={20} /> : <Package size={20} />}
-                                    </div>
-                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-sm border border-white/30 ${p.badge}`}>
+                            <button
+                                key={item.id}
+                                onClick={() => addToInvoice(item)}
+                                className={`group relative flex flex-col justify-between p-3 rounded-xl border transition-all text-right h-24 overflow-hidden ${
+                                    isOutOfStock 
+                                        ? 'border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/10 opacity-75' 
+                                        : 'border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/90 hover:border-primary-500/60 dark:hover:border-primary-500/60 hover:shadow-md'
+                                }`}
+                            >
+                                <div className="w-full flex items-start justify-between gap-1">
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold ${isService ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'}`}>
+                                        {isService ? <Scissors size={10} /> : <Package size={10} />}
                                         {isService ? t('service') : t('product')}
                                     </span>
+                                    {item.trackStock && (
+                                        <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold ${
+                                            isOutOfStock 
+                                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' 
+                                                : isLowStock 
+                                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300' 
+                                                : 'text-slate-500 dark:text-slate-400'
+                                        }`}>
+                                            {isOutOfStock ? (language === 'ar' ? 'نفد' : 'Out') : item.quantity}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="w-full">
-                                    <div className="font-bold text-base mb-2 leading-tight text-left line-clamp-2 drop-shadow-sm">{language === 'ar' ? item.nameAr : item.nameEn}</div>
-                                    <div className={`font-mono text-lg font-black ${p.label} px-3 py-1 rounded-full border backdrop-blur-sm inline-block shadow-inner`}>
-                                        {formatNumber(item.price)} {t('egp')}
+                                    <div className="font-semibold text-slate-800 dark:text-slate-100 text-sm truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                                        {language === 'ar' ? item.nameAr : item.nameEn}
                                     </div>
-                                </div>
-                                <div className="absolute -bottom-4 -right-4 opacity-10 transition-all duration-500 group-hover:opacity-20 group-hover:scale-125">
-                                    {isService ? <Scissors size={64} /> : <Package size={64} />}
+                                    <div className="flex items-center justify-between mt-1">
+                                        <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                            {formatNumber(item.price)} {t('egp')}
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                            + إضافة
+                                        </span>
+                                    </div>
                                 </div>
                             </button>
                         );
-                    })}
+                    }))}
                 </div>
              </Card>
              <Card>
                 <h3 className="text-lg font-bold mb-4">{t('billing')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input label={t('discount_percent')} type="number" value={discountPercent} onChange={(e:any)=>setDiscountPercent(parseFloat(e.target.value || 0))} />
+                    <div>
+                        <Input label={t('discount_percent')} type="number" value={discountPercent} onChange={(e:any)=>setDiscountPercent(parseFloat(e.target.value || 0))} />
+                        <div className="flex items-center gap-1.5 -mt-2 mb-2">
+                            <span className="text-[10px] text-slate-400 font-semibold">خصم سريع:</span>
+                            {[0, 5, 10, 15, 20].map(p => (
+                                <button
+                                    key={p}
+                                    type="button"
+                                    onClick={() => setDiscountPercent(p)}
+                                    className={`px-2 py-0.5 text-[11px] font-bold rounded-md border transition-colors ${discountPercent === p ? 'bg-primary-600 text-white border-primary-600' : 'bg-slate-50 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-100'}`}
+                                >
+                                    {p}%
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     <Input label={t('tax_percent')} type="number" value={taxPercent} onChange={(e:any)=>setTaxPercent(parseFloat(e.target.value || 0))} />
                     <div className="flex flex-col justify-end gap-2">
                         <div className="text-sm text-slate-600 dark:text-slate-300">{t('subtotal')}: <span className="font-bold">{subtotal.toLocaleString('en-US')} {t('egp')}</span></div>
-                        {existingCustomer && state.settings.loyaltyEnabled && (
-                            <div className="flex flex-col items-end gap-1">
-                                <div className="text-xs text-purple-600 font-bold">{t('loyalty_points')}: {existingCustomer.loyaltyPoints}</div>
-                                <button 
-                                    onClick={redeemPoints} 
-                                    className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-bold hover:bg-purple-200 transition-colors flex items-center gap-1"
-                                >
-                                    <Award size={14}/> {t('redeem_points_btn')}
-                                </button>
+                        {existingCustomer && (existingCustomer.balance || 0) > 0 && (
+                            <div className="flex flex-col items-end gap-0.5">
+                                <div className="text-xs text-rose-500 font-bold">
+                                    {language === 'ar' ? 'مديونية سابقة:' : 'Prev Debt:'} {Number(existingCustomer.balance).toLocaleString('en-US')} ج.م
+                                </div>
                             </div>
                         )}
                     </div>
@@ -635,15 +1065,31 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
                                     <button onClick={() => removeFromInvoice(item.item.id)} className="text-slate-400 hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-lg transition-colors flex-shrink-0"><Trash2 size={16}/></button>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shadow-md ${cp.qty}`}>
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => updateItemQuantity(item.item.id, -1)}
+                                            className="w-6 h-6 rounded-md bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-white flex items-center justify-center font-bold text-sm shadow-sm border border-slate-200 dark:border-slate-600 transition-colors"
+                                            title="تقليل الكمية"
+                                        >
+                                            -
+                                        </button>
+                                        <div className={`w-7 h-7 rounded-md flex items-center justify-center font-bold text-xs shadow-sm ${cp.qty}`}>
                                             {formatNumber(item.qty)}
                                         </div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                        <button
+                                            type="button"
+                                            onClick={() => updateItemQuantity(item.item.id, 1)}
+                                            className="w-6 h-6 rounded-md bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-white flex items-center justify-center font-bold text-sm shadow-sm border border-slate-200 dark:border-slate-600 transition-colors"
+                                            title="زيادة الكمية"
+                                        >
+                                            +
+                                        </button>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mr-1">
                                             × {formatNumber(item.item.price)} {t('egp')}
                                         </div>
                                     </div>
-                                    <div className={`text-lg font-black font-mono ${cp.text}`}>
+                                    <div className={`text-base font-black font-mono ${cp.text}`}>
                                         {formatNumber(item.qty * item.item.price)}
                                     </div>
                                 </div>
@@ -672,9 +1118,70 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
                 onClose={() => setShowPaymentModal(false)}
                 maxWidth="max-w-lg"
             >
+                {/* مفتاح التبديل بين الدفع الفوري والبيع الآجل */}
+                <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 mb-4">
+                    <button
+                        type="button"
+                        onClick={() => setPaymentMode('normal')}
+                        className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                            paymentMode === 'normal'
+                                ? 'bg-primary-600 text-white shadow-sm'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                    >
+                        💳 {language === 'ar' ? 'سداد فوري (كاش/فيزا/محفظة)' : 'Instant Payment'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setPaymentMode('credit')}
+                        className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                            paymentMode === 'credit'
+                                ? 'bg-purple-600 text-white shadow-sm'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                    >
+                        📝 {language === 'ar' ? 'على الحساب (آجل VIP)' : 'Credit (VIP Ledger)'}
+                    </button>
+                </div>
+
                 <p className="text-center text-sm text-slate-400 mb-4">
-                        {t('total')}: <span className="font-bold text-slate-700 dark:text-slate-200">{round2(total).toLocaleString('en-US')} {t('egp')}</span>
-                    </p>
+                    {t('total')}: <span className="font-bold text-slate-700 dark:text-slate-200">{round2(total).toLocaleString('en-US')} {t('egp')}</span>
+                </p>
+
+                {paymentMode === 'credit' ? (
+                    <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 mb-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-bold text-purple-900 dark:text-purple-200">{language === 'ar' ? 'العميل المفوتر:' : 'Customer:'}</span>
+                            <span className="font-bold text-slate-900 dark:text-white">{existingCustomer ? existingCustomer.name : (customerName || (language === 'ar' ? 'عميل غير محدد' : 'Unspecified'))}</span>
+                        </div>
+                        {!existingCustomer ? (
+                            <div className="p-3 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-bold">
+                                {language === 'ar' ? '⚠️ البيع الآجل يتطلب تحديد عميل مسجل في النظام أولاً' : 'Credit sales require selecting a registered customer first'}
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="text-slate-500">{language === 'ar' ? 'المديونية الحالية:' : 'Current Debt:'}</span>
+                                    <span className="font-bold font-mono text-red-600">{(existingCustomer.balance || 0).toLocaleString('en-US')} {t('egp')}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="text-slate-500">{language === 'ar' ? 'الحد الائتماني المسموح:' : 'Credit Limit:'}</span>
+                                    <span className="font-bold font-mono text-slate-700 dark:text-slate-300">{(existingCustomer.creditLimit || 0).toLocaleString('en-US')} {t('egp')}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs border-t pt-2 border-purple-200 dark:border-purple-800">
+                                    <span className="font-bold text-purple-800 dark:text-purple-300">{language === 'ar' ? 'المديونية بعد هذه الفاتورة:' : 'New Debt:'}</span>
+                                    <span className="font-bold font-mono text-base text-purple-600 dark:text-purple-400">{((existingCustomer.balance || 0) + total).toLocaleString('en-US')} {t('egp')}</span>
+                                </div>
+                                {(existingCustomer.creditLimit || 0) > 0 && ((existingCustomer.balance || 0) + total) > (existingCustomer.creditLimit || 0) && (
+                                    <div className="p-2 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-xs font-bold">
+                                        ⚠️ {language === 'ar' ? 'تنبيه: هذه الفاتورة ستتجاوز الحد الائتماني للعميل!' : 'Warning: This invoice exceeds customer credit limit!'}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                ) : (
+                    <>
 
                     {/* أجزاء السداد */}
                     <div className="grid grid-cols-3 gap-2 mb-3">
@@ -722,10 +1229,24 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
                                 <button
                                     type="button"
                                     onClick={() => setCashReceived(String(draftCashPart))}
-                                    className="px-2 py-2 text-xs font-bold rounded-lg bg-green-600 text-white hover:bg-green-700"
+                                    className="px-2 py-2 text-xs font-bold rounded-lg bg-green-600 text-white hover:bg-green-700 whitespace-nowrap"
                                 >
                                     {t('exact_amount')}
                                 </button>
+                            </div>
+                            {/* أزرار سريعة لفئات النقد الشائعة */}
+                            <div className="flex items-center gap-1.5 mt-2">
+                                <span className="text-[11px] text-slate-400 font-medium">سريع:</span>
+                                {[50, 100, 200, 500].map(val => (
+                                    <button
+                                        key={val}
+                                        type="button"
+                                        onClick={() => setCashReceived(String(val))}
+                                        className="px-2 py-1 text-xs font-bold rounded-md bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 transition-colors"
+                                    >
+                                        {val} {t('egp')}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     )}
@@ -756,9 +1277,19 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
                         <p className="text-xs font-bold text-red-500 text-center mb-2">{t(paymentCheck.error!)}</p>
                     )}
 
+                        </>
+                    )}
+
                     <div className="flex gap-3">
-                        <Button variant="success" onClick={confirmSave} disabled={!paymentCheck.ok} className="flex-1 justify-center py-3 text-lg">{t('confirm')}</Button>
-                        <Button variant="secondary" onClick={() => setShowPaymentModal(false)} className="flex-1 justify-center py-3 text-lg">{t('cancel')}</Button>
+                        <Button 
+                            variant="success" 
+                            onClick={confirmSave} 
+                            disabled={paymentMode === 'credit' ? !existingCustomer : !paymentCheck.ok} 
+                            className="flex-1 justify-center py-3 text-base font-black"
+                        >
+                            {paymentMode === 'credit' ? (language === 'ar' ? '✓ تأكيد القيد على الحساب' : 'Confirm Credit Sale') : t('confirm')}
+                        </Button>
+                        <Button variant="secondary" onClick={() => setShowPaymentModal(false)} className="flex-1 justify-center py-3 text-base">{t('cancel')}</Button>
                     </div>
             </ModalShell>
         )}
@@ -766,31 +1297,159 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
         {/* Held Invoices Modal */}
         {showHeldInvoices && (
             <ModalShell
-                title={t('held_invoices')}
+                title={language === 'ar' ? `الفواتير المعلقة (${state.heldInvoices.length})` : `Held Invoices (${state.heldInvoices.length})`}
                 onClose={() => setShowHeldInvoices(false)}
-                maxWidth="max-w-2xl"
+                maxWidth="max-w-3xl"
             >
                 <div className="space-y-4">
-                        {state.heldInvoices.length === 0 && <p className="text-center text-slate-500 py-8">{t('no_held_invoices')}</p>}
-                        {state.heldInvoices.map(inv => (
-                            <div key={inv.id} className="border border-slate-100 dark:border-slate-700 p-4 rounded-xl flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                                <div>
-                                    <h4 className="font-bold text-slate-800 dark:text-slate-200">{inv.customerName}</h4>
-                                    <p className="text-sm text-slate-500">{formatDateTime(inv.timestamp)} • {t('items')}: {inv.items.length}</p>
-                                    <p className="font-bold text-primary-600">{inv.total} {t('egp')}</p>
+                    {selectedItems.length > 0 && (
+                        <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 flex items-center justify-between">
+                            <span className="text-xs font-bold text-amber-800 dark:text-amber-200">
+                                {language === 'ar' ? 'لديك أصناف حالية في السلة، هل ترغب في تعليقها لخدمة عميل آخر؟' : 'You have active cart items, hold them now?'}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => { setShowHeldInvoices(false); handleHold(); }}
+                                className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs"
+                            >
+                                ⏸️ {language === 'ar' ? 'تعليق السلة الحالية' : 'Hold Current Cart'}
+                            </button>
+                        </div>
+                    )}
+
+                    {state.heldInvoices.length === 0 ? (
+                        <div className="text-center py-10 text-slate-400 text-xs">
+                            <PauseCircle size={36} className="mx-auto mb-2 opacity-40 text-amber-500" />
+                            <p className="font-bold">{language === 'ar' ? 'لا توجد أي فواتير معلقة حالياً.' : 'No held invoices.'}</p>
+                            <p className="mt-1 text-slate-500">{language === 'ar' ? 'يمكنك تعليق أي فاتورة في أي وقت بالضغط على زر ⏸️ أسفل السلة.' : 'You can hold any cart by clicking ⏸️ below.'}</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto p-1">
+                            {state.heldInvoices.map((inv, idx) => (
+                                <div key={inv.id || idx} className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/90 shadow-xs flex flex-col justify-between hover:border-primary-500/60 transition-all space-y-3">
+                                    <div>
+                                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                                            <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate flex items-center gap-1.5">
+                                                <span className="text-amber-500">⏸️</span>
+                                                <span>{inv.customerName || (language === 'ar' ? 'طلب معلق' : 'Held Order')}</span>
+                                            </h4>
+                                            <span className="font-mono font-black text-sm text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                                                {inv.total?.toLocaleString('en-US')} {t('egp')}
+                                            </span>
+                                        </div>
+
+                                        <p className="text-[11px] text-slate-400 font-mono flex items-center gap-1.5 mb-2">
+                                            <Clock size={12} />
+                                            <span>{formatDateTime(inv.timestamp)}</span>
+                                            <span>•</span>
+                                            <span>{inv.items?.length || 0} {t('items')}</span>
+                                        </p>
+
+                                        <div className="bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 max-h-20 overflow-y-auto space-y-0.5">
+                                            {(inv.items || []).map((it: any, i: number) => (
+                                                <div key={i} className="flex justify-between text-[11px]">
+                                                    <span className="truncate">{it.name}</span>
+                                                    <span className="font-mono font-bold text-slate-400">×{it.quantity}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {inv.notes && (
+                                            <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 italic truncate">
+                                                📝 {inv.notes}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-2 pt-1 border-t border-slate-100 dark:border-slate-700/60">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRestore(inv)}
+                                            className="flex-1 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                                        >
+                                            <span>▶️</span>
+                                            <span>{language === 'ar' ? 'استرجاع للبيع' : 'Resume Order'}</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذه الفاتورة المعلقة؟' : 'Delete this held invoice?')) {
+                                                    deleteHeldInvoice(inv.id);
+                                                }
+                                            }}
+                                            className="p-2 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs cursor-pointer transition-colors"
+                                            title={t('delete')}
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <Button variant="info" onClick={() => handleRestore(inv)} className="text-sm py-1">{t('restore')}</Button>
-                                    <Button variant="danger" onClick={() => deleteHeldInvoice(inv.id)} className="text-sm py-1"><Trash2 size={16}/></Button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </ModalShell>
         )}
 
         {/* Quick Add Service Modal */}
-        {isQuickAddingService && (
+        {isQuickAddingCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 w-full max-w-sm overflow-hidden animate-scale-up">
+            <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Users size={18} className="text-primary-500" />
+                {language === 'ar' ? 'إضافة عميل سريع' : 'Quick Add Client'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsQuickAddingCustomer(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleQuickAddCustomer} className="p-4 space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  {language === 'ar' ? 'اسم العميل' : 'Client Name'} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder={language === 'ar' ? 'الاسم بالكامل' : 'Full Name'}
+                  value={quickCustomerForm.name}
+                  onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  {language === 'ar' ? 'رقم الهاتف' : 'Phone'} *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="01xxxxxxxxx"
+                  value={quickCustomerForm.phone}
+                  onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button type="submit" variant="primary" className="flex-1 justify-center py-2 text-sm">
+                  {language === 'ar' ? 'حفظ واختيار' : 'Save & Select'}
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => setIsQuickAddingCustomer(false)} className="py-2 text-sm">
+                  {t('cancel')}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isQuickAddingService && (
             <ModalShell
                 title={t('add_service')}
                 onClose={() => setIsQuickAddingService(false)}

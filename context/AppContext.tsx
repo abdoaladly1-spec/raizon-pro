@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { AppState, Customer, Invoice, Item, Reservation, Language, User, Staff, Expense, ClosingReport, DrawerMovement, Note, Category, Location, Supplier, InventoryHistory, PurchaseOrder, ReturnRecord, PaymentPart, StaffPayment } from '../types';
+import { AppState, Customer, Invoice, Item, Reservation, Language, User, Staff, Expense, ClosingReport, DrawerMovement, Note, Category, Location, Supplier, InventoryHistory, PurchaseOrder, ReturnRecord, PaymentPart, StaffPayment, CustomerPayment } from '../types';
 import {
   enqueueInvoice, flushQueue, buildInvoicePayload, buildCustomerPayload, pushCustomer, notifySyncStatus,
   pullInvoices, mapServerInvoice, mergePulledInvoices, newInvoiceUid,
@@ -51,6 +51,7 @@ interface AppContextType {
   addCustomer: (customer: Omit<Customer, 'id' | 'totalSpent' | 'lastVisit' | 'loyaltyPoints' | 'tier'>) => number;
   updateCustomer: (customer: Customer) => void;
   deleteCustomer: (id: number) => void;
+  addCustomerPayment: (payment: Omit<CustomerPayment, 'id' | 'timestamp'>) => void;
   // Staff & Users
   addStaff: (staff: Staff) => void;
   updateStaff: (staff: Staff) => void;
@@ -103,6 +104,10 @@ interface AppContextType {
   formatDate: (date: Date | number, options?: Intl.DateTimeFormatOptions) => string;
   formatTime: (date: Date | number, options?: Intl.DateTimeFormatOptions) => string;
   formatDateTime: (date: Date | number, options?: Intl.DateTimeFormatOptions) => string;
+  settingsDirty: boolean;
+  setSettingsDirty: (dirty: boolean) => void;
+  saveSettingsHandlerRef: React.MutableRefObject<(() => Promise<void> | void) | null>;
+  discardSettingsHandlerRef: React.MutableRefObject<(() => void) | null>;
 }
 
 const translations = {
@@ -152,7 +157,7 @@ const translations = {
     return_execute: 'تنفيذ المرتجع',
     return_partial: 'جزئي',
     return_full: 'كامل',
-    return_status_pending: 'معلّق — بانتظار السيرفر',
+    return_status_pending: 'معلّق',
     return_status_approved: 'معتمد',
     return_status_rejected: 'مرفوض',
     return_rejected: 'رفض السيرفر المرتجع',
@@ -343,6 +348,7 @@ const translations = {
     // Invoices & Billing
     item_added: 'تمت إضافة العنصر',
     customer_name: 'اسم العميل',
+    real_name: 'الاسم الفعلي',
     held: 'معلق',
     customer_id: 'كود العميل',
     last_visit: 'آخر زيارة',
@@ -868,7 +874,22 @@ const translations = {
     template_thermal: 'حراري',
     template_classic_desc: 'A4 بهوامش واسعة وألوان فاتحة',
     template_professional_desc: 'A4 بتخطيط رشيق وألوان رسمية',
-    template_thermal_desc: 'بون حراري 80/58 مم للكاشير',
+    template_thermal_desc: 'بون حراري 80/58 مم للكاشير بتنسيق شبكي قياسي (أبيض وأسود)',
+    template_luxury: 'الملكي الفاخر',
+    template_luxury_desc: 'إطار خارجي مزدوج مع فواصل زخرفية ملكية (أبيض وأسود)',
+    template_modern: 'العصري الأنيق',
+    template_modern_desc: 'حواف ناعمة وتخطيط حديث عالي التباين (أبيض وأسود)',
+    template_minimal: 'التبسيطي الراقي',
+    template_minimal_desc: 'فواصل منقطة أنيقة وموفرة لورق البكرات (أبيض وأسود)',
+    template_custom: 'المصمم الذكي المخصص',
+    template_custom_desc: 'تخصيص كامل للأبعاد والخطوط وهوامش الطباعة',
+    greeting_text: 'رسالة الوداع والترحيب (أسفل الفاتورة)',
+    time_format: 'نظام عرض الوقت',
+    time_format_12h: '12 ساعة (02:47PM)',
+    time_format_24h: '24 ساعة (14:47)',
+    average_invoice: 'متوسط الفاتورة',
+    peak_hour: 'ساعة الذروة',
+    ph_greeting_text: 'نورتوا الصالون.. شرفتونا وننتظر زيارتكم القادمة!',
     paper_size: 'مقاس الورق',
     paper_a4: 'A4 (210×297 مم)',
     paper_a5: 'A5 (148×210 مم)',
@@ -949,7 +970,7 @@ const translations = {
     return_execute: 'Process return',
     return_partial: 'Partial',
     return_full: 'Full',
-    return_status_pending: 'Pending — waiting for server',
+    return_status_pending: 'Pending',
     return_status_approved: 'Approved',
     return_status_rejected: 'Rejected',
     return_rejected: 'Server rejected the return',
@@ -1140,6 +1161,7 @@ const translations = {
     // Invoices & Billing
     item_added: 'Item added',
     customer_name: 'Customer Name',
+    real_name: 'Full Name',
     held: 'Held',
     customer_id: 'Customer ID',
     last_visit: 'Last Visit',
@@ -1664,7 +1686,22 @@ const translations = {
     template_thermal: 'Thermal',
     template_classic_desc: 'A4 with wide margins and light colors',
     template_professional_desc: 'A4 with d compact layout and formal colors',
-    template_thermal_desc: '80/58mm receipt roll for the cashier',
+    template_thermal_desc: '80/58mm receipt roll for cashier in clean monochrome',
+    template_luxury: 'Royal Luxury',
+    template_luxury_desc: 'Double-line framing with decorative accents in crisp B&W',
+    template_modern: 'Modern Clean',
+    template_modern_desc: 'Smooth rounded border style with modern typography (B&W)',
+    template_minimal: 'Minimalist Receipt',
+    template_minimal_desc: 'Dashed divider layout designed for paper saving (B&W)',
+    template_custom: 'Smart Studio Custom',
+    template_custom_desc: 'Full custom design freedom for margins, fonts and layout',
+    greeting_text: 'Farewell / Greeting Message (Footer)',
+    time_format: 'Time Format',
+    time_format_12h: '12 Hours (02:47PM)',
+    time_format_24h: '24 Hours (14:47)',
+    average_invoice: 'Average Ticket',
+    peak_hour: 'Peak Hour',
+    ph_greeting_text: 'Thank you for your visit! See you soon!',
     paper_size: 'Paper size',
     paper_a4: 'A4 (210×297 mm)',
     paper_a5: 'A5 (148×210 mm)',
@@ -1764,6 +1801,9 @@ const normalizeInvoiceDates = (s: any) => {
 
 export const AppProvider = ({ children }: any) => {
   const [language, setLanguage] = useState('ar');
+  const [settingsDirty, setSettingsDirty] = useState(false);
+  const saveSettingsHandlerRef = useRef<(() => Promise<void> | void) | null>(null);
+  const discardSettingsHandlerRef = useRef<(() => void) | null>(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [state, setState] = useState<AppState>(() => {
     try {
@@ -1788,7 +1828,7 @@ export const AppProvider = ({ children }: any) => {
                     ...parsed.settings,
                     currentLocationId: parsed.settings?.currentLocationId || '1',
                     offlineMode: parsed.settings?.offlineMode || false,
-                    serverUrl: parsed.settings?.serverUrl || '',
+                    serverUrl: parsed.settings?.serverUrl || 'http://127.0.0.1:8087',
                     serverApiKey: parsed.settings?.serverApiKey || '',
                     cashDrawerOpening: Number(parsed.settings?.cashDrawerOpening) || 0,
                 }
@@ -1820,12 +1860,14 @@ export const AppProvider = ({ children }: any) => {
       suppliers: [],
       inventoryHistory: [],
       purchaseOrders: [],
+      customerPayments: [],
       settings: {
-        shopName: 'RaiZon Pro',
-        phone: '',
-        address: '',
+        shopName: 'صالون ابراهيم نوار',
+        phone: '01016828238 - 01102002750',
+        address: 'شارع حديقة الطفل بجوار البنك الاهلي القديم',
         currentLocationId: '1',
         printerName: 'Default',
+        timeFormat: '12h' as '12h' | '24h',
         defaultDiscountPercent: 0,
         defaultTaxPercent: 0,
         autoApplyDiscount: false,
@@ -1840,9 +1882,12 @@ export const AppProvider = ({ children }: any) => {
         loyaltyRedeemRate: 1,
         enableBiometricLogin: false,
         offlineMode: false,
-        serverUrl: '',
+        serverUrl: 'http://127.0.0.1:8087',
         serverApiKey: '',
         cashDrawerOpening: 0,
+        githubRepo: 'abdoaladly1-spec/raizon-pro',
+        githubToken: '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',
+        autoCheckUpdates: true,
         printDesign: {
           pageSize: '80mm',
           marginMm: 5,
@@ -2179,7 +2224,16 @@ export const AppProvider = ({ children }: any) => {
   };
 
   const addClosingReport = (report: ClosingReport) => {
-    setState(prev => ({ ...prev, closingReports: [report, ...prev.closingReports] }));
+    const nextOpening = typeof report.retainedInDrawer === 'number' ? report.retainedInDrawer : report.actualCash;
+    setState(prev => ({
+      ...prev,
+      closingReports: [report, ...prev.closingReports],
+      settings: {
+        ...prev.settings,
+        cashDrawerOpening: nextOpening,
+        manualOpeningDate: undefined
+      }
+    }));
     addAuditLog('Closing', `Added closing report #${report.id} - ${report.status}`);
   };
 
@@ -2353,12 +2407,27 @@ export const AppProvider = ({ children }: any) => {
 
   const formatTime = (date: Date | number, options?: Intl.DateTimeFormatOptions) => {
     const d = typeof date === 'number' ? new Date(date) : date;
-    return d.toLocaleTimeString(locale, options);
+    const is24h = state?.settings?.timeFormat === '24h';
+    return d.toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: !is24h,
+      ...options
+    });
   };
 
   const formatDateTime = (date: Date | number, options?: Intl.DateTimeFormatOptions) => {
     const d = typeof date === 'number' ? new Date(date) : date;
-    return d.toLocaleString(locale, options);
+    const is24h = state?.settings?.timeFormat === '24h';
+    return d.toLocaleString(language === 'ar' ? 'ar-EG' : 'en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: !is24h,
+      ...options
+    });
   };
 
   // Logic to simulate persistence would go here in d real app
@@ -2573,18 +2642,21 @@ export const AppProvider = ({ children }: any) => {
 
       const updatedCustomers = prev.customers.map(c => {
         if (c.id === invoiceData.customerId) {
-          const pointsEarned = state.settings.loyaltyEnabled ? Math.floor(invoiceData.total * state.settings.loyaltyPointsAward) : 0;
           const newTotalSpent = c.totalSpent + invoiceData.total;
 
           let newTier: 'Bronze' | 'Silver' | 'Gold' = 'Bronze';
           if (newTotalSpent > 10000) newTier = 'Gold';
           else if (newTotalSpent > 5000) newTier = 'Silver';
 
+          const isCredit = invoiceData.paymentMethod === 'credit';
+          const newBalance = (c.balance || 0) + (isCredit ? invoiceData.total : 0);
+
           return {
             ...c,
             totalSpent: newTotalSpent,
             lastVisit: new Date().toISOString(),
-            loyaltyPoints: (c.loyaltyPoints || 0) + pointsEarned,
+            balance: newBalance,
+            loyaltyPoints: 0,
             tier: newTier
           };
         }
@@ -2602,14 +2674,13 @@ export const AppProvider = ({ children }: any) => {
     addAuditLog('Invoice', `Created invoice #${newId} for ${invoiceData.total} EGP`);
 
     // مزامنة الفاتورة مع السيرفر المركزي (تخزين + إيميل تلقائي لصاحب المشروع)
-    if (state.settings.serverUrl) {
-      try {
-        const customer = state.customers.find(c => c.id === invoiceData.customerId);
-        enqueueInvoice(buildInvoicePayload(newInvoice, customer, state.settings));
-        void flushQueue({ url: state.settings.serverUrl || '', apiKey: state.settings.serverApiKey || '' });
-      } catch (e) {
-        console.error('sync enqueue failed', e);
-      }
+    try {
+      const targetServerUrl = state.settings.serverUrl || 'http://127.0.0.1:8087';
+      const customer = state.customers.find(c => c.id === invoiceData.customerId);
+      enqueueInvoice(buildInvoicePayload(newInvoice, customer, state.settings));
+      void flushQueue({ url: targetServerUrl, apiKey: state.settings.serverApiKey || '' });
+    } catch (e) {
+      console.error('sync enqueue failed', e);
     }
   };
 
@@ -2835,7 +2906,7 @@ export const AppProvider = ({ children }: any) => {
       try {
         enqueueReturn(buildReturnPayload(record, invoice, state.settings));
         void flushReturnQueue({
-          url: state.settings.serverUrl,
+          url: state.settings.serverUrl || 'http://127.0.0.1:8087',
           apiKey: state.settings.serverApiKey || '',
         }).then(hdndleReturnFlush);
       } catch (e) {
@@ -2936,6 +3007,38 @@ export const AppProvider = ({ children }: any) => {
     addAuditLog('Customer', `Deleted customer #${id}`);
   };
 
+  const addCustomerPayment = (paymentData: Omit<CustomerPayment, 'id' | 'timestamp'>) => {
+    const newPayment: CustomerPayment = {
+      ...paymentData,
+      id: crypto.randomUUID(),
+      timestamp: Date.now(),
+    };
+    setState(prev => ({
+      ...prev,
+      customerPayments: [...(prev.customerPayments || []), newPayment],
+      customers: prev.customers.map(c => {
+        if (c.id === paymentData.customerId) {
+          const newBal = Math.max(0, (c.balance || 0) - paymentData.amount);
+          return { ...c, balance: newBal };
+        }
+        return c;
+      }),
+      drawerMovements: paymentData.paymentMethod === 'cash' ? [
+        ...(prev.drawerMovements || []),
+        {
+          id: crypto.randomUUID(),
+          type: 'deposit',
+          amount: paymentData.amount,
+          reason: `سداد آجل: ${paymentData.customerName || `عميل #${paymentData.customerId}`}`,
+          date: paymentData.date,
+          timestamp: Date.now(),
+          user: currentUser?.name || 'كاشير'
+        }
+      ] : (prev.drawerMovements || [])
+    }));
+    addAuditLog('Payment', `Customer credit payment: ${paymentData.customerName || ''} - ${paymentData.amount} EGP (${paymentData.paymentMethod})`);
+  };
+
   const addUser = (user: User) => {
     setState(prev => ({
       ...prev,
@@ -2973,10 +3076,92 @@ export const AppProvider = ({ children }: any) => {
     }
   };
 
-  // استعادة الحالة كاملة (من نسخة احتياطية على السيرفر مثلاً)
-  const restoreState = (next: AppState) => {
-    if (!next || typeof next !== 'object') return;
-    setState(next);
+  // استعادة الحالة كاملة (من ملف خارجي أو نسخة سحابية/محلية) مع دمج وحماية شاملة
+  const restoreState = (rawInput: any) => {
+    if (!rawInput || typeof rawInput !== 'object') return;
+    const raw = rawInput.state || rawInput.appState || rawInput.data || rawInput;
+    if (!raw || typeof raw !== 'object') return;
+
+    const parsed = normalizeInvoiceDates(raw);
+
+    setState(prev => {
+      const merged: AppState = {
+        ...prev,
+        ...parsed,
+        locations: (Array.isArray(parsed.locations) && parsed.locations.length > 0) ? parsed.locations : (prev?.locations?.length ? prev.locations : initialLocations),
+        categories: (Array.isArray(parsed.categories) && parsed.categories.length > 0) ? parsed.categories : (prev?.categories?.length ? prev.categories : initidlCdtegories),
+        items: Array.isArray(parsed.items) ? parsed.items : (Array.isArray(parsed.products) ? parsed.products : (prev?.items || initidlItems)),
+        invoices: Array.isArray(parsed.invoices) ? parsed.invoices : (prev?.invoices || []),
+        customers: Array.isArray(parsed.customers) ? parsed.customers : (prev?.customers || []),
+        suppliers: Array.isArray(parsed.suppliers) ? parsed.suppliers : (prev?.suppliers || []),
+        inventoryHistory: Array.isArray(parsed.inventoryHistory) ? parsed.inventoryHistory : (prev?.inventoryHistory || []),
+        purchaseOrders: Array.isArray(parsed.purchaseOrders) ? parsed.purchaseOrders : (prev?.purchaseOrders || []),
+        closingReports: Array.isArray(parsed.closingReports) ? parsed.closingReports : (prev?.closingReports || []),
+        auditLogs: Array.isArray(parsed.auditLogs) ? parsed.auditLogs : (prev?.auditLogs || []),
+        returns: Array.isArray(parsed.returns) ? parsed.returns : (prev?.returns || []),
+        users: (Array.isArray(parsed.users) && parsed.users.length > 0) ? parsed.users : (prev?.users || [{ id: '1', username: 'admin', name: 'Admin', password: 'admin', role: 'admin', active: true, permissions: [] }]),
+        drawerMovements: Array.isArray(parsed.drawerMovements) ? parsed.drawerMovements : (prev?.drawerMovements || []),
+        heldInvoices: Array.isArray(parsed.heldInvoices) ? parsed.heldInvoices : (prev?.heldInvoices || []),
+        reservations: Array.isArray(parsed.reservations) ? parsed.reservations : (prev?.reservations || []),
+        staff: Array.isArray(parsed.staff) ? parsed.staff : (prev?.staff || []),
+        staffPayments: Array.isArray(parsed.staffPayments) ? parsed.staffPayments : (prev?.staffPayments || []),
+        notes: Array.isArray(parsed.notes) ? parsed.notes : (prev?.notes || []),
+        settings: {
+          ...prev.settings,
+          ...(parsed.settings || {}),
+          currentLocationId: parsed.settings?.currentLocationId || prev.settings?.currentLocationId || '1',
+          offlineMode: parsed.settings?.offlineMode ?? prev.settings?.offlineMode ?? false,
+          serverUrl: parsed.settings?.serverUrl || prev.settings?.serverUrl || 'http://127.0.0.1:8087',
+          serverApiKey: parsed.settings?.serverApiKey || prev.settings?.serverApiKey || '',
+          cashDrawerOpening: Number(parsed.settings?.cashDrawerOpening ?? prev.settings?.cashDrawerOpening) || 0,
+          managerEmail: parsed.settings?.emailConfig?.emailTo || parsed.settings?.managerEmail || parsed.emailConfig?.emailTo || parsed.managerEmail || prev.settings?.managerEmail || '',
+          emailConfig: parsed.settings?.emailConfig || parsed.emailConfig || (
+            (parsed.settings?.managerEmail || parsed.managerEmail) ? {
+              emailTo: parsed.settings?.managerEmail || parsed.managerEmail,
+              notifyOnInvoice: true,
+              notifyOnClosing: true,
+              notifyOnReturn: true,
+              notifyOnExpense: true,
+              smtpUser: 'rizon.pro.app@gmail.com'
+            } : prev.settings?.emailConfig
+          )
+        }
+      };
+
+      // إذا وُجد بريد مدير في النسخة الاحتياطية المستعادة نفعله فوراً على السيرفر
+      const restoredEmail = merged.settings.managerEmail || merged.settings.emailConfig?.emailTo;
+      if (restoredEmail) {
+        try {
+          const sUrl = (merged.settings.serverUrl || 'http://127.0.0.1:8087').trim().replace(/\/+$/, '');
+          fetch(`${sUrl}/api/email/config`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(merged.settings.serverApiKey ? { 'X-API-Key': merged.settings.serverApiKey } : {})
+            },
+            body: JSON.stringify({
+              email_to: restoredEmail,
+              notify_on_invoice: merged.settings.emailConfig?.notifyOnInvoice ?? true,
+              notify_on_closing: merged.settings.emailConfig?.notifyOnClosing ?? true,
+              notify_on_return: merged.settings.emailConfig?.notifyOnReturn ?? true,
+              notify_on_expense: merged.settings.emailConfig?.notifyOnExpense ?? true,
+            })
+          }).catch(err => console.warn('[RESTORE_EMAIL] Server sync error:', err));
+        } catch (e) {
+          console.warn('[RESTORE_EMAIL] Push error:', e);
+        }
+      }
+
+      try {
+        localStorage.setItem('appState', JSON.stringify(merged));
+        idbSet('appState', merged);
+      } catch (err) {
+        console.error('Failed to immediately save restored state', err);
+      }
+
+      return merged;
+    });
+
     addAuditLog('System', 'Restored state from backup');
   };
 
@@ -3016,6 +3201,29 @@ export const AppProvider = ({ children }: any) => {
   };
 
   const addExpense = (expense: Expense) => {
+      try {
+        const sUrl = (state.settings.serverUrl || 'http://127.0.0.1:8087').trim().replace(/\/+$/, '');
+        if (sUrl) {
+          fetch(`${sUrl}/api/expenses`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(state.settings.serverApiKey ? { 'X-API-Key': state.settings.serverApiKey } : {})
+            },
+            body: JSON.stringify({
+              id: expense.id,
+              title: expense.title,
+              amount: expense.amount,
+              category: expense.category,
+              date: expense.date,
+              notes: expense.description || '',
+              created_by: expense.recordedBy || currentUser?.name || 'كاشير المحل'
+            })
+          }).catch(err => console.warn('[EXPENSE] Server push failed:', err));
+        }
+      } catch (err) {
+        console.warn('[EXPENSE] Push error:', err);
+      }
       setState(prev => ({ ...prev, expenses: [...prev.expenses, expense] }));
       addAuditLog('Expense', `Added expense: ${expense.title} (${expense.amount})`);
   };
@@ -3053,9 +3261,11 @@ export const AppProvider = ({ children }: any) => {
       updateNote,
       deleteNote,
       addStaffPayment, deleteStaffPayment, resetSystem, restoreState, resetLoyaltyPoints,
+      addCustomerPayment,
       t, formatNumber, formatDate, formatTime, formatDateTime,
       theme, toggleTheme, glassNeon, toggleGlassNeon, experimentalMode, toggleExperimentalMode,
-      updateSettings, toasts, addToast, removeToast
+      updateSettings, toasts, addToast, removeToast,
+      settingsDirty, setSettingsDirty, saveSettingsHandlerRef, discardSettingsHandlerRef
     }}>
       {children}
     </AppContext.Provider>

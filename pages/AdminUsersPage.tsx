@@ -11,7 +11,7 @@ const emptyForm = (): UserType => ({
 });
 
 export const AdminUsers = () => {
-    const { state, addUser, updateUser, deleteUser, currentUser, t } = useApp();
+    const { state, addUser, updateUser, deleteUser, currentUser, t, language } = useApp();
     const [isEditing, setIsEditing] = useState(false);
     const [form, setForm] = useState(emptyForm());
     const [query, setQuery] = useState('');
@@ -150,7 +150,7 @@ export const AdminUsers = () => {
                         <Input label={t('password')} type="password" value={form.password}
                             onChange={(e: any) => setForm({ ...form, password: e.target.value })}
                             placeholder={isEditing ? t('leave_blank_to_keep') : ''} required={!isEditing} />
-                        <Input label={t('customer_name')} value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} required />
+                        <Input label={language === 'ar' ? 'الاسم الفعلي' : (t('real_name') || 'Full Name')} value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} required />
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('role')}</label>
                             <select className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800" value={form.role} onChange={(e: any) => setForm({ ...form, role: e.target.value })}>

@@ -117,8 +117,8 @@ export const StaffPage = () => {
     // سحب سلفة: يُسجَّل كدفعة من نوع advance (لا تُخصم كتكلفة ربح — مقدمة من مرتب/عمولات قادمة)
     const handleDrawAdvance = () => {
         const amt = parseFloat(advanceAmount);
-        if (!selectedStaffId || !selectedStaff) { alert(t('fill_all_fields')); return; }
-        if (!amt || amt <= 0) { alert(t('fill_all_fields')); return; }
+        if (!selectedStaffId || !selectedStaff) { addToast(t('fill_all_fields'), 'error'); return; }
+        if (!amt || amt <= 0) { addToast(t('fill_all_fields'), 'error'); return; }
         addStaffPayment({
             id: crypto.randomUUID(),
             staffId: selectedStaffId,
