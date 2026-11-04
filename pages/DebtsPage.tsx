@@ -1,43 +1,104 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   Users, Search, DollarSign, CreditCard, Printer, 
-  ArrowUp, ArrowDown, Check, X, Phone, AlertTriangle, 
-  Clock, FileText, Download, Wallet, RefreshCw, ChevronRight, MessageSquare
+  Check, X, Phone, AlertTriangle, Clock, FileText, 
+  Wallet, RefreshCw, ChevronRight, MessageSquare, Plus, 
+  Calendar, ArrowUp, ArrowDown, User, Tag, Sparkles, 
+  ChevronDown, Filter, Trash2
 } from '../components/Icons';
 import { Customer, CustomerPayment } from '../types';
-import { Button, Input, ModalShell } from '../components/ui';
+import { Button, ModalShell } from '../components/ui';
+
+export type DebtStatus = 'due' | 'overdue' | 'partial' | 'settled';
 
 export const DebtsPage: React.FC = () => {
   const { 
     state, t, language, formatNumber, formatDate, 
-    formatDateTime, addCustomerPayment, addToast, currentUser 
+    formatDateTime, addCustomerPayment, addCustomer, 
+    updateCustomer, addInvoice, addToast, currentUser 
   } = useApp();
 
-  const [search, setSearch] = useState('');
-  const [filterThreshold, setFilterThreshold] = useState<'all' | '500' | '1000' | 'over_limit'>('all');
-  
-  // Selected Customer for Payment or Statement Modal
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [showStatementModal, setShowStatementModal] = useState(false);
+  // Currency helper
+  const currencySymbol = t('egp') || 'ج.م';
 
-  // Payment Form
+  // ---------------------------------------------------------------------------
+  // Filters & Search State
+  // ---------------------------------------------------------------------------
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | DebtStatus>('all');
+  const [periodFilter, setPeriodFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [sortBy, setSortBy] = useState<'amount_desc' | 'amount_asc' | 'date_desc' | 'name_asc'>('amount_desc');
+
+  // ---------------------------------------------------------------------------
+  // Modals State
+  // ---------------------------------------------------------------------------
+  // 1. Payment Modal
+  const [paymentCustomer, setPaymentCustomer] = useState<Customer | null>(null);
+  const [paymentMode, setPaymentMode] = useState<'full' | 'partial'>('full');
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'wallet' | 'instapay'>('cash');
   const [receiptNumber, setReceiptNumber] = useState('');
+  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [paymentNotes, setPaymentNotes] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<string>(() => {
-    const d = new Date();
-    return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-  });
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
 
-  // Filter customers who owe money (balance > 0)
-  const debtors = useMemo(() => {
+  // 2. Profile & Ledger Modal
+  const [profileCustomer, setProfileCustomer] = useState<Customer | null>(null);
+
+  // 3. Add Debt Modal (تسجيل بيع آجل / مديونية)
+  const [showAddDebtModal, setShowAddDebtModal] = useState(false);
+  const [newDebtCustomerId, setNewDebtCustomerId] = useState<number | ''>('');
+  const [newDebtAmount, setNewDebtAmount] = useState('');
+  const [newDebtDescription, setNewDebtDescription] = useState('');
+  const [newDebtDate, setNewDebtDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [isSubmittingDebt, setIsSubmittingDebt] = useState(false);
+
+  // 4. Add Customer Modal
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [newCustName, setNewCustName] = useState('');
+  const [newCustPhone, setNewCustPhone] = useState('');
+  const [newCustLimit, setNewCustLimit] = useState('2000');
+  const [newCustInitialBalance, setNewCustInitialBalance] = useState('0');
+  const [newCustNotes, setNewCustNotes] = useState('');
+  const [isSubmittingCustomer, setIsSubmittingCustomer] = useState(false);
+
+  // 5. Edit Customer Modal
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editLimit, setEditLimit] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+
+  // ---------------------------------------------------------------------------
+  // Status Determination Function
+  // ---------------------------------------------------------------------------
+  const getCustomerStatus = (customer: Customer): DebtStatus => {
+    const bal = customer.balance || 0;
+    const limit = customer.creditLimit || 0;
+    const payments = (state.customerPayments || []).filter(p => p.customerId === customer.id);
+
+    if (bal <= 0) {
+      return 'settled';
+    }
+    if (limit > 0 && bal > limit) {
+      return 'overdue';
+    }
+    if (customer.lastVisit) {
+      const daysSinceVisit = (Date.now() - new Date(customer.lastVisit).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceVisit > 30) return 'overdue';
+    }
+    if (payments.length > 0 && bal > 0) {
+      return 'partial';
+    }
+    return 'due';
+  };
+
+  // ---------------------------------------------------------------------------
+  // Filtered & Sorted Customers
+  // ---------------------------------------------------------------------------
+  const filteredCustomers = useMemo(() => {
     return state.customers
-      .filter(c => (c.balance || 0) > 0)
       .filter(c => {
+        // Search filter (name, phone, id)
         if (!search.trim()) return true;
         const q = search.trim().toLowerCase();
         return (
@@ -47,38 +108,86 @@ export const DebtsPage: React.FC = () => {
         );
       })
       .filter(c => {
-        const bal = c.balance || 0;
-        const limit = c.creditLimit || 0;
-        if (filterThreshold === '500') return bal >= 500;
-        if (filterThreshold === '1000') return bal >= 1000;
-        if (filterThreshold === 'over_limit') return limit > 0 && bal > limit;
+        // Status filter
+        const status = getCustomerStatus(c);
+        if (statusFilter === 'all') {
+          // By default, if not searching for settled, show all active debts or all with history
+          return (c.balance || 0) > 0 || (state.customerPayments || []).some(p => p.customerId === c.id);
+        }
+        return status === statusFilter;
+      })
+      .filter(c => {
+        // Period filter (based on lastVisit)
+        if (periodFilter === 'all' || !c.lastVisit) return true;
+        const visitDate = new Date(c.lastVisit);
+        const now = new Date();
+        if (periodFilter === 'today') {
+          return visitDate.toDateString() === now.toDateString();
+        }
+        if (periodFilter === 'week') {
+          const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return visitDate >= oneWeekAgo;
+        }
+        if (periodFilter === 'month') {
+          const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          return visitDate >= oneMonthAgo;
+        }
         return true;
       })
-      .sort((a, b) => (b.balance || 0) - (a.balance || 0));
-  }, [state.customers, search, filterThreshold]);
+      .sort((a, b) => {
+        const balA = a.balance || 0;
+        const balB = b.balance || 0;
+        if (sortBy === 'amount_desc') return balB - balA;
+        if (sortBy === 'amount_asc') return balA - balB;
+        if (sortBy === 'name_asc') return a.name.localeCompare(b.name, 'ar');
+        if (sortBy === 'date_desc') {
+          const timeA = a.lastVisit ? new Date(a.lastVisit).getTime() : 0;
+          const timeB = b.lastVisit ? new Date(b.lastVisit).getTime() : 0;
+          return timeB - timeA;
+        }
+        return 0;
+      });
+  }, [state.customers, state.customerPayments, search, statusFilter, periodFilter, sortBy]);
 
-  // Overall statistics
-  const stats = useMemo(() => {
+  // ---------------------------------------------------------------------------
+  // KPI Summary Statistics
+  // ---------------------------------------------------------------------------
+  const summary = useMemo(() => {
     const allDebtors = state.customers.filter(c => (c.balance || 0) > 0);
-    const totalDebt = allDebtors.reduce((acc, c) => acc + (c.balance || 0), 0);
-    const totalOverLimit = allDebtors.filter(c => (c.creditLimit || 0) > 0 && (c.balance || 0) > (c.creditLimit || 0)).length;
+    const totalDue = allDebtors.reduce((sum, c) => sum + (c.balance || 0), 0);
     
-    // Total payments collected from debt
-    const totalCollected = (state.customerPayments || []).reduce((acc, p) => acc + (p.amount || 0), 0);
+    // Overdue debts: clients who exceeded credit limit or haven't paid in > 30 days
+    const overdueDebtors = allDebtors.filter(c => {
+      const limit = c.creditLimit || 0;
+      const isOverLimit = limit > 0 && (c.balance || 0) > limit;
+      let isOld = false;
+      if (c.lastVisit) {
+        const diff = (Date.now() - new Date(c.lastVisit).getTime()) / (1000 * 60 * 60 * 24);
+        if (diff > 30) isOld = true;
+      }
+      return isOverLimit || isOld;
+    });
+    const totalOverdue = overdueDebtors.reduce((sum, c) => sum + (c.balance || 0), 0);
+
+    // Total collected
+    const totalCollected = (state.customerPayments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
 
     return {
-      totalDebt,
+      totalDue,
       debtorsCount: allDebtors.length,
+      totalOverdue,
+      overdueCount: overdueDebtors.length,
       totalCollected,
-      totalOverLimit,
-      avgDebt: allDebtors.length > 0 ? Math.round(totalDebt / allDebtors.length) : 0
+      collectedCount: (state.customerPayments || []).length
     };
   }, [state.customers, state.customerPayments]);
 
-  // Customer Transaction Ledger (statement)
-  const customerLedger = useMemo(() => {
-    if (!selectedCustomer) return [];
-    
+  // ---------------------------------------------------------------------------
+  // Customer Ledger Calculation for Profile Modal
+  // ---------------------------------------------------------------------------
+  const activeCustomerLedger = useMemo(() => {
+    if (!profileCustomer) return [];
+
     interface LedgerEntry {
       id: string;
       date: string;
@@ -86,27 +195,27 @@ export const DebtsPage: React.FC = () => {
       type: 'invoice' | 'payment';
       title: string;
       ref: string;
-      debit: number;   // مدين (فاتورة زادت الدين)
-      credit: number;  // دائن (سداد خفض الدين)
+      debit: number;
+      credit: number;
       balanceAfter: number;
+      method?: string;
       notes?: string;
     }
 
-    const entries: { timestamp: number; date: string; entry: Omit<LedgerEntry, 'balanceAfter'> }[] = [];
+    const items: { timestamp: number; entry: Omit<LedgerEntry, 'balanceAfter'> }[] = [];
 
-    // Invoices on credit
-    state.invoices
-      .filter(inv => inv.customerId === selectedCustomer.id && (inv.paymentMethod === 'credit' || (inv.notes && inv.notes.includes('آجل'))))
+    // Credit Invoices
+    (state.invoices || [])
+      .filter(inv => inv.customerId === profileCustomer.id && (inv.paymentMethod === 'credit' || (inv.notes && inv.notes.includes('آجل'))))
       .forEach(inv => {
-        entries.push({
+        items.push({
           timestamp: inv.timestamp || Date.parse(inv.date) || 0,
-          date: inv.date,
           entry: {
             id: `inv-${inv.id}`,
             date: inv.date,
             timestamp: inv.timestamp || Date.parse(inv.date) || 0,
             type: 'invoice',
-            title: language === 'ar' ? 'فاتورة بيع (على الحساب)' : 'Credit Invoice',
+            title: 'فاتورة بيع (على الحساب)',
             ref: `#${inv.id}`,
             debit: inv.total,
             credit: 0,
@@ -115,191 +224,426 @@ export const DebtsPage: React.FC = () => {
         });
       });
 
-    // Customer Payments
+    // Payments
     (state.customerPayments || [])
-      .filter(p => p.customerId === selectedCustomer.id)
+      .filter(p => p.customerId === profileCustomer.id)
       .forEach(p => {
-        const methodStr = p.paymentMethod === 'cash' ? 'كاش' : p.paymentMethod === 'card' ? 'فيزا' : p.paymentMethod === 'instapay' ? 'إنستا باي' : 'محفظة';
-        entries.push({
+        const methodStr = p.paymentMethod === 'cash' ? 'نقدًا' : p.paymentMethod === 'card' ? 'بطاقة' : p.paymentMethod === 'instapay' ? 'إنستا باي' : 'محفظة';
+        items.push({
           timestamp: p.timestamp || Date.parse(p.date) || 0,
-          date: p.date,
           entry: {
             id: `pay-${p.id}`,
             date: p.date,
             timestamp: p.timestamp || Date.parse(p.date) || 0,
             type: 'payment',
-            title: language === 'ar' ? `سداد دفعة (${methodStr})` : `Payment (${p.paymentMethod})`,
+            title: `سداد دفعة (${methodStr})`,
             ref: p.receiptNumber ? `سند #${p.receiptNumber}` : `إيصال #${p.id.slice(0, 6)}`,
             debit: 0,
             credit: p.amount,
+            method: methodStr,
             notes: p.notes
           }
         });
       });
 
-    // Sort chronologically (oldest first) to compute running balance
-    entries.sort((a, b) => a.timestamp - b.timestamp);
+    // Sort ascending to calculate running balance
+    items.sort((a, b) => a.timestamp - b.timestamp);
 
-    let runningBal = 0;
-    const finalLedger: LedgerEntry[] = entries.map(item => {
-      runningBal += (item.entry.debit - item.entry.credit);
+    let running = 0;
+    const ledger: LedgerEntry[] = items.map(item => {
+      running += (item.entry.debit - item.entry.credit);
       return {
         ...item.entry,
-        balanceAfter: Math.max(0, runningBal)
+        balanceAfter: Math.max(0, running)
       };
     });
 
-    // Reverse to show newest on top
-    return finalLedger.reverse();
-  }, [selectedCustomer, state.invoices, state.customerPayments, language]);
+    return ledger.reverse();
+  }, [profileCustomer, state.invoices, state.customerPayments]);
 
-  // Open Payment Modal
+  // Total paid by the selected profile customer
+  const activeCustomerTotalPaid = useMemo(() => {
+    if (!profileCustomer) return 0;
+    return (state.customerPayments || [])
+      .filter(p => p.customerId === profileCustomer.id)
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
+  }, [profileCustomer, state.customerPayments]);
+
+  // ---------------------------------------------------------------------------
+  // Action Handlers
+  // ---------------------------------------------------------------------------
+  // Open payment dialog
   const handleOpenPayment = (customer: Customer) => {
-    setSelectedCustomer(customer);
+    setPaymentCustomer(customer);
+    setPaymentMode('full');
     setPaymentAmount(String(customer.balance || ''));
     setPaymentMethod('cash');
     setReceiptNumber(String(Math.floor(1000 + Math.random() * 9000)));
+    setPaymentDate(new Date().toISOString().split('T')[0]);
     setPaymentNotes('');
-    setShowPaymentModal(true);
   };
 
-  // Open Statement Modal
-  const handleOpenStatement = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setShowStatementModal(true);
-  };
-
-  // Submit Payment
-  const handleSubmitPayment = (e: React.FormEvent) => {
+  // Submit payment
+  const handleConfirmPayment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCustomer) return;
+    if (!paymentCustomer) return;
+
     const amt = parseFloat(paymentAmount);
+    const curBal = paymentCustomer.balance || 0;
+
     if (isNaN(amt) || amt <= 0) {
-      addToast(language === 'ar' ? 'يرجى إدخال مبلغ صحيح' : 'Please enter a valid amount', 'error');
+      addToast('يرجى إدخال مبلغ سداد صحيح أكبر من الصفر', 'error');
+      return;
+    }
+    if (amt > curBal) {
+      addToast(`المبلغ المدخل (${formatNumber(amt)} ${currencySymbol}) يتجاوز المديونية المستحقة (${formatNumber(curBal)} ${currencySymbol})`, 'error');
       return;
     }
 
-    setIsSubmitting(true);
+    setIsSubmittingPayment(true);
     try {
       addCustomerPayment({
-        customerId: selectedCustomer.id,
-        customerName: selectedCustomer.name,
+        customerId: paymentCustomer.id,
+        customerName: paymentCustomer.name,
         amount: amt,
         paymentMethod,
-        date: new Date().toISOString().split('T')[0],
+        date: paymentDate,
         receiptNumber: receiptNumber.trim() || undefined,
         notes: paymentNotes.trim() || undefined,
         recordedBy: currentUser?.username || 'كاشير'
       });
 
-      addToast(
-        language === 'ar' 
-          ? `تم سداد ${formatNumber(amt)} ${t('egp')} للعميل ${selectedCustomer.name} بنجاح` 
-          : `Payment of ${amt} recorded for ${selectedCustomer.name}`, 
-        'success'
-      );
-      setShowPaymentModal(false);
+      addToast(`تم تسجيل سداد ${formatNumber(amt)} ${currencySymbol} للعميل ${paymentCustomer.name} بنجاح ✓`, 'success');
+      
+      // Update profile customer state if open
+      if (profileCustomer && profileCustomer.id === paymentCustomer.id) {
+        setProfileCustomer({
+          ...profileCustomer,
+          balance: Math.max(0, curBal - amt)
+        });
+      }
+      setPaymentCustomer(null);
     } catch (err: any) {
-      addToast(err?.message || 'حدث خطأ أثناء تسجيل السداد', 'error');
+      addToast(err?.message || 'تعذر تسجيل السداد، يرجى المحاولة لاحقاً', 'error');
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingPayment(false);
     }
   };
 
-  // WhatsApp reminder message
+  // Submit manual debt
+  const handleConfirmAddDebt = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDebtCustomerId) {
+      addToast('يرجى اختيار العميل أولاً', 'error');
+      return;
+    }
+    const amt = parseFloat(newDebtAmount);
+    if (isNaN(amt) || amt <= 0) {
+      addToast('يرجى إدخال مبلغ صحيح أكبر من الصفر', 'error');
+      return;
+    }
+
+    const customer = state.customers.find(c => c.id === newDebtCustomerId);
+    if (!customer) {
+      addToast('العميل المحدد غير موجود', 'error');
+      return;
+    }
+
+    setIsSubmittingDebt(true);
+    try {
+      // 1. Add credit invoice entry
+      addInvoice({
+        locationId: state.locations?.[0]?.id || 'loc-default',
+        customerId: customer.id,
+        customerName: customer.name,
+        paymentMethod: 'credit',
+        items: [{
+          itemId: 'manual-credit-entry',
+          name: newDebtDescription.trim() || 'تسجيل مديونية / بيع آجل',
+          price: amt,
+          quantity: 1,
+          modifiers: []
+        }],
+        subtotal: amt,
+        discountPercent: 0,
+        taxPercent: 0,
+        total: amt,
+        timestamp: Date.now(),
+        date: newDebtDate,
+        status: 'pending',
+        notes: `آجل: ${newDebtDescription.trim() || 'تسجيل عملية على الحساب'}`
+      } as any);
+
+      // 2. Update customer balance
+      updateCustomer({
+        ...customer,
+        balance: (customer.balance || 0) + amt,
+        lastVisit: new Date().toISOString()
+      });
+
+      addToast(`تمت إضافة مديونية بمبلغ ${formatNumber(amt)} ${currencySymbol} للعميل ${customer.name} بنجاح ✓`, 'success');
+      setShowAddDebtModal(false);
+      setNewDebtCustomerId('');
+      setNewDebtAmount('');
+      setNewDebtDescription('');
+    } catch (err: any) {
+      addToast(err?.message || 'تعذر تسجيل المديونية', 'error');
+    } finally {
+      setIsSubmittingDebt(false);
+    }
+  };
+
+  // Submit new customer
+  const handleConfirmAddCustomer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCustName.trim()) {
+      addToast('يرجى إدخال اسم العميل', 'error');
+      return;
+    }
+    if (!newCustPhone.trim()) {
+      addToast('يرجى إدخال رقم الهاتف', 'error');
+      return;
+    }
+
+    setIsSubmittingCustomer(true);
+    try {
+      const limit = parseFloat(newCustLimit) || 0;
+      const initialBal = parseFloat(newCustInitialBalance) || 0;
+
+      addCustomer({
+        name: newCustName.trim(),
+        phone: newCustPhone.trim(),
+        creditLimit: limit,
+        balance: initialBal,
+        notes: newCustNotes.trim() || undefined
+      });
+
+      addToast(`تمت إضافة العميل «${newCustName}» بنجاح ✓`, 'success');
+      setShowAddCustomerModal(false);
+      setNewCustName('');
+      setNewCustPhone('');
+      setNewCustLimit('2000');
+      setNewCustInitialBalance('0');
+      setNewCustNotes('');
+    } catch (err: any) {
+      addToast(err?.message || 'تعذر إنشاء العميل', 'error');
+    } finally {
+      setIsSubmittingCustomer(false);
+    }
+  };
+
+  // Submit edit customer
+  const handleConfirmEditCustomer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCustomer) return;
+    try {
+      const updated: Customer = {
+        ...editingCustomer,
+        creditLimit: parseFloat(editLimit) || 0,
+        notes: editNotes.trim() || undefined
+      };
+      updateCustomer(updated);
+      if (profileCustomer && profileCustomer.id === editingCustomer.id) {
+        setProfileCustomer(updated);
+      }
+      addToast('تم تحديث بيانات العميل والحد الائتماني بنجاح ✓', 'success');
+      setEditingCustomer(null);
+    } catch (err: any) {
+      addToast(err?.message || 'تعذر التحديث', 'error');
+    }
+  };
+
+  // Send WhatsApp reminder
   const handleWhatsAppReminder = (customer: Customer) => {
     const text = encodeURIComponent(
-      `أهلاً بك أستاذ ${customer.name}، نود تذكير سيادتكم بلطف بوجود مديونية مستحقة لدى ${state.settings.shopName || 'الصالون'} بمبلغ (${customer.balance} ج.م). نسعد دائماً بخدمتكم وتفضلوا بزيارتنا في أي وقت!`
+      `أهلاً بك أستاذ ${customer.name}، نود تذكير سيادتكم بلطف بوجود رصيد متبقي مستحق لدى ${state.settings?.shopName || 'الصالون'} بمبلغ (${formatNumber(customer.balance || 0)} ${currencySymbol}). نسعد دائماً بزيارتكم في أي وقت!`
     );
     const cleanPhone = customer.phone.replace(/[^\d]/g, '');
     const fullPhone = cleanPhone.startsWith('0') ? `2${cleanPhone}` : cleanPhone;
     window.open(`https://wa.me/${fullPhone}?text=${text}`, '_blank');
   };
 
-  // Print Debts Summary Report
-  const handlePrintSummary = () => {
-    window.print();
+  // Generate realistic sample data if needed
+  const handleSeedSampleData = () => {
+    const samples = [
+      { name: 'أحمد إبراهيم الشناوي', phone: '01012345678', balance: 1250, creditLimit: 2000, notes: 'عميل منتظم - تسوية أسبوعية' },
+      { name: 'محمود عبد الرازق حسن', phone: '01198765432', balance: 3400, creditLimit: 2500, notes: 'تجاوز الحد الائتماني المعتمد' },
+      { name: 'د. طارق السعيد العوضي', phone: '01234567890', balance: 850, creditLimit: 1500, notes: 'سدد دفعة ومتبقي جزء' },
+      { name: 'م. خالد عبد الفتاح', phone: '01555544433', balance: 0, creditLimit: 1000, notes: 'حساب مسدد بالكامل' },
+      { name: 'كابتن عمر يوسف كمال', phone: '01099887766', balance: 600, creditLimit: 1000, notes: 'فاتورة خدمات استشوار ومعالجة' }
+    ];
+
+    samples.forEach(s => {
+      addCustomer({
+        name: s.name,
+        phone: s.phone,
+        creditLimit: s.creditLimit,
+        balance: s.balance,
+        notes: s.notes
+      });
+    });
+
+    addToast('تم توليد بيانات تجريبية واقعية بنجاح ✓', 'success');
   };
 
-  const handleRefresh = () => {
-    const d = new Date();
-    setLastSyncTime(d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }));
+  // Helper for status badge presentation
+  const renderStatusBadge = (status: DebtStatus) => {
+    switch (status) {
+      case 'settled':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span>مسدد بالكامل</span>
+          </span>
+        );
+      case 'partial':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span>مسدد جزئياً</span>
+          </span>
+        );
+      case 'overdue':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+            <span>متأخر / تجاوز الحد</span>
+          </span>
+        );
+      case 'due':
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+            <span>مستحق</span>
+          </span>
+        );
+    }
+  };
+
+  // Initials generator for customer avatars
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return `${parts[0][0]} ${parts[1][0]}`;
+    return name.slice(0, 2);
+  };
+
+  // Check if any filters are currently active
+  const isFiltered = search.trim() !== '' || statusFilter !== 'all' || periodFilter !== 'all' || sortBy !== 'amount_desc';
+
+  const handleClearFilters = () => {
     setSearch('');
-    setFilterThreshold('all');
-    addToast(language === 'ar' ? 'تم تحديث وفحص سجل الحسابات والديون بنجاح' : 'Debts ledger refreshed successfully', 'success');
+    setStatusFilter('all');
+    setPeriodFilter('all');
+    setSortBy('amount_desc');
   };
 
   return (
-    <div className="space-y-6 pb-12 animate-fade-in text-right" dir="rtl">
-      {/* 1. Header with sleek badge and prominent action button */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#161B26] border border-white/10 text-purple-400 flex items-center justify-center shadow-sm">
+    <div className="space-y-6 pb-12 animate-fade-in text-right font-sans" dir="rtl">
+      {/* ===================================================================== */}
+      {/* 1. Header (عنوان الصفحة والأزرار الإجرائية)                           */}
+      {/* ===================================================================== */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#161B26] border border-white/5 p-5 rounded-2xl shadow-sm">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500/20 to-blue-500/20 border border-purple-500/30 text-purple-300 flex items-center justify-center text-2xl shadow-sm shrink-0">
             <CreditCard size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-              {language === 'ar' ? 'سجل الديون والعملاء الآجل' : 'Customers Debt & Receivables'}
-            </h1>
+            <h1 className="text-2xl font-bold text-white tracking-tight">سجل الديون</h1>
             <p className="text-xs text-[#94A3B8] mt-1">
-              {language === 'ar' ? 'متابعة وإدارة ديون العملاء، التحصيلات وسندات القبض وكشوف الحساب' : 'Track and collect customer debts, receipts, and account statements'}
+              متابعة وإدارة أرصدة العملاء الآجلة، التحصيلات وسندات القبض وكشوف الحساب.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+          {/* زر إضافة دين / بيع آجل */}
           <button
             type="button"
-            onClick={handlePrintSummary}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold text-xs border border-slate-700 hover:border-slate-600 shadow-md flex items-center gap-2 transition-all hover:shadow-slate-700/20 active:scale-95 cursor-pointer"
+            onClick={() => setShowAddDebtModal(true)}
+            className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-900/30 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
           >
-            <Printer size={16} className="text-slate-300" />
-            <span>{language === 'ar' ? 'طباعة كشف الديون' : 'Print Debts Report'}</span>
+            <Plus size={16} />
+            <span>تسجيل عملية آجلة</span>
+          </button>
+
+          {/* زر إضافة عميل جديد */}
+          <button
+            type="button"
+            onClick={() => setShowAddCustomerModal(true)}
+            className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold text-xs border border-white/10 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+          >
+            <User size={15} className="text-slate-400" />
+            <span>إضافة عميل</span>
+          </button>
+
+          {/* زر طباعة كشف الديون */}
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 transition-all active:scale-95 cursor-pointer"
+            title="طباعة كشف الديون"
+          >
+            <Printer size={16} />
           </button>
         </div>
       </div>
 
-      {/* 2. Top Statistics Cards - Unified Dark Luxury Theme */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {/* Total Outstanding Debt */}
-        <div className="relative overflow-hidden rounded-2xl bg-[#161B26] border border-white/5 p-4 shadow-sm transition-all hover:border-white/10 group">
+      {/* ===================================================================== */}
+      {/* 2. Summary KPI Cards (بطاقات الملخص والإحصائيات)                      */}
+      {/* ===================================================================== */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* إجمالي المبالغ المستحقة */}
+        <div className="relative overflow-hidden rounded-2xl bg-[#161B26] border border-white/5 p-4 shadow-sm hover:border-white/10 transition-all group">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#94A3B8]">
-              {language === 'ar' ? 'إجمالي الديون بالخارج' : 'Total Outstanding Debt'}
-            </span>
+            <span className="text-xs font-semibold text-[#94A3B8]">إجمالي المبالغ المستحقة</span>
             <span className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center">
               <DollarSign size={18} />
             </span>
           </div>
           <div className="text-2xl font-black font-mono text-white tracking-tight">
-            {formatNumber(stats.totalDebt)} <span className="text-xs font-normal text-slate-400">{t('egp')}</span>
+            {formatNumber(summary.totalDue)} <span className="text-xs font-normal text-slate-400">{currencySymbol}</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
-            <span className="text-[11px] text-[#94A3B8]">
-              {language === 'ar' ? 'مستحقات واجبة التحصيل' : 'Receivables to collect'}
-            </span>
+            <span className="text-[11px] text-[#94A3B8]">مستحقات على {summary.debtorsCount} عميل</span>
             <span className="w-2 h-2 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50" />
           </div>
           <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-rose-500/0 via-rose-500/50 to-rose-500/0" />
         </div>
 
-        {/* Debtors Count */}
-        <div className="relative overflow-hidden rounded-2xl bg-[#161B26] border border-white/5 p-4 shadow-sm transition-all hover:border-white/10 group">
+        {/* عدد العملاء المدينين */}
+        <div className="relative overflow-hidden rounded-2xl bg-[#161B26] border border-white/5 p-4 shadow-sm hover:border-white/10 transition-all group">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#94A3B8]">
-              {language === 'ar' ? 'عدد العملاء المدينين' : 'In-Debt Customers'}
-            </span>
-            <span className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
+            <span className="text-xs font-semibold text-[#94A3B8]">عدد العملاء المدينين</span>
+            <span className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center">
               <Users size={18} />
             </span>
           </div>
           <div className="text-2xl font-black font-mono text-white tracking-tight">
-            {stats.debtorsCount} <span className="text-xs font-normal text-slate-400">{language === 'ar' ? 'عميل' : 'clients'}</span>
+            {summary.debtorsCount} <span className="text-xs font-normal text-slate-400">عميل مدين</span>
+          </div>
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
+            <span className="text-[11px] text-[#94A3B8]">نشطون بحسابات جارية</span>
+            <span className="w-2 h-2 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50" />
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/0 via-blue-500/50 to-blue-500/0" />
+        </div>
+
+        {/* إجمالي المبالغ المتأخرة */}
+        <div className="relative overflow-hidden rounded-2xl bg-[#161B26] border border-white/5 p-4 shadow-sm hover:border-white/10 transition-all group">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-[#94A3B8]">المبالغ المتأخرة</span>
+            <span className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
+              <AlertTriangle size={18} />
+            </span>
+          </div>
+          <div className="text-2xl font-black font-mono text-white tracking-tight">
+            {formatNumber(summary.totalOverdue)} <span className="text-xs font-normal text-slate-400">{currencySymbol}</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
             <span className="text-[11px] text-[#94A3B8]">
-              {stats.totalOverLimit > 0 ? (
-                <span className="text-amber-400 font-bold">⚠️ {stats.totalOverLimit} تجاوزوا الحد</span>
+              {summary.overdueCount > 0 ? (
+                <span className="text-amber-400 font-bold">⚠️ {summary.overdueCount} تجاوزوا الحد الائتماني</span>
               ) : (
                 <span>ضمن الحدود الائتمانية</span>
               )}
@@ -309,62 +653,38 @@ export const DebtsPage: React.FC = () => {
           <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500/0 via-amber-500/50 to-amber-500/0" />
         </div>
 
-        {/* Total Debt Payments Collected */}
-        <div className="relative overflow-hidden rounded-2xl bg-[#161B26] border border-white/5 p-4 shadow-sm transition-all hover:border-white/10 group">
+        {/* المبالغ المحصلة */}
+        <div className="relative overflow-hidden rounded-2xl bg-[#161B26] border border-white/5 p-4 shadow-sm hover:border-white/10 transition-all group">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#94A3B8]">
-              {language === 'ar' ? 'إجمالي التحصيلات' : 'Total Debt Collected'}
-            </span>
+            <span className="text-xs font-semibold text-[#94A3B8]">إجمالي التحصيلات</span>
             <span className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
               <Check size={18} />
             </span>
           </div>
           <div className="text-2xl font-black font-mono text-white tracking-tight">
-            {formatNumber(stats.totalCollected)} <span className="text-xs font-normal text-slate-400">{t('egp')}</span>
+            {formatNumber(summary.totalCollected)} <span className="text-xs font-normal text-slate-400">{currencySymbol}</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
-            <span className="text-[11px] text-[#94A3B8]">
-              {language === 'ar' ? 'سندات قبض مسجلة' : 'Recorded receipts'}
-            </span>
+            <span className="text-[11px] text-[#94A3B8]">{summary.collectedCount} سند قبض مسجل</span>
             <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
           </div>
           <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500/0 via-emerald-500/50 to-emerald-500/0" />
         </div>
-
-        {/* Average Debt */}
-        <div className="relative overflow-hidden rounded-2xl bg-[#161B26] border border-white/5 p-4 shadow-sm transition-all hover:border-white/10 group">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#94A3B8]">
-              {language === 'ar' ? 'متوسط دين العميل' : 'Average Debt / Client'}
-            </span>
-            <span className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center">
-              <CreditCard size={18} />
-            </span>
-          </div>
-          <div className="text-2xl font-black font-mono text-white tracking-tight">
-            {formatNumber(stats.avgDebt)} <span className="text-xs font-normal text-slate-400">{t('egp')}</span>
-          </div>
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
-            <span className="text-[11px] text-[#94A3B8]">
-              {language === 'ar' ? 'لكل عميل مدين' : 'Per debtor'}
-            </span>
-            <span className="w-2 h-2 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50" />
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/0 via-blue-500/50 to-blue-500/0" />
-        </div>
       </div>
 
-      {/* 3. Search and Quick Filters - RTL Natural Order */}
-      <div className="rounded-2xl bg-[#161B26] border border-white/5 p-3.5 shadow-sm">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          {/* Search Input - starts on right in RTL */}
-          <div className="relative flex-1 min-w-[280px]">
+      {/* ===================================================================== */}
+      {/* 3. Search & Filters Bar (البحث، الفلاتر والترتيب)                      */}
+      {/* ===================================================================== */}
+      <div className="bg-[#161B26] border border-white/5 p-4 rounded-2xl space-y-3 shadow-sm">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          {/* حقل البحث */}
+          <div className="relative flex-1 min-w-[260px]">
             <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
               <Search size={18} />
             </div>
             <input
               type="text"
-              placeholder={language === 'ar' ? 'بحث باسم العميل، رقم الهاتف، أو كود الحساب...' : 'Search debtor name, phone, or code...'}
+              placeholder="بحث باسم العميل، رقم الهاتف، أو كود الحساب..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pr-10 pl-8 py-2.5 text-xs rounded-xl bg-[#1E293B] border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
@@ -380,254 +700,411 @@ export const DebtsPage: React.FC = () => {
             )}
           </div>
 
-          {/* Filter Pills */}
+          {/* فلتر الفترة والترتيب */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[#94A3B8] text-xs font-medium ml-1">تصفية:</span>
-
-            {/* All */}
-            <button
-              type="button"
-              onClick={() => setFilterThreshold('all')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                filterThreshold === 'all'
-                  ? 'bg-blue-600 text-white border border-blue-500 shadow-sm shadow-blue-500/30'
-                  : 'bg-[#1E293B] text-slate-300 border border-white/5 hover:bg-slate-800 hover:text-white'
-              }`}
+            {/* فلتر الفترة */}
+            <select
+              value={periodFilter}
+              onChange={(e) => setPeriodFilter(e.target.value as any)}
+              className="px-3 py-2 text-xs font-semibold rounded-xl bg-[#1E293B] border border-white/10 text-slate-200 outline-none focus:border-purple-500 cursor-pointer"
             >
-              {language === 'ar' ? 'جميع المدينين' : 'All Debtors'}
-            </button>
+              <option value="all">كل الفترات</option>
+              <option value="today">حركات اليوم</option>
+              <option value="week">آخر 7 أيام</option>
+              <option value="month">آخر 30 يوم</option>
+            </select>
 
-            {/* >= 500 */}
-            <button
-              type="button"
-              onClick={() => setFilterThreshold('500')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                filterThreshold === '500'
-                  ? 'bg-blue-600 text-white border border-blue-500 shadow-sm shadow-blue-500/30'
-                  : 'bg-[#1E293B] text-slate-300 border border-white/5 hover:bg-slate-800 hover:text-white'
-              }`}
+            {/* خيارات الترتيب */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-3 py-2 text-xs font-semibold rounded-xl bg-[#1E293B] border border-white/10 text-slate-200 outline-none focus:border-purple-500 cursor-pointer"
             >
-              ≥ 500 ج.م
-            </button>
+              <option value="amount_desc">الأعلى مديونية</option>
+              <option value="amount_asc">الأقل مديونية</option>
+              <option value="date_desc">الأحدث حركة</option>
+              <option value="name_asc">أبجدياً بالاسم</option>
+            </select>
 
-            {/* >= 1000 */}
-            <button
-              type="button"
-              onClick={() => setFilterThreshold('1000')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                filterThreshold === '1000'
-                  ? 'bg-blue-600 text-white border border-blue-500 shadow-sm shadow-blue-500/30'
-                  : 'bg-[#1E293B] text-slate-300 border border-white/5 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              ≥ 1000 ج.م
-            </button>
+            {/* زر مسح الفلاتر */}
+            {isFiltered && (
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="px-3 py-2 text-xs font-semibold rounded-xl bg-rose-500/10 text-rose-300 border border-rose-500/20 hover:bg-rose-500/20 flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <X size={14} />
+                <span>مسح الفلاتر</span>
+              </button>
+            )}
+          </div>
+        </div>
 
-            {/* Over Limit Pill with subtle amber border & soft text */}
-            <button
-              type="button"
-              onClick={() => setFilterThreshold('over_limit')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
-                filterThreshold === 'over_limit'
-                  ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold shadow-sm shadow-amber-500/30'
-                  : 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20'
-              }`}
-            >
-              {language === 'ar' ? 'تجاوز الحد ⚠️' : 'Over Limit ⚠️'}
-            </button>
+        {/* كبسولات فلتر حالة الدين (Status Pills) */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/[0.04] text-xs">
+          <span className="text-[#94A3B8] text-xs font-medium ml-1 flex items-center gap-1">
+            <Filter size={13} />
+            <span>حالة الدين:</span>
+          </span>
+
+          {[
+            { id: 'all', label: 'الكل' },
+            { id: 'due', label: 'مستحق' },
+            { id: 'overdue', label: 'متأخر ⚠️' },
+            { id: 'partial', label: 'مسدد جزئياً' },
+            { id: 'settled', label: 'مسدد بالكامل' }
+          ].map(pill => {
+            const active = statusFilter === pill.id;
+            return (
+              <button
+                key={pill.id}
+                type="button"
+                onClick={() => setStatusFilter(pill.id as any)}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                  active
+                    ? 'bg-blue-600 text-white border border-blue-500 shadow-sm shadow-blue-500/30'
+                    : 'bg-[#1E293B] text-slate-300 border border-white/5 hover:bg-slate-800 hover:text-white'
+                }`}
+              >
+                {pill.label}
+              </button>
+            );
+          })}
+
+          <div className="mr-auto text-[11px] text-[#94A3B8]">
+            النتائج: <strong className="text-white font-mono">{filteredCustomers.length}</strong> عميل
           </div>
         </div>
       </div>
 
-      {/* 4. Debtors List Table / Enhanced Empty State */}
+      {/* ===================================================================== */}
+      {/* 4. Customers List (الجدول للشاشات الكبيرة + بطاقات للجوال)             */}
+      {/* ===================================================================== */}
       <div className="rounded-2xl bg-[#161B26] border border-white/5 overflow-hidden shadow-sm">
-        {debtors.length === 0 ? (
+        {filteredCustomers.length === 0 ? (
           <div className="py-14 px-6 text-center">
             <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mx-auto flex items-center justify-center mb-4 shadow-sm shadow-emerald-500/10">
               <Check size={32} />
             </div>
             <h3 className="text-xl font-bold text-white mb-2">
-              {language === 'ar' ? 'لا توجد مديونيات معلقة!' : 'No Outstanding Debts!'}
+              {isFiltered ? 'لا توجد نتائج مطابقة لبحثك' : 'لا توجد مديونيات معلقة!'}
             </h3>
             <p className="text-xs text-[#94A3B8] max-w-md mx-auto mb-6 leading-relaxed">
-              {language === 'ar' 
-                ? 'جميع حسابات العملاء مسددة بالكامل ولا يوجد أي عميل مدين حالياً. ميزانية الصالون متوازنة ومستقرة.' 
-                : 'All customer accounts are fully settled. No pending collections.'}
+              {isFiltered 
+                ? 'جرب تعديل كلمات البحث أو مسح الفلاتر لعرض العملاء الآخرين.'
+                : 'جميع حسابات العملاء مسددة بالكامل ولا توجد أي مديونيات مفتوحة حالياً.'}
             </p>
 
-            {/* Quick Action Button */}
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={handleRefresh}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 hover:border-slate-600 font-semibold text-xs flex items-center gap-2 transition-all shadow-sm active:scale-95 cursor-pointer"
-              >
-                <RefreshCw size={14} className="text-slate-400" />
-                <span>{language === 'ar' ? 'تحديث ومراجعة السجلات' : 'Refresh Ledger'}</span>
-              </button>
-            </div>
-
-            {/* Audit & Verification Footer */}
-            <div className="mt-8 pt-5 border-t border-white/5 flex items-center justify-center gap-2 text-[11px] text-[#94A3B8]">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-ping" />
-              <span>
-                {language === 'ar' 
-                  ? `آخر فحص ومزامنة آلية: اليوم الساعة ${lastSyncTime} • سلامة الأرصدة 100%` 
-                  : `Last synced at ${lastSyncTime} • Balance health 100%`}
-              </span>
+              {isFiltered ? (
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 font-semibold text-xs flex items-center gap-2 transition-all cursor-pointer"
+                >
+                  <RefreshCw size={14} className="text-slate-400" />
+                  <span>إعادة ضبط الفلاتر</span>
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddDebtModal(true)}
+                    className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-900/30 flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <Plus size={15} />
+                    <span>تسجيل عملية آجلة</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSeedSampleData}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <Sparkles size={14} className="text-amber-400" />
+                    <span>توليد بيانات تجريبية واقعية</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-right text-xs">
-              <thead className="bg-[#1E293B]/80 text-[#94A3B8] border-b border-white/5">
-                <tr>
-                  <th className="py-3.5 px-4 font-bold">#الكود</th>
-                  <th className="py-3.5 px-4 font-bold">العميل</th>
-                  <th className="py-3.5 px-4 font-bold text-center">المديونية الحالية</th>
-                  <th className="py-3.5 px-4 font-bold text-center">الحد الائتماني</th>
-                  <th className="py-3.5 px-4 font-bold text-center">آخر حركة / زيارة</th>
-                  <th className="py-3.5 px-4 font-bold text-center">إجراءات التحصيل</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.04] text-slate-200">
-                {debtors.map((c) => {
-                  const balance = c.balance || 0;
-                  const limit = c.creditLimit || 0;
-                  const isOverLimit = limit > 0 && balance > limit;
-                  const usagePercent = limit > 0 ? Math.min(100, Math.round((balance / limit) * 100)) : 0;
+          <>
+            {/* Desktop / Tablet Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-right text-xs">
+                <thead className="bg-[#1E293B]/80 text-[#94A3B8] border-b border-white/5">
+                  <tr>
+                    <th className="py-3.5 px-4 font-bold">العميل</th>
+                    <th className="py-3.5 px-4 font-bold">رقم الهاتف</th>
+                    <th className="py-3.5 px-4 font-bold text-center">المبلغ المستحق</th>
+                    <th className="py-3.5 px-4 font-bold text-center">الحد الائتماني</th>
+                    <th className="py-3.5 px-4 font-bold text-center">حالة الدين</th>
+                    <th className="py-3.5 px-4 font-bold text-center">آخر حركة</th>
+                    <th className="py-3.5 px-4 font-bold text-center">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.04] text-slate-200">
+                  {filteredCustomers.map(c => {
+                    const balance = c.balance || 0;
+                    const limit = c.creditLimit || 0;
+                    const status = getCustomerStatus(c);
+                    const usagePercent = limit > 0 ? Math.min(100, Math.round((balance / limit) * 100)) : 0;
 
-                  return (
-                    <tr key={c.id} className="hover:bg-white/[0.02] transition-colors">
-                      {/* Customer ID */}
-                      <td className="py-3.5 px-4 font-mono font-bold text-slate-400">
-                        #{c.id}
-                      </td>
-
-                      {/* Name & Phone */}
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-sm text-white flex items-center gap-2">
-                          <span>{c.name}</span>
-                          {c.isVip && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                              VIP
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[#94A3B8] text-xs font-mono mt-0.5 flex items-center gap-1.5">
-                          <Phone size={12} className="text-slate-400" />
-                          <span>{c.phone}</span>
-                        </div>
-                      </td>
-
-                      {/* Current Debt */}
-                      <td className="py-3.5 px-4 text-center">
-                        <div className="font-black font-mono text-base text-rose-400">
-                          {formatNumber(balance)} <span className="text-[11px] font-normal text-slate-400">{t('egp')}</span>
-                        </div>
-                        {isOverLimit && (
-                          <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/20 animate-pulse">
-                            تجاوز الحد بمقدار {formatNumber(balance - limit)} ج.م
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Credit Limit */}
-                      <td className="py-3.5 px-4 text-center font-mono">
-                        {limit > 0 ? (
-                          <div>
-                            <span className="text-slate-200 font-bold">{formatNumber(limit)} {t('egp')}</span>
-                            <div className="w-20 mx-auto bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden border border-white/5">
-                              <div 
-                                className={`h-full rounded-full ${usagePercent >= 100 ? 'bg-rose-500' : usagePercent >= 80 ? 'bg-amber-500' : 'bg-purple-500'}`}
-                                style={{ width: `${usagePercent}%` }}
-                              />
+                    return (
+                      <tr key={c.id} className="hover:bg-white/[0.02] transition-colors">
+                        {/* Customer Avatar & Name */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500/20 to-blue-500/20 border border-white/10 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-sm">
+                              {getInitials(c.name)}
+                            </div>
+                            <div>
+                              <div className="font-bold text-sm text-white flex items-center gap-2">
+                                <span>{c.name}</span>
+                                {c.isVip && (
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                                    VIP
+                                  </span>
+                                )}
+                              </div>
+                              {c.notes && (
+                                <p className="text-[11px] text-[#94A3B8] line-clamp-1 max-w-[200px] mt-0.5">
+                                  {c.notes}
+                                </p>
+                              )}
                             </div>
                           </div>
-                        ) : (
-                          <span className="text-[#94A3B8] italic">غير محدد</span>
-                        )}
-                      </td>
+                        </td>
 
-                      {/* Last Visit */}
-                      <td className="py-3.5 px-4 text-center font-mono text-[#94A3B8]">
-                        {c.lastVisit ? formatDate(new Date(c.lastVisit)) : '—'}
-                      </td>
+                        {/* Phone */}
+                        <td className="py-3.5 px-4">
+                          <div className="text-[#94A3B8] text-xs font-mono flex items-center gap-1.5">
+                            <Phone size={12} className="text-slate-400" />
+                            <span>{c.phone}</span>
+                          </div>
+                        </td>
 
-                      {/* Actions */}
-                      <td className="py-3.5 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {/* سداد دفعة */}
-                          <button
-                            type="button"
-                            onClick={() => handleOpenPayment(c)}
-                            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
-                            title="تحصيل دفعة أو سداد كامل المديونية"
-                          >
-                            <DollarSign size={14} />
-                            <span>سداد دفعة</span>
-                          </button>
+                        {/* Balance */}
+                        <td className="py-3.5 px-4 text-center">
+                          <div className={`font-black font-mono text-base ${balance > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                            {formatNumber(balance)} <span className="text-[11px] font-normal text-slate-400">{currencySymbol}</span>
+                          </div>
+                        </td>
 
-                          {/* كشف حساب */}
-                          <button
-                            type="button"
-                            onClick={() => handleOpenStatement(c)}
-                            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-white/10 transition-colors flex items-center gap-1 cursor-pointer"
-                            title="عرض كشف حساب العميل وحركات الآجل"
-                          >
-                            <FileText size={14} />
-                            <span>كشف حساب</span>
-                          </button>
+                        {/* Credit Limit */}
+                        <td className="py-3.5 px-4 text-center font-mono">
+                          {limit > 0 ? (
+                            <div>
+                              <span className="text-slate-200 font-bold">{formatNumber(limit)} {currencySymbol}</span>
+                              <div className="w-20 mx-auto bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden border border-white/5">
+                                <div 
+                                  className={`h-full rounded-full ${usagePercent >= 100 ? 'bg-rose-500' : usagePercent >= 80 ? 'bg-amber-500' : 'bg-purple-500'}`}
+                                  style={{ width: `${usagePercent}%` }}
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-[#94A3B8] italic">غير محدد</span>
+                          )}
+                        </td>
 
-                          {/* تذكير واتساب */}
-                          <button
-                            type="button"
-                            onClick={() => handleWhatsAppReminder(c)}
-                            className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors cursor-pointer"
-                            title="إرسال تذكير بالمديونية عبر واتساب"
-                          >
-                            <MessageSquare size={16} />
-                          </button>
+                        {/* Debt Status Badge */}
+                        <td className="py-3.5 px-4 text-center">
+                          {renderStatusBadge(status)}
+                        </td>
+
+                        {/* Last Visit / Activity */}
+                        <td className="py-3.5 px-4 text-center font-mono text-[#94A3B8]">
+                          {c.lastVisit ? formatDate(new Date(c.lastVisit)) : '—'}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3.5 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {/* زر سداد */}
+                            {balance > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenPayment(c)}
+                                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+                                title="تحصيل دفعة أو سداد كامل المديونية"
+                              >
+                                <DollarSign size={13} />
+                                <span>سداد</span>
+                              </button>
+                            ) : (
+                              <span className="px-2.5 py-1 text-slate-500 text-xs font-bold">
+                                مسدد ✓
+                              </span>
+                            )}
+
+                            {/* زر فتح ملف العميل */}
+                            <button
+                              type="button"
+                              onClick={() => setProfileCustomer(c)}
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-white/10 transition-colors flex items-center gap-1 cursor-pointer"
+                              title="عرض كشف الحساب والملف الشخصي"
+                            >
+                              <FileText size={13} />
+                              <span>ملف العميل</span>
+                            </button>
+
+                            {/* زر واتساب */}
+                            {balance > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => handleWhatsAppReminder(c)}
+                                className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors cursor-pointer"
+                                title="إرسال تذكير بالمديونية عبر واتساب"
+                              >
+                                <MessageSquare size={15} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards (شاشات الهواتف والتابلت الصغير) */}
+            <div className="md:hidden divide-y divide-white/[0.04] p-3 space-y-3">
+              {filteredCustomers.map(c => {
+                const balance = c.balance || 0;
+                const status = getCustomerStatus(c);
+
+                return (
+                  <div key={c.id} className="p-4 rounded-xl bg-[#1E293B]/50 border border-white/5 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-white/10 text-white font-bold flex items-center justify-center text-xs shadow-sm">
+                          {getInitials(c.name)}
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        <div>
+                          <h4 className="font-bold text-sm text-white">{c.name}</h4>
+                          <span className="text-[#94A3B8] text-xs font-mono">{c.phone}</span>
+                        </div>
+                      </div>
+                      <div>
+                        {renderStatusBadge(status)}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-black/20 border border-white/5">
+                      <span className="text-xs text-[#94A3B8]">المبلغ المستحق:</span>
+                      <span className={`font-mono font-black text-base ${balance > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                        {formatNumber(balance)} {currencySymbol}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      {balance > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenPayment(c)}
+                          className="flex-1 py-2 rounded-lg bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-1 active:scale-95"
+                        >
+                          <DollarSign size={14} />
+                          <span>سداد</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setProfileCustomer(c)}
+                        className="flex-1 py-2 rounded-lg bg-slate-800 text-slate-200 font-semibold text-xs border border-white/10 flex items-center justify-center gap-1 active:scale-95"
+                      >
+                        <FileText size={14} />
+                        <span>ملف العميل</span>
+                      </button>
+                      {balance > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleWhatsAppReminder(c)}
+                          className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                          title="واتساب"
+                        >
+                          <MessageSquare size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
-      {/* 5. Payment Modal (سند قبض / سداد مديونية) */}
-      {showPaymentModal && selectedCustomer && (
+      {/* ===================================================================== */}
+      {/* 5. Payment Modal (نافذة تسجيل السداد)                                  */}
+      {/* ===================================================================== */}
+      {paymentCustomer && (
         <ModalShell
-          title={`تحصيل سداد مديونية — ${selectedCustomer.name}`}
-          onClose={() => setShowPaymentModal(false)}
+          title={`تسجيل سداد مديونية — ${paymentCustomer.name}`}
+          onClose={() => setPaymentCustomer(null)}
           maxWidth="max-w-md"
         >
-          <form onSubmit={handleSubmitPayment} className="space-y-4">
-            {/* بطاقة ملخص المديونية للعميل */}
-            <div className="p-3.5 rounded-2xl bg-purple-950/30 border border-purple-500/20 flex items-center justify-between">
+          <form onSubmit={handleConfirmPayment} className="space-y-4 text-right" dir="rtl">
+            {/* ملخص الرصيد المستحق */}
+            <div className="p-4 rounded-2xl bg-[#1E293B] border border-white/5 flex items-center justify-between">
               <div>
-                <span className="text-xs text-[#94A3B8] block">المديونية الحالية المستحقة:</span>
-                <span className="text-lg font-black font-mono text-rose-400">
-                  {formatNumber(selectedCustomer.balance || 0)} {t('egp')}
+                <span className="text-xs text-[#94A3B8] block">المديونية المستحقة حالياً:</span>
+                <span className="text-xl font-black font-mono text-rose-400">
+                  {formatNumber(paymentCustomer.balance || 0)} {currencySymbol}
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => setPaymentAmount(String(selectedCustomer.balance || 0))}
-                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-600 text-white hover:bg-purple-500 transition-all cursor-pointer shadow-sm"
-              >
-                سداد كامل المديونية
-              </button>
+              <div className="text-left">
+                <span className="text-xs text-[#94A3B8] block">الحد الائتماني:</span>
+                <span className="text-sm font-bold font-mono text-slate-300">
+                  {paymentCustomer.creditLimit ? `${formatNumber(paymentCustomer.creditLimit)} ${currencySymbol}` : 'غير محدد'}
+                </span>
+              </div>
             </div>
 
-            {/* حقل المبلغ */}
+            {/* خيار نوع السداد (كامل / جزئي) */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                نوع عملية السداد:
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentMode('full');
+                    setPaymentAmount(String(paymentCustomer.balance || 0));
+                  }}
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    paymentMode === 'full'
+                      ? 'bg-purple-600 text-white border-purple-500 shadow-sm'
+                      : 'bg-[#1E293B] text-slate-300 border-white/5 hover:border-purple-500/50'
+                  }`}
+                >
+                  سداد كامل المبلغ ({formatNumber(paymentCustomer.balance || 0)})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentMode('partial');
+                    setPaymentAmount('');
+                  }}
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    paymentMode === 'partial'
+                      ? 'bg-purple-600 text-white border-purple-500 shadow-sm'
+                      : 'bg-[#1E293B] text-slate-300 border-white/5 hover:border-purple-500/50'
+                  }`}
+                >
+                  سداد جزء من المبلغ
+                </button>
+              </div>
+            </div>
+
+            {/* حقل مبلغ السداد */}
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-1">
-                المبلغ المراد تحصيله الآن ({t('egp')}):
+                المبلغ المراد تحصيله الآن ({currencySymbol}):
               </label>
               <input
                 type="number"
@@ -637,28 +1114,28 @@ export const DebtsPage: React.FC = () => {
                 value={paymentAmount}
                 onChange={(e) => setPaymentAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-[#1E293B] text-white font-bold font-mono text-base outline-none focus:ring-2 focus:ring-purple-500 text-center"
+                className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-[#1E293B] text-white font-bold font-mono text-lg outline-none focus:ring-2 focus:ring-purple-500 text-center"
               />
               {/* المديونية المتبقية المتوقعة */}
               {parseFloat(paymentAmount) > 0 && (
-                <div className="mt-1 text-xs text-[#94A3B8] flex justify-between">
-                  <span>المديونية المتبقية بعد السداد:</span>
+                <div className="mt-1.5 text-xs text-[#94A3B8] flex justify-between">
+                  <span>المبلغ المتبقي بعد السداد:</span>
                   <span className="font-mono font-bold text-purple-400">
-                    {formatNumber(Math.max(0, (selectedCustomer.balance || 0) - (parseFloat(paymentAmount) || 0)))} {t('egp')}
+                    {formatNumber(Math.max(0, (paymentCustomer.balance || 0) - (parseFloat(paymentAmount) || 0)))} {currencySymbol}
                   </span>
                 </div>
               )}
             </div>
 
-            {/* طريقة السداد (كاش، فيزا، محفظة، إنستا باي) */}
+            {/* طريقة الدفع */}
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-1">
-                طريقة التحصيل:
+                طريقة الدفع والتحصيل:
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { id: 'cash', label: 'كاش', icon: '💵' },
-                  { id: 'card', label: 'فيزا', icon: '💳' },
+                  { id: 'cash', label: 'نقدًا', icon: '💵' },
+                  { id: 'card', label: 'بطاقة', icon: '💳' },
                   { id: 'wallet', label: 'محفظة', icon: '📱' },
                   { id: 'instapay', label: 'إنستا باي', icon: '⚡' },
                 ].map(m => (
@@ -679,8 +1156,20 @@ export const DebtsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* رقم السند والملاحظات */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* تاريخ السداد ورقم السند */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  تاريخ السداد:
+                </label>
+                <input
+                  type="date"
+                  value={paymentDate}
+                  onChange={(e) => setPaymentDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">
                   رقم الإيصال / السند:
@@ -693,138 +1182,473 @@ export const DebtsPage: React.FC = () => {
                   className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
+            </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  ملاحظات (اختياري):
-                </label>
-                <input
-                  type="text"
-                  value={paymentNotes}
-                  onChange={(e) => setPaymentNotes(e.target.value)}
-                  placeholder="سداد دفعة نقدية..."
-                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
+            {/* ملاحظات */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                ملاحظات (اختياري):
+              </label>
+              <input
+                type="text"
+                value={paymentNotes}
+                onChange={(e) => setPaymentNotes(e.target.value)}
+                placeholder="سداد دفعة نقدية بالفرع..."
+                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
+              />
             </div>
 
             {/* الأزرار */}
             <div className="flex gap-2.5 pt-3 border-t border-white/10">
               <Button
                 variant="success"
-                disabled={isSubmitting || !parseFloat(paymentAmount)}
+                disabled={isSubmittingPayment || !parseFloat(paymentAmount)}
                 className="flex-1 justify-center py-2.5 text-sm font-bold shadow-sm"
               >
-                {isSubmitting ? 'جاري الحفظ...' : '✓ تأكيد وحفظ السداد'}
+                {isSubmittingPayment ? 'جاري الحفظ...' : '✓ تأكيد وحفظ السداد'}
               </Button>
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setShowPaymentModal(false)}
+                onClick={() => setPaymentCustomer(null)}
                 className="flex-1 justify-center py-2.5 text-sm"
               >
-                {t('cancel')}
+                إلغاء
               </Button>
             </div>
           </form>
         </ModalShell>
       )}
 
-      {/* 6. Statement Modal (كشف حساب تفصيلي للعميل) */}
-      {showStatementModal && selectedCustomer && (
+      {/* ===================================================================== */}
+      {/* 6. Profile & Ledger Modal (ملف العميل الشخصي وكشف الحساب)              */}
+      {/* ===================================================================== */}
+      {profileCustomer && (
         <ModalShell
-          title={`كشف حساب العميل: ${selectedCustomer.name}`}
-          onClose={() => setShowStatementModal(false)}
+          title={`ملف العميل وكشف الحساب: ${profileCustomer.name}`}
+          onClose={() => setProfileCustomer(null)}
           maxWidth="max-w-3xl"
         >
-          <div className="space-y-4">
-            {/* Header info */}
-            <div className="p-4 rounded-2xl bg-[#1E293B] border border-white/10 flex flex-wrap justify-between items-center gap-3">
-              <div>
-                <span className="text-xs text-[#94A3B8]">رقم الهاتف:</span>
-                <span className="font-bold font-mono text-sm text-white block">{selectedCustomer.phone}</span>
+          <div className="space-y-5 text-right font-sans" dir="rtl">
+            {/* بطاقة رأس الملف الشخصي */}
+            <div className="p-4 rounded-2xl bg-[#1E293B] border border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-500/30 to-blue-500/30 border border-white/10 text-white font-black text-lg flex items-center justify-center shadow-sm shrink-0">
+                  {getInitials(profileCustomer.name)}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-white">{profileCustomer.name}</h3>
+                    {profileCustomer.isVip && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                        VIP
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-[#94A3B8] font-mono mt-0.5 flex items-center gap-1.5">
+                    <Phone size={13} className="text-slate-400" />
+                    <span>{profileCustomer.phone}</span>
+                    {profileCustomer.address && (
+                      <span className="text-slate-500 mr-2">• {profileCustomer.address}</span>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div>
-                <span className="text-xs text-[#94A3B8]">الحد الائتماني:</span>
-                <span className="font-bold font-mono text-sm text-white block">
-                  {selectedCustomer.creditLimit ? `${formatNumber(selectedCustomer.creditLimit)} ${t('egp')}` : 'غير محدد'}
+
+              {/* أزرار سريعة في رأس الملف */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {(profileCustomer.balance || 0) > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenPayment(profileCustomer)}
+                    className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <DollarSign size={14} />
+                    <span>سداد دفعة</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingCustomer(profileCustomer);
+                    setEditLimit(String(profileCustomer.creditLimit || ''));
+                    setEditNotes(profileCustomer.notes || '');
+                  }}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-white/10 cursor-pointer"
+                >
+                  تعديل الحد / ملاحظات
+                </button>
+              </div>
+            </div>
+
+            {/* بطاقات الإحصائيات الثلاثية لملف العميل */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3.5 rounded-xl bg-[#161B26] border border-white/5">
+                <span className="text-[11px] text-[#94A3B8] block">إجمالي ما تم سداده:</span>
+                <span className="text-base font-black font-mono text-emerald-400 mt-0.5 block">
+                  {formatNumber(activeCustomerTotalPaid)} {currencySymbol}
                 </span>
               </div>
-              <div>
-                <span className="text-xs text-[#94A3B8]">المديونية الحالية المتبقية:</span>
-                <span className="font-black font-mono text-base text-rose-400 block">
-                  {formatNumber(selectedCustomer.balance || 0)} {t('egp')}
+
+              <div className="p-3.5 rounded-xl bg-[#161B26] border border-white/5">
+                <span className="text-[11px] text-[#94A3B8] block">الحد الائتماني المعتمد:</span>
+                <span className="text-base font-bold font-mono text-slate-300 mt-0.5 block">
+                  {profileCustomer.creditLimit ? `${formatNumber(profileCustomer.creditLimit)} ${currencySymbol}` : 'غير محدد'}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#161B26] border border-white/5">
+                <span className="text-[11px] text-[#94A3B8] block">الرصيد المتبقي المستحق:</span>
+                <span className="text-base font-black font-mono text-rose-400 mt-0.5 block">
+                  {formatNumber(profileCustomer.balance || 0)} {currencySymbol}
                 </span>
               </div>
             </div>
 
-            {/* Transactions Ledger Table */}
-            <div className="max-h-80 overflow-y-auto border border-white/10 rounded-xl">
-              <table className="w-full text-right text-xs">
-                <thead className="bg-[#1E293B] text-[#94A3B8] sticky top-0 border-b border-white/10">
-                  <tr>
-                    <th className="py-2.5 px-3 font-bold">التاريخ</th>
-                    <th className="py-2.5 px-3 font-bold">نوع الحركة / المرجع</th>
-                    <th className="py-2.5 px-3 font-bold text-center text-rose-400">مدين (+)</th>
-                    <th className="py-2.5 px-3 font-bold text-center text-emerald-400">دائن (-)</th>
-                    <th className="py-2.5 px-3 font-bold text-center">الرصيد بعد الحركة</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.04] text-slate-200">
-                  {customerLedger.length === 0 ? (
+            {/* ملاحظات العميل */}
+            {profileCustomer.notes && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-start gap-2">
+                <span className="text-sm">📌</span>
+                <span>{profileCustomer.notes}</span>
+              </div>
+            )}
+
+            {/* السجل الزمني لحركات العميل وكشف الحساب */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Clock size={14} className="text-purple-400" />
+                  <span>سجل الحركات المالية وكشف الحساب:</span>
+                </h4>
+                <span className="text-[11px] text-[#94A3B8]">
+                  عدد العمليات: {activeCustomerLedger.length}
+                </span>
+              </div>
+
+              <div className="max-h-64 overflow-y-auto border border-white/10 rounded-xl bg-[#161B26]">
+                <table className="w-full text-right text-xs">
+                  <thead className="bg-[#1E293B] text-[#94A3B8] sticky top-0 border-b border-white/10">
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-[#94A3B8]">
-                        لا توجد حركات مسجلة لهذا العميل حتى الآن.
-                      </td>
+                      <th className="py-2.5 px-3 font-bold">التاريخ</th>
+                      <th className="py-2.5 px-3 font-bold">نوع الحركة / المرجع</th>
+                      <th className="py-2.5 px-3 font-bold text-center text-rose-400">مدين (+)</th>
+                      <th className="py-2.5 px-3 font-bold text-center text-emerald-400">دائن (-)</th>
+                      <th className="py-2.5 px-3 font-bold text-center">الرصيد بعد الحركة</th>
                     </tr>
-                  ) : (
-                    customerLedger.map((row) => (
-                      <tr key={row.id} className="hover:bg-white/[0.02]">
-                        <td className="py-2.5 px-3 font-mono text-[#94A3B8]">
-                          {formatDate(new Date(row.timestamp))}
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <span className="font-bold text-white block">{row.title}</span>
-                          <span className="text-[11px] font-mono text-[#94A3B8]">{row.ref}</span>
-                        </td>
-                        <td className="py-2.5 px-3 text-center font-mono font-bold text-rose-400">
-                          {row.debit > 0 ? `+${formatNumber(row.debit)}` : '—'}
-                        </td>
-                        <td className="py-2.5 px-3 text-center font-mono font-bold text-emerald-400">
-                          {row.credit > 0 ? `-${formatNumber(row.credit)}` : '—'}
-                        </td>
-                        <td className="py-2.5 px-3 text-center font-mono font-black text-white">
-                          {formatNumber(row.balanceAfter)} {t('egp')}
+                  </thead>
+                  <tbody className="divide-y divide-white/[0.04] text-slate-200">
+                    {activeCustomerLedger.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-[#94A3B8]">
+                          لا توجد حركات مسجلة لهذا العميل حتى الآن.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      activeCustomerLedger.map(row => (
+                        <tr key={row.id} className="hover:bg-white/[0.02]">
+                          <td className="py-2.5 px-3 font-mono text-[#94A3B8]">
+                            {formatDate(new Date(row.timestamp))}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className="font-bold block text-white">{row.title}</span>
+                            <span className="text-[11px] font-mono text-[#94A3B8]">{row.ref}</span>
+                            {row.notes && (
+                              <span className="text-[10px] text-slate-400 block mt-0.5">{row.notes}</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-center font-mono font-bold text-rose-400">
+                            {row.debit > 0 ? `+${formatNumber(row.debit)}` : '—'}
+                          </td>
+                          <td className="py-2.5 px-3 text-center font-mono font-bold text-emerald-400">
+                            {row.credit > 0 ? `-${formatNumber(row.credit)}` : '—'}
+                          </td>
+                          <td className="py-2.5 px-3 text-center font-mono font-black text-white">
+                            {formatNumber(row.balanceAfter)} {currencySymbol}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            {/* Footer Buttons */}
-            <div className="flex justify-between items-center pt-2">
-              <Button
-                variant="secondary"
+            {/* الأزرار السفلية */}
+            <div className="flex justify-between items-center pt-2 border-t border-white/5">
+              <button
+                type="button"
                 onClick={() => window.print()}
-                className="flex items-center gap-1.5 text-xs py-2"
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-white/10 flex items-center gap-1.5 cursor-pointer"
               >
                 <Printer size={15} />
                 <span>طباعة كشف الحساب</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setProfileCustomer(null)}
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-white/10 cursor-pointer"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </ModalShell>
+      )}
+
+      {/* ===================================================================== */}
+      {/* 7. Add Debt Modal (نافذة تسجيل مديونية / بيع آجل)                      */}
+      {/* ===================================================================== */}
+      {showAddDebtModal && (
+        <ModalShell
+          title="تسجيل عملية بيع آجلة / إضافة دين"
+          onClose={() => setShowAddDebtModal(false)}
+          maxWidth="max-w-md"
+        >
+          <form onSubmit={handleConfirmAddDebt} className="space-y-4 text-right" dir="rtl">
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                اختر العميل:
+              </label>
+              <select
+                required
+                value={newDebtCustomerId}
+                onChange={(e) => setNewDebtCustomerId(Number(e.target.value) || '')}
+                className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="">-- اضغط لاختيار العميل --</option>
+                {state.customers.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.phone}) — الرصيد الحالي: {formatNumber(c.balance || 0)} {currencySymbol}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                المبلغ المراد تقييده كدين ({currencySymbol}):
+              </label>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                required
+                value={newDebtAmount}
+                onChange={(e) => setNewDebtAmount(e.target.value)}
+                placeholder="0.00"
+                className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-[#1E293B] text-white font-bold font-mono text-base outline-none focus:ring-2 focus:ring-purple-500 text-center"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                بيان العملية / سبب المديونية:
+              </label>
+              <input
+                type="text"
+                required
+                value={newDebtDescription}
+                onChange={(e) => setNewDebtDescription(e.target.value)}
+                placeholder="مثال: خدمات صالون ومعالجة، منتجات عناية..."
+                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                تاريخ العملية:
+              </label>
+              <input
+                type="date"
+                value={newDebtDate}
+                onChange={(e) => setNewDebtDate(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div className="flex gap-2.5 pt-3 border-t border-white/10">
+              <Button
+                variant="primary"
+                disabled={isSubmittingDebt || !newDebtCustomerId || !parseFloat(newDebtAmount)}
+                className="flex-1 justify-center py-2.5 text-sm font-bold shadow-sm"
+              >
+                {isSubmittingDebt ? 'جاري الحفظ...' : '✓ تأكيد وحفظ العملية'}
               </Button>
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setShowStatementModal(false)}
-                className="py-2 px-6"
+                onClick={() => setShowAddDebtModal(false)}
+                className="flex-1 justify-center py-2.5 text-sm"
               >
-                {t('cancel')}
+                إلغاء
               </Button>
             </div>
-          </div>
+          </form>
+        </ModalShell>
+      )}
+
+      {/* ===================================================================== */}
+      {/* 8. Add Customer Modal (إضافة عميل جديد)                               */}
+      {/* ===================================================================== */}
+      {showAddCustomerModal && (
+        <ModalShell
+          title="إضافة عميل جديد إلى السجل"
+          onClose={() => setShowAddCustomerModal(false)}
+          maxWidth="max-w-md"
+        >
+          <form onSubmit={handleConfirmAddCustomer} className="space-y-4 text-right" dir="rtl">
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                اسم العميل بالكامل:
+              </label>
+              <input
+                type="text"
+                required
+                value={newCustName}
+                onChange={(e) => setNewCustName(e.target.value)}
+                placeholder="أحمد محمد علي"
+                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                رقم الهاتف:
+              </label>
+              <input
+                type="tel"
+                required
+                value={newCustPhone}
+                onChange={(e) => setNewCustPhone(e.target.value)}
+                placeholder="01012345678"
+                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  الحد الائتماني ({currencySymbol}):
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="100"
+                  value={newCustLimit}
+                  onChange={(e) => setNewCustLimit(e.target.value)}
+                  placeholder="2000"
+                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  رصيد افتتاحي (إن وُجد):
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={newCustInitialBalance}
+                  onChange={(e) => setNewCustInitialBalance(e.target.value)}
+                  placeholder="0"
+                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                ملاحظات العميل:
+              </label>
+              <input
+                type="text"
+                value={newCustNotes}
+                onChange={(e) => setNewCustNotes(e.target.value)}
+                placeholder="ملاحظات ائتمانية أو مواعيد سداد..."
+                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div className="flex gap-2.5 pt-3 border-t border-white/10">
+              <Button
+                variant="primary"
+                disabled={isSubmittingCustomer || !newCustName.trim() || !newCustPhone.trim()}
+                className="flex-1 justify-center py-2.5 text-sm font-bold shadow-sm"
+              >
+                {isSubmittingCustomer ? 'جاري الحفظ...' : '✓ حفظ العميل'}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowAddCustomerModal(false)}
+                className="flex-1 justify-center py-2.5 text-sm"
+              >
+                إلغاء
+              </Button>
+            </div>
+          </form>
+        </ModalShell>
+      )}
+
+      {/* ===================================================================== */}
+      {/* 9. Edit Customer Modal (تعديل الحد الائتماني والملاحظات)              */}
+      {/* ===================================================================== */}
+      {editingCustomer && (
+        <ModalShell
+          title={`تعديل بيانات العميل — ${editingCustomer.name}`}
+          onClose={() => setEditingCustomer(null)}
+          maxWidth="max-w-md"
+        >
+          <form onSubmit={handleConfirmEditCustomer} className="space-y-4 text-right" dir="rtl">
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                الحد الائتماني المسموح به ({currencySymbol}):
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="100"
+                value={editLimit}
+                onChange={(e) => setEditLimit(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                الملاحظات:
+              </label>
+              <textarea
+                rows={3}
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="سجل ملاحظات التسهيلات والاتفاق..."
+                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div className="flex gap-2.5 pt-3 border-t border-white/10">
+              <Button
+                variant="primary"
+                className="flex-1 justify-center py-2.5 text-sm font-bold shadow-sm"
+              >
+                حفظ التعديلات
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setEditingCustomer(null)}
+                className="flex-1 justify-center py-2.5 text-sm"
+              >
+                إلغاء
+              </Button>
+            </div>
+          </form>
         </ModalShell>
       )}
     </div>
   );
 };
+export default DebtsPage;
