@@ -313,6 +313,13 @@ export const CreateInvoice = ({ onClose }: any) => {
     });
   }, [state.items, itemSearch, selectedCategory]);
 
+  const itemCounts = useMemo(() => {
+    const total = state.items.length;
+    const services = state.items.filter(i => i.type === 'service').length;
+    const products = state.items.filter(i => i.type === 'product').length;
+    return { total, services, products };
+  }, [state.items]);
+
   const subtotal = round2(selectedItems.reduce((acc, item) => acc + (item.item.price * item.qty), 0));
   const discountAmount = round2((Math.max(0, Math.min(100, discountPercent)) / 100) * subtotal);
   const taxableBase = round2(Math.max(0, subtotal - discountAmount));
@@ -880,9 +887,14 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
              </Card>
              <Card className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <h3 className="text-lg font-bold flex items-center gap-2"><Package size={20}/> {t('items')}</h3>
-                    <div className="relative w-full sm:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold flex items-center gap-2"><Package size={20} className="text-primary-500" /> {t('items')}</h3>
+                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold border border-slate-200 dark:border-slate-700 font-mono">
+                            {displayedItems.length} {language === 'ar' ? 'عنصر' : 'items'}
+                        </span>
+                    </div>
+                    <div className="relative w-full sm:w-72 md:w-80">
+                        <Search className={`absolute ${language === 'ar' ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none`} size={16} />
                         <input
                             type="text"
                             placeholder={language === 'ar' ? 'بحث بالاسم أو الباركود (Enter للإضافة)...' : 'Search name or barcode (Enter to add)...'}
@@ -910,12 +922,13 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
                                     }
                                 }
                             }}
-                            className="w-full pl-9 pr-4 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500"
+                            className={`w-full ${language === 'ar' ? 'pr-9 pl-9' : 'pl-9 pr-9'} py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-600/80 bg-white dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500 transition-all shadow-xs`}
                         />
                         {itemSearch && (
                             <button
+                                type="button"
                                 onClick={() => setItemSearch('')}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                className={`absolute ${language === 'ar' ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700`}
                             >
                                 <X size={14} />
                             </button>
@@ -928,105 +941,172 @@ ${t('wa_contact_booking')}: ${state.settings.phone}`;
                     <button
                         type="button"
                         onClick={() => setSelectedCategory('all')}
-                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap ${selectedCategory === 'all' ? 'bg-primary-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                            selectedCategory === 'all' 
+                                ? 'bg-primary-600 text-white shadow-sm ring-2 ring-primary-500/20' 
+                                : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                        }`}
                     >
-                        {t('all')}
+                        <span>{t('all')}</span>
+                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${selectedCategory === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200/70 dark:bg-slate-600 text-slate-500 dark:text-slate-300'}`}>
+                            {itemCounts.total}
+                        </span>
                     </button>
                     <button
                         type="button"
                         onClick={() => setSelectedCategory('services')}
-                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${selectedCategory === 'services' ? 'bg-purple-600 text-white shadow-sm' : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100'}`}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                            selectedCategory === 'services' 
+                                ? 'bg-purple-600 text-white shadow-sm ring-2 ring-purple-500/20' 
+                                : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50'
+                        }`}
                     >
-                        <Scissors size={12} /> {t('services')}
+                        <Scissors size={12} />
+                        <span>{t('services')}</span>
+                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${selectedCategory === 'services' ? 'bg-white/20 text-white' : 'bg-purple-200/70 dark:bg-purple-800 text-purple-700 dark:text-purple-300'}`}>
+                            {itemCounts.services}
+                        </span>
                     </button>
                     <button
                         type="button"
                         onClick={() => setSelectedCategory('products')}
-                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 ${selectedCategory === 'products' ? 'bg-blue-600 text-white shadow-sm' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100'}`}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                            selectedCategory === 'products' 
+                                ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/20' 
+                                : 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+                        }`}
                     >
-                        <Package size={12} /> {t('products')}
+                        <Package size={12} />
+                        <span>{t('products')}</span>
+                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${selectedCategory === 'products' ? 'bg-white/20 text-white' : 'bg-blue-200/70 dark:bg-blue-800 text-blue-700 dark:text-blue-300'}`}>
+                            {itemCounts.products}
+                        </span>
                     </button>
-                    {state.categories.map(cat => (
-                        <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => setSelectedCategory(cat.id)}
-                            className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap ${selectedCategory === cat.id ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 shadow-sm' : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
-                        >
-                            {language === 'ar' ? cat.nameAr : cat.nameEn}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2.5 max-h-[440px] overflow-y-auto pr-1 custom-scrollbar">
-                    {displayedItems.length === 0 ? (
-                        <div className="col-span-full py-8 text-center text-slate-400 text-sm">
-                            {t('no_items')}
-                        </div>
-                    ) : (
-                        displayedItems.map((item, idx) => {
-                        const palettes = [
-                            { bg: 'from-emerald-500 to-teal-600', ring: 'ring-emerald-300/50', iconBg: 'bg-white/20', label: 'bg-white/20 border-white/30', badge: 'bg-emerald-600/40', shadow: 'shadow-emerald-500/20' },
-                            { bg: 'from-rose-500 to-pink-600', ring: 'ring-rose-300/50', iconBg: 'bg-white/20', label: 'bg-white/20 border-white/30', badge: 'bg-rose-600/40', shadow: 'shadow-rose-500/20' },
-                            { bg: 'from-sky-500 to-blue-600', ring: 'ring-sky-300/50', iconBg: 'bg-white/20', label: 'bg-white/20 border-white/30', badge: 'bg-sky-600/40', shadow: 'shadow-sky-500/20' },
-                            { bg: 'from-violet-500 to-purple-600', ring: 'ring-violet-300/50', iconBg: 'bg-white/20', label: 'bg-white/20 border-white/30', badge: 'bg-violet-600/40', shadow: 'shadow-violet-500/20' },
-                            { bg: 'from-amber-500 to-orange-600', ring: 'ring-amber-300/50', iconBg: 'bg-white/20', label: 'bg-white/20 border-white/30', badge: 'bg-amber-600/40', shadow: 'shadow-amber-500/20' },
-                            { bg: 'from-cyan-500 to-sky-600', ring: 'ring-cyan-300/50', iconBg: 'bg-white/20', label: 'bg-white/20 border-white/30', badge: 'bg-cyan-600/40', shadow: 'shadow-cyan-500/20' },
-                            { bg: 'from-lime-500 to-green-600', ring: 'ring-lime-300/50', iconBg: 'bg-white/20', label: 'bg-white/20 border-white/30', badge: 'bg-lime-600/40', shadow: 'shadow-lime-500/20' },
-                            { bg: 'from-fuchsia-500 to-pink-600', ring: 'ring-fuchsia-300/50', iconBg: 'bg-white/20', label: 'bg-white/20 border-white/30', badge: 'bg-fuchsia-600/40', shadow: 'shadow-fuchsia-500/20' },
-                            { bg: 'from-indigo-500 to-blue-700', ring: 'ring-indigo-300/50', iconBg: 'bg-white/20', label: 'bg-white/20 border-white/30', badge: 'bg-indigo-600/40', shadow: 'shadow-indigo-500/20' },
-                            { bg: 'from-yellow-500 to-amber-600', ring: 'ring-yellow-300/50', iconBg: 'bg-white/20', label: 'bg-white/20 border-white/30', badge: 'bg-yellow-600/40', shadow: 'shadow-yellow-500/20' },
-                        ];
-                        let hash = 0;
-                        for (let i = 0; i < item.id.length; i++) hash = (hash * 31 + item.id.charCodeAt(i)) >>> 0;
-                        const styleIdx = hash % palettes.length;
-                        const p = palettes[styleIdx];
-                        const isService = item.type === 'service';
-                        const isOutOfStock = !isService && item.trackStock && item.quantity <= 0;
-                        const isLowStock = !isService && item.trackStock && item.quantity > 0 && item.quantity <= item.alertThreshold;
+                    {state.categories.map(cat => {
+                        const countInCat = state.items.filter(i => i.categoryId === cat.id).length;
                         return (
                             <button
-                                key={item.id}
-                                onClick={() => addToInvoice(item)}
-                                className={`group relative flex flex-col justify-between p-3 rounded-xl border transition-all text-right h-24 overflow-hidden ${
-                                    isOutOfStock 
-                                        ? 'border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/10 opacity-75' 
-                                        : 'border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/90 hover:border-primary-500/60 dark:hover:border-primary-500/60 hover:shadow-md'
+                                key={cat.id}
+                                type="button"
+                                onClick={() => setSelectedCategory(cat.id)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                                    selectedCategory === cat.id 
+                                        ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 shadow-sm' 
+                                        : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                                 }`}
                             >
-                                <div className="w-full flex items-start justify-between gap-1">
-                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold ${isService ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'}`}>
-                                        {isService ? <Scissors size={10} /> : <Package size={10} />}
-                                        {isService ? t('service') : t('product')}
-                                    </span>
-                                    {item.trackStock && (
-                                        <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold ${
-                                            isOutOfStock 
-                                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' 
-                                                : isLowStock 
-                                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300' 
-                                                : 'text-slate-500 dark:text-slate-400'
-                                        }`}>
-                                            {isOutOfStock ? (language === 'ar' ? 'نفد' : 'Out') : item.quantity}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="w-full">
-                                    <div className="font-semibold text-slate-800 dark:text-slate-100 text-sm truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                                        {language === 'ar' ? item.nameAr : item.nameEn}
-                                    </div>
-                                    <div className="flex items-center justify-between mt-1">
-                                        <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                                            {formatNumber(item.price)} {t('egp')}
-                                        </span>
-                                        <span className="text-[10px] text-slate-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                            + إضافة
-                                        </span>
-                                    </div>
-                                </div>
+                                <span>{language === 'ar' ? cat.nameAr : cat.nameEn}</span>
+                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${selectedCategory === cat.id ? 'bg-white/20 dark:bg-slate-900/20 text-current' : 'bg-slate-200/70 dark:bg-slate-600 text-slate-500 dark:text-slate-300'}`}>
+                                    {countInCat}
+                                </span>
                             </button>
                         );
-                    }))}
+                    })}
+                </div>
+
+                {/* Items Grid with Modern Touch-friendly Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[460px] overflow-y-auto p-1.5 custom-scrollbar">
+                    {displayedItems.length === 0 ? (
+                        <div className="col-span-full py-12 flex flex-col items-center justify-center text-center">
+                            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-2">
+                                <Package size={24} />
+                            </div>
+                            <p className="text-sm font-bold text-slate-600 dark:text-slate-300">{t('no_items')}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                                {itemSearch 
+                                    ? (language === 'ar' ? 'لا توجد نتائج مطابقة لبحثك' : 'No items match your search')
+                                    : (language === 'ar' ? 'لا توجد عناصر مسجلة في هذا القسم' : 'No items found in this section')}
+                            </p>
+                        </div>
+                    ) : (
+                        displayedItems.map((item) => {
+                            const isService = item.type === 'service';
+                            const isOutOfStock = !isService && item.trackStock && item.quantity <= 0;
+                            const isLowStock = !isService && item.trackStock && item.quantity > 0 && item.quantity <= (item.alertThreshold || 3);
+                            const inCartQty = selectedItems.find(i => i.item.id === item.id)?.qty || 0;
+
+                            return (
+                                <button
+                                    key={item.id}
+                                    type="button"
+                                    disabled={isOutOfStock}
+                                    onClick={() => addToInvoice(item)}
+                                    className={`group relative flex flex-col justify-between p-3.5 rounded-2xl border text-right transition-all duration-200 select-none min-h-[120px] cursor-pointer ${
+                                        isOutOfStock 
+                                            ? 'opacity-55 cursor-not-allowed bg-rose-50/20 dark:bg-rose-950/10 border-rose-200 dark:border-rose-900/40' 
+                                            : inCartQty > 0
+                                            ? 'bg-primary-50/50 dark:bg-primary-950/25 border-primary-500 dark:border-primary-500 shadow-md ring-2 ring-primary-500/20 hover:shadow-lg active:scale-[0.98]'
+                                            : 'bg-white dark:bg-slate-800/95 border-slate-200/90 dark:border-slate-700/80 hover:border-primary-500/70 dark:hover:border-primary-500/70 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98]'
+                                    }`}
+                                >
+                                    {/* شارة عدد العناصر الموجودة بالفاتورة الحالية */}
+                                    {inCartQty > 0 && (
+                                        <span className="absolute -top-2 -left-2 z-20 flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full bg-primary-600 text-white font-black text-xs shadow-md border-2 border-white dark:border-slate-800">
+                                            {inCartQty}×
+                                        </span>
+                                    )}
+
+                                    {/* الصف العلوي: النوع والمخزون */}
+                                    <div className="w-full flex items-center justify-between gap-1 mb-2">
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold ${
+                                            isService 
+                                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60' 
+                                                : 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800/60'
+                                        }`}>
+                                            {isService ? <Scissors size={11} className="shrink-0" /> : <Package size={11} className="shrink-0" />}
+                                            <span>{isService ? t('service') : t('product')}</span>
+                                        </span>
+
+                                        {item.trackStock ? (
+                                            <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg ${
+                                                isOutOfStock 
+                                                    ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-300 dark:border-rose-900' 
+                                                    : isLowStock 
+                                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800' 
+                                                    : 'bg-slate-100 text-slate-600 dark:bg-slate-700/60 dark:text-slate-300'
+                                            }`}>
+                                                {isOutOfStock ? (
+                                                    <span>{language === 'ar' ? 'نفد' : 'Out'}</span>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-[10px] text-slate-400 font-normal">{language === 'ar' ? 'متاح:' : 'Qty:'}</span>
+                                                        <span className="font-mono">{item.quantity}</span>
+                                                    </>
+                                                )}
+                                            </span>
+                                        ) : (
+                                            <span className="text-[10px] text-purple-500/80 dark:text-purple-400/80 font-medium">
+                                                {isService ? (language === 'ar' ? 'خدمة فورية' : 'Service') : ''}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* اسم العنصر */}
+                                    <div className="w-full text-right mb-2">
+                                        <div className="font-bold text-slate-900 dark:text-slate-100 text-[13px] sm:text-sm leading-snug line-clamp-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                                            {language === 'ar' ? item.nameAr : (item.nameEn || item.nameAr)}
+                                        </div>
+                                    </div>
+
+                                    {/* الصف السفلي: السعر وزر الإضافة */}
+                                    <div className="w-full pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="font-mono text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400">
+                                                {formatNumber(item.price)}
+                                            </span>
+                                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                                {t('egp')}
+                                            </span>
+                                        </div>
+
+                                        <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-700/70 text-slate-500 dark:text-slate-300 group-hover:bg-primary-600 group-hover:text-white transition-all shadow-xs group-hover:scale-110">
+                                            <Plus size={13} strokeWidth={2.5} />
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })
+                    )}
                 </div>
              </Card>
              <Card>
