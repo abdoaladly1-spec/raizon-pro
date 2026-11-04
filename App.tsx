@@ -284,23 +284,25 @@ const MainContent = () => {
                             )}
                             <button
                                 onClick={() => { handleNavigate(item.id as any); playBeep(); }}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-150 group relative
+                                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 group relative cursor-pointer
                                     ${sidebarCollapsed ? 'justify-center' : '' }
                                     ${isActive 
-                                        ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-bold' 
-                                        : 'text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white'
+                                        ? 'bg-gradient-to-r from-purple-500/15 to-indigo-500/10 dark:from-purple-500/25 dark:to-indigo-500/15 text-purple-700 dark:text-purple-300 font-black shadow-xs border border-purple-500/30' 
+                                        : 'text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
                                     }`}
                             >
                                 {(() => {
                                     const activeItem = navItems.find((n:any) => n.id === item.id);
                                     return activeItem ? (
                                         <>
-                                            <activeItem.icon size={24} className={isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'} />
-                                            {!sidebarCollapsed && <span className="hidden lg:block">{activeItem.label}</span>}
+                                            <activeItem.icon size={22} className={`transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
+                                            {!sidebarCollapsed && <span className="hidden lg:block text-sm">{activeItem.label}</span>}
                                         </>
                                     ) : null;
                                 })()}
-                                {isActive && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-600 rounded-l-full"></div>}
+                                {isActive && (
+                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-7 bg-gradient-to-b from-purple-500 to-indigo-500 rounded-l-full shadow-[0_0_10px_rgba(168,85,247,0.6)]"></div>
+                                )}
                             </button>
                         </div>
                     );

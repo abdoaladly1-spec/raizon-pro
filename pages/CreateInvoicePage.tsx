@@ -1237,18 +1237,25 @@ export const CreateInvoice = ({ onClose }: any) => {
                         })
                     )}
                 </div>
-                <div className="border-t pt-4">
-                    <div className="flex justify-between text-xl font-bold mb-4">
-                        <span>{t('total')}</span>
-                        <span className="text-primary-600">{total.toLocaleString('en-US')} {t('egp')}</span>
+                <div className="border-t border-slate-200 dark:border-slate-700/80 pt-4 space-y-3.5">
+                    <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-primary-500/10 border border-emerald-400/30 dark:border-emerald-600/30 flex items-center justify-between">
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{t('total')}</span>
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400 tracking-tight">
+                                {total.toLocaleString('en-US')}
+                            </span>
+                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                                {t('egp')}
+                            </span>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                          <div className="relative">
                              <Button 
                                  type="button" 
                                  onClick={handleHold} 
                                  variant="secondary" 
-                                 className="px-3 py-2 cursor-pointer relative" 
+                                 className="px-3.5 py-3 cursor-pointer relative rounded-xl border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-amber-600 dark:text-amber-400 active:scale-95 transition-all" 
                                  title={language === 'ar' ? 'تعليق الفاتورة أو فتح المعلقة (⏸️)' : 'Hold Invoice or View Held (⏸️)'}
                              >
                                  <PauseCircle size={20}/>
@@ -1259,8 +1266,20 @@ export const CreateInvoice = ({ onClose }: any) => {
                                  )}
                              </Button>
                          </div>
-                         <Button onClick={handleSave} className="flex-1 justify-center">{t('save')}</Button>
-                         <Button onClick={onClose} variant="danger" className="px-3"><Trash2 size={20}/></Button>
+                         <Button 
+                             onClick={handleSave} 
+                             className="flex-1 justify-center py-3 font-black text-sm rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md hover:shadow-emerald-500/25 active:scale-95 transition-all"
+                         >
+                             {t('save')}
+                         </Button>
+                         <Button 
+                             onClick={onClose} 
+                             variant="danger" 
+                             className="px-3.5 py-3 rounded-xl active:scale-95 transition-all"
+                             title={t('clear_all')}
+                         >
+                             <Trash2 size={20}/>
+                         </Button>
                     </div>
                 </div>
             </Card>
