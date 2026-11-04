@@ -8,6 +8,10 @@ import {
 } from '../lib/serverSync';
 import { validateReturn, reversedPointsFor, commissionReversalPlan } from '../lib/returns';
 import { round2, PAYMENT_KINDS } from '../lib/payments';
+import {
+  pushInvoiceToSupabase, pushCustomerToSupabase, pushBranchToSupabase,
+  subscribeSupabaseRealtime, pullFromSupabase
+} from '../lib/supabaseSync';
 import { toIsoDate } from '../lib/dates';
 import { buildPrintIdentity } from '../lib/printDesign';
 import { idbGet, idbSet, idbRemove } from '../lib/idb';
@@ -2084,6 +2088,72 @@ export const AppProvider = ({ children }: any) => {
       };
   }, []);
 
+  // اشتراك لحظي في سحابة Supabase لتلقي أي فواتير أو تعديلات من الفروع الأخرى
+  useEffect(() => {
+    const unsub = subscribeSupabaseRealtime({
+      onNewInvoice: (inv) => {
+        if (!inv || !inv.invoice_number) return;
+        setState(prev => {
+          if (prev.invoices.some(i => (i as any).client_key === inv.client_key || String(i.id) === String(inv.invoice_number))) {
+            return prev;
+          }
+          const mappedInvoice: Invoice = {
+            id: Number(inv.invoice_number) || prev.invoices.length + 1,
+            uid: inv.client_key,
+            customerId: inv.customer_id || '',
+            customerName: inv.customer_name || '',
+            branchName: inv.branch_name || '',
+            total: Number(inv.total || 0),
+            subtotal: Number(inv.subtotal || 0),
+            discountPercent: Number(inv.discount_percent || 0),
+            taxPercent: Number(inv.tax_percent || 0),
+            paymentMethod: inv.payment_method || 'cash',
+            status: inv.status || 'paid',
+            notes: inv.notes || '',
+            items: inv.items || [],
+            date: inv.created_at ? inv.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+            timestamp: inv.created_at ? new Date(inv.created_at).getTime() : Date.now(),
+          } as any;
+          return {
+            ...prev,
+            invoices: [mappedInvoice, ...prev.invoices],
+          };
+        });
+        addToast(`⚡ مزامنة فروع لحظية: فاتورة جديدة في ${inv.branch_name || 'فرع آخر'} #${inv.invoice_number} - ${inv.total} ج.م`, 'info');
+      },
+      onCustomerChange: (cust) => {
+        if (!cust || !cust.id) return;
+        setState(prev => ({
+          ...prev,
+          customers: prev.customers.map(c => String(c.id) === String(cust.id) 
+            ? { ...c, balance: Number(cust.balance ?? c.balance), name: cust.name || c.name, phone: cust.phone || c.phone }
+            : c
+          )
+        }));
+      },
+      onBranchChange: (branch) => {
+        if (!branch || !branch.id) return;
+        setState(prev => {
+          if (!prev.locations.some(l => String(l.id) === String(branch.id))) {
+            return {
+              ...prev,
+              locations: [...prev.locations, { id: String(branch.id), name: branch.name, address: branch.address || '', phone: branch.phone || '', active: branch.active !== false }]
+            };
+          }
+          return {
+            ...prev,
+            locations: prev.locations.map(l => String(l.id) === String(branch.id) 
+              ? { ...l, name: branch.name, address: branch.address || '', phone: branch.phone || '', active: branch.active !== false } 
+              : l
+            )
+          };
+        });
+      }
+    }, state.settings.supabaseUrl, state.settings.supabaseKey);
+
+    return () => unsub();
+  }, [state.settings.supabaseUrl, state.settings.supabaseKey]);
+
   // مزامنة دورية مع السيرفر: كل 20 ثانية + عند العودة للاتصال أو إظهار النافذة
   const serverConfigRef = useRef({ url: '', apiKey: '' });
   useEffect(() => {
@@ -2515,10 +2585,12 @@ export const AppProvider = ({ children }: any) => {
 
   const addLocation = (location: Location) => {
     setState(prev => ({ ...prev, locations: [...prev.locations, location] }));
+    void pushBranchToSupabase(location, state.settings.supabaseUrl, state.settings.supabaseKey);
   };
 
   const updateLocation = (location: Location) => {
     setState(prev => ({ ...prev, locations: prev.locations.map(l => l.id === location.id ? location : l) }));
+    void pushBranchToSupabase(location, state.settings.supabaseUrl, state.settings.supabaseKey);
   };
 
   const deleteLocation = (id: string) => {
@@ -2697,6 +2769,8 @@ export const AppProvider = ({ children }: any) => {
       const customer = state.customers.find(c => c.id === invoiceData.customerId);
       enqueueInvoice(buildInvoicePayload(newInvoice, customer, state.settings));
       void flushQueue({ url: targetServerUrl, apiKey: state.settings.serverApiKey || '' });
+      // مزامنة فورية مع Supabase السحابي لحظياً
+      void pushInvoiceToSupabase(newInvoice, state.settings.supabaseUrl, state.settings.supabaseKey);
     } catch (e) {
       console.error('sync enqueue failed', e);
     }
@@ -3005,6 +3079,7 @@ export const AppProvider = ({ children }: any) => {
     }));
     addAuditLog('Customer', `Added customer: ${customerDdtd.name}`);
     pushCustomer(serverConfigRef.current, buildCustomerPayload(newCustomer));
+    void pushCustomerToSupabase(newCustomer, state.settings.supabaseUrl, state.settings.supabaseKey);
     return newId;
   };
 
@@ -3015,6 +3090,7 @@ export const AppProvider = ({ children }: any) => {
     }));
     addAuditLog('Customer', `Updated customer: ${customer.name}`);
     pushCustomer(serverConfigRef.current, buildCustomerPayload(customer));
+    void pushCustomerToSupabase(customer, state.settings.supabaseUrl, state.settings.supabaseKey);
   };
 
   const deleteCustomer = (id: number) => {

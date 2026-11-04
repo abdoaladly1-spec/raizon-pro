@@ -449,6 +449,9 @@ export interface AppState {
     offlineMode: boolean;
     serverUrl?: string;
     serverApiKey?: string;
+    supabaseUrl?: string;
+    supabaseKey?: string;
+    enableSupabaseSync?: boolean;
     /** الرصيد النقدي في الدرج عند بداية اليوم (أساس حساب الخزنة المتوقعة) */
     cashDrawerOpening?: number;
     manualOpeningDate?: string;

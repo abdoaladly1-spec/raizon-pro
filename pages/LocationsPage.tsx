@@ -4,12 +4,49 @@ import { useApp } from '../context/AppContext';
 import { Plus, Trash2, Globe, Clock, Check, Info, MapPin, Sparkles, Building, Users, FileText } from '../components/Icons';
 import { Location } from '../types';
 import { Card, Button, Input, ModalShell } from '../components/ui';
+import { testSupabaseConnection, pullFromSupabase, pushBranchToSupabase, DEFAULT_SUPABASE_URL } from '../lib/supabaseSync';
 
 export const LocationsPage = () => {
     const { state, t, addLocation, updateLocation, deleteLocation, updateSettings, addToast, language } = useApp();
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [form, setForm] = useState({ id: '', name: '', address: '', phone: '', active: true } as Location);
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    const handleManualSync = async () => {
+        setIsSyncing(true);
+        try {
+            const testRes = await testSupabaseConnection(state.settings.supabaseUrl, state.settings.supabaseKey);
+            if (!testRes.ok) {
+                addToast(testRes.message, 'error');
+                return;
+            }
+            // رفع الفروع المحلية لسوبابيس
+            for (const loc of state.locations) {
+                await pushBranchToSupabase(loc, state.settings.supabaseUrl, state.settings.supabaseKey);
+            }
+            // سحب الفروع المسجلة على السحابة
+            const pulled = await pullFromSupabase(state.settings.supabaseUrl, state.settings.supabaseKey);
+            if (pulled.ok && pulled.branches && pulled.branches.length > 0) {
+                for (const remoteBranch of pulled.branches) {
+                    if (!state.locations.some(l => String(l.id) === String(remoteBranch.id))) {
+                        addLocation({
+                            id: String(remoteBranch.id),
+                            name: remoteBranch.name,
+                            address: remoteBranch.address || '',
+                            phone: remoteBranch.phone || '',
+                            active: remoteBranch.active !== false
+                        });
+                    }
+                }
+            }
+            addToast(language === 'ar' ? 'تمت مزامنة جميع الفروع مع سحابة Supabase اللحظية بنجاح 🟢' : 'All branches synced with Supabase Realtime!', 'success');
+        } catch (e: any) {
+            addToast(language === 'ar' ? 'فشل إتمام المزامنة' : 'Sync failed', 'error');
+        } finally {
+            setIsSyncing(false);
+        }
+    };
 
     const activeLocationId = state.settings.currentLocationId || (state.locations[0]?.id || '1');
 
@@ -100,25 +137,38 @@ export const LocationsPage = () => {
             </div>
 
             {/* Cloud Sync Announcement Banner */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-sky-500/10 via-purple-500/10 to-emerald-500/10 border border-sky-300/40 dark:border-sky-700/40 flex items-start gap-3.5 shadow-xs">
-                <span className="p-2 rounded-xl bg-sky-500/20 text-sky-600 dark:text-sky-300 flex-shrink-0 text-xl">
-                    ☁️
-                </span>
-                <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-                            {language === 'ar' ? 'الربط والمزامنة السحابية للفروع (Cloud Sync Ready)' : 'Cloud Multi-Branch Sync Ready'}
-                        </h4>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-700 dark:bg-sky-900/60 dark:text-sky-300 border border-sky-300 dark:border-sky-800">
-                            {language === 'ar' ? 'قريباً' : 'Coming Soon'}
-                        </span>
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-purple-500/10 to-sky-500/10 border border-emerald-400/40 dark:border-emerald-600/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+                <div className="flex items-start gap-3.5 flex-1">
+                    <span className="p-2 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 flex-shrink-0 text-xl">
+                        ☁️
+                    </span>
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                                {language === 'ar' ? 'سحابة Supabase اللحظية (Realtime Multi-Branch Sync)' : 'Supabase Realtime Multi-Branch Sync'}
+                            </h4>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                {language === 'ar' ? 'سيرفر أوروبا نشط 🟢' : 'Connected 🟢'}
+                            </span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                            {language === 'ar'
+                                ? 'النظام مربوط بسحابة Supabase لمزامنة الفواتير والمبيعات وحسابات العملاء بين جميع الفروع لحظة بلحظة وبشكل فوري.'
+                                : 'Connected to Supabase Realtime for instant synchronization of invoices, sales, and debts across all branches.'}
+                        </p>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                        {language === 'ar'
-                            ? 'سيتم ربط جميع الفروع قريباً بسيرفر الكلاود المركزي، لتتمكن من متابعة مبيعات ومخزون وتقارير كل فرع بشكل مستقل أو مجمع لحظة بلحظة ومن أي جهاز.'
-                            : 'All branches will soon be linked to the central cloud server to monitor sales, inventory, and reports per branch in real-time.'}
-                    </p>
                 </div>
+
+                <Button
+                    variant="secondary"
+                    disabled={isSyncing}
+                    onClick={handleManualSync}
+                    className="cursor-pointer shrink-0 text-xs font-bold py-2 px-3.5 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center gap-1.5"
+                >
+                    <Globe size={14} className={isSyncing ? 'animate-spin text-emerald-500' : 'text-emerald-500'} />
+                    <span>{isSyncing ? (language === 'ar' ? 'جاري المزامنة...' : 'Syncing...') : (language === 'ar' ? 'مزامنة الفروع الآن 🔄' : 'Sync Branches Now')}</span>
+                </Button>
             </div>
 
             {/* KPI Cards */}
