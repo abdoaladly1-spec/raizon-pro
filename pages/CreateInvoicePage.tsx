@@ -223,6 +223,7 @@ export const CreateInvoice = ({ onClose }: any) => {
   const [partCash, setPartCash] = useState('');
   const [partCard, setPartCard] = useState('');
   const [partWallet, setPartWallet] = useState('');
+  const [partInstapay, setPartInstapay] = useState('');
   const [cashReceived, setCashReceived] = useState('');
 
   // Effects
@@ -299,6 +300,49 @@ export const CreateInvoice = ({ onClose }: any) => {
   const draftParts: PaymentPart[] = partsRaw.filter(p => p.amount > 0);
   const draftCashPart = round2(draftParts.filter(p => p.method === 'cash').reduce((a, p) => a + p.amount, 0));
   const draftReceived = draftCashPart > 0 ? num(cashReceived) : 0;
+  
+  // حساب الأرصدة الحية للنقدية والمحفظة وإنستا باي اليوم
+  const todayDateStr = localIsoToday();
+  const todayInvoices = useMemo(() => {
+    return state.invoices.filter(i => i.date === todayDateStr && i.status !== 'void');
+  }, [state.invoices, todayDateStr]);
+
+  const { todayCashBalance, todayWalletBalance, todayInstapayBalance } = useMemo(() => {
+    let cash = state.settings.cashDrawerOpening || 0;
+    let wallet = 0;
+    let instapay = 0;
+
+    todayInvoices.forEach(inv => {
+      if (inv.paymentParts && inv.paymentParts.length > 0) {
+        inv.paymentParts.forEach(p => {
+          if (p.method === 'cash') cash += p.amount;
+          else if (p.method === 'wallet') wallet += p.amount;
+          else if (p.method === 'instapay') instapay += p.amount;
+        });
+      } else {
+        if (inv.paymentMethod === 'cash') cash += (inv.cashPaid !== undefined ? inv.cashPaid : inv.total);
+        else if (inv.paymentMethod === 'wallet') wallet += inv.total;
+        else if (inv.paymentMethod === 'instapay') instapay += inv.total;
+      }
+    });
+
+    (state.customerPayments || []).filter(cp => cp.date === todayDateStr).forEach(cp => {
+      if (cp.paymentMethod === 'cash') cash += cp.amount;
+      else if (cp.paymentMethod === 'wallet') wallet += cp.amount;
+      else if (cp.paymentMethod === 'instapay') instapay += cp.amount;
+    });
+
+    state.expenses.filter(e => e.date === todayDateStr && (e.method === 'cash' || !e.method)).forEach(e => {
+      cash -= e.amount;
+    });
+
+    return {
+      todayCashBalance: Math.max(0, cash),
+      todayWalletBalance: wallet,
+      todayInstapayBalance: instapay
+    };
+  }, [todayInvoices, state.customerPayments, state.expenses, state.settings.cashDrawerOpening, todayDateStr]);
+
   const paymentCheck = validatePayment(total, draftParts, draftReceived);
   const paymentRemaining = paymentCheck.remaining;
   const paymentChange = paymentCheck.info.change;

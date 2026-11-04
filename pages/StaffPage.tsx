@@ -2,7 +2,7 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw } from '../components/Icons';
-import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from '../types';
+import { Staff, Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from '../types';
 import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, useSound, useLiveTick } from '../components/ui';
 import { FilterModal } from '../components/FilterModal';
 import { CreateInvoice } from './CreateInvoicePage';
@@ -38,7 +38,20 @@ export const StaffPage = () => {
     // List View State
     const [isEditing, setIsEditing] = useState(false);
     const [showModal, setShowModal] = useState(false);
-    const [staffForm, setStaffForm] = useState({ id: '', name: '', phone: '', role: 'Cashier' as string, services: [] as string[], locationIds: [] as string[], active: true });
+    const initialStaffForm = {
+        id: '',
+        name: '',
+        phone: '',
+        role: 'Barber' as string,
+        services: [] as string[],
+        locationIds: [] as string[],
+        active: true,
+        commissionType: 'percent' as 'percent' | 'fixed',
+        commissionValue: '' as string | number,
+        nationalId: '',
+        address: ''
+    };
+    const [staffForm, setStaffForm] = useState(initialStaffForm);
 
     // Profile View State - Payment
     const [paymentAmount, setPaymentAmount] = useState('');
@@ -60,14 +73,28 @@ export const StaffPage = () => {
 
     const handleSubmit = () => {
         if (!staffForm.name || !staffForm.phone) return;
+        const valNum = staffForm.commissionValue !== '' ? (parseFloat(String(staffForm.commissionValue)) || 0) : 0;
+        const payload: Staff = {
+            id: isEditing ? staffForm.id : crypto.randomUUID(),
+            name: staffForm.name,
+            phone: staffForm.phone,
+            role: staffForm.role,
+            services: staffForm.services,
+            locationIds: staffForm.locationIds,
+            active: staffForm.active,
+            commissionType: staffForm.commissionType,
+            commissionValue: valNum,
+            nationalId: staffForm.nationalId,
+            address: staffForm.address
+        };
         if (isEditing) {
-            updateStaff(staffForm);
+            updateStaff(payload);
         } else {
-            addStaff({ ...staffForm, id: crypto.randomUUID() });
+            addStaff(payload);
         }
         setShowModal(false);
         setIsEditing(false);
-        setStaffForm({ id: '', name: '', phone: '', role: 'Cashier', services: [], locationIds: [], active: true });
+        setStaffForm(initialStaffForm);
     };
 
     const handleEdit = (staff: any) => {
@@ -612,7 +639,7 @@ export const StaffPage = () => {
                     <p className="text-slate-500 dark:text-slate-400 mt-1">{t('active_staff')}: {activeStaff} / {totalStaff}</p>
                 </div>
                 <button 
-                    onClick={() => { setIsEditing(false); setStaffForm({ id: '', name: '', phone: '', role: 'Barber', services: [], locationIds: [], active: true }); setShowModal(true); }}
+                    onClick={() => { setIsEditing(false); setStaffForm(initialStaffForm); setShowModal(true); }}
                     className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl transition-all shadow-lg shadow-purple-500/30"
                 >
                     <Plus size={20} />
@@ -660,6 +687,11 @@ export const StaffPage = () => {
                                 <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 group-hover:text-purple-600 transition-colors">{s.name}</h3>
                                 <p className="text-sm text-slate-500">{t(s.role.toLowerCase()) || s.role}</p>
                                 <p className="text-xs text-slate-400 mt-1">{s.phone}</p>
+                                <div className="mt-2 flex flex-wrap gap-1.5 items-center">
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                        💰 {s.commissionType === 'fixed' ? `${s.commissionValue || 0} ج.م / عميل` : `${s.commissionValue || 0}% على الخدمات`}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 

@@ -115,7 +115,7 @@ export interface CustomerPayment {
   amount: number;
   date: string;
   timestamp: number;
-  paymentMethod: 'cash' | 'card' | 'wallet';
+  paymentMethod: 'cash' | 'card' | 'wallet' | 'instapay';
   notes?: string;
   recordedBy?: string;
   receiptNumber?: string;
@@ -133,7 +133,7 @@ export interface InvoiceItem {
 
 /** جزء من إجمالي الفاتورة مدفوع بطريقة معيّنة (الدفع المختلط) */
 export interface PaymentPart {
-  method: 'cash' | 'card' | 'wallet';
+  method: 'cash' | 'card' | 'wallet' | 'instapay';
   amount: number;
 }
 
@@ -233,7 +233,7 @@ export interface Invoice {
    * طريقة/طرق الدفع. القيم القديمة ('visa','split','loyalty') محفوظة للتوافق،
    * و'mixed' تعني دفعاً مختلراً ويجب وجود paymentParts.
    */
-  paymentMethod: 'cash' | 'card' | 'split' | 'loyalty' | 'wallet' | 'mixed' | 'visa' | 'credit';
+  paymentMethod: 'cash' | 'card' | 'split' | 'loyalty' | 'wallet' | 'mixed' | 'visa' | 'credit' | 'instapay';
   /** تقسيم الفاتورة على الطرق (اختياري — الفواتير القديمة بلا تقسيم) */
   paymentParts?: PaymentPart[];
   /** الجزء المخصص من الكاش لسداد الفاتورة (لا يشمل الباقي للعميل) */
@@ -355,6 +355,11 @@ export interface Staff {
   role: string;
   active: boolean;
   locationIds: string[];
+  services?: string[];
+  commissionType?: 'percent' | 'fixed';
+  commissionValue?: number;
+  nationalId?: string;
+  address?: string;
 }
 
 export interface Expense {

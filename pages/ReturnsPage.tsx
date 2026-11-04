@@ -7,7 +7,7 @@ import { remainingRefundable, validateReturn, paidForMethod, refundedForMethod, 
 import { round2 } from '../lib/payments';
 import { escapeHtml } from '../lib/escapeHtml';
 
-const METHODS: PaymentPart['method'][] = ['cash', 'card', 'wallet'];
+const METHODS: PaymentPart['method'][] = ['cash', 'card', 'wallet', 'instapay'];
 
 const statusTone = (status: ReturnRecord['status']) =>
     status === 'approved'
@@ -35,7 +35,7 @@ export const ReturnsPage = () => {
     const [query, setQuery] = useState('');
     const [selectedUid, setSelectedUid] = useState('');
     const [quantities, setQuantities] = useState<Record<string, number>>({});
-    const [parts, setParts] = useState<Record<PaymentPart['method'], number>>({ cash: 0, card: 0, wallet: 0 });
+    const [parts, setParts] = useState<Record<PaymentPart['method'], number>>({ cash: 0, card: 0, wallet: 0, instapay: 0 });
     const [confirmed, setConfirmed] = useState(false);
     const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
     const [reason, setReason] = useState('');
@@ -80,7 +80,7 @@ export const ReturnsPage = () => {
     useEffect(() => {
         if (!invoice) return;
         const refund = refundPreview;
-        const next: Record<PaymentPart['method'], number> = { cash: 0, card: 0, wallet: 0 };
+        const next: Record<PaymentPart['method'], number> = { cash: 0, card: 0, wallet: 0, instapay: 0 };
         let left = refund;
         for (const m of METHODS) {
             const allowed = Math.max(0, round2(paidForMethod(invoice, m) - refundedForMethod(invoice, state.returns, m)));
@@ -166,7 +166,7 @@ export const ReturnsPage = () => {
         setQuery('');
         setSelectedUid('');
         setQuantities({});
-        setParts({ cash: 0, card: 0, wallet: 0 });
+        setParts({ cash: 0, card: 0, wallet: 0, instapay: 0 });
         setConfirmed(false);
         setReason('');
     };

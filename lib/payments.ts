@@ -2,7 +2,7 @@
 // "الكاش المخصص لسداد الفاتورة" عن "النقد المستلم" (الباقي للموظف/العميل).
 // كل الحسابات تُقرَّب لخانتين (جنيه) لتفادي أخطاء الفروق العشرية.
 
-export type PaymentKind = 'cash' | 'card' | 'wallet';
+export type PaymentKind = 'cash' | 'card' | 'wallet' | 'instapay';
 export type PaymentMethodLabel = PaymentKind | 'mixed';
 
 export interface PaymentPart {
@@ -27,7 +27,7 @@ export interface PaymentInfo {
     nonCash: number;
 }
 
-export const PAYMENT_KINDS: PaymentKind[] = ['cash', 'card', 'wallet'];
+export const PAYMENT_KINDS: PaymentKind[] = ['cash', 'card', 'wallet', 'instapay'];
 
 /** تقريب لخانتين مع تجنب أخطاء 0.1 + 0.2 = 0.30000000000000004 */
 export const round2 = (n: number): number => {
@@ -45,6 +45,7 @@ export const sumParts = (parts: PaymentPart[]): number =>
 /** يحوّل القيمة القديمة (طريقة واحدة) إلى طريقة مفهومة */
 export const legacyKind = (method?: string): PaymentKind => {
     const m = String(method || 'cash').toLowerCase();
+    if (m === 'instapay') return 'instapay';
     if (m === 'wallet' || m === 'card' || m === 'visa' || m === 'split' || m === 'loyalty') return m === 'wallet' ? 'wallet' : 'card';
     return 'cash';
 };

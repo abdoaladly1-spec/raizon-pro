@@ -25,6 +25,7 @@ const Inventory = lazy(() => import('./pages/InventoryPage').then(m => ({ defaul
 const AuditLogs = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogs })));
 const AdminUsers = lazy(() => import('./pages/AdminUsersPage').then(m => ({ default: m.AdminUsers })));
 const Clients = lazy(() => import('./pages/ClientsPage').then(m => ({ default: m.Clients })));
+const DebtsPage = lazy(() => import('./pages/DebtsPage').then(m => ({ default: m.DebtsPage })));
 const ReservationsPage = lazy(() => import('./pages/ReservationsPage').then(m => ({ default: m.ReservationsPage })));
 const StatsPage = lazy(() => import('./pages/StatsPage').then(m => ({ default: m.StatsPage })));
 const StaffPage = lazy(() => import('./pages/StaffPage').then(m => ({ default: m.StaffPage })));
@@ -127,7 +128,7 @@ const MainContent = () => {
     setPendingNavigation(null);
     if (next) setActiveTab(next as any);
   };
-  const [activeTab, setActiveTab] = useState('dashboard' as 'dashboard' | 'create_invoice' | 'invoices' | 'returns' | 'inventory' | 'categories' | 'locations' | 'suppliers' | 'purchase_orders' | 'inventory_history' | 'clients' | 'reservations' | 'stats' | 'settings' | 'expenses' | 'staff' | 'closing' | 'notes' | 'users' | 'audit_logs');
+  const [activeTab, setActiveTab] = useState('dashboard' as 'dashboard' | 'create_invoice' | 'invoices' | 'returns' | 'inventory' | 'categories' | 'locations' | 'suppliers' | 'purchase_orders' | 'inventory_history' | 'clients' | 'debts' | 'reservations' | 'stats' | 'settings' | 'expenses' | 'staff' | 'closing' | 'notes' | 'users' | 'audit_logs');
   const [showStats, setShowStats] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -197,6 +198,7 @@ const MainContent = () => {
       { id: 'expenses', icon: TrendingUp, label: t('expenses'), group: t('nav_group_daily') },
       { id: 'closing', icon: Wallet, label: t('closing'), group: t('nav_group_daily') },
       { id: 'clients', icon: Users, label: t('clients'), group: t('nav_group_daily') },
+      { id: 'debts', icon: CreditCard, label: t('debts') || 'الديون والآجل', group: t('nav_group_daily') },
       { id: 'reservations', icon: Calendar, label: t('reservations'), group: t('nav_group_daily') },
       { id: 'inventory', icon: Package, label: t('inventory'), group: t('nav_group_inventory') },
       { id: 'staff', icon: Users, label: t('staff_management'), group: t('nav_group_inventory') },
@@ -223,6 +225,7 @@ const MainContent = () => {
           case 'expenses': return <ExpensesPage />;
           case 'staff': return <StaffPage />;
           case 'clients': return <Clients />;
+          case 'debts': return <DebtsPage />;
           case 'reservations': return <ReservationsPage />;
           case 'stats': return <StatsPage />;
           case 'settings': return <SettingsPage />;
