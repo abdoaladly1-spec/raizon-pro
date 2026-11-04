@@ -60,10 +60,10 @@ const ScreenSaver = ({ onActive }: { onActive: () => void }) => {
         >
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-black to-purple-900/20 animate-pulse"></div>
             
-            {/* Floating Elements Animation */}
+            {/* ScreenSaver Brand Center */}
             <div className="relative z-10 text-center space-y-8">
-                <div className="w-32 h-32 mx-auto bg-white/5 rounded-full flex items-center justify-center backdrop-blur-md border border-white/10 shadow-[0_0_50px_rgba(255,255,255,0.1)] animate-bounce-slow">
-                    <Scissors size={64} className="text-amber-400" />
+                <div className="w-24 h-24 mx-auto bg-slate-900/80 rounded-3xl flex items-center justify-center backdrop-blur-md border border-slate-800 shadow-xl p-3">
+                    <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-full h-full object-contain" />
                 </div>
                 
                 <div>
@@ -249,7 +249,7 @@ const MainContent = () => {
   };
 
   return (
-    <div className={`flex h-screen bg-neon-gradient text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 ${language === 'ar' ? 'font-cairo' : ''}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className={`flex h-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 ${language === 'ar' ? 'font-cairo' : ''}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <ToastContainer />
         {/* Sidebar */}
         <aside className={`${sidebarCollapsed ? "w-16" : "w-20 lg:w-60"} bg-white dark:bg-slate-900 border-e border-slate-200 dark:border-slate-700/80 flex flex-col transition-all duration-300 z-20 flex-shrink-0`}>
@@ -510,7 +510,7 @@ const MainContent = () => {
                          <div className="text-right hidden md:block">
                              <div className="flex items-center justify-end gap-2">
                                 <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{currentUser?.name}</p>
-                                <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" title={t('online')}></span>
+                                <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse " title={t('online')}></span>
                              </div>
                              <p className="text-xs text-slate-500 capitalize">{t(currentUser?.role || '')}</p>
                          </div>
@@ -647,8 +647,8 @@ const ActivationScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => 
     return (
         <div className="fixed inset-0 bg-slate-900 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-2xl max-w-md w-full text-center space-y-6 border border-slate-700">
-                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-amber-500/30">
-                    <LogOut size={32} />
+                <div className="mx-auto w-16 h-16 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 rounded-2xl flex items-center justify-center text-amber-600 dark:text-amber-400 shadow-sm">
+                    <Key size={28} />
                 </div>
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{t('system_activation')}</h2>
@@ -1448,33 +1448,30 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
     }, []);
   
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 relative overflow-hidden transition-colors duration-500 p-4">
-        {/* Background Effects */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-100/40 via-slate-50 to-slate-50 dark:from-purple-900/40 dark:via-slate-900 dark:to-slate-900 z-0"></div>
-        <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-purple-300/20 dark:bg-purple-600/20 rounded-full blur-[100px] animate-pulse"></div>
-        <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-blue-300/20 dark:bg-blue-600/10 rounded-full blur-[100px] animate-pulse delay-1000"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-950 relative overflow-hidden transition-colors duration-300 p-4 font-sans" dir="rtl">
+        {/* Clean Neutral Background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-200/20 to-slate-200/40 dark:via-slate-900/40 dark:to-slate-900/80 pointer-events-none"></div>
 
         {/* Theme Toggle */}
         <button 
             onClick={toggleTheme} 
-            className="absolute top-6 right-6 z-20 p-3 rounded-full bg-white/80 dark:bg-white/5 backdrop-blur-md border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-white/10 transition-all shadow-sm"
+            className="absolute top-6 left-6 z-20 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-xs cursor-pointer"
         >
-            {theme === 'dark' ? <Sun size={24} /> : <Moon size={24} />}
+            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </button>
 
-        {/* Glassmorphism Container */}
-        <div className="relative z-10 bg-white/80 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-8 rounded-3xl shadow-2xl w-full max-w-md animate-scale-in">
+        {/* Card Container */}
+        <div className="relative z-10 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 p-8 rounded-3xl shadow-xl w-full max-w-md animate-scale-in">
           
-          {/* Custom Header with Logo */}
-          <div className="text-center mb-10">
-            <div className="relative w-24 h-24 mx-auto mb-6 group">
-                <div className="absolute inset-0 bg-gradient-to-tr from-purple-400 to-fuchsia-600 rounded-2xl rotate-6 group-hover:rotate-12 transition-transform duration-500 opacity-80 blur-md"></div>
-                <div className="relative bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/10 rounded-2xl w-full h-full flex items-center justify-center shadow-xl overflow-hidden">
-                    <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-20 h-20 object-contain" />
-                </div>
+          {/* Header with Logo */}
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-2.5 flex items-center justify-center shadow-xs">
+                <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-3xl font-bold mb-2"><span className="text-amber-400 dark:text-amber-300">RaiZon</span> <span className="text-purple-500 dark:text-purple-400">Pro</span></h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm tracking-wide uppercase">{t('login_title')}</p>
+            <h1 className="text-2xl font-bold tracking-tight mb-1">
+                <span className="text-amber-500 dark:text-amber-400">RaiZon</span> <span className="text-purple-600 dark:text-purple-400">Pro</span>
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 text-xs font-medium tracking-wide">{t('login_title')}</p>
 
             
             {/* شارة توفر التحديث في حال التخطي */}
@@ -1707,8 +1704,8 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
           <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 w-full max-w-xs animate-scale-in">
               <div className="text-center mb-5">
-                <div className="mx-auto w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center text-white mb-3">
-                  <Keypad size={24} />
+                <div className="mx-auto w-12 h-12 bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 rounded-2xl flex items-center justify-center text-purple-600 dark:text-purple-400 mb-3 shadow-xs">
+                  <Keypad size={22} />
                 </div>
                 <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{t('quick_pin')}</h3>
               </div>

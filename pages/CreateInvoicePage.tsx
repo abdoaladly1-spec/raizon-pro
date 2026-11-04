@@ -633,7 +633,7 @@ export const CreateInvoice = ({ onClose }: any) => {
 
   if (showPreview && createdInvoice) {
       return (
-        <div className="animate-fade-in space-y-4 neon-bg">
+        <div className="animate-fade-in space-y-4 max-w-xl mx-auto py-4">
              <InvoiceReceipt invoice={createdInvoice} />
              <div className="no-print flex gap-4 justify-end">
                  <PrintActions invoice={createdInvoice} />

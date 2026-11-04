@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { ArrowLeft } from './Icons';
 
 export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
@@ -7,105 +8,91 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const { t, formatNumber } = useApp();
 
   useEffect(() => {
-    // Total duration 10 seconds
-    // 100 steps * 100ms = 10000ms = 10s
+    setStatusText(t('intro_loading') || 'تهيئة النظام والبيانات...');
     
-    setStatusText(t('intro_loading'));
-    
+    // Fast & smooth 2.2s boot sequence
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          setTimeout(onComplete, 500); // Small delay after 100%
+          setTimeout(onComplete, 200);
           return 100;
         }
-        return prev + 1;
+        return prev + 2;
       });
-    }, 100);
+    }, 40);
 
-    const updateCheckTimer = setTimeout(() => {
-      setStatusText(t('intro_checking'));
-    }, 3000);
+    const checkTimer = setTimeout(() => {
+      setStatusText(t('intro_checking') || 'فحص الاتصال والخدمات...');
+    }, 700);
 
     const readyTimer = setTimeout(() => {
-      setStatusText(t('intro_ready'));
-    }, 8000);
+      setStatusText(t('intro_ready') || 'النظام جاهز للتشغيل');
+    }, 1600);
 
     return () => {
       clearInterval(interval);
-      clearTimeout(updateCheckTimer);
+      clearTimeout(checkTimer);
       clearTimeout(readyTimer);
     };
   }, [t, onComplete]);
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-slate-900 text-white flex flex-col items-center justify-center z-[9999] overflow-hidden">
-      {/* Animated Background Shapes - Uses styles from index.css */}
+    <div className="fixed inset-0 w-screen h-screen bg-slate-950 text-white flex flex-col items-center justify-center z-[9999] overflow-hidden select-none font-sans" dir="rtl">
+      {/* Subtle deep ambient glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-         <div className="shape shape-1 opacity-20"></div>
-         <div className="shape shape-2 opacity-20"></div>
-         <div className="shape shape-3 opacity-20"></div>
-         {/* Ambient purple glow */}
-         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-purple-600/25 rounded-full blur-[120px] animate-pulse"></div>
-         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-fuchsia-500/20 rounded-full blur-[90px]"></div>
-         {/* Grid Overlay — نسيج SVG مضمّن بدل رابط خارجي (يعمل دون إنترنت) */}
-         <div
-            className="absolute inset-0 opacity-15"
-            style={{
-              backgroundImage:
-                "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>\")",
-            }}
-         ></div>
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[140px]" />
       </div>
 
-      {/* Glassmorphism Container */}
-      <div className="w-full max-w-lg p-10 text-center space-y-8 animate-fade-in-up relative z-10 bg-white/5 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-2xl">
-        {/* Logo with animated rings + halo */}
-        <div className="relative w-44 h-44 mx-auto">
-          {/* Outer glow halo */}
-          <div className="absolute inset-2 rounded-full bg-purple-500/25 blur-2xl animate-pulse"></div>
-          {/* Rotating rings */}
-          <div className="absolute inset-0 border-2 border-t-amber-400 border-r-transparent border-b-purple-400 border-l-transparent rounded-full animate-spin duration-[3s]"></div>
-          <div className="absolute inset-3 border-2 border-t-transparent border-r-fuchsia-400 border-b-transparent border-l-fuchsia-400 rounded-full animate-spin direction-reverse duration-[2s] opacity-70"></div>
-          {/* Logo image */}
+      {/* Skip Button for quick entry */}
+      <button
+        type="button"
+        onClick={onComplete}
+        className="absolute top-6 left-6 z-20 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs font-semibold transition-all cursor-pointer shadow-sm"
+      >
+        <span>تخطي والبدء الآن</span>
+        <ArrowLeft size={14} />
+      </button>
+
+      {/* Container */}
+      <div className="w-full max-w-md p-8 text-center space-y-6 animate-fade-in relative z-10 bg-slate-900/70 backdrop-blur-xl rounded-3xl border border-slate-800/80 shadow-2xl">
+        {/* Brand Logo */}
+        <div className="relative w-28 h-28 mx-auto flex items-center justify-center p-3 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg">
           <img
             src="/img/logo-transparent.png"
             alt="RaiZon Pro"
-            className="absolute inset-0 w-full h-full object-contain p-3 drop-shadow-[0_0_30px_rgba(168,85,247,0.7)] animate-fade-in"
+            className="w-full h-full object-contain animate-fade-in"
           />
         </div>
 
         <div>
-            <h1 className="text-5xl font-bold mb-3 tracking-wider drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">
-            <span className="text-amber-400">RaiZon</span> <span className="text-purple-400">Pro</span> <span className="text-2xl align-super opacity-80">v1</span>
-            </h1>
-            {/* نبذة مختصرة — سطر واحد */}
-            <p className="text-slate-300 text-base font-medium tracking-wide">{t('intro_tagline_1')}</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            <span className="text-amber-400">RaiZon</span> <span className="text-purple-400">Pro</span> <span className="text-xs align-super text-slate-500 font-mono">v1.0</span>
+          </h1>
+          <p className="text-slate-400 text-xs font-medium mt-1 tracking-wide">{t('intro_tagline_1') || 'منصة الإدارة ونقاط البيع السحابية'}</p>
         </div>
 
-        <div className="h-6">
-            <p className="text-lg text-slate-300 font-medium animate-pulse">
-            {statusText}...
-            </p>
+        <div className="h-5">
+          <p className="text-xs text-slate-400 font-medium">
+            {statusText}
+          </p>
         </div>
 
-        {/* Progress Bar */}
-        <div className="w-full bg-slate-800/50 rounded-full h-2.5 mb-2 overflow-hidden relative shadow-inner border border-white/5">
+        {/* Minimal High-Precision Progress Bar */}
+        <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden relative shadow-inner">
           <div
-            className="bg-gradient-to-r from-amber-400 via-purple-500 to-fuchsia-500 h-full rounded-full transition-all duration-100 ease-linear relative shadow-[0_0_15px_rgba(168,85,247,0.7)]"
+            className="bg-purple-500 h-full rounded-full transition-all duration-75 ease-out"
             style={{ width: `${progress}%` }}
-          >
-            <div className="absolute inset-0 bg-white/40 animate-pulse"></div>
-          </div>
+          />
         </div>
 
-        <div className="flex justify-between text-xs text-slate-500 font-mono uppercase tracking-widest">
-            <span>v1.0.0</span>
-            <span>{formatNumber(Math.round(progress))}%</span>
+        <div className="flex justify-between items-center text-[11px] text-slate-500 font-mono">
+          <span>Enterprise Core</span>
+          <span className="font-bold text-slate-300">{formatNumber(Math.round(progress))}%</span>
         </div>
 
-        <div className="absolute bottom-4 left-0 w-full text-center">
-             <p className="text-[10px] text-slate-600">{t('secure_protected')}</p>
+        <div className="pt-2 text-center border-t border-slate-800/60">
+          <p className="text-[10px] text-slate-500">{t('secure_protected') || 'نظام مؤمن ومرخص تجارياً'}</p>
         </div>
       </div>
     </div>

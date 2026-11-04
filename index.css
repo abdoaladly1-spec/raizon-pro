@@ -97,18 +97,7 @@ input[type="number"] {
   background: #0f172a; /* slate-900 */
 }
 
-/* Specific Glows for Variants */
-.glow-primary:hover {
-  box-shadow: 0 0 25px rgba(14, 165, 233, 0.6);
-}
-
-.glow-danger:hover {
-  box-shadow: 0 0 25px rgba(239, 68, 68, 0.6);
-}
-
-.glow-success:hover {
-  box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
-}
+/* Clean standard shadows */
 
 /* Glassmorphism Utilities */
 .glass {
@@ -179,16 +168,7 @@ input[type="number"] {
   background-size: 24px 24px;
 }
 
-/* Neon Utilities */
-.neon-text {
-  text-shadow: 0 0 5px rgba(14,165,233,0.5), 0 0 10px rgba(14,165,233,0.3);
-}
-.neon-border {
-  box-shadow: 0 0 5px rgba(14,165,233,0.5), inset 0 0 5px rgba(14,165,233,0.2);
-}
-.neon-shadow {
-  box-shadow: 0 0 15px rgba(14,165,233,0.3), 0 0 30px rgba(14,165,233,0.1);
-}
+
 
 /* Geometric Background */
 .geo-bg {
