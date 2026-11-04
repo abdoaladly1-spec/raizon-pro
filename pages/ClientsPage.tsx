@@ -498,6 +498,22 @@ ${state.settings.phone ? `📞 للتواصل: ${state.settings.phone}` : ''}`;
                                         </td>
                                         <td className="py-3 px-3 text-left" onClick={e => e.stopPropagation()}>
                                             <div className="inline-flex items-center gap-1.5">
+                                                {c.phone && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const clean = c.phone.replace(/[^\d]/g, '');
+                                                            const p = clean.startsWith('0') ? `2${clean}` : clean;
+                                                            const msg = encodeURIComponent(`مرحباً أستاذ ${c.name}، يسعدنا تواصلكم دائماً مع ${state.settings?.shopName || 'المتجر'}!`);
+                                                            window.open(`https://wa.me/${p}?text=${msg}`, '_blank');
+                                                        }}
+                                                        className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 dark:text-emerald-300 font-bold text-[11px] border border-emerald-300/40 transition-all cursor-pointer"
+                                                        title="مراسلة واتساب"
+                                                    >
+                                                        <span>💬 واتساب</span>
+                                                    </button>
+                                                )}
                                                 <button
                                                     type="button"
                                                     onClick={() => { setSelectedCustomer(c); setLedgerTab('ledger'); }}

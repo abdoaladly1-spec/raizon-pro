@@ -15,6 +15,8 @@ export const ExpensesPage = () => {
     const { state, addExpense, deleteExpense, t, addToast, currentUser } = useApp();
     const [showAddModal, setShowAddModal] = useState(false);
     useLiveTick();
+    const [searchFilter, setSearchFilter] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('');
     const [newExpense, setNewExpense] = useState({
         title: '',
         amount: 0,
@@ -101,45 +103,71 @@ export const ExpensesPage = () => {
                 </div>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl">
-                            <DollarSign size={24} />
+            {/* Stats Cards Elevated */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 border-t-4 border-t-rose-500">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('total_expenses')}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">إجمالي</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 rounded-2xl flex items-center justify-center shrink-0 shadow-xs">
+                            <DollarSign size={22} />
                         </div>
                         <div>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">{t('total_expenses')}</p>
-                            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{totalExpenses.toLocaleString('en-US')} {t('egp')}</h3>
+                            <h3 className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight">{totalExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
                         </div>
                     </div>
                 </div>
-                 <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-xl">
-                            <Calendar size={24} />
+
+                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 border-t-4 border-t-amber-500">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('sold_today')} ({t('expenses')})</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">اليوم</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60 rounded-2xl flex items-center justify-center shrink-0 shadow-xs">
+                            <Calendar size={22} />
                         </div>
                         <div>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">{t('sold_today')} ({t('expenses')})</p>
-                            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{todayExpenses.toLocaleString('en-US')} {t('egp')}</h3>
+                            <h3 className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight">{todayExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
                         </div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-xl">
-                            <Wallet size={24} />
+
+                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 border-t-4 border-t-emerald-500">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('cash_expenses_today')}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">من الدرج</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 rounded-2xl flex items-center justify-center shrink-0 shadow-xs">
+                            <Wallet size={22} />
                         </div>
                         <div>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">{t('cash_expenses_today')}</p>
-                            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{todayCashExpenses.toLocaleString('en-US')} {t('egp')}</h3>
+                            <h3 className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight">{todayCashExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Expenses List */}
-            <Card>
+            <Card className="space-y-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-slate-700/80">
+                    <div className="relative w-full sm:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="بحث في المصروفات..."
+                            value={searchFilter}
+                            onChange={(e) => setSearchFilter(e.target.value)}
+                            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:border-purple-500"
+                        />
+                    </div>
+                    <span className="text-xs font-bold text-slate-400">
+                        {state.expenses.filter(e => !searchFilter || e.title.toLowerCase().includes(searchFilter.toLowerCase()) || e.category.toLowerCase().includes(searchFilter.toLowerCase())).length} مصروف مسجل
+                    </span>
+                </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left rtl:text-right text-slate-500 dark:text-slate-300">
                         <thead className="text-xs text-slate-700 dark:text-slate-200 uppercase bg-slate-50 dark:bg-slate-700/50">
