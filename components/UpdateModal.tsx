@@ -88,6 +88,16 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
       return;
     }
 
+    try {
+      localStorage.setItem('raizon_just_updated', 'true');
+      localStorage.setItem('raizon_app_version', updateInfo.latestVersion);
+      localStorage.setItem('raizon_whats_new', JSON.stringify({
+        version: updateInfo.latestVersion,
+        name: updateInfo.releaseName || `الإصدار ${updateInfo.latestVersion}`,
+        notes: updateInfo.releaseNotes || ''
+      }));
+    } catch (e) {}
+
     setError(null);
     setDownloading(true);
     setStatusMessage('بدء الاتصال وتحميل التحديث...');

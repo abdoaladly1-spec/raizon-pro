@@ -17,6 +17,7 @@ import { CommandPalette } from './components/CommandPalette';
 import { PatcherModal } from './components/PatcherModal';
 import { UnsavedChangesModal } from './components/UnsavedChangesModal';
 import { UpdateModal, type UpdateInfo } from './components/UpdateModal';
+import { WhatsNewModal } from './components/WhatsNewModal';
 // الصفحات تُحمَّل عند الطلب (code-splitting) لتقليل حجم الحزمة الأولية
 const Dashboard = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.Dashboard })));
 const CreateInvoice = lazy(() => import('./pages/CreateInvoicePage').then(m => ({ default: m.CreateInvoice })));
@@ -938,6 +939,44 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
     const [pendingUpdate, setPendingUpdate] = useState<UpdateInfo | null>(null);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
 
+    // رقم الإصدار الحالي النشط
+    const [appVersion, setAppVersion] = useState<string>(() => {
+        return localStorage.getItem('raizon_app_version') || 'v1.0.0';
+    });
+
+    // نافذة المميزات بعد التحديث الصغير
+    const [showWhatsNew, setShowWhatsNew] = useState(false);
+    const [whatsNewInfo, setWhatsNewInfo] = useState<{ version: string; name?: string; notes?: string }>({ version: 'v1.0.1' });
+
+    useEffect(() => {
+        // فحص هل تم التحديث للتو
+        const justUpdated = localStorage.getItem('raizon_just_updated');
+        if (justUpdated === 'true') {
+            const raw = localStorage.getItem('raizon_whats_new');
+            if (raw) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    setWhatsNewInfo(parsed);
+                    if (parsed.version) {
+                        setAppVersion(parsed.version.startsWith('v') ? parsed.version : `v${parsed.version}`);
+                    }
+                } catch (e) {}
+            }
+            setShowWhatsNew(true);
+        }
+
+        // جلب الإصدار من Electron إن وُجد
+        if (window.procashier?.getAppVersion) {
+            window.procashier.getAppVersion().then((v: string) => {
+                if (v) {
+                    const fmt = v.startsWith('v') ? v : `v${v}`;
+                    setAppVersion(fmt);
+                    localStorage.setItem('raizon_app_version', fmt);
+                }
+            });
+        }
+    }, []);
+
     useEffect(() => {
         if (state.settings?.autoCheckUpdates === false) return;
         const timer = setTimeout(async () => {
@@ -1171,7 +1210,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                     <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-20 h-20 object-contain" />
                 </div>
             </div>
-            <h1 className="text-3xl font-bold mb-2 translate-x-[2%]"><span className="text-amber-400 dark:text-amber-300">RaiZon</span> <span className="text-purple-500 dark:text-purple-400">Pro</span> <span className="text-xl align-super opacity-80">v1</span></h1>
+            <h1 className="text-3xl font-bold mb-2"><span className="text-amber-400 dark:text-amber-300">RaiZon</span> <span className="text-purple-500 dark:text-purple-400">Pro</span></h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm tracking-wide uppercase">{t('login_title')}</p>
 
             
@@ -1359,6 +1398,31 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             )}
           </div>
         </div>
+
+        {/* الربع الأخير بالأسفل بالمنتصف: شارة الإصدار الحالي */}
+        <div className="relative z-10 mt-6 flex flex-col items-center justify-center gap-1.5 select-none">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/60 dark:bg-slate-800/80 border border-slate-200/20 dark:border-white/10 backdrop-blur-md shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-mono font-bold text-slate-300">
+              الإصدار {appVersion}
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+            جميع الحقوق محفوظة © RaiZon Pro
+          </p>
+        </div>
+
+        {/* نافذة ما بعد التحديث الصغير (المميزات الجديدة) */}
+        <WhatsNewModal
+          isOpen={showWhatsNew}
+          version={whatsNewInfo.version}
+          releaseName={whatsNewInfo.name}
+          releaseNotes={whatsNewInfo.notes}
+          onClose={() => {
+            localStorage.removeItem('raizon_just_updated');
+            setShowWhatsNew(false);
+          }}
+        />
 
         
         {/* نافذة التحديث التلقائي (زر تحديث وزر تخطي) */}

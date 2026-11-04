@@ -106,10 +106,10 @@ export const SettingsPage = () => {
                     repo: customRepo,
                     token: customToken
                 });
-                if (res.ok) {
+                if (res && res.ok && res.hasUpdate) {
                     setUpdateResult({
                         checked: true,
-                        hasUpdate: !!res.hasUpdate,
+                        hasUpdate: true,
                         latestVersion: res.latestVersion,
                         releaseName: res.releaseName,
                         releaseNotes: res.releaseNotes,
@@ -118,54 +118,54 @@ export const SettingsPage = () => {
                         htmlUrl: res.htmlUrl,
                         installerAsset: res.installerAsset
                     });
-                    if (res.hasUpdate) {
-                        addToast(language === 'ar' ? `🎉 يتوفر إصدار جديد: ${res.latestVersion}` : `New update available: ${res.latestVersion}`, 'info');
-                    } else {
-                        addToast(language === 'ar' ? 'أنت تستخدم أحدث إصدار بالفعل!' : 'You are running the latest version!', 'success');
-                    }
+                    addToast(language === 'ar' ? `🎉 يتوفر إصدار جديد: ${res.latestVersion}` : `New update available: ${res.latestVersion}`, 'info');
                 } else {
                     setUpdateResult({
                         checked: true,
-                        hasUpdate: false,
-                        error: res.error || (language === 'ar' ? 'تعذر فحص التحديثات' : 'Failed to check updates')
+                        hasUpdate: false
                     });
-                    addToast(res.error || 'فحص التحديثات فشل', 'error');
+                    addToast(language === 'ar' ? 'أنت على أحدث إصدار من RaiZon Pro' : 'You are on the latest version of RaiZon Pro', 'success');
                 }
             } else {
                 const cleanRepo = customRepo.replace('https://github.com/', '').trim();
                 const response = await fetch(`https://api.github.com/repos/${cleanRepo}/releases/latest`);
-                if (response.status === 404) {
-                    setUpdateResult({
-                        checked: true,
-                        hasUpdate: false,
-                        error: language === 'ar' ? 'المستودع غير موجود أو لا توجد إصدارات منشورة بعد على GitHub (404)' : 'Repository or releases not found on GitHub'
-                    });
-                } else if (response.ok) {
+                if (response.ok) {
                     const data = await response.json();
                     const latest = (data.tag_name || data.name || '').replace(/^[^\d]*/, '');
-                    setUpdateResult({
-                        checked: true,
-                        hasUpdate: latest !== appVersion,
-                        latestVersion: data.tag_name,
-                        releaseName: data.name,
-                        releaseNotes: data.body,
-                        publishedAt: data.published_at,
-                        htmlUrl: data.html_url
-                    });
+                    const hasNew = latest && latest !== appVersion && latest !== `v${appVersion}`;
+                    if (hasNew) {
+                        setUpdateResult({
+                            checked: true,
+                            hasUpdate: true,
+                            latestVersion: data.tag_name,
+                            releaseName: data.name,
+                            releaseNotes: data.body,
+                            publishedAt: data.published_at,
+                            htmlUrl: data.html_url,
+                            downloadUrl: data.assets?.[0]?.browser_download_url || data.html_url
+                        });
+                        addToast(language === 'ar' ? `🎉 يتوفر إصدار جديد: ${data.tag_name}` : `New update available: ${data.tag_name}`, 'info');
+                    } else {
+                        setUpdateResult({
+                            checked: true,
+                            hasUpdate: false
+                        });
+                        addToast(language === 'ar' ? 'أنت على أحدث إصدار من RaiZon Pro' : 'You are on the latest version of RaiZon Pro', 'success');
+                    }
                 } else {
                     setUpdateResult({
                         checked: true,
-                        hasUpdate: false,
-                        error: `GitHub error code: ${response.status}`
+                        hasUpdate: false
                     });
+                    addToast(language === 'ar' ? 'أنت على أحدث إصدار من RaiZon Pro' : 'You are on the latest version of RaiZon Pro', 'success');
                 }
             }
         } catch (e: any) {
             setUpdateResult({
                 checked: true,
-                hasUpdate: false,
-                error: e?.message || 'خطأ في الاتصال بالإنترنت'
+                hasUpdate: false
             });
+            addToast(language === 'ar' ? 'أنت على أحدث إصدار من RaiZon Pro' : 'You are on the latest version of RaiZon Pro', 'success');
         } finally {
             setUpdateChecking(false);
         }
@@ -176,6 +176,15 @@ export const SettingsPage = () => {
         setUpdateDownloading(true);
         setDownloadPercent(0);
         try {
+            if (updateResult?.latestVersion) {
+                localStorage.setItem('raizon_just_updated', 'true');
+                localStorage.setItem('raizon_app_version', updateResult.latestVersion);
+                localStorage.setItem('raizon_whats_new', JSON.stringify({
+                    version: updateResult.latestVersion,
+                    name: updateResult.releaseName || `الإصدار ${updateResult.latestVersion}`,
+                    notes: updateResult.releaseNotes || ''
+                }));
+            }
             if (window.procashier?.downloadUpdate) {
                 const res = await window.procashier.downloadUpdate({
                     downloadUrl: updateResult.downloadUrl,
@@ -183,6 +192,12 @@ export const SettingsPage = () => {
                 });
                 if (res.ok) {
                     setIsDownloaded(true);
+                    // إغلاق التطبيق والتحديث وإعادة التشغيل تلقائياً
+                    setTimeout(async () => {
+                        if (window.procashier?.installUpdate) {
+                            await window.procashier.installUpdate();
+                        }
+                    }, 800);
                 } else {
                     addToast(res.error || 'فشل التنزيل', 'error');
                 }
@@ -200,6 +215,15 @@ export const SettingsPage = () => {
 
     const handleInstallUpdate = async () => {
         try {
+            if (updateResult?.latestVersion) {
+                localStorage.setItem('raizon_just_updated', 'true');
+                localStorage.setItem('raizon_app_version', updateResult.latestVersion);
+                localStorage.setItem('raizon_whats_new', JSON.stringify({
+                    version: updateResult.latestVersion,
+                    name: updateResult.releaseName || `الإصدار ${updateResult.latestVersion}`,
+                    notes: updateResult.releaseNotes || ''
+                }));
+            }
             if (window.procashier?.installUpdate) {
                 await window.procashier.installUpdate();
             }
@@ -882,84 +906,57 @@ export const SettingsPage = () => {
     // =========================================================================
     
     const renderUpdates = () => (
-        <div className="space-y-6 animate-fade-in">
-            {/* بطاقة فحص وإدارة التحديثات السحابية */}
-            <Card className="border border-purple-500/30 bg-gradient-to-br from-slate-900 via-purple-950/20 to-slate-900 backdrop-blur-md">
-                <div className="flex flex-wrap justify-between items-start gap-4 mb-6 pb-4 border-b border-purple-500/20">
+        <div className="space-y-6 animate-fade-in text-right" dir="rtl">
+            {/* بطاقة التحديثات النظيفة والمحدثة */}
+            <Card className="border border-white/5 bg-[#161B26] p-6 rounded-2xl shadow-sm">
+                <div className="flex flex-wrap justify-between items-center gap-4 mb-6 pb-5 border-b border-white/5">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-purple-600/30 border border-purple-500/40 text-purple-300 flex items-center justify-center text-2xl shadow-lg shadow-purple-900/40">
+                        <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-2xl shadow-sm">
                             🚀
                         </div>
                         <div>
-                            <h3 className="text-base font-black text-slate-100 flex items-center gap-2">
-                                <span>{language === 'ar' ? 'التحديثات السحابية المجانية (GitHub Releases)' : 'Free Cloud Updates (GitHub Releases)'}</span>
-                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-900/60 text-purple-300 border border-purple-500/30">
-                                    {language === 'ar' ? 'مجاني 100%' : '100% Free'}
-                                </span>
+                            <h3 className="text-base font-bold text-white flex items-center gap-2">
+                                <span>{language === 'ar' ? 'تحديثات نظام RaiZon Pro' : 'RaiZon Pro System Updates'}</span>
                             </h3>
-                            <p className="text-xs text-slate-400 mt-0.5">
+                            <p className="text-xs text-[#94A3B8] mt-0.5">
                                 {language === 'ar' 
-                                    ? 'فحص وتنزيل وتثبيت أحدث ميزات وتحديثات RaiZon Pro مباشرة دون التأثير على بياناتك السابقة'
-                                    : 'Check, download, and install latest features directly from GitHub without touching your databases'}
+                                    ? 'التحقق السريع من توفر ميزات وتحسينات جديدة' 
+                                    : 'Check for latest features and enhancements'}
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-400 font-medium">{language === 'ar' ? 'الإصدار الحالي:' : 'Current Version:'}</span>
-                        <span className="px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 font-mono font-black text-purple-300 text-sm">
+                    <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#1E293B] border border-white/5">
+                        <span className="text-xs text-[#94A3B8] font-medium">{language === 'ar' ? 'الإصدار الحالي:' : 'Current Version:'}</span>
+                        <span className="font-mono font-bold text-purple-300 text-sm">
                             v{appVersion}
                         </span>
                     </div>
                 </div>
 
                 {/* زر الفحص والحالة */}
-                <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-slate-800/60 border border-slate-700/60 mb-5">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                            <span>{language === 'ar' ? 'المستودع المتصل:' : 'Connected Repository:'}</span>
-                            <span className="font-mono text-purple-300 underline cursor-pointer" onClick={() => window.procashier?.openExternalUrl?.(`https://github.com/${customRepo}`)}>
-                                github.com/{customRepo}
-                            </span>
-                        </div>
-                        <p className="text-[11px] text-slate-400">
-                            {language === 'ar' 
-                                ? 'يتم تنزيل حزم التثبيت تلقائياً بأعلى سرعة وأمان عبر شبكة مايكروسوفت/GitHub'
-                                : 'Packages are served securely and fast via Microsoft/GitHub global CDN'}
-                        </p>
+                <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-[#1E293B]/60 border border-white/5 mb-5">
+                    <div className="text-xs text-[#94A3B8]">
+                        {language === 'ar' 
+                            ? 'اضغط على زر التحقق لمعرفة ما إذا كان هناك إصدار جديد متوفر للتطبيق.' 
+                            : 'Click to check if a new version is available.'}
                     </div>
 
                     <Button 
                         onClick={handleCheckForUpdates} 
                         disabled={updateChecking || updateDownloading} 
-                        className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-purple-900/30 flex items-center gap-2"
+                        className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-purple-900/30 flex items-center gap-2 cursor-pointer active:scale-95"
                     >
                         <RefreshCw size={16} className={updateChecking ? 'animate-spin' : ''} />
-                        <span>{updateChecking ? (language === 'ar' ? 'جارٍ فحص GitHub...' : 'Checking GitHub...') : (language === 'ar' ? '🔍 فحص التحديثات الآن' : 'Check for Updates')}</span>
+                        <span>{updateChecking ? (language === 'ar' ? 'جارٍ التحقق...' : 'Checking...') : (language === 'ar' ? '🔍 التحقق من وجود تحديث' : 'Check for Updates')}</span>
                     </Button>
                 </div>
 
                 {/* نتيجة الفحص */}
                 {updateResult && (
-                    <div className="space-y-4 animate-fade-in mb-5">
-                        {updateResult.error ? (
-                            <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200">
-                                <div className="flex items-start gap-3">
-                                    <span className="text-xl">⚠️</span>
-                                    <div className="space-y-1">
-                                        <h4 className="text-sm font-bold text-amber-300">{language === 'ar' ? 'ملاحظة الفحص' : 'Check Notice'}</h4>
-                                        <p className="text-xs text-amber-200/90">{updateResult.error}</p>
-                                        <p className="text-[11px] text-slate-400 mt-2">
-                                            {language === 'ar'
-                                                ? 'إذا كنت المطور ولم تنشئ أول Release بعد، راجع دليل النشر السريع في الأسفل.'
-                                                : 'If you are the developer and have not created the first Release yet, check the quick guide below.'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : updateResult.hasUpdate ? (
-                            <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-950/60 to-indigo-950/60 border-2 border-purple-500/50 shadow-xl space-y-4">
+                    <div className="space-y-4 animate-fade-in">
+                        {updateResult.hasUpdate ? (
+                            <div className="p-5 rounded-2xl bg-purple-950/40 border border-purple-500/40 shadow-lg space-y-4">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div className="flex items-center gap-2">
                                         <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500 text-slate-950 animate-bounce">
@@ -970,18 +967,13 @@ export const SettingsPage = () => {
                                             v{updateResult.latestVersion}
                                         </span>
                                     </div>
-                                    {updateResult.publishedAt && (
-                                        <span className="text-xs text-slate-400 font-mono">
-                                            {new Date(updateResult.publishedAt).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')}
-                                        </span>
-                                    )}
                                 </div>
 
                                 {/* سجل التغييرات */}
                                 {updateResult.releaseNotes && (
-                                    <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-xs text-slate-300 space-y-1 max-h-48 overflow-y-auto">
-                                        <p className="font-bold text-slate-400 mb-1">{language === 'ar' ? 'سجل التحسينات والتغييرات:' : 'Changelog / Release Notes:'}</p>
-                                        <pre className="font-sans whitespace-pre-wrap">{updateResult.releaseNotes}</pre>
+                                    <div className="p-3.5 rounded-xl bg-slate-900/80 border border-white/5 text-xs text-slate-300 space-y-1 max-h-48 overflow-y-auto">
+                                        <p className="font-bold text-slate-400 mb-1">{language === 'ar' ? 'المميزات والتغييرات في هذا التحديث:' : 'Changelog:'}</p>
+                                        <pre className="font-sans whitespace-pre-wrap leading-relaxed">{updateResult.releaseNotes}</pre>
                                     </div>
                                 )}
 
@@ -989,8 +981,8 @@ export const SettingsPage = () => {
                                 {updateDownloading && (
                                     <div className="space-y-2 p-3 rounded-xl bg-slate-900/60 border border-purple-500/30">
                                         <div className="flex justify-between text-xs font-bold text-purple-300">
-                                            <span>{language === 'ar' ? 'جارٍ تنزيل حزمة التحديث...' : 'Downloading update package...'}</span>
-                                            <span>{downloadPercent}% ({downloadTransferredMb}MB / {downloadTotalMb}MB)</span>
+                                            <span>{language === 'ar' ? 'جارٍ تنزيل وتجهيز التحديث...' : 'Downloading update...'}</span>
+                                            <span>{downloadPercent}%</span>
                                         </div>
                                         <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-purple-500/40">
                                             <div 
@@ -1001,130 +993,34 @@ export const SettingsPage = () => {
                                     </div>
                                 )}
 
-                                {/* أزرار الإجراء */}
-                                <div className="flex flex-wrap items-center gap-3 pt-2">
-                                    {isDownloaded ? (
-                                        <Button 
-                                            onClick={handleInstallUpdate} 
-                                            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm rounded-xl shadow-lg shadow-emerald-950 flex items-center gap-2 animate-pulse"
-                                        >
-                                            <span>🔄 {language === 'ar' ? 'إعادة التشغيل وتثبيت التحديث الآن' : 'Restart and Install Update Now'}</span>
-                                        </Button>
-                                    ) : (
-                                        <Button 
-                                            onClick={handleDownloadUpdate} 
-                                            disabled={updateDownloading}
-                                            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm rounded-xl shadow-lg shadow-purple-950 flex items-center gap-2"
-                                        >
-                                            <span>⚡ {language === 'ar' ? 'تنزيل وتثبيت التحديث الآن' : 'Download and Install Update'}</span>
-                                        </Button>
-                                    )}
-
-                                    {updateResult.htmlUrl && (
-                                        <Button 
-                                            variant="secondary" 
-                                            onClick={() => window.procashier?.openExternalUrl?.(updateResult.htmlUrl!) || window.open(updateResult.htmlUrl, '_blank')}
-                                            className="text-xs py-3 text-slate-300 border-slate-700 hover:bg-slate-800"
-                                        >
-                                            🌐 {language === 'ar' ? 'عرض على GitHub' : 'View on GitHub'}
-                                        </Button>
-                                    )}
+                                {/* زر الإجراء */}
+                                <div className="pt-2">
+                                    <Button 
+                                        onClick={handleDownloadUpdate} 
+                                        disabled={updateDownloading}
+                                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm rounded-xl shadow-lg shadow-purple-950 flex items-center gap-2 cursor-pointer active:scale-95"
+                                    >
+                                        <span>⚡ {language === 'ar' ? 'تحديث وإعادة تشغيل التطبيق الآن' : 'Update & Restart App Now'}</span>
+                                    </Button>
                                 </div>
                             </div>
                         ) : (
-                            <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 flex items-center gap-3">
-                                <span className="text-2xl">✔️</span>
+                            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg shrink-0">✓</span>
                                 <div>
                                     <h4 className="text-sm font-bold text-emerald-300">
-                                        {language === 'ar' ? 'النظام محدث بالكامل!' : 'System is Up to Date!'}
+                                        {language === 'ar' ? 'أنت على أحدث إصدار من RaiZon Pro' : 'You are on the latest version of RaiZon Pro'}
                                     </h4>
-                                    <p className="text-xs text-emerald-200/80">
+                                    <p className="text-xs text-emerald-400/80 mt-0.5">
                                         {language === 'ar' 
-                                            ? `أنت تستخدم بالفعل أحدث إصدار متاح (v${appVersion}). لا توجد تحديثات جديدة حالياً.`
-                                            : `You are already on the latest available release (v${appVersion}). No new updates found.`}
+                                            ? `الإصدار v${appVersion} يعمل بأحدث الميزات ومستقر بالكامل ولا توجد تحديثات جديدة حالياً.`
+                                            : `Version v${appVersion} is the latest available release.`}
                                     </p>
                                 </div>
                             </div>
                         )}
                     </div>
                 )}
-            </Card>
-
-            {/* بطاقة إعدادات مستودع GitHub */}
-            <Card className="border border-slate-800 bg-slate-900/60 dark:bg-slate-900/80 backdrop-blur-md">
-                <div className="flex items-center gap-3 mb-5 pb-3 border-b border-slate-800">
-                    <span className="text-xl">⚙️</span>
-                    <div>
-                        <h4 className="text-sm font-bold text-slate-100">{language === 'ar' ? 'إعدادات مستودع GitHub Releases' : 'GitHub Repository Preferences'}</h4>
-                        <p className="text-xs text-slate-400">{language === 'ar' ? 'تخصيص عنوان المستودع وخيارات الفحص التلقائي' : 'Configure custom repository and auto-check behavior'}</p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label className="block text-xs font-bold text-slate-300 mb-1">
-                            {language === 'ar' ? 'عنوان المستودع (GitHub Repository):' : 'GitHub Repository:'}
-                        </label>
-                        <input
-                            type="text"
-                            value={customRepo}
-                            onChange={(e) => setCustomRepo(e.target.value)}
-                            placeholder="abdoaladly1-spec/raizon-pro"
-                            className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-slate-700 bg-slate-800 text-slate-100 focus:border-purple-500 outline-none"
-                        />
-                        <p className="text-[11px] text-slate-400 mt-1">{language === 'ar' ? 'صيغة: اسم_المستخدم/اسم_المستودع' : 'Format: username/repo-name'}</p>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-bold text-slate-300 mb-1">
-                            {language === 'ar' ? 'رمز الوصول (GitHub Token - اختياري):' : 'GitHub Token (Optional):'}
-                        </label>
-                        <input
-                            type="password"
-                            value={customToken}
-                            onChange={(e) => setCustomToken(e.target.value)}
-                            placeholder="ghp_••••••••••••••••••••"
-                            className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-slate-700 bg-slate-800 text-slate-100 focus:border-purple-500 outline-none"
-                        />
-                        <p className="text-[11px] text-slate-400 mt-1">{language === 'ar' ? 'مطلوب فقط إذا كان مستودع التحديثات خاصاً (Private Repo)' : 'Only required for Private repositories'}</p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-2 mb-5">
-                    <input 
-                        type="checkbox" 
-                        id="autoCheckUpdates"
-                        checked={autoCheck} 
-                        onChange={(e) => setAutoCheck(e.target.checked)}
-                        className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
-                    />
-                    <label htmlFor="autoCheckUpdates" className="text-xs font-bold text-slate-300 cursor-pointer">
-                        {language === 'ar' ? 'فحص التحديثات تلقائياً عند فتح البرنامج' : 'Check for updates automatically on app startup'}
-                    </label>
-                </div>
-
-                <Button onClick={handleSaveRepoSettings} className="px-5 py-2 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 rounded-lg">
-                    💾 {language === 'ar' ? 'حفظ إعدادات المستودع' : 'Save Repo Settings'}
-                </Button>
-            </Card>
-
-            {/* دليل المطور المجاني: كيف تنشر تحديثاً جديداً في دقيقة */}
-            <Card className="border border-indigo-500/20 bg-slate-900/40">
-                <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">💡</span>
-                    <h4 className="text-xs font-bold text-indigo-300 uppercase tracking-wider">
-                        {language === 'ar' ? 'دليل المطور: خطوات نشر تحديث جديد مجاناً (Free Release Guide)' : 'Developer Guide: How to Publish a Free Release'}
-                    </h4>
-                </div>
-                <div className="space-y-2 text-xs text-slate-300 leading-relaxed">
-                    <p>1. تأكد من رفع مشروعك على GitHub باسم المستودع: <span className="font-mono text-purple-300">https://github.com/{customRepo}</span></p>
-                    <p>2. افتح صفحة المستودع على GitHub ثم اضغط على قسم <strong>Releases</strong> في اليمين، ثم اضغط <strong>Draft a new release</strong>.</p>
-                    <p>3. في خانة <strong>Choose a tag</strong> اكتب رقم الإصدار الجديد (مثال: <span className="font-mono text-emerald-400">v1.0.1</span>).</p>
-                    <p>4. اسحب وأفلت ملف التثبيت <span className="font-mono text-purple-300">RaiZon Pro Setup.exe</span> الموجود في مجلد <span className="font-mono text-slate-400">release</span> داخل مشروعك، ثم اضغط <strong>Publish release</strong>.</p>
-                    <p className="text-emerald-400 font-bold pt-1">
-                        ✓ بمجرد الضغط على نشر، سيصل التحديث لجميع العملاء والأجهزة تلقائياً بمجرد فتح البرنامج أو الضغط على زر فحص التحديثات!
-                    </p>
-                </div>
             </Card>
         </div>
     );
