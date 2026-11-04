@@ -543,14 +543,14 @@ export const DebtsPage: React.FC = () => {
       {/* ===================================================================== */}
       {/* 1. Header (عنوان الصفحة والأزرار الإجرائية)                           */}
       {/* ===================================================================== */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#161B26] border border-white/5 p-5 rounded-2xl shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 p-5 rounded-2xl shadow-xs">
         <div className="flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500/20 to-blue-500/20 border border-purple-500/30 text-purple-300 flex items-center justify-center text-2xl shadow-sm shrink-0">
             <CreditCard size={24} />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white tracking-tight">سجل الديون</h1>
-            <p className="text-xs text-[#94A3B8] mt-1">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               متابعة وإدارة أرصدة العملاء الآجلة، التحصيلات وسندات القبض وكشوف الحساب.
             </p>
           </div>
@@ -571,7 +571,7 @@ export const DebtsPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowAddCustomerModal(true)}
-            className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold text-xs border border-white/10 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+            className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold text-xs border border-slate-300 dark:border-slate-600/80 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
           >
             <User size={15} className="text-slate-400" />
             <span>إضافة عميل</span>
@@ -581,7 +581,7 @@ export const DebtsPage: React.FC = () => {
           <button
             type="button"
             onClick={() => window.print()}
-            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 transition-all active:scale-95 cursor-pointer"
+            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-300 dark:border-slate-600/80 transition-all active:scale-95 cursor-pointer"
             title="طباعة كشف الديون"
           >
             <Printer size={16} />
@@ -594,88 +594,84 @@ export const DebtsPage: React.FC = () => {
       {/* ===================================================================== */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* إجمالي المبالغ المستحقة */}
-        <div className="relative overflow-hidden rounded-2xl bg-[#161B26] border border-white/5 p-4 shadow-sm hover:border-white/10 transition-all group">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 border-t-4 border-t-rose-500 p-4 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all group">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#94A3B8]">إجمالي المبالغ المستحقة</span>
-            <span className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">إجمالي المبالغ المستحقة</span>
+            <span className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center justify-center">
               <DollarSign size={18} />
             </span>
           </div>
-          <div className="text-2xl font-black font-mono text-white tracking-tight">
+          <div className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight">
             {formatNumber(summary.totalDue)} <span className="text-xs font-normal text-slate-400">{currencySymbol}</span>
           </div>
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
-            <span className="text-[11px] text-[#94A3B8]">مستحقات على {summary.debtorsCount} عميل</span>
-            <span className="w-2 h-2 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50" />
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">مستحقات على {summary.debtorsCount} عميل</span>
+            <span className="w-2 h-2 rounded-full bg-rose-500 shadow-xs shadow-rose-500/50" />
           </div>
-          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-rose-500/0 via-rose-500/50 to-rose-500/0" />
         </div>
 
         {/* عدد العملاء المدينين */}
-        <div className="relative overflow-hidden rounded-2xl bg-[#161B26] border border-white/5 p-4 shadow-sm hover:border-white/10 transition-all group">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 border-t-4 border-t-blue-500 p-4 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all group">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#94A3B8]">عدد العملاء المدينين</span>
-            <span className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">عدد العملاء المدينين</span>
+            <span className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center">
               <Users size={18} />
             </span>
           </div>
-          <div className="text-2xl font-black font-mono text-white tracking-tight">
+          <div className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight">
             {summary.debtorsCount} <span className="text-xs font-normal text-slate-400">عميل مدين</span>
           </div>
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
-            <span className="text-[11px] text-[#94A3B8]">نشطون بحسابات جارية</span>
-            <span className="w-2 h-2 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50" />
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">نشطون بحسابات جارية</span>
+            <span className="w-2 h-2 rounded-full bg-blue-500 shadow-xs shadow-blue-500/50" />
           </div>
-          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/0 via-blue-500/50 to-blue-500/0" />
         </div>
 
         {/* إجمالي المبالغ المتأخرة */}
-        <div className="relative overflow-hidden rounded-2xl bg-[#161B26] border border-white/5 p-4 shadow-sm hover:border-white/10 transition-all group">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 border-t-4 border-t-amber-500 p-4 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all group">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#94A3B8]">المبالغ المتأخرة</span>
-            <span className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">المبالغ المتأخرة</span>
+            <span className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center">
               <AlertTriangle size={18} />
             </span>
           </div>
-          <div className="text-2xl font-black font-mono text-white tracking-tight">
+          <div className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight">
             {formatNumber(summary.totalOverdue)} <span className="text-xs font-normal text-slate-400">{currencySymbol}</span>
           </div>
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
-            <span className="text-[11px] text-[#94A3B8]">
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
               {summary.overdueCount > 0 ? (
-                <span className="text-amber-400 font-bold">⚠️ {summary.overdueCount} تجاوزوا الحد الائتماني</span>
+                <span className="text-amber-600 dark:text-amber-400 font-bold">⚠️ {summary.overdueCount} تجاوزوا الحد الائتماني</span>
               ) : (
                 <span>ضمن الحدود الائتمانية</span>
               )}
             </span>
-            <span className="w-2 h-2 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50" />
+            <span className="w-2 h-2 rounded-full bg-amber-500 shadow-xs shadow-amber-500/50" />
           </div>
-          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500/0 via-amber-500/50 to-amber-500/0" />
         </div>
 
         {/* المبالغ المحصلة */}
-        <div className="relative overflow-hidden rounded-2xl bg-[#161B26] border border-white/5 p-4 shadow-sm hover:border-white/10 transition-all group">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 border-t-4 border-t-emerald-500 p-4 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all group">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[#94A3B8]">إجمالي التحصيلات</span>
-            <span className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">إجمالي التحصيلات</span>
+            <span className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
               <Check size={18} />
             </span>
           </div>
-          <div className="text-2xl font-black font-mono text-white tracking-tight">
+          <div className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-tight">
             {formatNumber(summary.totalCollected)} <span className="text-xs font-normal text-slate-400">{currencySymbol}</span>
           </div>
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
-            <span className="text-[11px] text-[#94A3B8]">{summary.collectedCount} سند قبض مسجل</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">{summary.collectedCount} سند قبض مسجل</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/50" />
           </div>
-          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500/0 via-emerald-500/50 to-emerald-500/0" />
         </div>
       </div>
 
       {/* ===================================================================== */}
       {/* 3. Search & Filters Bar (البحث، الفلاتر والترتيب)                      */}
       {/* ===================================================================== */}
-      <div className="bg-[#161B26] border border-white/5 p-4 rounded-2xl space-y-3 shadow-sm">
+      <div className="bg-white dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700/80 p-4 rounded-2xl space-y-3 shadow-sm">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           {/* حقل البحث */}
           <div className="relative flex-1 min-w-[260px]">
@@ -687,7 +683,7 @@ export const DebtsPage: React.FC = () => {
               placeholder="بحث باسم العميل، رقم الهاتف، أو كود الحساب..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pr-10 pl-8 py-2.5 text-xs rounded-xl bg-[#1E293B] border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+              className="w-full pr-10 pl-8 py-2.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-600/80 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
             />
             {search && (
               <button
@@ -706,7 +702,7 @@ export const DebtsPage: React.FC = () => {
             <select
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e.target.value as any)}
-              className="px-3 py-2 text-xs font-semibold rounded-xl bg-[#1E293B] border border-white/10 text-slate-200 outline-none focus:border-purple-500 cursor-pointer"
+              className="px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-600/80 text-slate-200 outline-none focus:border-purple-500 cursor-pointer"
             >
               <option value="all">كل الفترات</option>
               <option value="today">حركات اليوم</option>
@@ -718,7 +714,7 @@ export const DebtsPage: React.FC = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 text-xs font-semibold rounded-xl bg-[#1E293B] border border-white/10 text-slate-200 outline-none focus:border-purple-500 cursor-pointer"
+              className="px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-600/80 text-slate-200 outline-none focus:border-purple-500 cursor-pointer"
             >
               <option value="amount_desc">الأعلى مديونية</option>
               <option value="amount_asc">الأقل مديونية</option>
@@ -742,7 +738,7 @@ export const DebtsPage: React.FC = () => {
 
         {/* كبسولات فلتر حالة الدين (Status Pills) */}
         <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-white/[0.04] text-xs">
-          <span className="text-[#94A3B8] text-xs font-medium ml-1 flex items-center gap-1">
+          <span className="text-slate-500 dark:text-slate-400 text-xs font-medium ml-1 flex items-center gap-1">
             <Filter size={13} />
             <span>حالة الدين:</span>
           </span>
@@ -763,7 +759,7 @@ export const DebtsPage: React.FC = () => {
                 className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
                   active
                     ? 'bg-blue-600 text-white border border-blue-500 shadow-sm shadow-blue-500/30'
-                    : 'bg-[#1E293B] text-slate-300 border border-white/5 hover:bg-slate-800 hover:text-white'
+                    : 'bg-slate-100 dark:bg-slate-900/80 text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-800 hover:text-white'
                 }`}
               >
                 {pill.label}
@@ -771,7 +767,7 @@ export const DebtsPage: React.FC = () => {
             );
           })}
 
-          <div className="mr-auto text-[11px] text-[#94A3B8]">
+          <div className="mr-auto text-[11px] text-slate-500 dark:text-slate-400">
             النتائج: <strong className="text-white font-mono">{filteredCustomers.length}</strong> عميل
           </div>
         </div>
@@ -780,7 +776,7 @@ export const DebtsPage: React.FC = () => {
       {/* ===================================================================== */}
       {/* 4. Customers List (الجدول للشاشات الكبيرة + بطاقات للجوال)             */}
       {/* ===================================================================== */}
-      <div className="rounded-2xl bg-[#161B26] border border-white/5 overflow-hidden shadow-sm">
+      <div className="rounded-2xl bg-white dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700/80 overflow-hidden shadow-sm">
         {filteredCustomers.length === 0 ? (
           <div className="py-14 px-6 text-center">
             <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mx-auto flex items-center justify-center mb-4 shadow-sm shadow-emerald-500/10">
@@ -789,7 +785,7 @@ export const DebtsPage: React.FC = () => {
             <h3 className="text-xl font-bold text-white mb-2">
               {isFiltered ? 'لا توجد نتائج مطابقة لبحثك' : 'لا توجد مديونيات معلقة!'}
             </h3>
-            <p className="text-xs text-[#94A3B8] max-w-md mx-auto mb-6 leading-relaxed">
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">
               {isFiltered 
                 ? 'جرب تعديل كلمات البحث أو مسح الفلاتر لعرض العملاء الآخرين.'
                 : 'جميع حسابات العملاء مسددة بالكامل ولا توجد أي مديونيات مفتوحة حالياً.'}
@@ -800,7 +796,7 @@ export const DebtsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleClearFilters}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 font-semibold text-xs flex items-center gap-2 transition-all cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-300 dark:border-slate-600/80 font-semibold text-xs flex items-center gap-2 transition-all cursor-pointer"
                 >
                   <RefreshCw size={14} className="text-slate-400" />
                   <span>إعادة ضبط الفلاتر</span>
@@ -818,7 +814,7 @@ export const DebtsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleSeedSampleData}
-                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-300 dark:border-slate-600/80 font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
                   >
                     <Sparkles size={14} className="text-amber-400" />
                     <span>توليد بيانات تجريبية واقعية</span>
@@ -832,7 +828,7 @@ export const DebtsPage: React.FC = () => {
             {/* Desktop / Tablet Table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-right text-xs">
-                <thead className="bg-[#1E293B]/80 text-[#94A3B8] border-b border-white/5">
+                <thead className="bg-slate-100 dark:bg-slate-900/80/80 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/80">
                   <tr>
                     <th className="py-3.5 px-4 font-bold">العميل</th>
                     <th className="py-3.5 px-4 font-bold">رقم الهاتف</th>
@@ -855,7 +851,7 @@ export const DebtsPage: React.FC = () => {
                         {/* Customer Avatar & Name */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500/20 to-blue-500/20 border border-white/10 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-sm">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500/20 to-blue-500/20 border border-slate-300 dark:border-slate-600/80 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-sm">
                               {getInitials(c.name)}
                             </div>
                             <div>
@@ -868,7 +864,7 @@ export const DebtsPage: React.FC = () => {
                                 )}
                               </div>
                               {c.notes && (
-                                <p className="text-[11px] text-[#94A3B8] line-clamp-1 max-w-[200px] mt-0.5">
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 max-w-[200px] mt-0.5">
                                   {c.notes}
                                 </p>
                               )}
@@ -878,7 +874,7 @@ export const DebtsPage: React.FC = () => {
 
                         {/* Phone */}
                         <td className="py-3.5 px-4">
-                          <div className="text-[#94A3B8] text-xs font-mono flex items-center gap-1.5">
+                          <div className="text-slate-500 dark:text-slate-400 text-xs font-mono flex items-center gap-1.5">
                             <Phone size={12} className="text-slate-400" />
                             <span>{c.phone}</span>
                           </div>
@@ -896,7 +892,7 @@ export const DebtsPage: React.FC = () => {
                           {limit > 0 ? (
                             <div>
                               <span className="text-slate-200 font-bold">{formatNumber(limit)} {currencySymbol}</span>
-                              <div className="w-20 mx-auto bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden border border-white/5">
+                              <div className="w-20 mx-auto bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden border border-slate-200 dark:border-slate-700/80">
                                 <div 
                                   className={`h-full rounded-full ${usagePercent >= 100 ? 'bg-rose-500' : usagePercent >= 80 ? 'bg-amber-500' : 'bg-purple-500'}`}
                                   style={{ width: `${usagePercent}%` }}
@@ -904,7 +900,7 @@ export const DebtsPage: React.FC = () => {
                               </div>
                             </div>
                           ) : (
-                            <span className="text-[#94A3B8] italic">غير محدد</span>
+                            <span className="text-slate-500 dark:text-slate-400 italic">غير محدد</span>
                           )}
                         </td>
 
@@ -914,7 +910,7 @@ export const DebtsPage: React.FC = () => {
                         </td>
 
                         {/* Last Visit / Activity */}
-                        <td className="py-3.5 px-4 text-center font-mono text-[#94A3B8]">
+                        <td className="py-3.5 px-4 text-center font-mono text-slate-500 dark:text-slate-400">
                           {c.lastVisit ? formatDate(new Date(c.lastVisit)) : '—'}
                         </td>
 
@@ -942,7 +938,7 @@ export const DebtsPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setProfileCustomer(c)}
-                              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-white/10 transition-colors flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-300 dark:border-slate-600/80 transition-colors flex items-center gap-1 cursor-pointer"
                               title="عرض كشف الحساب والملف الشخصي"
                             >
                               <FileText size={13} />
@@ -976,15 +972,15 @@ export const DebtsPage: React.FC = () => {
                 const status = getCustomerStatus(c);
 
                 return (
-                  <div key={c.id} className="p-4 rounded-xl bg-[#1E293B]/50 border border-white/5 space-y-3">
+                  <div key={c.id} className="p-4 rounded-xl bg-slate-100 dark:bg-slate-900/80/50 border border-slate-200 dark:border-slate-700/80 space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-white/10 text-white font-bold flex items-center justify-center text-xs shadow-sm">
+                        <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-slate-300 dark:border-slate-600/80 text-white font-bold flex items-center justify-center text-xs shadow-sm">
                           {getInitials(c.name)}
                         </div>
                         <div>
                           <h4 className="font-bold text-sm text-white">{c.name}</h4>
-                          <span className="text-[#94A3B8] text-xs font-mono">{c.phone}</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-xs font-mono">{c.phone}</span>
                         </div>
                       </div>
                       <div>
@@ -992,8 +988,8 @@ export const DebtsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-black/20 border border-white/5">
-                      <span className="text-xs text-[#94A3B8]">المبلغ المستحق:</span>
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-black/20 border border-slate-200 dark:border-slate-700/80">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">المبلغ المستحق:</span>
                       <span className={`font-mono font-black text-base ${balance > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
                         {formatNumber(balance)} {currencySymbol}
                       </span>
@@ -1013,7 +1009,7 @@ export const DebtsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setProfileCustomer(c)}
-                        className="flex-1 py-2 rounded-lg bg-slate-800 text-slate-200 font-semibold text-xs border border-white/10 flex items-center justify-center gap-1 active:scale-95"
+                        className="flex-1 py-2 rounded-lg bg-slate-800 text-slate-200 font-semibold text-xs border border-slate-300 dark:border-slate-600/80 flex items-center justify-center gap-1 active:scale-95"
                       >
                         <FileText size={14} />
                         <span>ملف العميل</span>
@@ -1048,15 +1044,15 @@ export const DebtsPage: React.FC = () => {
         >
           <form onSubmit={handleConfirmPayment} className="space-y-4 text-right" dir="rtl">
             {/* ملخص الرصيد المستحق */}
-            <div className="p-4 rounded-2xl bg-[#1E293B] border border-white/5 flex items-center justify-between">
+            <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between">
               <div>
-                <span className="text-xs text-[#94A3B8] block">المديونية المستحقة حالياً:</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block">المديونية المستحقة حالياً:</span>
                 <span className="text-xl font-black font-mono text-rose-400">
                   {formatNumber(paymentCustomer.balance || 0)} {currencySymbol}
                 </span>
               </div>
               <div className="text-left">
-                <span className="text-xs text-[#94A3B8] block">الحد الائتماني:</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block">الحد الائتماني:</span>
                 <span className="text-sm font-bold font-mono text-slate-300">
                   {paymentCustomer.creditLimit ? `${formatNumber(paymentCustomer.creditLimit)} ${currencySymbol}` : 'غير محدد'}
                 </span>
@@ -1078,7 +1074,7 @@ export const DebtsPage: React.FC = () => {
                   className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                     paymentMode === 'full'
                       ? 'bg-purple-600 text-white border-purple-500 shadow-sm'
-                      : 'bg-[#1E293B] text-slate-300 border-white/5 hover:border-purple-500/50'
+                      : 'bg-slate-100 dark:bg-slate-900/80 text-slate-300 border-slate-200 dark:border-slate-700/80 hover:border-purple-500/50'
                   }`}
                 >
                   سداد كامل المبلغ ({formatNumber(paymentCustomer.balance || 0)})
@@ -1093,7 +1089,7 @@ export const DebtsPage: React.FC = () => {
                   className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                     paymentMode === 'partial'
                       ? 'bg-purple-600 text-white border-purple-500 shadow-sm'
-                      : 'bg-[#1E293B] text-slate-300 border-white/5 hover:border-purple-500/50'
+                      : 'bg-slate-100 dark:bg-slate-900/80 text-slate-300 border-slate-200 dark:border-slate-700/80 hover:border-purple-500/50'
                   }`}
                 >
                   سداد جزء من المبلغ
@@ -1114,11 +1110,11 @@ export const DebtsPage: React.FC = () => {
                 value={paymentAmount}
                 onChange={(e) => setPaymentAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-[#1E293B] text-white font-bold font-mono text-lg outline-none focus:ring-2 focus:ring-purple-500 text-center"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white font-bold font-mono text-lg outline-none focus:ring-2 focus:ring-purple-500 text-center"
               />
               {/* المديونية المتبقية المتوقعة */}
               {parseFloat(paymentAmount) > 0 && (
-                <div className="mt-1.5 text-xs text-[#94A3B8] flex justify-between">
+                <div className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 flex justify-between">
                   <span>المبلغ المتبقي بعد السداد:</span>
                   <span className="font-mono font-bold text-purple-400">
                     {formatNumber(Math.max(0, (paymentCustomer.balance || 0) - (parseFloat(paymentAmount) || 0)))} {currencySymbol}
@@ -1146,7 +1142,7 @@ export const DebtsPage: React.FC = () => {
                     className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1 cursor-pointer ${
                       paymentMethod === m.id
                         ? 'bg-purple-600 text-white border-purple-500 shadow-sm'
-                        : 'bg-[#1E293B] text-slate-300 border-white/5 hover:border-purple-400'
+                        : 'bg-slate-100 dark:bg-slate-900/80 text-slate-300 border-slate-200 dark:border-slate-700/80 hover:border-purple-400'
                     }`}
                   >
                     <span>{m.icon}</span>
@@ -1166,7 +1162,7 @@ export const DebtsPage: React.FC = () => {
                   type="date"
                   value={paymentDate}
                   onChange={(e) => setPaymentDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
@@ -1179,7 +1175,7 @@ export const DebtsPage: React.FC = () => {
                   value={receiptNumber}
                   onChange={(e) => setReceiptNumber(e.target.value)}
                   placeholder="مثال: 1042"
-                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
             </div>
@@ -1194,12 +1190,12 @@ export const DebtsPage: React.FC = () => {
                 value={paymentNotes}
                 onChange={(e) => setPaymentNotes(e.target.value)}
                 placeholder="سداد دفعة نقدية بالفرع..."
-                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
 
             {/* الأزرار */}
-            <div className="flex gap-2.5 pt-3 border-t border-white/10">
+            <div className="flex gap-2.5 pt-3 border-t border-slate-300 dark:border-slate-600/80">
               <Button
                 variant="success"
                 disabled={isSubmittingPayment || !parseFloat(paymentAmount)}
@@ -1231,9 +1227,9 @@ export const DebtsPage: React.FC = () => {
         >
           <div className="space-y-5 text-right font-sans" dir="rtl">
             {/* بطاقة رأس الملف الشخصي */}
-            <div className="p-4 rounded-2xl bg-[#1E293B] border border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="flex items-center gap-3.5">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-500/30 to-blue-500/30 border border-white/10 text-white font-black text-lg flex items-center justify-center shadow-sm shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-500/30 to-blue-500/30 border border-slate-300 dark:border-slate-600/80 text-white font-black text-lg flex items-center justify-center shadow-sm shrink-0">
                   {getInitials(profileCustomer.name)}
                 </div>
                 <div>
@@ -1245,7 +1241,7 @@ export const DebtsPage: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-[#94A3B8] font-mono mt-0.5 flex items-center gap-1.5">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5 flex items-center gap-1.5">
                     <Phone size={13} className="text-slate-400" />
                     <span>{profileCustomer.phone}</span>
                     {profileCustomer.address && (
@@ -1274,7 +1270,7 @@ export const DebtsPage: React.FC = () => {
                     setEditLimit(String(profileCustomer.creditLimit || ''));
                     setEditNotes(profileCustomer.notes || '');
                   }}
-                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-white/10 cursor-pointer"
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-300 dark:border-slate-600/80 cursor-pointer"
                 >
                   تعديل الحد / ملاحظات
                 </button>
@@ -1283,22 +1279,22 @@ export const DebtsPage: React.FC = () => {
 
             {/* بطاقات الإحصائيات الثلاثية لملف العميل */}
             <div className="grid grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-xl bg-[#161B26] border border-white/5">
-                <span className="text-[11px] text-[#94A3B8] block">إجمالي ما تم سداده:</span>
+              <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700/80">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">إجمالي ما تم سداده:</span>
                 <span className="text-base font-black font-mono text-emerald-400 mt-0.5 block">
                   {formatNumber(activeCustomerTotalPaid)} {currencySymbol}
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-[#161B26] border border-white/5">
-                <span className="text-[11px] text-[#94A3B8] block">الحد الائتماني المعتمد:</span>
+              <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700/80">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">الحد الائتماني المعتمد:</span>
                 <span className="text-base font-bold font-mono text-slate-300 mt-0.5 block">
                   {profileCustomer.creditLimit ? `${formatNumber(profileCustomer.creditLimit)} ${currencySymbol}` : 'غير محدد'}
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-[#161B26] border border-white/5">
-                <span className="text-[11px] text-[#94A3B8] block">الرصيد المتبقي المستحق:</span>
+              <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700/80">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">الرصيد المتبقي المستحق:</span>
                 <span className="text-base font-black font-mono text-rose-400 mt-0.5 block">
                   {formatNumber(profileCustomer.balance || 0)} {currencySymbol}
                 </span>
@@ -1320,14 +1316,14 @@ export const DebtsPage: React.FC = () => {
                   <Clock size={14} className="text-purple-400" />
                   <span>سجل الحركات المالية وكشف الحساب:</span>
                 </h4>
-                <span className="text-[11px] text-[#94A3B8]">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
                   عدد العمليات: {activeCustomerLedger.length}
                 </span>
               </div>
 
-              <div className="max-h-64 overflow-y-auto border border-white/10 rounded-xl bg-[#161B26]">
+              <div className="max-h-64 overflow-y-auto border border-slate-300 dark:border-slate-600/80 rounded-xl bg-white dark:bg-slate-800/95">
                 <table className="w-full text-right text-xs">
-                  <thead className="bg-[#1E293B] text-[#94A3B8] sticky top-0 border-b border-white/10">
+                  <thead className="bg-slate-100 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 sticky top-0 border-b border-slate-300 dark:border-slate-600/80">
                     <tr>
                       <th className="py-2.5 px-3 font-bold">التاريخ</th>
                       <th className="py-2.5 px-3 font-bold">نوع الحركة / المرجع</th>
@@ -1339,19 +1335,19 @@ export const DebtsPage: React.FC = () => {
                   <tbody className="divide-y divide-white/[0.04] text-slate-200">
                     {activeCustomerLedger.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-[#94A3B8]">
+                        <td colSpan={5} className="py-8 text-center text-slate-500 dark:text-slate-400">
                           لا توجد حركات مسجلة لهذا العميل حتى الآن.
                         </td>
                       </tr>
                     ) : (
                       activeCustomerLedger.map(row => (
                         <tr key={row.id} className="hover:bg-white/[0.02]">
-                          <td className="py-2.5 px-3 font-mono text-[#94A3B8]">
+                          <td className="py-2.5 px-3 font-mono text-slate-500 dark:text-slate-400">
                             {formatDate(new Date(row.timestamp))}
                           </td>
                           <td className="py-2.5 px-3">
                             <span className="font-bold block text-white">{row.title}</span>
-                            <span className="text-[11px] font-mono text-[#94A3B8]">{row.ref}</span>
+                            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">{row.ref}</span>
                             {row.notes && (
                               <span className="text-[10px] text-slate-400 block mt-0.5">{row.notes}</span>
                             )}
@@ -1374,11 +1370,11 @@ export const DebtsPage: React.FC = () => {
             </div>
 
             {/* الأزرار السفلية */}
-            <div className="flex justify-between items-center pt-2 border-t border-white/5">
+            <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-700/80">
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-white/10 flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-300 dark:border-slate-600/80 flex items-center gap-1.5 cursor-pointer"
               >
                 <Printer size={15} />
                 <span>طباعة كشف الحساب</span>
@@ -1387,7 +1383,7 @@ export const DebtsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setProfileCustomer(null)}
-                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-white/10 cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-300 dark:border-slate-600/80 cursor-pointer"
               >
                 إغلاق
               </button>
@@ -1414,7 +1410,7 @@ export const DebtsPage: React.FC = () => {
                 required
                 value={newDebtCustomerId}
                 onChange={(e) => setNewDebtCustomerId(Number(e.target.value) || '')}
-                className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="">-- اضغط لاختيار العميل --</option>
                 {state.customers.map(c => (
@@ -1437,7 +1433,7 @@ export const DebtsPage: React.FC = () => {
                 value={newDebtAmount}
                 onChange={(e) => setNewDebtAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-3 py-2.5 rounded-xl border border-white/10 bg-[#1E293B] text-white font-bold font-mono text-base outline-none focus:ring-2 focus:ring-purple-500 text-center"
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white font-bold font-mono text-base outline-none focus:ring-2 focus:ring-purple-500 text-center"
               />
             </div>
 
@@ -1451,7 +1447,7 @@ export const DebtsPage: React.FC = () => {
                 value={newDebtDescription}
                 onChange={(e) => setNewDebtDescription(e.target.value)}
                 placeholder="مثال: خدمات صالون ومعالجة، منتجات عناية..."
-                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
 
@@ -1463,11 +1459,11 @@ export const DebtsPage: React.FC = () => {
                 type="date"
                 value={newDebtDate}
                 onChange={(e) => setNewDebtDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
 
-            <div className="flex gap-2.5 pt-3 border-t border-white/10">
+            <div className="flex gap-2.5 pt-3 border-t border-slate-300 dark:border-slate-600/80">
               <Button
                 variant="primary"
                 disabled={isSubmittingDebt || !newDebtCustomerId || !parseFloat(newDebtAmount)}
@@ -1508,7 +1504,7 @@ export const DebtsPage: React.FC = () => {
                 value={newCustName}
                 onChange={(e) => setNewCustName(e.target.value)}
                 placeholder="أحمد محمد علي"
-                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
 
@@ -1522,7 +1518,7 @@ export const DebtsPage: React.FC = () => {
                 value={newCustPhone}
                 onChange={(e) => setNewCustPhone(e.target.value)}
                 placeholder="01012345678"
-                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
 
@@ -1538,7 +1534,7 @@ export const DebtsPage: React.FC = () => {
                   value={newCustLimit}
                   onChange={(e) => setNewCustLimit(e.target.value)}
                   placeholder="2000"
-                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
@@ -1553,7 +1549,7 @@ export const DebtsPage: React.FC = () => {
                   value={newCustInitialBalance}
                   onChange={(e) => setNewCustInitialBalance(e.target.value)}
                   placeholder="0"
-                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
             </div>
@@ -1567,11 +1563,11 @@ export const DebtsPage: React.FC = () => {
                 value={newCustNotes}
                 onChange={(e) => setNewCustNotes(e.target.value)}
                 placeholder="ملاحظات ائتمانية أو مواعيد سداد..."
-                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
 
-            <div className="flex gap-2.5 pt-3 border-t border-white/10">
+            <div className="flex gap-2.5 pt-3 border-t border-slate-300 dark:border-slate-600/80">
               <Button
                 variant="primary"
                 disabled={isSubmittingCustomer || !newCustName.trim() || !newCustPhone.trim()}
@@ -1612,7 +1608,7 @@ export const DebtsPage: React.FC = () => {
                 step="100"
                 value={editLimit}
                 onChange={(e) => setEditLimit(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
 
@@ -1625,11 +1621,11 @@ export const DebtsPage: React.FC = () => {
                 value={editNotes}
                 onChange={(e) => setEditNotes(e.target.value)}
                 placeholder="سجل ملاحظات التسهيلات والاتفاق..."
-                className="w-full px-3 py-2 rounded-xl border border-white/10 bg-[#1E293B] text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
 
-            <div className="flex gap-2.5 pt-3 border-t border-white/10">
+            <div className="flex gap-2.5 pt-3 border-t border-slate-300 dark:border-slate-600/80">
               <Button
                 variant="primary"
                 className="flex-1 justify-center py-2.5 text-sm font-bold shadow-sm"
