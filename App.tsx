@@ -1110,29 +1110,14 @@ const AppContent = () => {
     return <ForcePasswordChange />;
   }
 
-  // عند وجود أكثر من فرع: يظهر للمدير فقط اختيار الفرع عند تسجيل الدخول
-  const activeLocations = (state.locations || []).filter(l => l.active !== false);
-  const requiresAdminBranchSelection = currentUser.role === 'admin' && activeLocations.length > 1 && !adminBranchSelected;
-
-  if (requiresAdminBranchSelection) {
-    return (
-      <AdminBranchSelectionScreen
-        locations={activeLocations}
-        userName={currentUser.name}
-        onSelectBranch={(loc) => {
-          updateSettings({ currentLocationId: loc.id });
-          sessionStorage.setItem('admin_branch_selected_' + currentUser.id, loc.id);
-          setAdminBranchSelected(loc.id);
-          addToast(language === 'ar' ? `تم الدخول لإدارة فرع «${loc.name}» بنجاح ✓` : `Managing branch: ${loc.name}`, 'success');
-        }}
-        onLogout={() => {
-          sessionStorage.removeItem('admin_branch_selected_' + (currentUser?.id || ''));
-          setAdminBranchSelected(null);
-          logout();
-        }}
-      />
-    );
-  }
+  // لا يتم حجب الشاشة أو إعادة تسجيل الدخول عند تحديث الفروع؛ تتحدث البيانات مباشرة في الصفحة بسلاسة
+  useEffect(() => {
+    if (currentUser?.id && !sessionStorage.getItem('admin_branch_selected_' + currentUser.id)) {
+      const activeId = state.settings.currentLocationId || (state.locations[0]?.id || '1');
+      sessionStorage.setItem('admin_branch_selected_' + currentUser.id, activeId);
+      setAdminBranchSelected(activeId);
+    }
+  }, [currentUser?.id, state.settings.currentLocationId, state.locations]);
 
   return (
     <ErrorBoundary>
