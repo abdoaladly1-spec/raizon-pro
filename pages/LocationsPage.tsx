@@ -1,5 +1,5 @@
 /* نظام إدارة الفروع المتعددة والربط السحابي (RaiZon Pro) */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Plus, Trash2, Globe, Clock, Check, Info, MapPin, Sparkles, Building, Users, FileText } from '../components/Icons';
 import { Location } from '../types';
@@ -12,6 +12,33 @@ export const LocationsPage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [form, setForm] = useState({ id: '', name: '', address: '', phone: '', active: true } as Location);
     const [isSyncing, setIsSyncing] = useState(false);
+
+    // تحديث وتزامن تلقائي للفروع بمجرد فتح الصفحة
+    useEffect(() => {
+        let mounted = true;
+        const autoSync = async () => {
+            try {
+                const pulled = await pullFromSupabase(state.settings.supabaseUrl, state.settings.supabaseKey);
+                if (mounted && pulled.ok && pulled.branches && pulled.branches.length > 0) {
+                    for (const remoteBranch of pulled.branches) {
+                        if (!state.locations.some(l => String(l.id) === String(remoteBranch.id))) {
+                            addLocation({
+                                id: String(remoteBranch.id),
+                                name: remoteBranch.name,
+                                address: remoteBranch.address || '',
+                                phone: remoteBranch.phone || '',
+                                active: remoteBranch.active !== false
+                            });
+                        }
+                    }
+                }
+            } catch (e) {
+                // صامت في الخلفية
+            }
+        };
+        autoSync();
+        return () => { mounted = false; };
+    }, []);
 
     const handleManualSync = async () => {
         setIsSyncing(true);
@@ -122,54 +149,33 @@ export const LocationsPage = () => {
                             : 'Manage shop branches, set active terminal branch, and prepare cloud syncing.'}
                     </p>
                 </div>
-                <Button 
-                    variant="primary" 
-                    onClick={() => { 
-                        setForm({ id: '', name: '', address: '', phone: '', active: true }); 
-                        setIsEditing(false); 
-                        setShowModal(true); 
-                    }}
-                    className="font-bold shadow-md cursor-pointer flex items-center gap-2 py-2.5 px-4"
-                >
-                    <Plus size={18} />
-                    <span>{language === 'ar' ? 'إضافة فرع جديد' : 'Add New Branch'}</span>
-                </Button>
-            </div>
+                <div className="flex items-center gap-2.5">
+                    <Button
+                        variant="secondary"
+                        disabled={isSyncing}
+                        onClick={handleManualSync}
+                        className="font-bold shadow-xs cursor-pointer flex items-center gap-1.5 py-2.5 px-3.5 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs sm:text-sm"
+                    >
+                        <Globe size={16} className={isSyncing ? 'animate-spin text-primary-500' : 'text-primary-500'} />
+                        <span>{isSyncing ? (language === 'ar' ? 'جاري المزامنة...' : 'Syncing...') : (language === 'ar' ? 'مزامنة الفروع 🔄' : 'Sync Branches')}</span>
+                    </Button>
 
-            {/* Cloud Sync Announcement Banner */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-purple-500/10 to-sky-500/10 border border-emerald-400/40 dark:border-emerald-600/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
-                <div className="flex items-start gap-3.5 flex-1">
-                    <span className="p-2 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 flex-shrink-0 text-xl">
-                        ☁️
-                    </span>
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-                                {language === 'ar' ? 'سحابة Supabase اللحظية (Realtime Multi-Branch Sync)' : 'Supabase Realtime Multi-Branch Sync'}
-                            </h4>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                {language === 'ar' ? 'سيرفر أوروبا نشط 🟢' : 'Connected 🟢'}
-                            </span>
-                        </div>
-                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                            {language === 'ar'
-                                ? 'النظام مربوط بسحابة Supabase لمزامنة الفواتير والمبيعات وحسابات العملاء بين جميع الفروع لحظة بلحظة وبشكل فوري.'
-                                : 'Connected to Supabase Realtime for instant synchronization of invoices, sales, and debts across all branches.'}
-                        </p>
-                    </div>
+                    <Button 
+                        variant="primary" 
+                        onClick={() => { 
+                            setForm({ id: '', name: '', address: '', phone: '', active: true }); 
+                            setIsEditing(false); 
+                            setShowModal(true); 
+                        }}
+                        className="font-bold shadow-md cursor-pointer flex items-center gap-2 py-2.5 px-4 text-xs sm:text-sm"
+                    >
+                        <Plus size={18} />
+                        <span>{language === 'ar' ? 'إضافة فرع جديد' : 'Add New Branch'}</span>
+                    </Button>
                 </div>
-
-                <Button
-                    variant="secondary"
-                    disabled={isSyncing}
-                    onClick={handleManualSync}
-                    className="cursor-pointer shrink-0 text-xs font-bold py-2 px-3.5 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center gap-1.5"
-                >
-                    <Globe size={14} className={isSyncing ? 'animate-spin text-emerald-500' : 'text-emerald-500'} />
-                    <span>{isSyncing ? (language === 'ar' ? 'جاري المزامنة...' : 'Syncing...') : (language === 'ar' ? 'مزامنة الفروع الآن 🔄' : 'Sync Branches Now')}</span>
-                </Button>
             </div>
+
+
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
