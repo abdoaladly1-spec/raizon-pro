@@ -10,7 +10,7 @@ import {
     Building, Bell, Lock, Save, Key, Shield, Download
 } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier, AppState } from '../types';
-import { Card, Button, Input, ToastContainer } from '../components/ui';
+import { Card, Button, Input, ToastContainer, ModalShell } from '../components/ui';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AuditLogs } from './AuditLogsPage';
 import { AdminUsers } from './AdminUsersPage';
@@ -23,7 +23,7 @@ import { PAGE_SIZES, ELEMENT_ORDER, TEMPLATE_PRESETS, applyTemplatePreset, norma
 type SettingsTab = 'general' | 'email' | 'print' | 'security' | 'users' | 'logs' | 'updates';
 
 const TABS = [
-    { id: 'general', icon: Building, labelAr: 'بيانات المحل', labelEn: 'Shop Profile' },
+    { id: 'general', icon: Settings, labelAr: 'عام', labelEn: 'General' },
     { id: 'email', icon: Bell, labelAr: 'إشعارات المدير', labelEn: 'Manager Alerts' },
     { id: 'print', icon: Printer, labelAr: 'الطباعة والتصميم', labelEn: 'Print Design' },
     { id: 'security', icon: Shield, labelAr: 'النسخ الاحتياطي والأمان', labelEn: 'Backup & Security' },
@@ -40,6 +40,7 @@ export const SettingsPage = () => {
     } = useApp();
 
     const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+    const [showCustomizeNotificationsModal, setShowCustomizeNotificationsModal] = useState(false);
     const [showVisibilityModal, setShowVisibilityModal] = useState(false);
     const [form, setForm] = useState(state.settings);
     const initialFormJsonRef = useRef(JSON.stringify(state.settings));
@@ -1087,17 +1088,24 @@ export const SettingsPage = () => {
 
     const renderGeneral = () => (
         <div className="space-y-5 animate-fade-in">
+            {/* بيانات النشاط التجاري والدرج */}
             <Card>
                 <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
                     <span className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400"><Building size={20} /></span>
                     <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                        {language === 'ar' ? 'بيانات النشاط التجاري والاتصال' : 'Shop Information'}
+                        {language === 'ar' ? 'بيانات النشاط التجاري والخزينة' : 'Business & Cash Drawer'}
                     </h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <Input label={t('shop_name')} value={form.shopName} onChange={(e:any)=>setForm({...form, shopName: e.target.value})} />
                     <Input label={t('phone')} value={form.phone} onChange={(e:any)=>setForm({...form, phone: e.target.value})} />
                     <Input label={t('address')} value={form.address} onChange={(e:any)=>setForm({...form, address: e.target.value})} />
+                    <Input 
+                        label={language === 'ar' ? 'رصيد افتتاح الدرج (ج.م)' : 'Cash Drawer Opening (EGP)'} 
+                        type="number" 
+                        value={form.cashDrawerOpening || 0} 
+                        onChange={(e:any)=>setForm({...form, cashDrawerOpening: parseFloat(e.target.value) || 0})} 
+                    />
                 </div>
             </Card>
 
@@ -1193,6 +1201,64 @@ export const SettingsPage = () => {
                 </div>
             </Card>
 
+            {/* بطاقة إشعارات المدير السريعة وتخصيص الإشعارات */}
+            <Card>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
+                    <div className="flex items-center gap-2">
+                        <span className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400"><Bell size={20} /></span>
+                        <div>
+                            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                                {language === 'ar' ? 'إشعارات جيميل وتنبيهات المدير الفورية' : 'Manager Instant Alerts'}
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                {language === 'ar' ? 'تصلك تنبيهات الفواتير والتقفيل والمصروفات فور حدوثها على هاتفك' : 'Receive instant transaction and closing alerts on your phone'}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setShowCustomizeNotificationsModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
+                    >
+                        <Bell size={15} />
+                        <span>{language === 'ar' ? 'تخصيص الإشعارات' : 'Customize Notifications'}</span>
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            {language === 'ar' ? 'بريد جيميل المدير لاستقبال الإشعارات:' : "Manager's Receiving Gmail:"}
+                        </label>
+                        <input
+                            type="email"
+                            placeholder="manager@gmail.com"
+                            value={emailConfig.emailTo}
+                            onChange={(e) => setEmailConfig(prev => ({ ...prev, emailTo: e.target.value.trim() }))}
+                            className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-purple-500 font-mono font-bold"
+                        />
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => handleSendTestEmail('invoice')}
+                            disabled={isTestingEmail || !emailConfig.emailTo}
+                            className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+                        >
+                            {language === 'ar' ? 'تجربة إرسال فاتورة' : 'Test Invoice'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleSendTestEmail('closing')}
+                            disabled={isTestingEmail || !emailConfig.emailTo}
+                            className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+                        >
+                            {language === 'ar' ? 'تجربة إرسال تقفيل' : 'Test Closing'}
+                        </button>
+                    </div>
+                </div>
+            </Card>
+
             <div className="flex justify-end">
                 <Button onClick={save} className="px-6 py-2.5 font-bold shadow-xs">{t('save')}</Button>
             </div>
@@ -1220,26 +1286,6 @@ export const SettingsPage = () => {
                     <span className="text-xs font-bold px-3 py-1 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span>{language === 'ar' ? 'سيرفر الإرسال معتمد وجاهز' : 'Dispatch Ready'}</span>
-                    </span>
-                </div>
-
-                {/* بطاقة البريد المعتمد المدمج في النظام */}
-                <div className="mb-4 p-4 rounded-2xl bg-gradient-to-r from-primary-50/80 via-sky-50/40 to-slate-50/60 dark:from-slate-800 dark:via-slate-800/90 dark:to-slate-800/60 border border-primary-200/60 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center text-lg font-bold shadow-xs">
-                            
-                        </div>
-                        <div>
-                            <p className="text-xs font-extrabold text-slate-700 dark:text-slate-300">
-                                {language === 'ar' ? 'بريد الإرسال الرسمي المدمج بالنظام:' : 'Official Dispatch Email:'}
-                            </p>
-                            <p className="text-sm font-mono font-bold text-primary-700 dark:text-primary-300">
-                                rizon.pro.app@gmail.com
-                            </p>
-                        </div>
-                    </div>
-                    <span className="text-xs font-bold px-3 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300/50">
-                        {language === 'ar' ? 'مدمج ومعتمد أساسياً' : 'Pre-configured'}
                     </span>
                 </div>
 
@@ -1272,102 +1318,31 @@ export const SettingsPage = () => {
                     </p>
                 </div>
 
-                {/* شبكة خيارات تفعيل الإشعارات الفورية لكل الخدمات */}
-                <div className="mt-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                            {language === 'ar' ? 'اختر الإشعارات الفورية المطلوب استلامها فور حدوثها:' : 'Instant Alerts to receive in real-time:'}
-                        </label>
-                        <span className="text-[11px] text-slate-500 font-bold">
-                            {language === 'ar' ? 'جميع الإشعارات بنمط فخم موحد وتصميم احترافي' : 'Luxury unified dark theme'}
-                        </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {/* 1. الفواتير */}
-                        <div className={`p-3.5 rounded-xl border transition-all ${emailConfig.notifyOnInvoice ? 'bg-primary-50/50 border-primary-300/80 dark:bg-primary-950/20 dark:border-primary-700/60' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'}`}>
-                            <label className="flex items-start gap-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={emailConfig.notifyOnInvoice}
-                                    onChange={(e) => setEmailConfig(prev => ({ ...prev, notifyOnInvoice: e.target.checked }))}
-                                    className="w-4 h-4 mt-0.5 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
-                                />
-                                <div className="space-y-0.5">
-                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                                        <FileText size={16} className="text-slate-400 shrink-0" />
-                                        <span>{language === 'ar' ? 'فواتير المبيعات الجديدة' : 'New Sales Invoices'}</span>
-                                    </div>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                                        {language === 'ar' ? 'إشعار فوري عند إصدار كل فاتورة بيع مع الأصناف وطريقة الدفع والعميل.' : 'Instant alert on every new invoice with items, cashier & payment method.'}
-                                    </p>
-                                </div>
-                            </label>
+                {/* زر تخصيص الإشعارات المطور مع تلميح أنيق */}
+                <div className="mt-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/20">
+                            <Bell size={20} />
                         </div>
-
-                        {/* 2. تقفيل الوردية */}
-                        <div className={`p-3.5 rounded-xl border transition-all ${emailConfig.notifyOnClosing ? 'bg-primary-50/50 border-primary-300/80 dark:bg-primary-950/20 dark:border-primary-700/60' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'}`}>
-                            <label className="flex items-start gap-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={emailConfig.notifyOnClosing}
-                                    onChange={(e) => setEmailConfig(prev => ({ ...prev, notifyOnClosing: e.target.checked }))}
-                                    className="w-4 h-4 mt-0.5 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
-                                />
-                                <div className="space-y-0.5">
-                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                                        <Lock size={16} className="text-slate-400 shrink-0" />
-                                        <span>{language === 'ar' ? 'تقفيل الوردية اليومية (Z-Report)' : 'Shift Closing (Z-Report)'}</span>
-                                    </div>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                                        {language === 'ar' ? 'تقرير مفصل بإجمالي المبيعات، النقدية، المصروفات، والعجز أو الزيادة بالدرج.' : 'Detailed report with total cash, expenses, and drawer variance.'}
-                                    </p>
-                                </div>
-                            </label>
-                        </div>
-
-                        {/* 3. المرتجعات */}
-                        <div className={`p-3.5 rounded-xl border transition-all ${emailConfig.notifyOnReturn ? 'bg-primary-50/50 border-primary-300/80 dark:bg-primary-950/20 dark:border-primary-700/60' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'}`}>
-                            <label className="flex items-start gap-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={emailConfig.notifyOnReturn}
-                                    onChange={(e) => setEmailConfig(prev => ({ ...prev, notifyOnReturn: e.target.checked }))}
-                                    className="w-4 h-4 mt-0.5 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
-                                />
-                                <div className="space-y-0.5">
-                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                                        <RefreshCw size={16} className="text-slate-400 shrink-0" />
-                                        <span>{language === 'ar' ? 'المرتجعات واسترداد المبالغ' : 'Refunds & Returns'}</span>
-                                    </div>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                                        {language === 'ar' ? 'تنبيه فوري عند استرجاع أي صنف أو إعادة نقدية للعميل مع بيان السبب.' : 'Instant alert on any returned items or refunds with reason.'}
-                                    </p>
-                                </div>
-                            </label>
-                        </div>
-
-                        {/* 4. المصروفات النقدية */}
-                        <div className={`p-3.5 rounded-xl border transition-all ${emailConfig.notifyOnExpense ? 'bg-primary-50/50 border-primary-300/80 dark:bg-primary-950/20 dark:border-primary-700/60' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'}`}>
-                            <label className="flex items-start gap-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={emailConfig.notifyOnExpense}
-                                    onChange={(e) => setEmailConfig(prev => ({ ...prev, notifyOnExpense: e.target.checked }))}
-                                    className="w-4 h-4 mt-0.5 rounded text-primary-600 focus:ring-primary-500 cursor-pointer"
-                                />
-                                <div className="space-y-0.5">
-                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                                        <Wallet size={16} className="text-slate-400 shrink-0" />
-                                        <span>{language === 'ar' ? 'المصروفات والسحب من الخزينة' : 'Drawer Cash Expenses'}</span>
-                                    </div>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                                        {language === 'ar' ? 'إشعار عند تسجيل أي مصروف نقدي أو فواتير صيانة ونثريات من الدرج.' : 'Alert on any cash expense or petty cash deduction from drawer.'}
-                                    </p>
-                                </div>
-                            </label>
+                        <div>
+                            <h4 className="text-xs md:text-sm font-bold text-slate-900 dark:text-slate-100">
+                                {language === 'ar' ? 'تخصيص الإشعارات الفورية' : 'Customize Instant Notifications'}
+                            </h4>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                {language === 'ar'
+                                    ? 'حدد الفواتير، تقفيل الوردية، المرتجعات، والمصروفات المراد استلامها فورياً على بريدك.'
+                                    : 'Select invoices, closings, returns, and cash expenses to trigger instant alerts.'}
+                            </p>
                         </div>
                     </div>
+                    <button
+                        type="button"
+                        onClick={() => setShowCustomizeNotificationsModal(true)}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-600/20 transition-all cursor-pointer active:scale-95"
+                    >
+                        <Bell size={16} />
+                        <span>{language === 'ar' ? 'تخصيص الإشعارات' : 'Customize Notifications'}</span>
+                    </button>
                 </div>
 
                 {/* أزرار الحفظ وتجربة الخدمات */}
@@ -2224,6 +2199,131 @@ export const SettingsPage = () => {
             {activeTab === 'users' && <AdminUsers />}
             {activeTab === 'logs' && <AuditLogs />}
             {activeTab === 'updates' && renderUpdates()}
+            {/* نافذة تخصيص الإشعارات الفورية مع زر حفظ وزر إغلاق */}
+            {showCustomizeNotificationsModal && (
+                <ModalShell
+                    title={language === 'ar' ? 'تخصيص الإشعارات الفورية' : 'Customize Notifications'}
+                    onClose={() => setShowCustomizeNotificationsModal(false)}
+                    maxWidth="max-w-xl"
+                >
+                    <div className="space-y-4">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {language === 'ar'
+                                ? 'حدد الأحداث والعمليات التي ترغب في استلام إشعار فوري بها على بريد جيميل المدير:'
+                                : 'Select events to trigger real-time notifications to the manager:'}
+                        </p>
+
+                        <div className="space-y-3">
+                            {/* 1. فواتير المبيعات */}
+                            <div className={`p-3.5 rounded-xl border transition-all ${emailConfig.notifyOnInvoice ? 'bg-purple-50/50 border-purple-300 dark:bg-purple-950/30 dark:border-purple-700' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'}`}>
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={emailConfig.notifyOnInvoice}
+                                        onChange={(e) => setEmailConfig(prev => ({ ...prev, notifyOnInvoice: e.target.checked }))}
+                                        className="w-4 h-4 mt-0.5 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                    />
+                                    <div className="space-y-0.5">
+                                        <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                            <FileText size={15} className="text-purple-500" />
+                                            <span>{language === 'ar' ? 'فواتير المبيعات الجديدة' : 'New Sales Invoices'}</span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            {language === 'ar' ? 'إشعار فوري عند إصدار كل فاتورة بيع مع الأصناف وطريقة الدفع والعميل.' : 'Instant alert on every new invoice with items, cashier & payment method.'}
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            {/* 2. تقفيل الوردية */}
+                            <div className={`p-3.5 rounded-xl border transition-all ${emailConfig.notifyOnClosing ? 'bg-purple-50/50 border-purple-300 dark:bg-purple-950/30 dark:border-purple-700' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'}`}>
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={emailConfig.notifyOnClosing}
+                                        onChange={(e) => setEmailConfig(prev => ({ ...prev, notifyOnClosing: e.target.checked }))}
+                                        className="w-4 h-4 mt-0.5 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                    />
+                                    <div className="space-y-0.5">
+                                        <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                            <Lock size={15} className="text-purple-500" />
+                                            <span>{language === 'ar' ? 'تقفيل الوردية اليومية (Z-Report)' : 'Shift Closing (Z-Report)'}</span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            {language === 'ar' ? 'تقرير مفصل بإجمالي المبيعات، النقدية، المصروفات، والعجز أو الزيادة بالدرج.' : 'Detailed report with total cash, expenses, and drawer variance.'}
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            {/* 3. المرتجعات */}
+                            <div className={`p-3.5 rounded-xl border transition-all ${emailConfig.notifyOnReturn ? 'bg-purple-50/50 border-purple-300 dark:bg-purple-950/30 dark:border-purple-700' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'}`}>
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={emailConfig.notifyOnReturn}
+                                        onChange={(e) => setEmailConfig(prev => ({ ...prev, notifyOnReturn: e.target.checked }))}
+                                        className="w-4 h-4 mt-0.5 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                    />
+                                    <div className="space-y-0.5">
+                                        <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                            <RefreshCw size={15} className="text-purple-500" />
+                                            <span>{language === 'ar' ? 'المرتجعات واسترداد المبالغ' : 'Refunds & Returns'}</span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            {language === 'ar' ? 'تنبيه فوري عند استرجاع أي صنف أو إعادة نقدية للعميل مع بيان السبب.' : 'Instant alert on any returned items or refunds with reason.'}
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            {/* 4. المصروفات النقدية */}
+                            <div className={`p-3.5 rounded-xl border transition-all ${emailConfig.notifyOnExpense ? 'bg-purple-50/50 border-purple-300 dark:bg-purple-950/30 dark:border-purple-700' : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'}`}>
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={emailConfig.notifyOnExpense}
+                                        onChange={(e) => setEmailConfig(prev => ({ ...prev, notifyOnExpense: e.target.checked }))}
+                                        className="w-4 h-4 mt-0.5 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                    />
+                                    <div className="space-y-0.5">
+                                        <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                            <Wallet size={15} className="text-purple-500" />
+                                            <span>{language === 'ar' ? 'المصروفات والسحب من الخزينة' : 'Drawer Cash Expenses'}</span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            {language === 'ar' ? 'إشعار عند تسجيل أي مصروف نقدي أو فواتير صيانة ونثريات من الدرج.' : 'Alert on any cash expense or petty cash deduction from drawer.'}
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* أزرار الإجراءات في النافذة: حفظ وإغلاق */}
+                        <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-700">
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    await handleSaveEmailConfig();
+                                    setShowCustomizeNotificationsModal(false);
+                                }}
+                                disabled={isSavingEmail}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-600/20 transition-all cursor-pointer active:scale-95"
+                            >
+                                <Save size={16} />
+                                <span>{language === 'ar' ? 'حفظ التخصيص' : 'Save'}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowCustomizeNotificationsModal(false)}
+                                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-600 cursor-pointer"
+                            >
+                                {language === 'ar' ? 'إغلاق' : 'Close'}
+                            </button>
+                        </div>
+                    </div>
+                </ModalShell>
+            )}
         </div>
     );
 };
