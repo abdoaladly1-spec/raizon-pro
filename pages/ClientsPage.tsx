@@ -181,8 +181,14 @@ export const Clients = () => {
         const phoneRegex = /^01\d{9}$/;
         const nameRegex = /^(\S+)\s+(\S+).*$/; 
 
-        if (!phoneRegex.test(form.phone.trim())) return alert(t('invalid_phone_format'));
-        if (!nameRegex.test(form.name.trim())) return alert(language === 'ar' ? 'يرجى كتابة الاسم ثنائياً على الأقل' : 'Please enter at least first and last name');
+        const cleanPhone = form.phone.trim().replace(/[٠-٩]/g, (d: string) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString()).replace(/[^\d]/g, '');
+        if (cleanPhone.length !== 11 || !cleanPhone.startsWith('01')) {
+            return alert(language === 'ar' ? 'شرط: رقم الهاتف يجب أن يتكون من 11 رقماً بالضبط ويبدأ بـ 01' : 'Phone number must be exactly 11 digits starting with 01');
+        }
+        const nameParts = form.name.trim().split(/\s+/).filter(Boolean);
+        if (nameParts.length < 3) {
+            return alert(language === 'ar' ? 'شرط: يرجى كتابة اسم العميل ثلاثياً على الأقل (3 أسماء)' : 'Customer name must be at least 3 parts (tripartite name)');
+        }
 
         const creditLimitNum = Math.max(0, parseFloat(String(form.creditLimit)) || 0);
         const balanceNum = Math.max(0, parseFloat(String(form.balance)) || 0);

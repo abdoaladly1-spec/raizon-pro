@@ -129,23 +129,62 @@ export const CreateInvoice = ({ onClose }: any) => {
       addToast(language === 'ar' ? 'يرجى إدخال اسم العميل' : 'Please enter customer name', 'error');
       return;
     }
+
+    // شرط: يجب أن يكون اسم العميل ثلاثياً على الأقل (3 أسماء)
+    const nameParts = nameTrimmed.split(/\s+/).filter(Boolean);
+    if (nameParts.length < 3) {
+      addToast(
+        language === 'ar'
+          ? 'شرط: يجب إدخال اسم العميل ثلاثياً على الأقل (مثال: محمد أحمد علي)'
+          : 'Customer name must be at least 3 parts (tripartite name)',
+        'error'
+      );
+      return;
+    }
+    if (nameParts.some(part => part.length < 2)) {
+      addToast(
+        language === 'ar'
+          ? 'يرجى كتابة أسماء صحيحة (كل مقطع يتكون من حرفين على الأقل)'
+          : 'Please enter valid names (each name at least 2 characters)',
+        'error'
+      );
+      return;
+    }
+
     if (!rawPhone) {
       addToast(language === 'ar' ? 'يرجى إدخال رقم الهاتف' : 'Please enter phone number', 'error');
       return;
     }
 
-    // Convert Arabic-Indic numerals to standard English digits and strip extra characters
+    // تحويل الأرقام العربية الهندية إلى أرقام إنجليزية وتجريد أي رموز إضافية
     let cleanPhone = rawPhone
       .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
       .replace(/[^\d]/g, '');
 
-    // If starts with 201 (Egypt country code), strip leading 2
+    // استبعاد كود الدولة لمصر (20) إن وُجد مثل 2010... ليصبح 010...
     if (cleanPhone.startsWith('201') && cleanPhone.length === 12) {
       cleanPhone = cleanPhone.slice(1);
     }
 
-    if (cleanPhone.length < 7) {
-      addToast(language === 'ar' ? 'رقم الهاتف قصير جداً، يرجى كتابة رقم صحيح' : 'Invalid phone number', 'error');
+    // شرط: رقم الهاتف يجب أن يتكون من 11 رقماً بالضبط
+    if (cleanPhone.length !== 11) {
+      addToast(
+        language === 'ar'
+          ? `شرط: رقم الهاتف يجب أن يتكون من 11 رقماً بالضبط (أدخلت ${cleanPhone.length} أرقام)`
+          : `Phone number must be exactly 11 digits (entered ${cleanPhone.length})`,
+        'error'
+      );
+      return;
+    }
+
+    // التحقق من أنه رقم محمول مصري سليم يبدأ بـ 01
+    if (!cleanPhone.startsWith('01')) {
+      addToast(
+        language === 'ar'
+          ? 'شرط: رقم الهاتف المحمول يجب أن يبدأ بـ 01 (مثال: 010, 011, 012, 015)'
+          : 'Phone number must start with 01',
+        'error'
+      );
       return;
     }
 
@@ -1672,13 +1711,18 @@ export const CreateInvoice = ({ onClose }: any) => {
             </div>
             <form onSubmit={handleQuickAddCustomer} className="p-4 space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  {language === 'ar' ? 'اسم العميل' : 'Client Name'} *
-                </label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                    {language === 'ar' ? 'اسم العميل' : 'Client Name'} *
+                  </label>
+                  <span className="text-[10px] text-amber-500 font-semibold">
+                    {language === 'ar' ? 'شرط: اسم ثلاثي' : 'Tripartite required'}
+                  </span>
+                </div>
                 <input
                   type="text"
                   required
-                  placeholder={language === 'ar' ? 'الاسم بالكامل' : 'Full Name'}
+                  placeholder={language === 'ar' ? 'اسم العميل ثلاثياً (مثال: محمد أحمد علي)' : 'Full tripartite name'}
                   value={quickCustomerForm.name}
                   onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500"
@@ -1686,16 +1730,30 @@ export const CreateInvoice = ({ onClose }: any) => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  {language === 'ar' ? 'رقم الهاتف' : 'Phone'} *
-                </label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                    {language === 'ar' ? 'رقم الهاتف' : 'Phone'} *
+                  </label>
+                  <span className={`text-[10px] font-mono font-bold ${quickCustomerForm.phone.replace(/[^\d]/g, '').length === 11 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                    {language === 'ar' 
+                      ? `شرط 11 رقماً (${quickCustomerForm.phone.replace(/[^\d]/g, '').length}/11)` 
+                      : `11 digits (${quickCustomerForm.phone.replace(/[^\d]/g, '').length}/11)`}
+                  </span>
+                </div>
                 <input
                   type="tel"
                   required
-                  placeholder="01xxxxxxxxx"
+                  maxLength={11}
+                  placeholder="01xxxxxxxxx (11 رقماً بالضبط)"
                   value={quickCustomerForm.phone}
-                  onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+                  onChange={(e) => {
+                    const clean = e.target.value
+                      .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
+                      .replace(/[^\d]/g, '')
+                      .slice(0, 11);
+                    setQuickCustomerForm(prev => ({ ...prev, phone: clean }));
+                  }}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500 font-mono text-center tracking-wider"
                 />
               </div>
               <div className="flex gap-2 pt-2">

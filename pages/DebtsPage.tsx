@@ -393,15 +393,36 @@ export const DebtsPage: React.FC = () => {
     }
   };
 
+  // Helper to convert Arabic numerals to English digits
+  const toEnglishDigits = (str: string) => {
+    return (str || '')
+      .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632))
+      .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776));
+  };
+
   // Submit new customer
   const handleConfirmAddCustomer = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCustName.trim()) {
+    const nameTrimmed = newCustName.trim();
+    if (!nameTrimmed) {
       addToast('يرجى إدخال اسم العميل', 'error');
       return;
     }
-    if (!newCustPhone.trim()) {
-      addToast('يرجى إدخال رقم الهاتف', 'error');
+
+    // شرط الاسم ثلاثي على الأقل
+    const nameParts = nameTrimmed.split(/\s+/).filter(Boolean);
+    if (nameParts.length < 3 || nameParts.some((p) => p.length < 2)) {
+      addToast('يجب كتابة اسم العميل ثلاثي على الأقل (مثال: محمد أحمد علي)', 'error');
+      return;
+    }
+
+    // تطهير رقم الهاتف وشرط 11 رقماً
+    let cleanPhone = toEnglishDigits(newCustPhone).replace(/\D/g, '');
+    if (cleanPhone.startsWith('20') && cleanPhone.length === 13) {
+      cleanPhone = cleanPhone.slice(2);
+    }
+    if (cleanPhone.length !== 11 || !cleanPhone.startsWith('01')) {
+      addToast('رقم الهاتف يجب أن يتكون من 11 رقماً ويبدأ بـ 01 (مثال: 01012345678)', 'error');
       return;
     }
 
@@ -411,8 +432,8 @@ export const DebtsPage: React.FC = () => {
       const initialBal = parseFloat(newCustInitialBalance) || 0;
 
       addCustomer({
-        name: newCustName.trim(),
-        phone: newCustPhone.trim(),
+        name: nameTrimmed,
+        phone: cleanPhone,
         creditLimit: limit,
         balance: initialBal,
         notes: newCustNotes.trim() || undefined
@@ -1495,29 +1516,41 @@ export const DebtsPage: React.FC = () => {
         >
           <form onSubmit={handleConfirmAddCustomer} className="space-y-4 text-right" dir="rtl">
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">
-                اسم العميل بالكامل:
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-bold text-slate-300">
+                  اسم العميل (ثلاثي): <span className="text-rose-400">*</span>
+                </label>
+                <span className="text-[10px] text-purple-300">شرط 3 كلمات</span>
+              </div>
               <input
                 type="text"
                 required
                 value={newCustName}
                 onChange={(e) => setNewCustName(e.target.value)}
-                placeholder="أحمد محمد علي"
+                placeholder="مثال: أحمد محمد علي"
                 className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">
-                رقم الهاتف:
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-bold text-slate-300">
+                  رقم الهاتف (11 رقماً): <span className="text-rose-400">*</span>
+                </label>
+                <span className={`text-[10px] font-mono ${newCustPhone.replace(/\D/g, '').length === 11 ? 'text-emerald-400 font-bold' : 'text-amber-400'}`}>
+                  {newCustPhone.replace(/\D/g, '').length}/11 رقم
+                </span>
+              </div>
               <input
                 type="tel"
                 required
+                maxLength={11}
                 value={newCustPhone}
-                onChange={(e) => setNewCustPhone(e.target.value)}
-                placeholder="01012345678"
+                onChange={(e) => {
+                  const val = toEnglishDigits(e.target.value).replace(/\D/g, '').slice(0, 11);
+                  setNewCustPhone(val);
+                }}
+                placeholder="01xxxxxxxxx"
                 className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
