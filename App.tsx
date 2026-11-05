@@ -1584,24 +1584,21 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             <div style={{ position:'absolute', top:0, left:'18%', right:'18%', height:1, background:'linear-gradient(90deg, transparent, #e879f9, #ffc52e, transparent)', opacity:.9, zIndex:2 }} />
 
             {/* ── BRAND / LOGO ── */}
-            <header style={{ textAlign:'center', marginBottom:22 }}>
+            <header style={{ textAlign:'center', marginBottom:20 }}>
               <img
                 src="/img/logo-transparent.png"
-                alt="RIZON PRO"
-                style={{ width:'min(100%,250px)', height:155, objectFit:'contain', display:'block', margin:'-5px auto 0', filter:'drop-shadow(0 8px 22px rgba(187,46,255,0.26))' }}
+                alt="RaiZon Pro"
+                style={{ width:'min(100%,240px)', height:140, objectFit:'contain', display:'block', margin:'-5px auto 0', filter:'drop-shadow(0 8px 22px rgba(187,46,255,0.26))' }}
               />
-              <p style={{ margin:'2px 0 0', color:'#cbbbd8', fontSize:11, letterSpacing:'2.5px', direction:'ltr', fontWeight:600 }}>
-                SMART CASHIER MANAGEMENT SYSTEM
+              {/* اسم التطبيق أسفل اللوجو مباشرة */}
+              <h1 style={{ fontSize:26, fontWeight:800, margin:'8px 0 2px', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                <span style={{ color:'#ffbf24', textShadow:'0 0 16px rgba(255,191,36,0.35)' }}>RaiZon</span>
+                <span style={{ color:'#cf57ff', textShadow:'0 0 16px rgba(207,87,255,0.35)' }}>Pro</span>
+              </h1>
+              <p style={{ color:'#b9a9c7', textAlign:'center', fontSize:13, margin:'2px 0 0' }}>
+                سجّل الدخول لإدارة أعمالك ومتابعة مبيعاتك
               </p>
             </header>
-
-            {/* Title + subtitle */}
-            <h1 style={{ fontSize:25, lineHeight:1.5, margin:'0 0 4px', textAlign:'center', fontWeight:800, color:'#fff' }}>
-              مرحباً بعودتك
-            </h1>
-            <p style={{ color:'#b9a9c7', textAlign:'center', fontSize:13, margin:'0 0 24px' }}>
-              سجّل الدخول لإدارة أعمالك ومتابعة مبيعاتك
-            </p>
 
             {/* License badge */}
             {liveRemainingText && (
