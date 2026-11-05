@@ -462,6 +462,7 @@ export interface AppState {
   purchaseOrders: PurchaseOrder[];
   customerPayments?: CustomerPayment[];
   settings: {
+    firstAdminSetupDone?: boolean;
     shopName: string;
     phone: string;
     address: string;

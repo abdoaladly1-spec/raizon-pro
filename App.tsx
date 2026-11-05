@@ -1192,8 +1192,10 @@ const AppContent = () => {
   }
 
   // إجبار تغيير كلمة المرور الافتراضية قبل استخدام النظام
-  if (currentUser.mustChangePassword) {
-    return <ForcePasswordChange />;
+  // إجبار تغيير كلمة المرور الافتراضية وتهيئة حساب المدير والدرج عند أول دخول
+  const isFirstAdminSetup = currentUser.role === 'admin' && (currentUser.mustChangePassword || !state.settings?.firstAdminSetupDone);
+  if (currentUser.mustChangePassword || isFirstAdminSetup) {
+    return <InitialAdminSetupWizard />;
   }
 
   return (
@@ -1211,47 +1213,409 @@ const AppContent = () => {
   );
 };
 
-const ForcePasswordChange = () => {
-  const { currentUser, changeOwnPassword, logout, t } = useApp();
+const InitialAdminSetupWizard = () => {
+  const {
+    currentUser,
+    changeOwnPassword,
+    updateUser,
+    updateSettings,
+    addDrawerMovement,
+    addAuditLog,
+    addToast,
+    state,
+    logout,
+    language
+  } = useApp();
+
+  const isAdmin = currentUser?.role === 'admin';
+
+  // Step state: 1 = Password change, 2 = Admin Name & Cash Drawer
+  const [step, setStep] = useState<1 | 2>(1);
+
+  // Step 1: Password inputs
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNext, setShowNext] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  // Step 2: Name & Cash Drawer
+  const [realName, setRealName] = useState(
+    currentUser?.name && currentUser.name !== 'Admin' && currentUser.name !== 'المدير العام'
+      ? currentUser.name
+      : ''
+  );
+  const [drawerCash, setDrawerCash] = useState<string>('');
+
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const submit = async (e: any) => {
-    e.preventDefault();
+  // Handle Step 1 Next
+  const handleStep1Next = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setError('');
-    if (next.trim().length < 6) { setError(t('password_short')); return; }
-    if (next !== confirm) { setError(t('wrong_password')); return; }
+
+    if (!current.trim()) {
+      setError(language === 'ar' ? 'يرجى إدخال كلمة المرور الحالية (admin)' : 'Please enter current password');
+      return;
+    }
+    if (next.trim().length < 6) {
+      setError(language === 'ar' ? 'كلمة المرور الجديدة يجب ألا تقل عن 6 أحرف أو أرقام' : 'New password must be at least 6 characters');
+      return;
+    }
+    if (next.trim().toLowerCase() === 'admin') {
+      setError(language === 'ar' ? 'يرجى اختيار كلمة مرور جديدة تختلف عن كلمة المرور الافتراضية (admin)' : 'Please choose a password different from default');
+      return;
+    }
+    if (next !== confirm) {
+      setError(language === 'ar' ? 'كلمة المرور وتأكيدها غير متطابقين' : 'Passwords do not match');
+      return;
+    }
+
+    if (isAdmin) {
+      setStep(2);
+    } else {
+      handleFinalSave();
+    }
+  };
+
+  // Handle Step 2 / Final Save
+  const handleFinalSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setError('');
+
+    if (isAdmin && !realName.trim()) {
+      setError(language === 'ar' ? 'يرجى إدخال اسمك الفعلي (اسم المدير)' : 'Please enter your actual name');
+      return;
+    }
+
     setBusy(true);
     try {
+      // 1. تغيير كلمة المرور بشكل آمن ومشفر
       const res = await changeOwnPassword(current, next);
-      if (!res.ok) setError(res.error === 'password_short' ? t('password_short') : t('wrong_password'));
+      if (!res.ok) {
+        setStep(1);
+        setError(
+          res.error === 'password_short'
+            ? (language === 'ar' ? 'كلمة المرور الجديدة قصيرة جداً' : 'Password too short')
+            : (language === 'ar' ? 'كلمة المرور الحالية غير صحيحة' : 'Wrong current password')
+        );
+        return;
+      }
+
+      if (isAdmin) {
+        // 2. تحديث الاسم الفعلي لمدير النظام
+        const storedUser = state.users.find(u => u.id === currentUser?.id) || currentUser;
+        if (storedUser) {
+          updateUser({
+            ...storedUser,
+            name: realName.trim(),
+            mustChangePassword: false,
+          });
+        }
+
+        // 3. ضبط الرصيد الافتتاحي للدرج وحفظ اكتمال الإعداد لأول مرة
+        const today = new Date().toISOString().split('T')[0];
+        const cashAmount = Math.max(0, Number(drawerCash) || 0);
+
+        updateSettings({
+          ...state.settings,
+          cashDrawerOpening: cashAmount,
+          manualOpeningDate: today,
+          firstAdminSetupDone: true,
+        });
+
+        // 4. تسجيل حركة إيداع افتتاحي للدرج إن وُجد مبلغ
+        if (cashAmount > 0) {
+          addDrawerMovement({
+            type: 'deposit',
+            amount: cashAmount,
+            reason: language === 'ar' ? 'رصيد افتتاحي لدرج الكاشير عند إعداد النظام' : 'Opening drawer balance at initial system setup',
+          });
+        }
+
+        addAuditLog('Setup', `Completed initial admin setup: Name=${realName.trim()}, CashDrawer=${cashAmount} EGP`);
+        addToast(
+          language === 'ar'
+            ? `مرحباً بك يا ${realName.trim()}! تم تغيير كلمة المرور وتعيين رصيد الدرج بنجاح.`
+            : 'Initial setup completed successfully!',
+          'success'
+        );
+      } else {
+        addToast(language === 'ar' ? 'تم تحديث كلمة المرور بنجاح' : 'Password updated successfully', 'success');
+      }
+    } catch (err: any) {
+      setError(err?.message || (language === 'ar' ? 'حدث خطأ أثناء حفظ الإعدادات' : 'Error saving setup'));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4" dir="rtl">
-      <form onSubmit={submit} className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-4">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{t('force_password_title')}</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400">{t('force_password_hint')}</p>
-        <p className="text-xs text-slate-400">{currentUser?.username}</p>
-        <Input label={t('current_password')} type="password" value={current} onChange={(e: any) => setCurrent(e.target.value)} required />
-        <Input label={t('new_password')} type="password" value={next} onChange={(e: any) => setNext(e.target.value)} required />
-        <Input label={t('confirm_password')} type="password" value={confirm} onChange={(e: any) => setConfirm(e.target.value)} required placeholder={t('new_password')} />
-        {error && <div className="text-sm text-red-600 dark:text-red-400 font-bold">{error}</div>}
-        <div className="flex gap-2">
-          <Button type="submit" disabled={busy} className="flex-1 justify-center">{t('save')}</Button>
-          <Button type="button" variant="secondary" onClick={logout}>{t('logout')}</Button>
+    <div className="min-h-screen flex items-center justify-center bg-[#07030e] p-4 text-right relative overflow-hidden select-none" dir="rtl">
+      {/* خلفية جمالية متوهجة */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-purple-950/30 via-black to-amber-950/20 pointer-events-none" />
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="w-full max-w-lg relative z-10">
+        {/* الترويسة والشعار */}
+        <div className="text-center mb-6">
+          <div className="w-20 h-20 mx-auto rounded-3xl bg-purple-950/50 border border-purple-500/30 p-2.5 flex items-center justify-center mb-3 shadow-[0_0_30px_rgba(168,85,247,0.25)]">
+            <img src={RAIZON_LOGO_URI} alt="RaiZon Pro" className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(207,87,255,0.4)]" />
+          </div>
+          <h1 dir="ltr" className="text-2xl font-black tracking-tight flex items-center justify-center gap-2">
+            <span className="text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.35)]">RaiZon</span>
+            <span className="text-purple-400 drop-shadow-[0_0_12px_rgba(168,85,247,0.35)]">Pro</span>
+          </h1>
+          <p className="text-xs text-purple-200/80 font-bold mt-1">
+            {isAdmin ? 'معالج التهيئة والأمان لأول دخول للنظام' : 'تحديث كلمة المرور الإلزامية'}
+          </p>
         </div>
-      </form>
+
+        {/* مؤشر الخطوات */}
+        {isAdmin && (
+          <div className="flex items-center justify-center gap-3 mb-6 px-4">
+            <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
+              step === 1
+                ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30 ring-2 ring-purple-400/50'
+                : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+            }`}>
+              <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">
+                {step > 1 ? <Check size={12} /> : '1'}
+              </span>
+              <span>تغيير كلمة المرور</span>
+            </div>
+
+            <div className={`h-0.5 w-8 transition-all ${step === 2 ? 'bg-purple-500' : 'bg-slate-700'}`} />
+
+            <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
+              step === 2
+                ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30 ring-2 ring-purple-400/50'
+                : 'bg-slate-800 text-slate-400 border border-slate-700'
+            }`}>
+              <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[11px]">2</span>
+              <span>الاسم الفعلي ورصيد الدرج</span>
+            </div>
+          </div>
+        )}
+
+        {/* البطاقة الرئيسية */}
+        <div className="bg-[#140a24]/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-purple-500/20 shadow-2xl space-y-5">
+          {/* الخطوة الأولى: تغيير الباسورد */}
+          {step === 1 && (
+            <form onSubmit={handleStep1Next} className="space-y-4">
+              <div className="border-b border-purple-900/40 pb-3">
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                  <span className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400"><Lock size={16} /></span>
+                  <span>تغيير كلمة المرور الافتراضية (admin)</span>
+                </h2>
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                  لحماية حساب مدير النظام وتأمين مبيعاتك، يرجى استبدال كلمة المرور الافتراضية بكلمة مرور جديدة قوية.
+                </p>
+              </div>
+
+              {/* Current Password */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  كلمة المرور الحالية (الافتراضية: admin)
+                </label>
+                <div className="relative">
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none">
+                    <Lock size={16} />
+                  </span>
+                  <input
+                    type={showCurrent ? 'text' : 'password'}
+                    value={current}
+                    onChange={(e) => setCurrent(e.target.value)}
+                    placeholder="أدخل كلمة المرور الحالية (admin)"
+                    className="w-full pr-10 pl-10 py-2.5 rounded-xl border border-purple-900/50 bg-[#1c0f33] text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrent(!showCurrent)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                  >
+                    {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* New Password */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  كلمة المرور الجديدة (6 خانات على الأقل)
+                </label>
+                <div className="relative">
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none">
+                    <Keypad size={16} />
+                  </span>
+                  <input
+                    type={showNext ? 'text' : 'password'}
+                    value={next}
+                    onChange={(e) => setNext(e.target.value)}
+                    placeholder="أدخل كلمة المرور الجديدة"
+                    className="w-full pr-10 pl-10 py-2.5 rounded-xl border border-purple-900/50 bg-[#1c0f33] text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNext(!showNext)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                  >
+                    {showNext ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  تأكيد كلمة المرور الجديدة
+                </label>
+                <div className="relative">
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none">
+                    <Check size={16} />
+                  </span>
+                  <input
+                    type={showConfirm ? 'text' : 'password'}
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    placeholder="أعد إدخال كلمة المرور الجديدة للتأكيد"
+                    className="w-full pr-10 pl-10 py-2.5 rounded-xl border border-purple-900/50 bg-[#1c0f33] text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                  >
+                    {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs font-bold">
+                  {error}
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-600 text-white text-xs font-extrabold shadow-lg shadow-purple-600/30 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
+                >
+                  <span>{isAdmin ? 'متابعة: الاسم الفعلي ورصيد الدرج ←' : 'تحديث كلمة المرور والدخول'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="py-3 px-4 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer transition-all"
+                >
+                  خروج
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* الخطوة الثانية: الاسم الفعلي ورصيد الدرج */}
+          {step === 2 && (
+            <form onSubmit={handleFinalSave} className="space-y-4">
+              <div className="border-b border-purple-900/40 pb-3">
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                  <span className="p-1.5 rounded-lg bg-purple-500/20 text-purple-400"><User size={16} /></span>
+                  <span>الاسم الفعلي للمدير والمبلغ الموجود بالدرج</span>
+                </h2>
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                  خطوة أخيرة: سجّل اسمك الفعلي ومبلغ النقدية الموجود حالياً في درج الكاشير لافتتاح النظام بدقة حسابية 100%.
+                </p>
+              </div>
+
+              {/* Admin Real Name */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  الاسم الفعلي للمدير *
+                </label>
+                <div className="relative">
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none">
+                    <User size={16} />
+                  </span>
+                  <input
+                    type="text"
+                    value={realName}
+                    onChange={(e) => setRealName(e.target.value)}
+                    placeholder="مثال: م / عبد الرحمن فتحي العادلي"
+                    className="w-full pr-10 pl-4 py-2.5 rounded-xl border border-purple-900/50 bg-[#1c0f33] text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                    autoFocus
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  سيظهر هذا الاسم في ترويسة التطبيق وكافة التقارير بدلاً من "Admin".
+                </p>
+              </div>
+
+              {/* Cash Drawer Amount */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  المبلغ الموجود بالدرج حالياً (الرصيد الافتتاحي) *
+                </label>
+                <div className="relative">
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-amber-400 pointer-events-none">
+                    <Wallet size={16} />
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={drawerCash}
+                    onChange={(e) => setDrawerCash(e.target.value)}
+                    placeholder="0.00 (أدخل مبلغ النقدية الموجود بدرج الكاشير)"
+                    className="w-full pr-10 pl-16 py-2.5 rounded-xl border border-purple-900/50 bg-[#1c0f33] text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-400">
+                    ج.م
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  المبلغ النقدي المتاح في الدرج عند فتح المحل لمطابقة تقفيل الوردية والأرباح.
+                </p>
+              </div>
+
+              {error && (
+                <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs font-bold">
+                  {error}
+                </div>
+              )}
+
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-purple-600 hover:from-amber-400 hover:to-purple-500 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/25 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
+                >
+                  {busy ? <span>جاري الحفظ والتأمين...</span> : <span>حفظ وبدء استخدام النظام ✓</span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setError(''); setStep(1); }}
+                  className="py-3 px-4 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer transition-all"
+                >
+                  ← رجوع
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
-
 interface RememberedUser {
     username: string;
     name?: string;
