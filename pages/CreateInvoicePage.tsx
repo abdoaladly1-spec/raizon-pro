@@ -615,14 +615,22 @@ export const CreateInvoice = ({ onClose }: any) => {
           addToast(t('select_barber_alert'), 'error');
           return;
       }
-      // منع إتمام البيع: مجموع الأجزاء = الإجمالي والمستلم يغطي الجزء الكاش
-      if (!paymentCheck.ok) {
-          addToast(t(paymentCheck.error || 'payment_sum_mismatch'), 'error');
-          return;
+      const isCreditSale = paymentMode === 'credit';
+      if (isCreditSale) {
+          if (!existingCustomer) {
+              addToast(language === 'ar' ? 'البيع الآجل يتطلب تحديد عميل مسجل في النظام أولاً' : 'Credit sales require selecting a registered customer', 'error');
+              return;
+          }
+      } else {
+          // منع إتمام البيع: مجموع الأجزاء = الإجمالي والمستلم يغطي الجزء الكاش
+          if (!paymentCheck.ok) {
+              addToast(t(paymentCheck.error || 'payment_sum_mismatch'), 'error');
+              return;
+          }
       }
       setShowPaymentModal(false);
       const existing = state.customers.find(c => c.phone === phone);
-      const customerId = addCustomer({ 
+      const customerId = existing ? existing.id : addCustomer({ 
         name: customerName, 
         phone 
       } as any);
@@ -642,6 +650,7 @@ export const CreateInvoice = ({ onClose }: any) => {
               itemId: i.item.id, 
               name: language === 'ar' ? i.item.nameAr : i.item.nameEn,
               price: i.item.price,
+              cost: i.item.cost || 0,
               quantity: i.qty,
               modifiers: i.modifiers
           })),
@@ -651,13 +660,13 @@ export const CreateInvoice = ({ onClose }: any) => {
           total,
           date: localIsoToday(),
           timestamp: Date.now(),
-          status: 'paid',
-          paymentMethod: paymentCheck.info.method,
-          paymentParts: paymentCheck.info.parts,
-          cashPaid: paymentCheck.info.cashPaid,
-          received: paymentCheck.info.received,
-          change: paymentCheck.info.change,
-          notes: notes,
+          status: isCreditSale ? 'pending' : 'paid',
+          paymentMethod: isCreditSale ? 'credit' : paymentCheck.info.method,
+          paymentParts: isCreditSale ? [] : paymentCheck.info.parts,
+          cashPaid: isCreditSale ? 0 : paymentCheck.info.cashPaid,
+          received: isCreditSale ? 0 : paymentCheck.info.received,
+          change: isCreditSale ? 0 : paymentCheck.info.change,
+          notes: isCreditSale ? (notes ? `${notes} (آجل / على الحساب)` : 'فاتورة آجلة على الحساب') : notes,
           staffId: selectedStaffId,
           staffName: selectedStaff?.name
       };

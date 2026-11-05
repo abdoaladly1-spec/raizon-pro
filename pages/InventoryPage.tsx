@@ -171,7 +171,7 @@ export const Inventory = () => {
             nameAr: itemForm.nameAr.trim(),
             nameEn: (itemForm.nameEn || itemForm.nameAr).trim(),
             price: Math.max(0, Number(itemForm.price) || 0),
-            cost: isProduct ? Math.max(0, Number(itemForm.cost) || 0) : 0,
+            cost: Math.max(0, Number(itemForm.cost) || 0),
             trackStock: isProduct ? Boolean(itemForm.trackStock) : false,
             quantity: isProduct ? Math.max(0, Number(itemForm.quantity) || 0) : 0,
             alertThreshold: isProduct ? Math.max(0, Number(itemForm.alertThreshold) || 0) : 0,
@@ -970,25 +970,28 @@ export const Inventory = () => {
                                     />
                                 </div>
 
-                                {itemForm.type === 'product' ? (
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            {language === 'ar' ? 'سعر التكلفة / الشراء (ج.م)' : 'Cost Price (EGP)'}
-                                        </label>
-                                        <input
-                                            type="number"
-                                            step="0.5"
-                                            min="0"
-                                            value={itemForm.cost || ''}
-                                            onChange={(e) => setItemForm(prev => ({ ...prev, cost: parseFloat(e.target.value) || 0 }))}
-                                            className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500 font-mono"
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 p-2 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                                        <span>{language === 'ar' ? 'الخدمة تضاف للفاتورة مباشرة بدون حساب تكلفة تخزين' : 'Service goes directly to invoice'}</span>
-                                    </div>
-                                )}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                        {itemForm.type === 'product'
+                                            ? (language === 'ar' ? 'سعر التكلفة / الشراء (ج.م)' : 'Cost Price (EGP)')
+                                            : (language === 'ar' ? 'المبلغ التجاري / تكلفة الخدمة (ج.م)' : 'Commercial Cost (EGP)')
+                                        }
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.5"
+                                        min="0"
+                                        placeholder={itemForm.type === 'service' ? (language === 'ar' ? 'اختياري لحساب صافي الأرباح بدقة' : 'Optional for profit') : '0'}
+                                        value={itemForm.cost || ''}
+                                        onChange={(e) => setItemForm(prev => ({ ...prev, cost: parseFloat(e.target.value) || 0 }))}
+                                        className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+                                    />
+                                    {itemForm.type === 'service' && (
+                                        <p className="text-[10px] text-slate-400 mt-1">
+                                            {language === 'ar' ? 'المبلغ التجاري للخدمة يُخصم تلقائياً لحساب صافي الأرباح بدقة 100%' : 'Direct service cost used for 100% accurate net profit'}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Product-Specific Quantity & Alert Threshold */}

@@ -352,7 +352,7 @@ const MainContent = () => {
         {/* Sidebar */}
         <aside className={`${sidebarCollapsed ? "w-16" : "w-60"} bg-white dark:bg-[#0c0617] border-e border-slate-300 dark:border-purple-900/30 flex flex-col transition-all duration-300 z-20 flex-shrink-0 select-none`}>
             {/* Sidebar Top Header */}
-            <div className={`h-16 flex items-center ${sidebarCollapsed ? 'justify-center px-1.5' : 'justify-between px-3.5'} gap-2 border-b border-slate-300 dark:border-purple-900/30 shrink-0`}>
+            <div className={`h-[72px] flex items-center ${sidebarCollapsed ? 'justify-center px-1.5' : 'justify-between px-3.5'} gap-2 border-b border-slate-300 dark:border-purple-900/30 shrink-0`}>
                 {sidebarCollapsed ? (
                     <button
                         onClick={() => setSidebarCollapsed(false)}
@@ -459,7 +459,7 @@ const MainContent = () => {
                 const currentNavItem = navItems.find(i => i.id === activeTab);
                 const ActiveTabIcon = currentNavItem?.icon;
                 return (
-                    <header className="h-16 bg-white/95 dark:bg-[#0c0617]/90 backdrop-blur-md border-b border-slate-300 dark:border-purple-900/30 flex items-center justify-between px-3 md:px-5 z-10 sticky top-0 shadow-xs transition-colors duration-200">
+                    <header className="h-[72px] bg-white/95 dark:bg-[#0c0617]/90 backdrop-blur-md border-b border-slate-300 dark:border-purple-900/30 flex items-center justify-between px-3 md:px-6 z-10 sticky top-0 shadow-xs transition-colors duration-200">
                         {/* Right: Active Page Breadcrumb & Title */}
                         <div className="flex items-center gap-3 shrink-0">
                             <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-500/15 border border-purple-300 dark:border-purple-500/25 flex items-center justify-center text-purple-700 dark:text-purple-400 shadow-xs">
@@ -527,100 +527,6 @@ const MainContent = () => {
                                 </div>
                              )}
                              
-                             {/* Smart Notification Center */}
-                             <div className="relative">
-                                 <button
-                                     onClick={() => setShowNotifications(prev => !prev)}
-                                     className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-purple-950/25 dark:hover:bg-purple-900/40 border border-slate-300 dark:border-purple-500/20 text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-300 transition-all hover:scale-105 active:scale-95 relative cursor-pointer shadow-xs"
-                                     title="مركز التنبيهات الذكية"
-                                 >
-                                     <Bell size={17} />
-                                     {totalNotifications > 0 && (
-                                         <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-sm shadow-rose-500/40 animate-pulse">
-                                             {totalNotifications}
-                                         </span>
-                                     )}
-                                 </button>
-
-                                 {showNotifications && (
-                                     <div 
-                                         className="absolute left-0 sm:right-auto sm:left-0 mt-2 w-80 bg-white dark:bg-[#140b22] rounded-2xl shadow-2xl border border-slate-200 dark:border-purple-500/30 p-3.5 z-50 animate-scale-in"
-                                         onClick={(e) => e.stopPropagation()}
-                                     >
-                                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-purple-900/40 pb-2.5 mb-2.5">
-                                             <h4 className="font-bold text-xs text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                                                 <Bell size={14} className="text-purple-500" />
-                                                 مركز التنبيهات المباشرة ({totalNotifications})
-                                             </h4>
-                                             <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
-                                                 <X size={14} />
-                                             </button>
-                                         </div>
-                                         <div className="max-h-64 overflow-y-auto space-y-2 text-xs custom-scrollbar">
-                                             {totalNotifications === 0 ? (
-                                                 <div className="py-6 text-center text-slate-400">
-                                                     لا توجد تنبيهات عاجلة حالياً
-                                                 </div>
-                                             ) : (
-                                                 <>
-                                                     {lowStockItems.length > 0 && (
-                                                         <div 
-                                                             onClick={() => { handleNavigate('inventory'); setShowNotifications(false); }}
-                                                             className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/25 border border-rose-200/60 dark:border-rose-900/40 cursor-pointer hover:bg-rose-100/60 transition-colors"
-                                                         >
-                                                             <div className="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
-                                                                 <AlertTriangle size={13} />
-                                                                 تنبيه نفاد مخزون ({lowStockItems.length} صنف)
-                                                             </div>
-                                                             <p className="text-[11px] text-rose-600/80 dark:text-rose-300/80 mt-0.5">
-                                                                 الأصناف وصلت لحد الخطر وتحتاج إعادة طلب فوراً.
-                                                             </p>
-                                                         </div>
-                                                     )}
-                                                     {heldCount > 0 && (
-                                                         <div 
-                                                             onClick={() => { handleNavigate('create_invoice'); setShowNotifications(false); }}
-                                                             className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/25 border border-amber-200/60 dark:border-amber-900/40 cursor-pointer hover:bg-amber-100/60 transition-colors"
-                                                         >
-                                                             <div className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-                                                                 <Clock size={13} />
-                                                                 فواتير معلقة ({heldCount})
-                                                             </div>
-                                                             <p className="text-[11px] text-amber-600/80 dark:text-amber-300/80 mt-0.5">
-                                                                 يوجد فواتير قيد الانتظار لم تُستكمل بعد.
-                                                             </p>
-                                                         </div>
-                                                     )}
-                                                     {upcomingReservations.length > 0 && (
-                                                         <div 
-                                                             onClick={() => { handleNavigate('reservations'); setShowNotifications(false); }}
-                                                             className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/25 border border-purple-200/60 dark:border-purple-900/40 cursor-pointer hover:bg-purple-100/60 transition-colors"
-                                                         >
-                                                             <div className="font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1.5">
-                                                                 <Calendar size={13} />
-                                                                 حجوزات اليوم القادمة ({upcomingReservations.length})
-                                                             </div>
-                                                             <p className="text-[11px] text-purple-600/80 dark:text-purple-300/80 mt-0.5">
-                                                                 تأكد من جاهزية الموظفين لاستقبال العملاء.
-                                                             </p>
-                                                         </div>
-                                                     )}
-                                                 </>
-                                             )}
-                                         </div>
-                                     </div>
-                                 )}
-                             </div>
-
-                             {/* Shortcuts button */}
-                             <button
-                                 onClick={() => setShowShortcuts(true)}
-                                 className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-purple-950/25 dark:hover:bg-purple-900/40 border border-slate-300 dark:border-purple-500/20 text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-300 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
-                                 title={t('shortcuts')}
-                             >
-                                <Keyboard size={17} />
-                             </button>
-
                              {/* Branch selector */}
                              {(() => {
                                 const activeBranch = state.locations.find(l => l.id === state.settings.currentLocationId) || state.locations[0];

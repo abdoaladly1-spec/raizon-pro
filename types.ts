@@ -126,6 +126,7 @@ export interface InvoiceItem {
   variantId?: string;
   name: string;
   price: number;
+  cost?: number;
   quantity: number;
   modifiers: ItemModifier[];
   discount?: number;

@@ -6,7 +6,7 @@
 import { Invoice, ReturnRecord, Expense, StaffPayment, Reservation, Customer } from '../types';
 import { round2, paymentOf } from './payments';
 
-export type PeriodPreset = 'today' | 'yesterday' | 'week' | 'last_week' | 'month' | 'last_month' | 'year' | 'custom';
+export type PeriodPreset = 'today' | 'yesterday' | 'week' | 'last_week' | 'month' | 'last_month' | 'year' | 'all' | 'custom';
 
 export interface Period { from: number; to: number }
 
@@ -52,6 +52,7 @@ export const calcPeriod = (preset: PeriodPreset, customFrom?: string, customTo?:
             return { from: new Date(y, m - 1, 1).getTime(), to: new Date(y, m, 0, 23, 59, 59, 999).getTime() };
         }
         case 'year': return { from: new Date(new Date().getFullYear(), 0, 1).getTime(), to: new Date(new Date().getFullYear(), 11, 31, 23, 59, 59, 999).getTime() };
+        case 'all': return { from: 0, to: Date.now() + 100 * 365 * day };
         case 'custom': {
             const from = customFrom ? new Date(customFrom + 'T00:00:00').getTime() : 0;
             const to = customTo ? new Date(customTo + 'T23:59:59.999').getTime() : Date.now() + 365 * day;
