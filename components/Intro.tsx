@@ -24,7 +24,7 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSkip]);
 
-  // 1. خلفية Canvas: شبكة سداسيات حية متحركة (Hexagon Grid Canvas)
+  // 1. خلفية Canvas: شبكة سداسيات حية قوية ومتحركة
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -69,19 +69,19 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
           const dx = x - W / 2;
           const dy = y - H / 2;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          const maxDist = Math.max(W, H) / 1.8;
+          const maxDist = Math.max(W, H) / 1.7;
           const norm = Math.max(0, 1 - dist / maxDist);
 
           const hue = 250 + Math.sin(time * 0.002 + col * 0.1 + row * 0.1) * 40; // 210-290 (Blue ↔ Purple)
-          const alpha = 0.04 + norm * 0.28 + Math.sin(time * 0.003 + dist * 0.01) * 0.04;
+          const alpha = 0.05 + norm * 0.35 + Math.sin(time * 0.003 + dist * 0.01) * 0.05;
 
-          ctx.strokeStyle = `hsla(${hue}, 85%, 65%, ${alpha})`;
-          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = `hsla(${hue}, 90%, 65%, ${alpha})`;
+          ctx.lineWidth = 1.4;
           hexagon(x, y, hexR * 0.92);
           ctx.stroke();
 
-          if (norm > 0.55) {
-            ctx.fillStyle = `hsla(${hue}, 90%, 60%, ${alpha * 0.12})`;
+          if (norm > 0.5) {
+            ctx.fillStyle = `hsla(${hue}, 95%, 60%, ${alpha * 0.15})`;
             ctx.fill();
           }
         }
@@ -98,26 +98,26 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
     };
   }, []);
 
-  // 2. جسيمات متصاعدة ناعمة (Floating Upward Particles)
+  // 2. جسيمات متصاعدة ناعمة
   useEffect(() => {
     const container = particlesRef.current;
     if (!container) return;
 
     const activeParticles: HTMLDivElement[] = [];
-    const colors = ['#a78bfa', '#60a5fa', '#22d3ee', '#ffffff'];
+    const colors = ['#a78bfa', '#60a5fa', '#22d3ee', '#ffffff', '#fbbf24'];
 
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 45; i++) {
       const p = document.createElement('div');
       p.className = 'intro-particle';
-      const size = 1 + Math.random() * 2.5;
+      const size = 1.2 + Math.random() * 2.8;
       p.style.width = size + 'px';
       p.style.height = size + 'px';
       p.style.left = Math.random() * 100 + 'vw';
       p.style.top = Math.random() * 100 + 'vh';
-      p.style.opacity = String(Math.random() * 0.7 + 0.1);
+      p.style.opacity = String(Math.random() * 0.8 + 0.15);
       p.style.background = colors[Math.floor(Math.random() * colors.length)];
       
-      const duration = 6 + Math.random() * 12;
+      const duration = 5 + Math.random() * 10;
       p.style.transition = `transform ${duration}s linear, opacity ${duration}s ease`;
       container.appendChild(p);
       activeParticles.push(p);
@@ -131,7 +131,7 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
         p.style.transition = 'none';
         p.style.transform = 'translate(0,0)';
         p.style.top = '105vh';
-        p.style.opacity = String(Math.random() * 0.7 + 0.2);
+        p.style.opacity = String(Math.random() * 0.8 + 0.2);
         setTimeout(() => {
           p.style.transition = `transform ${duration}s linear, opacity ${duration}s ease`;
           p.style.transform = `translateY(-${120 + Math.random() * 80}vh) translateX(${(Math.random() - 0.5) * 60}px)`;
@@ -158,9 +158,9 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
     const steps = [
       { text: 'جاري التحقق من وجود تحديثات...', value: 12 },
       { text: 'جاري فحص السيرفرات...', value: 32 },
-      { text: 'جاري التحقق الأمني...', value: 52 },
+      { text: 'جاري التحقق الأمني وتشفير البيانات...', value: 52 },
       { text: 'جاري ربط التخزين السحابي...', value: 72 },
-      { text: 'جاري تحميل الواجهة...', value: 90 },
+      { text: 'جاري تحميل الواجهة ونقاط البيع...', value: 90 },
       { text: 'جاري تشغيل النظام...', value: 100 }
     ];
 
@@ -169,16 +169,16 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
 
     const run = () => {
       if (idx >= steps.length) {
-        setStatusText('تم التشغيل بنجاح');
+        setStatusText('تم التشغيل بنجاح ✓');
         setIsDone(true);
-        timerId = setTimeout(onComplete, 700);
+        timerId = setTimeout(onComplete, 750);
         return;
       }
       const s = steps[idx];
       setStatusText(s.text);
       setProgress(s.value);
       idx++;
-      const delay = 800 + Math.random() * 900;
+      const delay = 850 + Math.random() * 800;
       timerId = setTimeout(run, delay);
     };
 
@@ -193,7 +193,6 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   return (
     <div className="fixed inset-0 w-screen h-screen bg-[#030014] text-[#f8fafc] flex items-center justify-center z-[9999] overflow-hidden select-none font-cairo font-sans" dir="rtl">
       
-      {/* ستايل المكون المطابق تماماً لطلبك */}
       <style>{`
         /* خلفية Canvas */
         .intro-canvas {
@@ -202,43 +201,43 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
           z-index: 0;
         }
 
-        /* أقراص ضبابية متحركة */
+        /* أقراص ضبابية متوهجة قوية */
         .intro-orb {
           position: fixed;
           border-radius: 50%;
           filter: blur(120px);
-          opacity: 0.55;
+          opacity: 0.65;
           z-index: 1;
           pointer-events: none;
         }
         .intro-orb-1 {
-          width: 500px;
-          height: 500px;
-          background: radial-gradient(circle, #7c3aed, transparent 70%);
-          top: -10%;
-          left: -10%;
+          width: 550px;
+          height: 550px;
+          background: radial-gradient(circle, #8b5cf6, transparent 70%);
+          top: -12%;
+          left: -12%;
           animation: introFloat 10s ease-in-out infinite alternate;
         }
         .intro-orb-2 {
-          width: 400px;
-          height: 400px;
+          width: 450px;
+          height: 450px;
           background: radial-gradient(circle, #2563eb, transparent 70%);
-          bottom: -10%;
-          right: -10%;
+          bottom: -12%;
+          right: -12%;
           animation: introFloat 12s ease-in-out infinite alternate-reverse;
         }
         .intro-orb-3 {
-          width: 300px;
-          height: 300px;
-          background: radial-gradient(circle, #0ea5e9, transparent 70%);
-          top: 40%;
-          left: 40%;
+          width: 350px;
+          height: 350px;
+          background: radial-gradient(circle, #06b6d4, transparent 70%);
+          top: 38%;
+          left: 38%;
           animation: introFloat 8s ease-in-out infinite alternate;
         }
 
         @keyframes introFloat {
           0% { transform: translate(0, 0) scale(1); }
-          100% { transform: translate(30px, -40px) scale(1.1); }
+          100% { transform: translate(35px, -45px) scale(1.12); }
         }
 
         /* الجسيمات */
@@ -246,26 +245,25 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
           position: fixed;
           width: 3px;
           height: 3px;
-          background: rgba(255,255,255,0.9);
           border-radius: 50%;
           pointer-events: none;
           z-index: 2;
-          box-shadow: 0 0 6px rgba(139,92,246,0.8);
+          box-shadow: 0 0 8px rgba(139,92,246,0.9);
         }
 
-        /* البطاقة الزجاجية */
+        /* البطاقة الزجاجية المعززة */
         .intro-splash-card {
           position: relative;
           z-index: 10;
-          width: 460px;
+          width: 470px;
           max-width: 92vw;
-          padding: 44px 36px 36px;
-          border-radius: 28px;
-          background: rgba(15, 23, 42, 0.45);
-          backdrop-filter: blur(24px) saturate(140%);
-          -webkit-backdrop-filter: blur(24px) saturate(140%);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 25px 80px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.04);
+          padding: 42px 36px 34px;
+          border-radius: 30px;
+          background: rgba(15, 23, 42, 0.52);
+          backdrop-filter: blur(28px) saturate(160%);
+          -webkit-backdrop-filter: blur(28px) saturate(160%);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          box-shadow: 0 30px 90px rgba(0,0,0,0.65), 0 0 50px rgba(124,58,237,0.18), inset 0 1px 0 rgba(255,255,255,0.1);
           text-align: center;
           animation: introCardIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
@@ -275,15 +273,15 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        /* حاوية الشعار */
+        /* حاوية الشعار المتوهجة بقوة */
         .intro-logo-wrap {
-          width: 118px;
-          height: 118px;
-          margin: 0 auto 24px;
-          border-radius: 28px;
-          background: linear-gradient(135deg, rgba(124,58,237,0.25), rgba(37,99,235,0.2));
-          border: 1px solid rgba(255,255,255,0.12);
-          box-shadow: 0 0 40px rgba(124,58,237,0.25), inset 0 0 24px rgba(124,58,237,0.1);
+          width: 122px;
+          height: 122px;
+          margin: 0 auto 22px;
+          border-radius: 30px;
+          background: linear-gradient(135deg, rgba(124,58,237,0.35), rgba(37,99,235,0.25));
+          border: 1px solid rgba(255,255,255,0.18);
+          box-shadow: 0 0 50px rgba(139,92,246,0.45), 0 0 20px rgba(6,182,212,0.3), inset 0 0 30px rgba(124,58,237,0.2);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -293,9 +291,9 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
         .intro-logo-wrap::before {
           content: '';
           position: absolute;
-          inset: -50%;
-          background: conic-gradient(from 0deg, transparent, rgba(139,92,246,0.6), transparent 30%);
-          animation: introRotate 4s linear infinite;
+          inset: -55%;
+          background: conic-gradient(from 0deg, transparent 0%, rgba(139,92,246,0.9) 25%, rgba(6,182,212,0.85) 55%, transparent 80%);
+          animation: introRotate 3.5s linear infinite;
         }
         @keyframes introRotate {
           100% { transform: rotate(360deg); }
@@ -303,10 +301,10 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
 
         .intro-logo-inner {
           position: relative;
-          width: 106px;
-          height: 106px;
-          border-radius: 22px;
-          background: rgba(6,6,22,0.75);
+          width: 108px;
+          height: 108px;
+          border-radius: 24px;
+          background: rgba(6,6,22,0.82);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -314,29 +312,29 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
         }
 
         .intro-logo-inner img {
-          width: 60px;
-          height: 60px;
+          width: 66px;
+          height: 66px;
           object-fit: contain;
           display: block;
-          filter: drop-shadow(0 2px 10px rgba(139,92,246,0.5));
+          filter: drop-shadow(0 2px 14px rgba(139,92,246,0.65));
         }
 
-        /* شريط التحميل */
+        /* شريط التحميل الليزري */
         .intro-progress-track {
-          height: 7px;
+          height: 8px;
           border-radius: 999px;
-          background: rgba(255,255,255,0.06);
-          box-shadow: inset 0 1px 3px rgba(0,0,0,0.35);
+          background: rgba(255,255,255,0.08);
+          box-shadow: inset 0 1px 4px rgba(0,0,0,0.45);
           overflow: hidden;
           position: relative;
-          margin-bottom: 22px;
+          margin-bottom: 20px;
         }
 
         .intro-progress-fill {
           height: 100%;
           border-radius: 999px;
-          background: linear-gradient(90deg, #7c3aed, #3b82f6, #06b6d4);
-          box-shadow: 0 0 18px rgba(124,58,237,0.6), 0 0 8px rgba(59,130,246,0.4);
+          background: linear-gradient(90deg, #7c3aed, #3b82f6, #06b6d4, #10b981);
+          box-shadow: 0 0 22px rgba(124,58,237,0.75), 0 0 10px rgba(6,182,212,0.5);
           transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
           position: relative;
           overflow: hidden;
@@ -345,29 +343,29 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
           content: '';
           position: absolute;
           inset: 0;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
-          animation: introShimmer 2.2s infinite;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+          animation: introShimmer 2s infinite;
         }
         @keyframes introShimmer {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(100%); }
         }
 
-        /* نص الحالة والسبينر */
+        /* سطر الحالة */
         .intro-status-row {
           display: flex;
           align-items: center;
-          justify-content: center;
-          gap: 10px;
+          justify-content: space-between;
           min-height: 24px;
-          font-size: 14px;
+          font-size: 13px;
           color: #e2e8f0;
+          padding: 0 4px;
         }
 
         .intro-spinner {
-          width: 16px;
-          height: 16px;
-          border: 2px solid rgba(255,255,255,0.12);
+          width: 15px;
+          height: 15px;
+          border: 2px solid rgba(255,255,255,0.15);
           border-top-color: #38bdf8;
           border-radius: 50%;
           animation: introSpin 0.85s linear infinite;
@@ -376,12 +374,67 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
           to { transform: rotate(360deg); }
         }
 
+        /* التذييل ومعلومات المطور */
         .intro-footer {
           position: fixed;
           bottom: 16px;
+          z-index: 20;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          text-align: center;
+        }
+
+        .dev-credit-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 7px 18px;
+          border-radius: 999px;
+          background: rgba(15, 23, 42, 0.72);
+          border: 1px solid rgba(139, 92, 246, 0.35);
+          box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5), 0 0 18px rgba(139, 92, 246, 0.2);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          font-size: 13px;
+          color: #e2e8f0;
+        }
+
+        .dev-credit-label {
+          color: #94a3b8;
           font-size: 12px;
-          color: #475569;
-          z-index: 5;
+          font-weight: 600;
+        }
+
+        .dev-credit-name {
+          color: #fbbf24;
+          font-weight: 700;
+          text-shadow: 0 0 12px rgba(251, 191, 36, 0.4);
+        }
+
+        .dev-credit-sep {
+          opacity: 0.4;
+          color: #94a3b8;
+        }
+
+        .dev-credit-phone {
+          color: #38bdf8;
+          font-weight: 700;
+          font-family: ui-monospace, monospace;
+          text-decoration: none;
+          letter-spacing: 0.5px;
+          text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+        }
+
+        .dev-credit-phone:hover {
+          text-decoration: underline;
+          color: #7dd3fc;
+        }
+
+        .intro-copyright {
+          font-size: 11px;
+          color: #64748b;
           letter-spacing: 0.3px;
         }
       `}</style>
@@ -389,7 +442,7 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
       {/* كانفاس السداسيات الحية */}
       <canvas ref={canvasRef} className="intro-canvas" />
 
-      {/* الأقراص الضبابية الملونة العائمة */}
+      {/* الأقراص الضبابية الملونة المتوهجة */}
       <div className="intro-orb intro-orb-1" />
       <div className="intro-orb intro-orb-2" />
       <div className="intro-orb intro-orb-3" />
@@ -401,7 +454,7 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
       <button
         type="button"
         onClick={handleSkip}
-        className="fixed top-6 left-6 z-30 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/60 hover:bg-slate-800/80 text-slate-400 hover:text-white border border-white/10 text-xs font-semibold transition-all cursor-pointer backdrop-blur-md group active:scale-95"
+        className="fixed top-6 left-6 z-30 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 text-xs font-semibold transition-all cursor-pointer backdrop-blur-md group active:scale-95 shadow-md"
         title="اضغط Space أو انقر للتخطي"
       >
         <span>تخطي</span>
@@ -418,10 +471,11 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
         </div>
 
         {/* الاسم التجاري */}
-        <h1 className="text-2xl font-bold tracking-tight mb-1 text-white">
-          <span className="text-amber-400">RaiZon</span> <span className="text-purple-400">Pro</span>
+        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight mb-1 text-white">
+          <span className="text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.35)]">RaiZon</span>{' '}
+          <span className="text-purple-400 drop-shadow-[0_0_12px_rgba(168,85,247,0.35)]">Pro</span>
         </h1>
-        <div className="text-xs text-slate-400 mb-7">
+        <div className="text-xs text-slate-400 mb-6 font-medium">
           الإصدار 1.0.0 — إدارة المبيعات ونقاط البيع السحابية
         </div>
 
@@ -431,23 +485,36 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
             className="intro-progress-fill"
             style={{
               width: `${progress}%`,
-              boxShadow: isDone ? '0 0 24px rgba(34,211,238,0.8)' : undefined
+              boxShadow: isDone ? '0 0 28px rgba(34,211,238,0.9)' : undefined
             }}
           />
         </div>
 
-        {/* سطر الحالة مع السبينر */}
+        {/* سطر الحالة مع السبينر والنسبة المئوية */}
         <div className="intro-status-row">
-          {!isDone && <div className="intro-spinner" />}
-          <span className="font-medium text-slate-200 transition-opacity duration-200">
-            {statusText}
+          <div className="flex items-center gap-2.5 truncate">
+            {!isDone && <div className="intro-spinner shrink-0" />}
+            <span className="font-semibold text-slate-200 truncate">
+              {statusText}
+            </span>
+          </div>
+          <span className="font-mono text-xs font-bold text-cyan-400 shrink-0 ps-2">
+            {progress}%
           </span>
         </div>
       </div>
 
-      {/* الحقوق بالأسفل */}
+      {/* التذييل ومعلومات المطور الرسمية */}
       <div className="intro-footer">
-        © 2026 RaiZon Pro — جميع الحقوق محفوظة
+        <div className="dev-credit-badge">
+          <span className="dev-credit-label">برمجة وتصميم:</span>
+          <span className="dev-credit-name">م / عبد الرحمن فتحي العادلي</span>
+          <span className="dev-credit-sep">•</span>
+          <a href="tel:01026695879" className="dev-credit-phone" dir="ltr">01026695879</a>
+        </div>
+        <div className="intro-copyright">
+          © 2026 RaiZon Pro — جميع الحقوق محفوظة
+        </div>
       </div>
 
     </div>

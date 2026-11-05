@@ -317,7 +317,7 @@ const translations = {
     remember_me: 'تذكرني',
     forgot_password: 'نسيت كلمة المرور؟',
     quick_pin: 'رمز سريع',
-    developed_by: 'تطوير مهندس عبدالرحمن فتحي',
+    developed_by: 'برمجة وتصميم: م/ عبد الرحمن فتحي العادلي • ت/ 01026695879',
     no_saved_user_biometric: 'لا يوجد مستخدم محفوظ للدخول الحيوي. يرجى تسجيل الدخول يدوياً أولاً.',
     contact_admin_reset_pwd: 'يرجى التواصل مع إبراهيم نوّار لإعادة ضبط كلمة المرور',
     // Dashboard & Stats
@@ -1139,7 +1139,7 @@ const translations = {
     remember_me: 'Remember Me',
     forgot_password: 'Forgot Password?',
     quick_pin: 'Quick PIN',
-    developed_by: 'Developed by Eng. Abdelrahman Fathy',
+    developed_by: 'Developed by Eng. Abdelrahman Fathy El-Adly • Tel: 01026695879',
     no_saved_user_biometric: 'No saved user found for biometric login. Please login manually first.',
     contact_admin_reset_pwd: 'Please contact Ibrahim Nawar to reset your password.',
     // Dashboard & Stats
