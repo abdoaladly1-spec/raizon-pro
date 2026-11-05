@@ -1511,33 +1511,41 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             style={{ animation: 'neonPulseGlow 4s ease-in-out infinite' }}
           />
 
-          {/* Card Container: شفافة بنسبة 20% (80% Opacity Glass) مع إطار وتوهج نيون ناعم وأنيق */}
-          <div className={`relative z-10 w-full bg-white/80 dark:bg-[#0f141c]/80 backdrop-blur-2xl border border-purple-500/30 dark:border-purple-500/35 p-8 sm:p-9 rounded-[28px] shadow-[0_0_20px_rgba(168,85,247,0.18),0_20px_50px_-15px_rgba(0,0,0,0.5),inset_0_0_12px_rgba(168,85,247,0.06)] transition-all ${
+          {/* Card Container: شفافة بنسبة 20% مع إطار وتوهج نيون ناعم ونقاط بيضاء في الخلفية */}
+          <div className={`relative z-10 w-full overflow-hidden bg-white/80 dark:bg-[#0f141c]/80 backdrop-blur-2xl border border-purple-500/30 dark:border-purple-500/35 p-8 sm:p-9 rounded-[28px] shadow-[0_0_20px_rgba(168,85,247,0.18),0_20px_50px_-15px_rgba(0,0,0,0.5),inset_0_0_12px_rgba(168,85,247,0.06)] transition-all ${
             isShaking 
               ? 'animate-shake ring-4 ring-red-500/60 border-red-500/80 shadow-[0_0_40px_rgba(239,68,68,0.5)]' 
               : 'animate-scale-in'
           }`}>
+            {/* White Dots Grid Overlay inside the Card (نفس النقاط البيضاء الموجودة بالخلفية) */}
+            <div 
+              className="absolute inset-0 pointer-events-none rounded-[28px] opacity-[0.10] dark:opacity-[0.16] text-slate-900 dark:text-white"
+              style={{
+                backgroundImage: 'radial-gradient(currentColor 1.2px, transparent 1.2px)',
+                backgroundSize: '24px 24px'
+              }}
+            />
             
             {/* Header with Animated Neon Purple Logo */}
-            <div className="text-center mb-8">
-              {/* Logo with Purple Neon Ring Animation */}
+            <div className="text-center mb-8 relative z-10">
+              {/* Logo with Soft Purple Neon Ring Animation */}
               <div className="relative w-24 h-24 mx-auto mb-4 flex items-center justify-center">
-                {/* Outer Pulsing Neon Halo */}
-                <div className="absolute -inset-1.5 rounded-[28px] bg-gradient-to-tr from-purple-600 via-fuchsia-500 to-purple-800 opacity-50 blur-md animate-pulse" />
+                {/* Soft Outer Pulsing Neon Halo (توهج هادئ وناعم خلف اللوجو) */}
+                <div className="absolute -inset-1 rounded-[26px] bg-gradient-to-tr from-purple-600 via-fuchsia-500 to-purple-800 opacity-20 blur-sm animate-pulse" />
                 
                 {/* Spinning Conic Purple Neon Ring */}
-                <div className="relative w-full h-full rounded-[24px] p-[2.5px] overflow-hidden flex items-center justify-center shadow-[0_0_30px_rgba(168,85,247,0.65),0_0_60px_rgba(147,51,234,0.35)]">
+                <div className="relative w-full h-full rounded-[24px] p-[2px] overflow-hidden flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.3)]">
                   <div 
                     className="absolute inset-[-50%]"
                     style={{
-                      background: 'conic-gradient(from 0deg, transparent 0%, rgba(168, 85, 247, 0.95) 25%, rgba(232, 121, 249, 1) 35%, transparent 45%, rgba(147, 51, 234, 0.9) 75%, transparent 85%)',
-                      animation: 'loginLogoSpin 3.2s linear infinite'
+                      background: 'conic-gradient(from 0deg, transparent 0%, rgba(168, 85, 247, 0.9) 25%, rgba(232, 121, 249, 1) 35%, transparent 45%, rgba(147, 51, 234, 0.9) 75%, transparent 85%)',
+                      animation: 'loginLogoSpin 3.5s linear infinite'
                     }}
                   />
                   
                   {/* Inner Logo Badge */}
-                  <div className="relative z-10 w-full h-full bg-slate-900/90 dark:bg-[#090d16]/95 rounded-[21px] p-2.5 flex items-center justify-center border border-purple-500/30 backdrop-blur-md">
-                    <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-full h-full object-contain drop-shadow-[0_0_14px_rgba(168,85,247,0.7)]" />
+                  <div className="relative z-10 w-full h-full bg-slate-900/90 dark:bg-[#090d16]/95 rounded-[22px] p-2.5 flex items-center justify-center border border-purple-500/25 backdrop-blur-md">
+                    <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(168,85,247,0.45)]" />
                   </div>
                 </div>
               </div>
