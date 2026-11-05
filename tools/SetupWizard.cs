@@ -28,6 +28,7 @@ namespace RaiZonInstaller
                     var startInfo = new ProcessStartInfo
                     {
                         FileName = Assembly.GetExecutingAssembly().Location,
+                        Arguments = args != null && args.Length > 0 ? string.Join(" ", args) : "",
                         UseShellExecute = true,
                         Verb = "runas"
                     };
@@ -41,7 +42,7 @@ namespace RaiZonInstaller
             }
 
             var app = new App();
-            app.Run(new InstallerWindow());
+            app.Run(new InstallerWindow(args));
         }
 
         private static bool IsAdministrator()
@@ -85,8 +86,13 @@ namespace RaiZonInstaller
 
         private string installDir = @"C:\Program Files\RaiZon Pro";
 
-        public InstallerWindow()
+        public InstallerWindow(string[] args = null)
         {
+            string detectedDir = DetectExistingInstallDir(args);
+            if (!string.IsNullOrEmpty(detectedDir))
+            {
+                installDir = detectedDir;
+            }
             Title = "برنامج تثبيت RaiZon Pro - مساعد التثبيت";
             Width = 800;
             Height = 520;
@@ -1236,6 +1242,91 @@ namespace RaiZonInstaller
                 }
             }
             catch { }
+        }
+
+                private static string DetectExistingInstallDir(string[] args)
+        {
+            // 1. فحص وسائط سطر الأوامر الممررة من التطبيق الحالي
+            if (args != null && args.Length > 0)
+            {
+                foreach (var a in args)
+                {
+                    if (string.IsNullOrWhiteSpace(a)) continue;
+                    string trimmed = a.Trim().Trim('"');
+                    if (trimmed.StartsWith("--dir=", StringComparison.OrdinalIgnoreCase))
+                        return trimmed.Substring(6).Trim().Trim('"');
+                    if (trimmed.StartsWith("/dir=", StringComparison.OrdinalIgnoreCase))
+                        return trimmed.Substring(5).Trim().Trim('"');
+                    if (trimmed.StartsWith("--target=", StringComparison.OrdinalIgnoreCase))
+                        return trimmed.Substring(9).Trim().Trim('"');
+                    if (trimmed.StartsWith("/d=", StringComparison.OrdinalIgnoreCase))
+                        return trimmed.Substring(3).Trim().Trim('"');
+                    if (trimmed.StartsWith("/D=", StringComparison.OrdinalIgnoreCase))
+                        return trimmed.Substring(3).Trim().Trim('"');
+                    if (Directory.Exists(trimmed) && (File.Exists(Path.Combine(trimmed, "RaiZon Pro.exe")) || File.Exists(Path.Combine(trimmed, "resources", "procashier-server.exe"))))
+                        return trimmed;
+                }
+            }
+
+            // 2. فحص مسار مجلد برنامج RaiZon Pro المشغل حالياً
+            try
+            {
+                var procs = Process.GetProcessesByName("RaiZon Pro");
+                if (procs != null && procs.Length > 0)
+                {
+                    foreach (var p in procs)
+                    {
+                        try
+                        {
+                            string pPath = (p.MainModule != null) ? p.MainModule.FileName : null;
+                            if (!string.IsNullOrEmpty(pPath) && File.Exists(pPath))
+                            {
+                                string dir = Path.GetDirectoryName(pPath);
+                                if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
+                                    return dir;
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch { }
+
+            // 3. فحص سجل وندوز (HKCU) لآخر مسار تثبيت مسجل
+            try
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\RaiZonPro"))
+                {
+                    if (key != null)
+                    {
+                        object loc = key.GetValue("InstallLocation");
+                        if (loc != null && !string.IsNullOrWhiteSpace(loc.ToString()) && Directory.Exists(loc.ToString()))
+                        {
+                            return loc.ToString().Trim();
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            // 4. فحص سجل وندوز (HKLM)
+            try
+            {
+                using (var key = Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\RaiZonPro"))
+                {
+                    if (key != null)
+                    {
+                        object loc = key.GetValue("InstallLocation");
+                        if (loc != null && !string.IsNullOrWhiteSpace(loc.ToString()) && Directory.Exists(loc.ToString()))
+                        {
+                            return loc.ToString().Trim();
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            return null;
         }
 
         private ImageSource GetAppIcon()

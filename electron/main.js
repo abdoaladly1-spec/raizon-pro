@@ -1016,7 +1016,15 @@ ipcMain.handle('updater:install', async () => {
   }
 
   try {
-    const child = spawn(downloadedInstallerPath, [], {
+    // تحديد مجلد التثبيت الحالي لضمان التثبيت والتحديث فوق نفس النسخة تماماً
+    const currentAppDir = path.dirname(process.execPath);
+    const args = [
+      `--dir=${currentAppDir}`,
+      `/DIR=${currentAppDir}`,
+      `/D=${currentAppDir}`,
+      `--target=${currentAppDir}`
+    ];
+    const child = spawn(downloadedInstallerPath, args, {
       detached: true,
       stdio: 'ignore'
     });
