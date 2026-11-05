@@ -393,37 +393,117 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                         </div>
                     </div>
 
-                    {/* شريط موجز هادئ للبيانات الفرعية بدلاً من 6 بطاقات ثقيلة */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 bg-white dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-xs">
-                        <div className="flex items-center gap-4 flex-wrap text-slate-600 dark:text-slate-400 font-medium">
-                            <span>
-                                {language === 'ar' ? 'متوسط الفاتورة:' : 'Avg Invoice:'} <strong className="text-slate-900 dark:text-slate-100 font-bold">{averageInvoice.toLocaleString('en-US')} {t('egp')}</strong>
-                            </span>
-                            <span className="opacity-30">•</span>
-                            <span>
-                                {t('returns')}: <strong className="text-slate-900 dark:text-slate-100 font-bold">{totalReturns.toLocaleString('en-US')} {t('egp')}</strong>
-                            </span>
-                            <span className="opacity-30">•</span>
-                            <span>
-                                {language === 'ar' ? 'ساعة الذروة:' : 'Peak Hour:'} <strong className="text-slate-900 dark:text-slate-100 font-mono font-bold">{formatHourDisplay(peakHour.hour)}</strong>
-                            </span>
-                            {financialStats.topStaff && (
-                                <>
-                                    <span className="opacity-30">•</span>
-                                    <span>
-                                        {language === 'ar' ? 'أفضل موظف:' : 'Top Staff:'} <strong className="text-slate-900 dark:text-slate-100 font-bold">{financialStats.topStaff[0]}</strong>
-                                    </span>
-                                </>
-                            )}
+                    {/* بطاقات الإحصائيات التحليلية الإضافية (متوسط الفاتورة، المرتجعات، ساعة الذروة، أفضل موظف) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                        {/* 1. متوسط الفاتورة */}
+                        <div className="rounded-2xl p-4.5 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                                    {language === 'ar' ? 'متوسط الفاتورة' : 'Avg Invoice'}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                    معدل
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 flex items-center justify-center shrink-0 shadow-xs">
+                                    <TrendingUp size={22} />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white font-mono tracking-tight">
+                                        {averageInvoice.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                                    </h3>
+                                </div>
+                            </div>
                         </div>
 
-                        {lowStockCount > 0 && (
-                            <span className="px-2.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-bold flex items-center gap-1 border border-amber-200/60 dark:border-amber-800/60">
-                                <AlertCircle size={12} />
-                                <span>{lowStockCount} {language === 'ar' ? 'نواقص بالمخزن' : 'low stock'}</span>
-                            </span>
-                        )}
+                        {/* 2. المرتجعات */}
+                        <div className="rounded-2xl p-4.5 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                                    {t('returns')}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                    مرتجع
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60 flex items-center justify-center shrink-0 shadow-xs">
+                                    <TrendingDown size={22} />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white font-mono tracking-tight">
+                                        {totalReturns.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. ساعة الذروة */}
+                        <div className="rounded-2xl p-4.5 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                                    {language === 'ar' ? 'ساعة الذروة' : 'Peak Hour'}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
+                                    إقبال
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-11 h-11 rounded-2xl bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 border border-violet-200/60 dark:border-violet-800/60 flex items-center justify-center shrink-0 shadow-xs">
+                                    <Clock size={22} />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white font-mono tracking-tight truncate">
+                                        {formatHourDisplay(peakHour.hour)}
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 4. أفضل موظف */}
+                        <div className="rounded-2xl p-4.5 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                                    {language === 'ar' ? 'أفضل موظف' : 'Top Staff'}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                    تميز
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0 shadow-xs">
+                                    <Award size={22} />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white tracking-tight truncate">
+                                        {financialStats.topStaff ? financialStats.topStaff[0] : (language === 'ar' ? 'لا يوجد' : 'None')}
+                                    </h3>
+                                    {financialStats.topStaff && (
+                                        <p className="text-[11px] font-mono text-slate-400 truncate">
+                                            {Number(financialStats.topStaff[1]).toLocaleString('en-US')} {t('egp')}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    {/* تنبيه النواقص إن وجدت */}
+                    {lowStockCount > 0 && (
+                        <div className="flex items-center justify-between px-4 py-2.5 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/60 rounded-xl text-xs text-amber-800 dark:text-amber-300 animate-fade-in">
+                            <span className="flex items-center gap-2 font-bold">
+                                <AlertCircle size={15} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                                <span>{language === 'ar' ? `تنبيه المخزون: يوجد ${lowStockCount} أصناف وصلت إلى حد النواقص أو أوشكت على النفاد` : `Low stock warning: ${lowStockCount} items at alert threshold`}</span>
+                            </span>
+                            <button
+                                onClick={() => onNavigate('inventory')}
+                                className="font-bold underline hover:text-amber-900 dark:hover:text-amber-200 cursor-pointer"
+                            >
+                                {language === 'ar' ? 'عرض النواقص ←' : 'View stock →'}
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
