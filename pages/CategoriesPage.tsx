@@ -55,7 +55,7 @@ export const CategoriesPage = () => {
                 <button 
                     type="button"
                     onClick={() => { setIsEditing(false); setForm({ id: '', nameAr: '', nameEn: '', color: '#3b82f6' }); setShowModal(true); }}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer active:scale-95"
                 >
                     <Plus size={16} /> 
                     <span>{t('add')}</span>
@@ -69,7 +69,7 @@ export const CategoriesPage = () => {
                         <span>إجمالي التصنيفات</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800/40">الأقسام</span>
                     </div>
-                    <h4 className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight">{categoryStats.total} <span className="text-xs font-bold text-slate-400">قسم</span></h4>
+                    <h4 className="text-2xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">{categoryStats.total} <span className="text-xs font-bold text-slate-400">قسم</span></h4>
                 </div>
 
                 <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -77,7 +77,7 @@ export const CategoriesPage = () => {
                         <span>أقسام تحتوي أصناف</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">نشطة</span>
                     </div>
-                    <h4 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">{categoryStats.usedCategories} <span className="text-xs font-bold text-slate-400">قسم</span></h4>
+                    <h4 className="text-2xl font-extrabold text-emerald-500 font-mono tracking-tight">{categoryStats.usedCategories} <span className="text-xs font-bold text-slate-400">قسم</span></h4>
                 </div>
 
                 <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -85,7 +85,7 @@ export const CategoriesPage = () => {
                         <span>إجمالي الأصناف المرتبطة</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 font-bold border border-purple-200 dark:border-purple-800/40">أصناف</span>
                     </div>
-                    <h4 className="text-2xl font-bold text-purple-600 dark:text-purple-400 font-mono tracking-tight">{categoryStats.totalItems} <span className="text-xs font-bold text-slate-400">صنف وخدمة</span></h4>
+                    <h4 className="text-2xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">{categoryStats.totalItems} <span className="text-xs font-bold text-slate-400">صنف وخدمة</span></h4>
                 </div>
             </div>
 

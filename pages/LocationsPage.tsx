@@ -185,7 +185,7 @@ export const LocationsPage = () => {
                     </div>
                     <div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{language === 'ar' ? 'إجمالي الفروع' : 'Total Branches'}</div>
-                        <div className="text-xl font-bold text-slate-900 dark:text-white font-mono">{state.locations.length}</div>
+                        <div className="text-xl font-extrabold text-primary-600 dark:text-primary-400 font-mono">{state.locations.length}</div>
                     </div>
                 </Card>
 
@@ -195,7 +195,7 @@ export const LocationsPage = () => {
                     </div>
                     <div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{language === 'ar' ? 'الفروع النشطة' : 'Active Branches'}</div>
-                        <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                        <div className="text-xl font-extrabold text-emerald-500 font-mono">
                             {state.locations.filter(l => l.active).length}
                         </div>
                     </div>
@@ -207,7 +207,7 @@ export const LocationsPage = () => {
                     </div>
                     <div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{language === 'ar' ? 'الكاشير والموظفين' : 'Assigned Staff'}</div>
-                        <div className="text-xl font-bold text-slate-900 dark:text-white font-mono">
+                        <div className="text-xl font-extrabold text-primary-600 dark:text-primary-400 font-mono">
                             {state.users.filter(u => u.locationId).length}
                         </div>
                     </div>

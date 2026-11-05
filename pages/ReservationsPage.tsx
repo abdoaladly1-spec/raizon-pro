@@ -728,7 +728,7 @@ export const ReservationsPage = () => {
                     <button 
                         type="button"
                         onClick={() => { resetForm(); setShowModal(true); }}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm shadow-md transition-all cursor-pointer active:scale-95"
                     >
                         <Plus size={20} />
                         <span>{t('new_reservation')}</span>
@@ -752,7 +752,7 @@ export const ReservationsPage = () => {
                         <span>{rtl ? 'إجمالي الحجوزات' : 'Total Bookings'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800/40">الكل</span>
                     </div>
-                    <div className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight">
+                    <div className="text-2xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">
                         {resStats.total} <span className="text-xs font-bold text-slate-400">{rtl ? 'موعد' : 'res'}</span>
                     </div>
                 </div>
@@ -762,7 +762,7 @@ export const ReservationsPage = () => {
                         <span>{rtl ? 'حجوزات اليوم' : 'Today'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/40">اليوم</span>
                     </div>
-                    <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 font-mono tracking-tight">
+                    <div className="text-2xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">
                         {resStats.today} <span className="text-xs font-bold text-slate-400">{rtl ? 'موعد' : 'res'}</span>
                     </div>
                 </div>
@@ -772,7 +772,7 @@ export const ReservationsPage = () => {
                         <span>{rtl ? 'مؤكدة' : 'Confirmed'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">مؤكد</span>
                     </div>
-                    <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
+                    <div className="text-2xl font-extrabold text-emerald-500 font-mono tracking-tight">
                         {resStats.confirmed} <span className="text-xs font-bold text-slate-400">{rtl ? 'موعد' : 'res'}</span>
                     </div>
                 </div>
@@ -782,7 +782,7 @@ export const ReservationsPage = () => {
                         <span>{rtl ? 'مكتملة' : 'Completed'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800/40">مكتمل</span>
                     </div>
-                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono tracking-tight">
+                    <div className="text-2xl font-extrabold text-emerald-500 font-mono tracking-tight">
                         {resStats.completed} <span className="text-xs font-bold text-slate-400">{rtl ? 'موعد' : 'res'}</span>
                     </div>
                 </div>
