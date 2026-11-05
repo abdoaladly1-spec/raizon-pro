@@ -11,7 +11,7 @@ import { AdminUsers } from './AdminUsersPage';
 import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, type SyncStatus } from '../lib/serverSync';
 
 export const StaffPage = () => {
-    const { state, t, addStaff, updateStaff, deleteStaff, addStaffPayment, deleteStaffPayment, currentUser, addToast, formatDate } = useApp();
+    const { state, t, language, addStaff, updateStaff, deleteStaff, addStaffPayment, deleteStaffPayment, currentUser, addToast, formatDate } = useApp();
     const [view, setView] = useState('list' as 'list' | 'profile');
     const [selectedStaffId, setSelectedStaffId] = useState(null as string | null);
     
