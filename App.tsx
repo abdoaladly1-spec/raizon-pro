@@ -1477,466 +1477,301 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
   
-        // نجوم الخلفية العشوائية المضيئة والمتحركة (Cosmic Stars Random Generator)
+        // نجوم الخلفية - Deterministic memoized star field
     const backgroundStars = useMemo(() => {
-      const glyphs = ['✦', '✧', '⋆', '•', '✦', '✧', '•'];
-      const palettes = [
-        { color: '#ffffff', glow: 'rgba(255, 255, 255, 0.95)' },
-        { color: '#f3e8ff', glow: 'rgba(233, 213, 255, 0.85)' },
-        { color: '#c084fc', glow: 'rgba(192, 132, 252, 0.85)' },
-        { color: '#a855f7', glow: 'rgba(168, 85, 247, 0.80)' },
-        { color: '#67e8f9', glow: 'rgba(103, 232, 249, 0.75)' },
-        { color: '#93c5fd', glow: 'rgba(147, 197, 253, 0.70)' }
+      const stars = [
+        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size: 10, top:  5, left: 10, dur: 4.2, del: 0.0, dx:  4, dy: -6 },
+        { glyph: '•',  color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size:  3, top: 11, left: 88, dur: 3.5, del: 0.8, dx: -3, dy:  5 },
+        { glyph: '✧', color: '#67e8f9', glow: 'rgba(103,232,249,0.8)',  size:  8, top: 18, left: 22, dur: 5.1, del: 1.2, dx:  6, dy: -4 },
+        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size: 12, top:  8, left: 72, dur: 3.8, del: 2.0, dx: -5, dy:  7 },
+        { glyph: '⋆', color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size:  7, top: 25, left: 55, dur: 4.6, del: 0.4, dx:  3, dy: -8 },
+        { glyph: '•',  color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  2, top: 32, left:  8, dur: 3.2, del: 1.6, dx: -2, dy:  3 },
+        { glyph: '✦', color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size:  9, top: 38, left: 85, dur: 5.4, del: 0.0, dx:  5, dy: -5 },
+        { glyph: '✧', color: '#93c5fd', glow: 'rgba(147,197,253,0.75)', size:  6, top: 42, left: 42, dur: 4.0, del: 2.4, dx: -4, dy:  6 },
+        { glyph: '•',  color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size:  4, top: 14, left: 38, dur: 3.6, del: 1.0, dx:  3, dy: -4 },
+        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size: 11, top: 55, left: 15, dur: 4.8, del: 0.6, dx: -6, dy:  4 },
+        { glyph: '⋆', color: '#67e8f9', glow: 'rgba(103,232,249,0.8)',  size:  7, top: 62, left: 78, dur: 3.3, del: 1.8, dx:  4, dy: -7 },
+        { glyph: '•',  color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  3, top: 70, left: 50, dur: 4.4, del: 0.2, dx: -3, dy:  5 },
+        { glyph: '✧', color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size:  8, top: 78, left: 28, dur: 5.0, del: 2.8, dx:  5, dy: -3 },
+        { glyph: '✦', color: '#93c5fd', glow: 'rgba(147,197,253,0.75)', size: 10, top: 85, left: 68, dur: 3.7, del: 1.4, dx: -4, dy:  6 },
+        { glyph: '•',  color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size:  2, top: 90, left: 92, dur: 4.3, del: 0.8, dx:  2, dy: -5 },
+        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  9, top: 48, left: 95, dur: 3.9, del: 2.2, dx: -5, dy:  3 },
+        { glyph: '⋆', color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size:  6, top: 20, left:  4, dur: 5.2, del: 0.6, dx:  3, dy: -6 },
+        { glyph: '•',  color: '#67e8f9', glow: 'rgba(103,232,249,0.8)',  size:  4, top: 93, left: 35, dur: 3.4, del: 1.0, dx: -2, dy:  4 },
+        { glyph: '✧', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  7, top:  3, left: 60, dur: 4.5, del: 1.6, dx:  4, dy: -5 },
+        { glyph: '✦', color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size: 11, top: 60, left:  3, dur: 3.6, del: 2.6, dx: -6, dy:  5 },
+        { glyph: '•',  color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size:  3, top: 35, left: 65, dur: 4.2, del: 0.3, dx:  3, dy: -3 },
+        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  8, top: 72, left: 48, dur: 5.3, del: 1.4, dx: -4, dy:  7 },
+        { glyph: '⋆', color: '#93c5fd', glow: 'rgba(147,197,253,0.75)', size:  6, top: 80, left: 85, dur: 3.8, del: 2.0, dx:  5, dy: -4 },
+        { glyph: '•',  color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  2, top: 50, left: 30, dur: 4.0, del: 0.9, dx: -2, dy:  3 },
+        { glyph: '✧', color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size:  9, top: 15, left: 95, dur: 3.5, del: 1.8, dx:  5, dy: -6 },
+        { glyph: '✦', color: '#67e8f9', glow: 'rgba(103,232,249,0.8)',  size: 10, top: 44, left: 18, dur: 4.7, del: 0.0, dx: -5, dy:  4 },
+        { glyph: '•',  color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size:  3, top: 97, left: 60, dur: 3.3, del: 2.4, dx:  3, dy: -3 },
+        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  7, top: 28, left: 44, dur: 5.0, del: 1.2, dx: -4, dy:  5 },
+        { glyph: '⋆', color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size:  6, top: 65, left: 62, dur: 4.4, del: 0.5, dx:  4, dy: -4 },
+        { glyph: '•',  color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  4, top:  7, left: 30, dur: 3.6, del: 1.0, dx: -3, dy:  6 },
+        { glyph: '✧', color: '#67e8f9', glow: 'rgba(103,232,249,0.8)',  size:  8, top: 88, left: 10, dur: 4.9, del: 2.1, dx:  5, dy: -5 },
+        { glyph: '✦', color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size: 12, top: 52, left: 72, dur: 3.4, del: 0.7, dx: -6, dy:  3 },
+        { glyph: '•',  color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size:  2, top: 30, left: 20, dur: 4.1, del: 1.5, dx:  2, dy: -4 },
+        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  9, top: 75, left: 97, dur: 5.1, del: 2.9, dx: -5, dy:  6 },
+        { glyph: '⋆', color: '#93c5fd', glow: 'rgba(147,197,253,0.75)', size:  7, top: 22, left: 80, dur: 3.9, del: 0.4, dx:  4, dy: -7 },
+        { glyph: '•',  color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size:  3, top: 58, left: 38, dur: 4.6, del: 1.3, dx: -3, dy:  5 },
+        { glyph: '✧', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  6, top: 40, left: 55, dur: 3.7, del: 2.0, dx:  3, dy: -4 },
+        { glyph: '✦', color: '#67e8f9', glow: 'rgba(103,232,249,0.8)',  size: 11, top: 95, left: 78, dur: 4.3, del: 0.9, dx: -5, dy:  4 },
+        { glyph: '•',  color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size:  4, top: 12, left: 50, dur: 3.5, del: 1.7, dx:  3, dy: -6 },
+        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  8, top: 68, left: 25, dur: 5.2, del: 0.1, dx: -4, dy:  5 },
       ];
-
-      // 65 نجمة موزعة بعشوائية وتناسق تغطي كامل أرجاء الشاشة
-      return Array.from({ length: 65 }, (_, i) => {
-        const glyph = glyphs[i % glyphs.length];
-        const isDot = glyph === '•';
-        const isProminent = i % 7 === 0;
-        const pal = palettes[i % palettes.length];
-
-        // خوارزمية توزيع شبه عشوائي تغطي 2% إلى 98% طولاً وعرضاً
-        const top = Math.min(97, Math.max(2, (((i * 47) % 94) + 2)));
-        const left = Math.min(97, Math.max(2, (((i * 73 + 17) % 94) + 2)));
-
-        const size = isDot 
-          ? (i % 3 === 0 ? '3.5px' : '2px')
-          : isProminent 
-            ? `${11 + (i % 4)}px`
-            : `${6 + (i % 5)}px`;
-
-        const duration = (3.2 + (i % 5) * 1.1).toFixed(1) + 's';
-        const delay = ((i % 8) * 0.6).toFixed(1) + 's';
-        const dx = (((i % 5) - 2) * 5) + 'px';
-        const dy = ((((i * 3) % 5) - 2) * 6) + 'px';
-
-        return {
-          id: i,
-          glyph,
-          top: `${top}%`,
-          left: `${left}%`,
-          size,
-          color: pal.color,
-          glow: pal.glow,
-          duration,
-          delay,
-          dx,
-          dy
-        };
-      });
+      return stars.map((s, i) => ({ ...s, id: i }));
     }, []);
 
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#07060c] relative overflow-hidden p-4 font-sans select-none" dir="rtl">
-        {/* CSS Keyframes for Moving Background & iPhone Liquid Glass Intro */}
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#06040f] relative overflow-hidden select-none" dir="rtl">
+        {/* CSS Keyframes & utility classes */}
         <style>{`
-          @keyframes spotlightDrift {
-            0%, 100% {
-              transform: rotate(-28deg) translateY(0px) scale(1);
-              opacity: 0.95;
-            }
-            50% {
-              transform: rotate(-31deg) translateY(22px) scale(1.06);
-              opacity: 0.78;
-            }
+          @keyframes starTwinkle {
+            0%, 100% { opacity: 0.15; transform: translate(0,0) scale(0.8); }
+            50% { opacity: 1; transform: translate(var(--sdx,4px), var(--sdy,-6px)) scale(1.25); }
           }
-          @keyframes wingDriftLeft {
-            0%, 100% {
-              transform: rotate(-12deg) scale(1);
-              opacity: 0.42;
-            }
-            50% {
-              transform: rotate(-16deg) scale(1.18) translateY(-12px);
-              opacity: 0.60;
-            }
+          @keyframes beamPulse {
+            0%, 100% { opacity: 0.75; transform: rotate(-30deg) scaleY(1); }
+            50% { opacity: 0.52; transform: rotate(-33deg) scaleY(1.08) translateY(18px); }
           }
-          @keyframes wingDriftRight {
-            0%, 100% {
-              transform: rotate(12deg) scale(1);
-              opacity: 0.42;
-            }
-            50% {
-              transform: rotate(16deg) scale(1.18) translateY(-12px);
-              opacity: 0.60;
-            }
+          @keyframes orbFloat {
+            0%, 100% { transform: translate(0,0) scale(1); }
+            50% { transform: translate(20px,-30px) scale(1.1); }
           }
-          @keyframes cosmicStarDrift {
-            0%, 100% {
-              opacity: 0.2;
-              transform: translate(0px, 0px) scale(0.85);
-              filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.4));
-            }
-            50% {
-              opacity: 0.95;
-              transform: translate(var(--dx, 6px), var(--dy, -8px)) scale(1.3);
-              filter: drop-shadow(0 0 6px var(--glow, rgba(168, 85, 247, 0.9))) drop-shadow(0 0 12px var(--glow, rgba(168, 85, 247, 0.5)));
-            }
+          @keyframes cardReveal {
+            0% { opacity:0; transform: translateY(32px) scale(0.94); filter: blur(16px); }
+            65% { opacity:0.7; transform: translateY(8px) scale(0.98); filter: blur(4px); }
+            100% { opacity:1; transform: translateY(0) scale(1); filter: blur(0); }
           }
-          @keyframes shootingStar1 {
-            0%, 90% {
-              transform: translateX(0) translateY(0) rotate(-35deg) scaleX(0);
-              opacity: 0;
-            }
-            92% {
-              opacity: 0.9;
-              transform: translateX(50px) translateY(35px) rotate(-35deg) scaleX(1);
-            }
-            95% {
-              transform: translateX(450px) translateY(315px) rotate(-35deg) scaleX(1.4);
-              opacity: 0;
-            }
-            100% {
-              opacity: 0;
-              transform: translateX(450px) translateY(315px) rotate(-35deg) scaleX(0);
-            }
+          @keyframes logoSpin {
+            100% { transform: rotate(360deg); }
           }
-          @keyframes shootingStar2 {
-            0%, 88% {
-              transform: translateX(0) translateY(0) rotate(-40deg) scaleX(0);
-              opacity: 0;
-            }
-            90% {
-              opacity: 0.85;
-              transform: translateX(40px) translateY(33px) rotate(-40deg) scaleX(1);
-            }
-            93% {
-              transform: translateX(400px) translateY(335px) rotate(-40deg) scaleX(1.3);
-              opacity: 0;
-            }
-            100% {
-              opacity: 0;
-              transform: translateX(400px) translateY(335px) rotate(-40deg) scaleX(0);
-            }
+          @keyframes logoPulse {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 0.9; transform: scale(1.08); }
           }
-          @keyframes starFloat {
-            0%, 100% {
-              transform: translateY(0px) scale(1);
-              opacity: 0.35;
-            }
-            50% {
-              transform: translateY(-8px) scale(1.25);
-              opacity: 0.85;
-            }
+          @keyframes rippleOut {
+            0% { transform: scale(0.6); opacity: 0.7; }
+            100% { transform: scale(2.2); opacity: 0; }
           }
-          @keyframes iosWaterCardIntro {
-            0% {
-              opacity: 0;
-              transform: translateY(42px) scale(0.92);
-              filter: blur(18px);
-            }
-            60% {
-              opacity: 0.65;
-              transform: translateY(12px) scale(0.97);
-              filter: blur(6px);
-            }
-            100% {
-              opacity: 1;
-              transform: translateY(0px) scale(1);
-              filter: blur(0px);
-            }
+          @keyframes shoot1 {
+            0%,88% { transform: translateX(0) translateY(0) rotate(-38deg) scaleX(0); opacity:0; }
+            90% { opacity:0.9; transform: translateX(30px) translateY(22px) rotate(-38deg) scaleX(1); }
+            96% { transform: translateX(500px) translateY(380px) rotate(-38deg) scaleX(1.5); opacity:0; }
+            100% { opacity:0; transform: translateX(500px) translateY(380px) rotate(-38deg) scaleX(0); }
           }
-          @keyframes liquidRipple {
-            0% {
-              transform: scale(0.7);
-              opacity: 0.8;
-            }
-            100% {
-              transform: scale(1.9);
-              opacity: 0;
-            }
+          @keyframes shoot2 {
+            0%,80% { transform: translateX(0) translateY(0) rotate(-42deg) scaleX(0); opacity:0; }
+            82% { opacity:0.75; transform: translateX(25px) translateY(20px) rotate(-42deg) scaleX(1); }
+            88% { transform: translateX(420px) translateY(336px) rotate(-42deg) scaleX(1.4); opacity:0; }
+            100% { opacity:0; transform: translateX(420px) translateY(336px) rotate(-42deg) scaleX(0); }
           }
+          @keyframes shakeX {
+            0%,100% { transform: translateX(0); }
+            15% { transform: translateX(-8px); }
+            30% { transform: translateX(8px); }
+            45% { transform: translateX(-6px); }
+            60% { transform: translateX(6px); }
+            75% { transform: translateX(-3px); }
+            90% { transform: translateX(3px); }
+          }
+          .login-input {
+            width: 100%;
+            padding: 13px 16px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 500;
+            outline: none;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            font-family: 'Cairo', Tahoma, sans-serif;
+            color: #f1f5f9;
+            background: rgba(255,255,255,0.055);
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.08);
+            caret-color: #a78bfa;
+          }
+          .login-input::placeholder { color: rgba(148,163,184,0.6); }
+          .login-input:focus {
+            background: rgba(139,92,246,0.09);
+            border-color: rgba(139,92,246,0.55);
+            box-shadow: 0 0 0 3px rgba(139,92,246,0.18), inset 0 1px 1px rgba(255,255,255,0.1);
+          }
+          .login-input:disabled { opacity: 0.5; cursor: not-allowed; }
+          .login-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 15px;
+            font-family: 'Cairo', Tahoma, sans-serif;
+            color: white;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 60%, #5b21b6 100%);
+            box-shadow: 0 4px 22px rgba(109,40,217,0.5), inset 0 1px 0 rgba(255,255,255,0.15);
+          }
+          .login-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+          }
+          .login-btn:hover::after { transform: translateX(100%); }
+          .login-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(109,40,217,0.65), inset 0 1px 0 rgba(255,255,255,0.15); }
+          .login-btn:active { transform: scale(0.98); }
+          .login-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+          .card-shake { animation: shakeX 0.5s ease !important; }
         `}</style>
 
-        {/* Theme Toggle Button */}
-        <button 
-          onClick={toggleTheme} 
-          className="absolute top-6 left-6 z-30 p-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.12] transition-all shadow-md backdrop-blur-md cursor-pointer"
-          title="تبديل المظهر"
-          aria-label="تبديل المظهر"
-        >
-          {theme === 'dark' ? <Sun size={19} className="text-amber-400" /> : <Moon size={19} className="text-purple-300" />}
-        </button>
+        {/* BG: deep gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0d0520] via-[#06040f] to-[#06040f]" />
 
-        {/* 1. Dynamic Moving Diagonal Overhead Purple Spotlight Beam (تحريك الخلفية) */}
-        <div 
-          className="absolute pointer-events-none"
-          style={{
-            top: '-25%',
-            left: '52%',
-            width: '380px',
-            height: '950px',
-            transformOrigin: 'top center',
-            background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(220, 185, 255, 0.8) 20%, rgba(147, 51, 234, 0.55) 45%, rgba(109, 40, 217, 0.15) 75%, transparent 100%)',
-            filter: 'blur(45px)',
-            animation: 'spotlightDrift 9s ease-in-out infinite alternate'
-          }}
-        />
-        <div 
-          className="absolute pointer-events-none"
-          style={{
-            top: '-20%',
-            left: '55%',
-            width: '110px',
-            height: '700px',
-            transformOrigin: 'top center',
-            background: 'linear-gradient(180deg, #ffffff 0%, rgba(240, 225, 255, 0.95) 25%, rgba(168, 85, 247, 0.4) 55%, transparent 100%)',
-            filter: 'blur(20px)',
-            animation: 'spotlightDrift 9s ease-in-out infinite alternate'
-          }}
-        />
+        {/* BG: atmospheric orbs */}
+        <div className="absolute pointer-events-none" style={{ top:'-15%', left:'-10%', width:480, height:480, borderRadius:'50%', background:'radial-gradient(circle, rgba(109,40,217,0.32) 0%, transparent 68%)', filter:'blur(65px)', animation:'orbFloat 10s ease-in-out infinite alternate' }} />
+        <div className="absolute pointer-events-none" style={{ bottom:'-15%', right:'-10%', width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle, rgba(79,70,229,0.25) 0%, transparent 68%)', filter:'blur(70px)', animation:'orbFloat 13s ease-in-out infinite alternate-reverse' }} />
+        <div className="absolute pointer-events-none" style={{ top:'35%', left:'35%', width:280, height:280, borderRadius:'50%', background:'radial-gradient(circle, rgba(6,182,212,0.07) 0%, transparent 70%)', filter:'blur(50px)', animation:'orbFloat 8s ease-in-out infinite alternate' }} />
 
-        {/* 2. Symmetrical Dynamic Soft Purple Wing Flares (تحريك الأجنحة الضوئية) */}
-        <div 
-          className="absolute pointer-events-none"
-          style={{
-            bottom: '16%',
-            left: '8%',
-            width: '420px',
-            height: '200px',
-            borderRadius: '50%',
-            background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.45) 0%, rgba(109, 40, 217, 0.18) 50%, transparent 75%)',
-            filter: 'blur(60px)',
-            animation: 'wingDriftLeft 11s ease-in-out infinite alternate'
-          }}
-        />
-        <div 
-          className="absolute pointer-events-none"
-          style={{
-            bottom: '16%',
-            right: '8%',
-            width: '420px',
-            height: '200px',
-            borderRadius: '50%',
-            background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.45) 0%, rgba(109, 40, 217, 0.18) 50%, transparent 75%)',
-            filter: 'blur(60px)',
-            animation: 'wingDriftRight 11s ease-in-out infinite alternate'
-          }}
-        />
+        {/* BG: diagonal spotlight beam */}
+        <div className="absolute pointer-events-none" style={{ top:'-30%', left:'48%', width:300, height:1000, transformOrigin:'top center', background:'linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(210,180,255,0.6) 18%, rgba(139,92,246,0.3) 42%, transparent 70%)', filter:'blur(55px)', animation:'beamPulse 9s ease-in-out infinite alternate' }} />
+        <div className="absolute pointer-events-none" style={{ top:'-22%', left:'53%', width:85, height:660, transformOrigin:'top center', background:'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(245,235,255,0.88) 22%, rgba(167,139,250,0.35) 52%, transparent 78%)', filter:'blur(18px)', animation:'beamPulse 9s ease-in-out infinite alternate' }} />
 
-{/* 3. Cosmic Moving & Glowing Random Stars (نجوم متحركة ومضيئة بعشوائية في الخلفية) */}
-        {backgroundStars.map((star) => (
-          <div 
-            key={star.id}
-            className="absolute pointer-events-none select-none font-mono"
-            style={{
-              top: star.top,
-              left: star.left,
-              fontSize: star.size,
-              color: star.color,
-              // @ts-ignore
-              '--dx': star.dx,
-              '--dy': star.dy,
-              '--glow': star.glow,
-              textShadow: `0 0 6px ${star.glow}, 0 0 14px ${star.glow}`,
-              animation: `cosmicStarDrift ${star.duration} ease-in-out infinite alternate`,
-              animationDelay: star.delay
-            } as React.CSSProperties}
-          >
-            {star.glyph}
+        {/* BG: wing flares bottom L/R */}
+        <div className="absolute pointer-events-none" style={{ bottom:'12%', left:'4%', width:380, height:170, borderRadius:'50%', background:'radial-gradient(ellipse at center, rgba(109,40,217,0.34) 0%, rgba(79,70,229,0.1) 55%, transparent 75%)', filter:'blur(55px)', animation:'orbFloat 11s ease-in-out infinite alternate' }} />
+        <div className="absolute pointer-events-none" style={{ bottom:'12%', right:'4%', width:380, height:170, borderRadius:'50%', background:'radial-gradient(ellipse at center, rgba(109,40,217,0.34) 0%, rgba(79,70,229,0.1) 55%, transparent 75%)', filter:'blur(55px)', animation:'orbFloat 11s ease-in-out infinite alternate-reverse' }} />
+
+        {/* BG: star field */}
+        {backgroundStars.map((s) => (
+          <div key={s.id} className="absolute pointer-events-none select-none font-mono leading-none" style={{ top:`${s.top}%`, left:`${s.left}%`, fontSize:s.size, color:s.color, textShadow:`0 0 6px ${s.glow}, 0 0 14px ${s.glow}`, '--sdx':`${s.dx}px`, '--sdy':`${s.dy}px`, animation:`starTwinkle ${s.dur}s ease-in-out ${s.del}s infinite alternate` } as React.CSSProperties}>
+            {s.glyph}
           </div>
         ))}
 
-        {/* Dynamic Shooting Stars across background */}
-        <div 
-          className="absolute pointer-events-none z-1 overflow-hidden"
-          style={{
-            top: '8%',
-            left: '12%',
-            width: '130px',
-            height: '2px',
-            background: 'linear-gradient(90deg, rgba(255,255,255,0.95), rgba(192,132,252,0.6), transparent)',
-            boxShadow: '0 0 8px #c084fc, 0 0 16px #ffffff',
-            transformOrigin: 'left center',
-            animation: 'shootingStar1 12s cubic-bezier(0.2, 0, 0.4, 1) infinite',
-            animationDelay: '1.5s'
-          }}
-        />
-        <div 
-          className="absolute pointer-events-none z-1 overflow-hidden"
-          style={{
-            top: '24%',
-            right: '16%',
-            width: '110px',
-            height: '2px',
-            background: 'linear-gradient(90deg, rgba(255,255,255,0.95), rgba(103,232,249,0.6), transparent)',
-            boxShadow: '0 0 8px #67e8f9, 0 0 14px #ffffff',
-            transformOrigin: 'left center',
-            animation: 'shootingStar2 15s cubic-bezier(0.2, 0, 0.4, 1) infinite',
-            animationDelay: '7s'
-          }}
-        />
+        {/* BG: shooting stars */}
+        <div className="absolute pointer-events-none" style={{ top:'5%', left:'8%', width:120, height:2, borderRadius:2, background:'linear-gradient(90deg, white, rgba(167,139,250,0.5), transparent)', boxShadow:'0 0 8px white, 0 0 18px rgba(167,139,250,0.6)', transformOrigin:'left center', animation:'shoot1 14s ease-in-out 2s infinite' }} />
+        <div className="absolute pointer-events-none" style={{ top:'22%', right:'12%', width:100, height:2, borderRadius:2, background:'linear-gradient(90deg, white, rgba(103,232,249,0.5), transparent)', boxShadow:'0 0 8px white, 0 0 16px rgba(103,232,249,0.6)', transformOrigin:'left center', animation:'shoot2 18s ease-in-out 8s infinite' }} />
 
-                {/* 4. Preliminary 1.5s Liquid Energy Ripple before Card Materializes */}
+        {/* Theme toggle */}
+        <button onClick={toggleTheme} className="absolute top-5 left-5 z-30 cursor-pointer" style={{ padding:'10px', borderRadius:16, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)', transition:'background 0.2s' }} title="تبديل المظهر" aria-label="تبديل المظهر">
+          {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-purple-300" />}
+        </button>
+
+        {/* Pre-card ripple (1.5s loading animation) */}
         {!isCardReady && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-            <div 
-              className="w-48 h-48 rounded-full border-2 border-purple-400/40"
-              style={{ animation: 'liquidRipple 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
-            />
+            <div className="rounded-full" style={{ width:160, height:160, border:'1px solid rgba(139,92,246,0.3)', animation:'rippleOut 1.5s cubic-bezier(0.16,1,0.3,1) forwards' }} />
+            <div className="absolute rounded-full" style={{ width:250, height:250, border:'1px solid rgba(139,92,246,0.15)', animation:'rippleOut 1.5s cubic-bezier(0.16,1,0.3,1) 0.35s forwards' }} />
           </div>
         )}
 
-        {/* 5. The iPhone Liquid Water Glass Card (شفافة مائية مثل الآيفون ثيم + أنيميشن 1.5 ثانية) */}
-        <div className="relative z-10 w-full max-w-[420px]">
-          <div 
-            className={`relative w-full rounded-[28px] p-8 sm:p-9 transition-all duration-300 ${
-              isShaking 
-                ? 'animate-shake ring-4 ring-red-500/60 border-red-500/80 shadow-[0_0_40px_rgba(239,68,68,0.5)]' 
-                : ''
-            }`}
-            style={{
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(15, 12, 28, 0.35) 100%)',
-              backdropFilter: 'blur(40px) saturate(200%)',
-              WebkitBackdropFilter: 'blur(40px) saturate(200%)',
-              border: '1px solid rgba(255, 255, 255, 0.20)',
-              boxShadow: 'inset 0 1.5px 1px rgba(255, 255, 255, 0.45), inset 0 -1px 1px rgba(255, 255, 255, 0.08), 0 25px 65px -15px rgba(0, 0, 0, 0.75), 0 0 35px rgba(168, 85, 247, 0.15)',
-              animation: 'iosWaterCardIntro 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards'
-            }}
-          >
-            
-            {/* Header: Centered Logo + Centered Brand Title & Subtitle (اللوجو في المنتصف) */}
-            <div className="mb-6 text-center">
-              {/* Centered Liquid Glass Logo Badge */}
-              <div className="relative w-18 h-18 mx-auto mb-3.5 flex items-center justify-center">
-                {/* Water shimmer halo */}
-                <div className="absolute -inset-1 rounded-2xl bg-gradient-to-tr from-purple-500/25 to-fuchsia-500/25 blur-md animate-pulse" />
-                
-                <div 
-                  className="relative w-full h-full rounded-2xl p-3 flex items-center justify-center"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.04) 100%)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, 0.22)',
-                    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.45), 0 10px 25px -5px rgba(0, 0, 0, 0.5)'
-                  }}
-                >
-                  <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(168,85,247,0.6)]" />
+        {/* ═══ THE LOGIN CARD ═══ */}
+        <div className="relative z-20 w-full px-4" style={{ maxWidth:440 }}>
+          <div className={isShaking ? 'card-shake' : ''} style={{ borderRadius:28, padding:'36px 32px 28px', background:'linear-gradient(145deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 50%, rgba(10,6,30,0.4) 100%)', backdropFilter:'blur(44px) saturate(185%)', WebkitBackdropFilter:'blur(44px) saturate(185%)', border:'1px solid rgba(255,255,255,0.14)', boxShadow:'inset 0 1.5px 1px rgba(255,255,255,0.4), inset 0 -1px 1px rgba(255,255,255,0.05), 0 32px 80px -16px rgba(0,0,0,0.75), 0 0 0 1px rgba(0,0,0,0.3)', animation:'cardReveal 1.5s cubic-bezier(0.16,1,0.3,1) forwards' }}>
+
+            {/* ── LOGO SECTION ── */}
+            <div className="flex flex-col items-center mb-6">
+              {/* Logo with spinning conic border + glow */}
+              <div className="relative mb-4" style={{ width:88, height:88 }}>
+                {/* Spinning ring */}
+                <div className="absolute inset-0 rounded-[22px]" style={{ background:'conic-gradient(from 0deg, #7c3aed, #c084fc, #67e8f9, #a78bfa, #7c3aed)', borderRadius:22, animation:'logoSpin 4s linear infinite', padding:1.5 }} />
+                {/* Glow behind */}
+                <div className="absolute" style={{ inset:'-4px', borderRadius:26, background:'rgba(109,40,217,0.35)', filter:'blur(14px)', animation:'logoPulse 3s ease-in-out infinite' }} />
+                {/* Inner glass */}
+                <div className="absolute" style={{ inset:2, borderRadius:20, background:'linear-gradient(145deg, rgba(255,255,255,0.12) 0%, rgba(10,6,30,0.82) 100%)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', border:'1px solid rgba(255,255,255,0.18)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'inset 0 1px 1px rgba(255,255,255,0.3)' }}>
+                  <img src="/img/logo-transparent.png" alt="RaiZon Pro" style={{ width:52, height:52, objectFit:'contain', filter:'drop-shadow(0 0 10px rgba(167,139,250,0.75))' }} />
                 </div>
               </div>
 
-              {/* Centered Brand Title */}
-              <h1 className="text-2xl sm:text-[26px] font-bold text-white tracking-tight mb-1 flex items-center justify-center gap-1.5">
-                <span className="text-amber-400 drop-shadow-[0_2px_8px_rgba(251,191,36,0.3)]">RaiZon</span>
-                <span className="text-purple-400 drop-shadow-[0_2px_8px_rgba(168,85,247,0.3)]">Pro</span>
+              {/* Brand name */}
+              <h1 style={{ fontSize:26, fontWeight:800, letterSpacing:'-0.5px', margin:'0 0 4px', display:'flex', gap:7, alignItems:'center' }}>
+                <span style={{ color:'#fbbf24', textShadow:'0 0 20px rgba(251,191,36,0.4)' }}>RaiZon</span>
+                <span style={{ color:'#a78bfa', textShadow:'0 0 20px rgba(167,139,250,0.4)' }}>Pro</span>
               </h1>
-              <p className="text-xs text-slate-300/80 font-normal tracking-wide">
-                نظام كاشير برو المتكامل لإدارة المبيعات
+              <p style={{ fontSize:12, color:'rgba(148,163,184,0.8)', margin:0, fontWeight:500, letterSpacing:'0.3px' }}>
+                نظام كاشير المتكامل لإدارة المبيعات
               </p>
 
-              {/* License or update badges centered if present */}
+              {/* License badge */}
               {liveRemainingText && (
-                <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-xs">
-                  <Clock size={11} className="animate-pulse" />
-                  <span>{liveRemainingText}</span>
+                <div className="mt-3 inline-flex items-center gap-1.5" style={{ padding:'4px 12px', borderRadius:99, background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.25)', fontSize:11 }}>
+                  <Clock size={11} className="text-amber-400 animate-pulse" />
+                  <span className="text-amber-400 font-semibold">{liveRemainingText}</span>
                 </div>
               )}
 
+              {/* Update available */}
               {pendingUpdate && !showUpdateModal && (
-                <div className="mt-2 text-center">
-                  <button
-                    type="button"
-                    onClick={() => setShowUpdateModal(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30 hover:bg-purple-500/25 transition-all cursor-pointer animate-pulse"
-                  >
-                    <RefreshCw size={11} className="shrink-0" />
-                    <span>يتوفر إصدار جديد ({pendingUpdate.latestVersion}) — اضغط للتحديث</span>
-                  </button>
-                </div>
+                <button type="button" onClick={() => setShowUpdateModal(true)} style={{ marginTop:8, display:'inline-flex', alignItems:'center', gap:6, padding:'4px 12px', borderRadius:99, background:'rgba(139,92,246,0.12)', border:'1px solid rgba(139,92,246,0.3)', fontSize:11, cursor:'pointer', fontFamily:'inherit' }}>
+                  <RefreshCw size={11} className="text-purple-400 animate-spin" />
+                  <span className="text-purple-300 font-semibold">إصدار جديد ({pendingUpdate.latestVersion}) — اضغط للتحديث</span>
+                </button>
               )}
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleLogin} className="space-y-4 text-right">
-              {/* Field 1: Username */}
+            {/* Thin divider */}
+            <div style={{ height:1, background:'linear-gradient(90deg, transparent, rgba(255,255,255,0.11), transparent)', marginBottom:22 }} />
+
+            {/* ── FORM ── */}
+            <form onSubmit={handleLogin} style={{ display:'flex', flexDirection:'column', gap:14 }} dir="rtl">
+
+              {/* Username */}
               <div className="relative" ref={userDropdownRef}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-medium text-slate-300">
-                    اسم المستخدم<span className="text-purple-400 ms-0.5">*</span>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:7 }}>
+                  <label style={{ fontSize:12, fontWeight:600, color:'rgba(203,213,225,0.88)' }}>
+                    اسم المستخدم <span style={{ color:'#a78bfa' }}>*</span>
                   </label>
                   {rememberedUsers.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowUserDropdown(!showUserDropdown)}
-                      className="text-[11px] font-semibold text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"
-                    >
+                    <button type="button" onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ fontSize:11, color:'#a78bfa', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:600, padding:0 }}>
                       حسابات محفوظة ({rememberedUsers.length})
                     </button>
                   )}
                 </div>
-
-                <div className="relative flex items-center">
-                  <input 
-                    ref={usernameInputRef}
-                    type="text" 
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    disabled={!isCardReady}
-                    className="w-full px-4 py-3 rounded-2xl text-white text-sm font-medium outline-none transition-all placeholder:text-slate-400 focus:border-purple-400 focus:bg-white/[0.12] disabled:opacity-70"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.06)',
-                      backdropFilter: 'blur(16px)',
-                      WebkitBackdropFilter: 'blur(16px)',
-                      border: '1px solid rgba(255, 255, 255, 0.16)',
-                      boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.15)'
-                    }}
-                    placeholder="اكتب اسم المستخدم..."
-                    aria-label="اسم المستخدم"
-                    autoComplete="username"
-                  />
+                <div style={{ position:'relative', display:'flex', alignItems:'center' }}>
+                  <span style={{ position:'absolute', right:12, color:'rgba(148,163,184,0.45)', pointerEvents:'none', display:'flex', alignItems:'center' }}>
+                    <User size={15} />
+                  </span>
+                  <input ref={usernameInputRef} type="text" value={username} onChange={(e) => setUsername(e.target.value)} disabled={!isCardReady} className="login-input" style={{ paddingRight:36, paddingLeft: rememberedUsers.length > 0 ? 36 : 16 }} placeholder="اكتب اسم المستخدم..." aria-label="اسم المستخدم" autoComplete="username" />
                   {rememberedUsers.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowUserDropdown(!showUserDropdown)}
-                      className="absolute inset-y-0 end-0 pe-3 flex items-center text-slate-400 hover:text-purple-400 transition-colors cursor-pointer"
-                      aria-label="عرض الحسابات المحفوظة"
-                    >
-                      <ChevronDown size={17} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180 text-purple-400' : ''}`} />
+                    <button type="button" onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ position:'absolute', left:10, color:'rgba(148,163,184,0.5)', background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', padding:2 }}>
+                      <ChevronDown size={15} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180 text-purple-400' : ''}`} />
                     </button>
                   )}
                 </div>
 
-                {/* Dropdown Menu of Remembered Users */}
+                {/* Saved users dropdown */}
                 {showUserDropdown && rememberedUsers.length > 0 && (
-                  <div 
-                    className="absolute top-full start-0 end-0 mt-2 rounded-2xl shadow-2xl z-50 overflow-hidden animate-scale-in"
-                    style={{
-                      background: 'rgba(15, 12, 28, 0.95)',
-                      backdropFilter: 'blur(25px)',
-                      WebkitBackdropFilter: 'blur(25px)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)'
-                    }}
-                  >
-                    <div className="p-2.5 bg-white/[0.04] border-b border-white/[0.08] text-xs font-bold text-slate-400 flex items-center justify-between">
-                      <span>الحسابات المحفوظة</span>
-                      <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-mono font-bold">
-                        {rememberedUsers.length}
-                      </span>
+                  <div className="absolute top-full end-0 start-0 z-50 overflow-hidden" style={{ marginTop:8, borderRadius:16, background:'rgba(13,8,35,0.95)', backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)', border:'1px solid rgba(255,255,255,0.11)', boxShadow:'0 20px 60px rgba(0,0,0,0.6)' }}>
+                    <div style={{ padding:'10px 12px 8px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                      <span style={{ fontSize:11, color:'rgba(148,163,184,0.7)', fontWeight:600 }}>الحسابات المحفوظة</span>
+                      <span style={{ fontSize:10, color:'#a78bfa', background:'rgba(139,92,246,0.15)', padding:'1px 7px', borderRadius:99, fontWeight:700 }}>{rememberedUsers.length}</span>
                     </div>
-                    <div className="max-h-48 overflow-y-auto divide-y divide-white/[0.04] p-1">
+                    <div style={{ maxHeight:176, overflowY:'auto', padding:6 }}>
                       {rememberedUsers.map((u) => (
-                        <div
-                          key={u.username}
-                          onClick={() => handleSelectRememberedUser(u)}
-                          className="p-2.5 rounded-xl flex items-center justify-between gap-3 cursor-pointer hover:bg-white/[0.08] text-slate-200 transition-colors"
+                        <div key={u.username} onClick={() => handleSelectRememberedUser(u)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 10px', borderRadius:12, cursor:'pointer', transition:'background 0.15s' }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                              {u.name ? u.name.charAt(0).toUpperCase() : u.username.charAt(0).toUpperCase()}
+                          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                            <div style={{ width:30, height:30, borderRadius:'50%', background:'linear-gradient(135deg, #7c3aed, #4f46e5)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:'white', flexShrink:0 }}>
+                              {(u.name || u.username).charAt(0).toUpperCase()}
                             </div>
-                            <div className="truncate text-right">
-                              <div className="text-xs font-bold truncate">{u.name || u.username}</div>
-                              <div className="text-[10px] text-slate-400 font-mono truncate">@{u.username}</div>
+                            <div>
+                              <div style={{ fontSize:12, fontWeight:700, color:'#e2e8f0' }}>{u.name || u.username}</div>
+                              <div style={{ fontSize:10, color:'rgba(148,163,184,0.6)', fontFamily:'monospace' }}>@{u.username}</div>
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={(e) => handleDeleteRememberedUser(e, u.username)}
-                            className="p-1 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0 cursor-pointer"
+                          <button type="button" onClick={(e) => handleDeleteRememberedUser(e, u.username)} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(148,163,184,0.45)', padding:4, borderRadius:8, display:'flex', transition:'color 0.15s' }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#f87171'; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'rgba(148,163,184,0.45)'; }}
                             title="حذف من القائمة"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={13} />
                           </button>
                         </div>
                       ))}
@@ -1945,147 +1780,98 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                 )}
               </div>
 
-              {/* Field 2: Password */}
+              {/* Password */}
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  كلمة المرور<span className="text-purple-400 ms-0.5">*</span>
+                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'rgba(203,213,225,0.88)', marginBottom:7 }}>
+                  كلمة المرور <span style={{ color:'#a78bfa' }}>*</span>
                 </label>
-                <div className="relative flex items-center">
-                  <input 
-                    ref={passwordInputRef}
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={!isCardReady}
-                    className="w-full px-4 py-3 pe-11 rounded-2xl text-white text-sm font-medium outline-none transition-all placeholder:text-slate-400 focus:border-purple-400 focus:bg-white/[0.12] disabled:opacity-70"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.06)',
-                      backdropFilter: 'blur(16px)',
-                      WebkitBackdropFilter: 'blur(16px)',
-                      border: '1px solid rgba(255, 255, 255, 0.16)',
-                      boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.15)'
-                    }}
-                    placeholder="اكتب كلمة المرور..."
-                    aria-label="كلمة المرور"
-                    autoComplete="current-password"
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 end-0 pe-3 flex items-center text-slate-400 hover:text-purple-400 transition-colors cursor-pointer"
+                <div style={{ position:'relative', display:'flex', alignItems:'center' }}>
+                  <span style={{ position:'absolute', right:12, color:'rgba(148,163,184,0.45)', pointerEvents:'none', display:'flex', alignItems:'center' }}>
+                    <Lock size={15} />
+                  </span>
+                  <input ref={passwordInputRef} type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} disabled={!isCardReady} className="login-input" style={{ paddingRight:36, paddingLeft:36 }} placeholder="اكتب كلمة المرور..." aria-label="كلمة المرور" autoComplete="current-password" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position:'absolute', left:10, color:'rgba(148,163,184,0.45)', background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', padding:2, transition:'color 0.15s' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#a78bfa'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'rgba(148,163,184,0.45)'; }}
                     aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
 
-              {/* Error Message */}
+              {/* Error */}
               {error && (
-                <div role="alert" className="bg-red-500/15 border border-red-500/35 text-red-300 text-xs py-2.5 px-3.5 rounded-2xl flex items-center gap-2.5 animate-shake shadow-xs">
-                  <AlertCircle size={16} className="text-red-400 shrink-0" />
-                  <span className="font-medium">{t('login_error')}</span>
+                <div role="alert" style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderRadius:12, background:'rgba(239,68,68,0.11)', border:'1px solid rgba(239,68,68,0.28)', fontSize:13, color:'#fca5a5', fontWeight:500 }}>
+                  <AlertCircle size={15} style={{ color:'#f87171', flexShrink:0 }} />
+                  <span>{t('login_error')}</span>
                 </div>
               )}
 
-              {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between pt-0.5">
-                <label className="flex items-center gap-2 cursor-pointer group select-none">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
-                  <div className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center transition-all ${
-                    rememberMe 
-                      ? 'bg-purple-600 border-purple-600 text-white shadow-xs' 
-                      : 'border-white/20 bg-white/[0.04] group-hover:border-purple-400'
-                  }`}>
-                    {rememberMe && <Check size={12} strokeWidth={3} className="text-white" />}
+              {/* Remember me + forgot password */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', userSelect:'none' }}>
+                  <input type="checkbox" className="sr-only" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+                  <div style={{ width:18, height:18, borderRadius:6, border:`1.5px solid ${rememberMe ? '#7c3aed' : 'rgba(255,255,255,0.18)'}`, background:rememberMe ? '#7c3aed' : 'rgba(255,255,255,0.04)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s', boxShadow:rememberMe ? '0 0 10px rgba(124,58,237,0.5)' : 'none', flexShrink:0 }}>
+                    {rememberMe && <Check size={11} strokeWidth={3} style={{ color:'white' }} />}
                   </div>
-                  <span className={`text-xs transition-colors ${
-                    rememberMe ? 'text-purple-300 font-semibold' : 'text-slate-400 group-hover:text-slate-200'
-                  }`}>
+                  <span style={{ fontSize:12, color: rememberMe ? '#c4b5fd' : 'rgba(148,163,184,0.7)', fontWeight: rememberMe ? 600 : 400, transition:'color 0.2s' }}>
                     {t('remember_me')}
                   </span>
                 </label>
-
-                <button 
-                  type="button" 
-                  onClick={() => alert(t('contact_admin_reset_pwd'))} 
-                  className="text-xs text-slate-400 hover:text-purple-400 transition-colors cursor-pointer"
+                <button type="button" onClick={() => alert(t('contact_admin_reset_pwd'))} style={{ fontSize:12, color:'rgba(148,163,184,0.6)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'color 0.15s', padding:0 }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#a78bfa'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'rgba(148,163,184,0.6)'; }}
                 >
                   {t('forgot_password')}
                 </button>
               </div>
 
-              {/* Primary Purple Submit Button */}
-              <button 
-                disabled={busy || !isCardReady} 
-                type="submit"
-                className="w-full bg-[#7c3aed] hover:bg-[#6d28d9] active:scale-[0.98] text-white font-semibold py-3.5 px-4 rounded-2xl shadow-[0_4px_25px_rgba(124,58,237,0.45)] hover:shadow-[0_6px_30px_rgba(124,58,237,0.6)] transition-all cursor-pointer text-sm text-center flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none mt-2"
-              >
+              {/* Submit */}
+              <button disabled={busy || !isCardReady} type="submit" className="login-btn" style={{ marginTop:4 }}>
                 {busy ? (
-                  <div className="flex items-center gap-2">
-                    <RefreshCw size={16} className="animate-spin text-white" />
+                  <span style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                    <RefreshCw size={16} className="animate-spin" />
                     <span>جاري التحقق والاتصال...</span>
-                  </div>
+                  </span>
                 ) : (
                   <span>تسجيل الدخول</span>
                 )}
               </button>
 
-              {/* Developer Attribution Text Only (نص فقط في المنتصف حسب طلب المستخدم) */}
-              <div className="pt-3 pb-1 text-center">
-                <p className="text-xs text-slate-400 font-medium tracking-wide">
-                  <span>برمجة وتصميم: م / عبد الرحمن فتحي العادلي</span>
-                  <span className="mx-2 text-slate-500">-</span>
-                  <a href="tel:01026695879" className="hover:text-purple-400 transition-colors inline-block" dir="ltr">
-                    ت/01026695879
-                  </a>
-                </p>
-              </div>
-
+              {/* Biometric */}
               {state.settings.enableBiometricLogin && (
-                <div className="flex items-center justify-center pt-1">
-                  <button type="button" onClick={handleBiometricLogin} className="text-slate-500 hover:text-purple-400 text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
-                    <Fingerprint size={18} />
+                <div style={{ display:'flex', justifyContent:'center' }}>
+                  <button type="button" onClick={handleBiometricLogin} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'rgba(148,163,184,0.5)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'color 0.15s' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#a78bfa'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'rgba(148,163,184,0.5)'; }}
+                  >
+                    <Fingerprint size={17} />
                     <span>تسجيل الدخول الحيوي</span>
                   </button>
                 </div>
               )}
+
+              {/* Developer credit */}
+              <div style={{ paddingTop:6, textAlign:'center' }}>
+                <p style={{ fontSize:11, color:'rgba(100,116,139,0.75)', margin:0, lineHeight:1.7 }}>
+                  <span>برمجة وتصميم: م / عبد الرحمن فتحي العادلي</span>
+                  <span style={{ margin:'0 6px', color:'rgba(100,116,139,0.35)' }}>·</span>
+                  <a href="tel:01026695879" dir="ltr" style={{ color:'rgba(100,116,139,0.75)', textDecoration:'none', transition:'color 0.15s' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#a78bfa'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'rgba(100,116,139,0.75)'; }}
+                  >ت/01026695879</a>
+                </p>
+              </div>
             </form>
           </div>
         </div>
 
+        {/* WhatsNew Modal */}
+        <WhatsNewModal isOpen={showWhatsNew} version={whatsNewInfo.version} releaseName={whatsNewInfo.name} releaseNotes={whatsNewInfo.notes} onClose={() => { localStorage.removeItem('raizon_just_updated'); setShowWhatsNew(false); }} />
 
-        {/* نافذة ما بعد التحديث الصغير (المميزات الجديدة) */}
-        <WhatsNewModal
-          isOpen={showWhatsNew}
-          version={whatsNewInfo.version}
-          releaseName={whatsNewInfo.name}
-          releaseNotes={whatsNewInfo.notes}
-          onClose={() => {
-            localStorage.removeItem('raizon_just_updated');
-            setShowWhatsNew(false);
-          }}
-        />
-
-        
-        {/* نافذة التحديث التلقائي (زر تحديث وزر تخطي) */}
-        <UpdateModal
-          isOpen={showUpdateModal}
-          updateInfo={pendingUpdate}
-          token={state.settings?.githubToken || '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'}
-          onClose={() => setShowUpdateModal(false)}
-          onSkip={() => {
-            if (pendingUpdate?.latestVersion) {
-              sessionStorage.setItem('skipped_update_version', pendingUpdate.latestVersion);
-            }
-            setShowUpdateModal(false);
-          }}
-        />
+        {/* Update Modal */}
+        <UpdateModal isOpen={showUpdateModal} updateInfo={pendingUpdate} token={state.settings?.githubToken || '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'} onClose={() => setShowUpdateModal(false)} onSkip={() => { if (pendingUpdate?.latestVersion) { sessionStorage.setItem('skipped_update_version', pendingUpdate.latestVersion); } setShowUpdateModal(false); }} />
 
         {/* Quick PIN Keypad */}
         {showPinPad && (
@@ -2097,14 +1883,12 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                 </div>
                 <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{t('quick_pin')}</h3>
               </div>
-              {/* PIN display */}
               <div className={`flex justify-center gap-2 mb-5 ${pinError ? 'animate-shake' : ''}`}>
                 {[0,1,2,3,4,5].map(i => (
                   <span key={i} className={`w-3.5 h-3.5 rounded-full transition-colors ${i < pin.length ? (pinError ? 'bg-red-500' : 'bg-amber-500') : 'bg-slate-300 dark:bg-slate-600'}`}></span>
                 ))}
               </div>
               {pinHint && <p className="text-center text-red-500 text-xs mb-3">{pinHint}</p>}
-              {/* Keypad */}
               <div className="grid grid-cols-3 gap-2.5">
                 {['1','2','3','4','5','6','7','8','9','','0',''].map((n, idx) => {
                   if (n === '') {
