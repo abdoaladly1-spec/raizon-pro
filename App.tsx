@@ -90,6 +90,102 @@ const PageLoader = () => (
     </div>
 );
 
+// --- Avatar Styling Utility: Gold for Admin, Distinct Harmonious Colors for Staff/Cashiers ---
+export const getUserAvatarStyle = (user?: { role?: string; username?: string; name?: string } | null) => {
+  const role = (user?.role || '').toLowerCase();
+  const username = (user?.username || '').toLowerCase();
+
+  // المدير: ذهبي ملكي متوهج
+  if (role === 'admin' || username === 'admin') {
+    return {
+      isAdmin: true,
+      label: 'مدير النظام',
+      className: 'bg-gradient-to-tr from-amber-600 via-amber-500 to-amber-300 text-slate-950 shadow-amber-500/30 ring-2 ring-amber-400/80',
+      cssBackground: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 60%, #fef08a 100%)',
+      textColor: '#0f172a',
+      ringColor: '#f59e0b',
+      shadowColor: 'rgba(245, 158, 11, 0.5)',
+      borderColor: '#fbbf24',
+    };
+  }
+
+  // الكاشير والموظفون: ألوان حيوية مميزة وثابتة لكل مستخدم
+  const palettes = [
+    {
+      tailwind: 'bg-gradient-to-tr from-cyan-600 via-cyan-500 to-teal-400 text-white shadow-cyan-500/30 ring-2 ring-cyan-400/70',
+      css: 'linear-gradient(135deg, #0891b2 0%, #06b6d4 50%, #2dd4bf 100%)',
+      ring: '#06b6d4',
+      shadow: 'rgba(6, 182, 212, 0.45)',
+    },
+    {
+      tailwind: 'bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-300 text-white shadow-emerald-500/30 ring-2 ring-emerald-400/70',
+      css: 'linear-gradient(135deg, #059669 0%, #10b981 50%, #6ee7b7 100%)',
+      ring: '#10b981',
+      shadow: 'rgba(16, 185, 129, 0.45)',
+    },
+    {
+      tailwind: 'bg-gradient-to-tr from-fuchsia-600 via-pink-500 to-rose-400 text-white shadow-pink-500/30 ring-2 ring-pink-400/70',
+      css: 'linear-gradient(135deg, #c026d3 0%, #ec4899 50%, #fb7185 100%)',
+      ring: '#ec4899',
+      shadow: 'rgba(236, 72, 153, 0.45)',
+    },
+    {
+      tailwind: 'bg-gradient-to-tr from-indigo-600 via-indigo-500 to-sky-400 text-white shadow-indigo-500/30 ring-2 ring-indigo-400/70',
+      css: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #38bdf8 100%)',
+      ring: '#6366f1',
+      shadow: 'rgba(99, 102, 241, 0.45)',
+    },
+    {
+      tailwind: 'bg-gradient-to-tr from-violet-700 via-purple-600 to-fuchsia-400 text-white shadow-purple-500/30 ring-2 ring-purple-400/70',
+      css: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #e879f9 100%)',
+      ring: '#9333ea',
+      shadow: 'rgba(147, 51, 234, 0.45)',
+    },
+    {
+      tailwind: 'bg-gradient-to-tr from-orange-600 via-orange-500 to-amber-400 text-white shadow-orange-500/30 ring-2 ring-orange-400/70',
+      css: 'linear-gradient(135deg, #ea580c 0%, #f97316 50%, #fbbf24 100%)',
+      ring: '#f97316',
+      shadow: 'rgba(249, 115, 22, 0.45)',
+    },
+    {
+      tailwind: 'bg-gradient-to-tr from-teal-700 via-teal-500 to-emerald-400 text-white shadow-teal-500/30 ring-2 ring-teal-400/70',
+      css: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #34d399 100%)',
+      ring: '#14b8a6',
+      shadow: 'rgba(20, 184, 166, 0.45)',
+    },
+    {
+      tailwind: 'bg-gradient-to-tr from-blue-700 via-blue-600 to-cyan-400 text-white shadow-blue-500/30 ring-2 ring-blue-400/70',
+      css: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #22d3ee 100%)',
+      ring: '#2563eb',
+      shadow: 'rgba(37, 99, 235, 0.45)',
+    },
+  ];
+
+  const seed = (username || user?.name || role || 'user').toLowerCase();
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash << 5) - hash + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  const picked = palettes[Math.abs(hash) % palettes.length];
+
+  let displayRole = 'مستخدم';
+  if (role === 'cashier') displayRole = 'كاشير';
+  else if (role === 'staff') displayRole = 'موظف';
+  else if (role === 'admin') displayRole = 'مدير النظام';
+
+  return {
+    isAdmin: false,
+    label: displayRole,
+    className: picked.tailwind,
+    cssBackground: picked.css,
+    textColor: '#ffffff',
+    ringColor: picked.ring,
+    shadowColor: picked.shadow,
+    borderColor: picked.ring,
+  };
+};
+
 const MainContent = () => {
   const { 
     logout, t, toggleLanguage, language, currentUser, theme, toggleTheme, updateSettings, 
@@ -526,22 +622,29 @@ const MainContent = () => {
                                 );
                              })()}
                              
-                             {/* User Profile Pill & Divider */}
-                             <div className="flex items-center gap-2.5 ps-3 md:ps-3.5 border-s border-slate-300 dark:border-purple-900/40">
-                                 <div className="text-right hidden sm:block leading-tight">
-                                     <div className="flex items-center justify-end gap-1.5">
-                                         <p className="text-xs md:text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">{currentUser?.name || 'Admin'}</p>
-                                         <span className="w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse shrink-0" title={t('online')}></span>
+                             {/* User Profile Pill & Divider (المدير ذهبي والموظفون بألوان حيوية) */}
+                             {(() => {
+                                 const avatarStyle = getUserAvatarStyle(currentUser);
+                                 return (
+                                     <div className="flex items-center gap-2.5 ps-3 md:ps-3.5 border-s border-slate-300 dark:border-purple-900/40">
+                                         <div className="text-right hidden sm:block leading-tight">
+                                             <div className="flex items-center justify-end gap-1.5">
+                                                 <p className="text-xs md:text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">{currentUser?.name || 'Admin'}</p>
+                                                 <span className="w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse shrink-0" title={t('online')}></span>
+                                             </div>
+                                             <p className={`text-[11px] font-bold capitalize leading-none mt-0.5 ${avatarStyle.isAdmin ? 'text-amber-500 dark:text-amber-400' : 'text-purple-600 dark:text-purple-300'}`}>
+                                                 {t(currentUser?.role || '')}
+                                             </p>
+                                         </div>
+                                         <div 
+                                             className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shadow-md relative overflow-hidden transition-transform hover:scale-105 shrink-0 ${avatarStyle.className}`}
+                                             title={`${currentUser?.name || 'User'} (${t(currentUser?.role || '')})`}
+                                         >
+                                             <User size={18} className="drop-shadow-xs" />
+                                         </div>
                                      </div>
-                                     <p className="text-[11px] font-semibold text-purple-600 dark:text-amber-400/90 capitalize leading-none mt-0.5">{t(currentUser?.role || '')}</p>
-                                 </div>
-                                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shadow-md relative overflow-hidden transition-transform hover:scale-105 shrink-0
-                                    ${currentUser?.role === 'admin' 
-                                        ? 'bg-gradient-to-tr from-amber-600 via-amber-500 to-amber-300 text-slate-950 shadow-amber-500/20 ring-1 ring-amber-400/50' 
-                                        : 'bg-gradient-to-tr from-purple-700 via-purple-600 to-fuchsia-500 text-white shadow-purple-500/20 ring-1 ring-purple-400/50'}`}>
-                                     <User size={18} className="drop-shadow-xs" />
-                                 </div>
-                             </div>
+                                 );
+                             })()}
                         </div>
                     </header>
                 );
@@ -1658,63 +1761,122 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                     </button>
                   )}
                 </div>
-                <div style={{ position:'relative' }}>
-                  <span style={{ position:'absolute', right:15, top:'50%', transform:'translateY(-50%)', color:'#c084fc', fontSize:16, pointerEvents:'none', display:'flex', alignItems:'center' }}>
-                    <User size={16} />
-                  </span>
-                  <input
-                    ref={usernameInputRef}
-                    type="text"
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    disabled={!isCardReady}
-                    className="rz-input"
-                    placeholder="أدخل اسم المستخدم"
-                    aria-label="اسم المستخدم"
-                    autoComplete="username"
-                    style={{ paddingLeft: rememberedUsers.length > 0 ? 46 : 16 }}
-                  />
-                  {rememberedUsers.length > 0 && (
-                    <button type="button" onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#a99ab5', display:'flex', alignItems:'center', padding:0 }}>
-                      <ChevronDown size={15} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} style={{ color: showUserDropdown ? '#cf57ff' : undefined }} />
-                    </button>
-                  )}
-                </div>
+                {(() => {
+                  const showUserArrow = rememberMe || rememberedUsers.length > 0;
+                  // قائمة الحسابات المتاحة: تجمع الحسابات المحفوظة وحسابات النظام (المدير، الكاشير، الموظفين)
+                  const availableLoginUsers: RememberedUser[] = [...rememberedUsers];
+                  (state.users || []).forEach(u => {
+                    if (!availableLoginUsers.some(item => item.username.toLowerCase() === u.username.toLowerCase())) {
+                      availableLoginUsers.push({ username: u.username, name: u.name, role: u.role });
+                    }
+                  });
+                  if (availableLoginUsers.length === 0) {
+                    availableLoginUsers.push({ username: 'admin', name: 'المدير العام', role: 'admin' });
+                  }
 
-                {/* Saved users dropdown */}
-                {showUserDropdown && rememberedUsers.length > 0 && (
-                  <div style={{ position:'absolute', left:0, right:0, marginTop:8, borderRadius:16, background:'rgba(13,7,21,0.96)', backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)', border:'1px solid rgba(221,190,245,0.18)', boxShadow:'0 20px 60px rgba(0,0,0,0.6)', zIndex:50, overflow:'hidden' }}>
-                    <div style={{ padding:'10px 14px 8px', borderBottom:'1px solid rgba(225,185,255,0.1)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                      <span style={{ fontSize:11, color:'#b9a9c7', fontWeight:600 }}>الحسابات المحفوظة</span>
-                      <span style={{ fontSize:10, color:'#e4a8ff', background:'rgba(207,87,255,0.15)', padding:'1px 8px', borderRadius:99, fontWeight:700 }}>{rememberedUsers.length}</span>
-                    </div>
-                    <div style={{ maxHeight:176, overflowY:'auto', padding:6 }}>
-                      {rememberedUsers.map(u => (
-                        <div key={u.username} onClick={() => handleSelectRememberedUser(u)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 10px', borderRadius:12, cursor:'pointer', transition:'background .15s' }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(225,185,255,0.07)'; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; }}
-                        >
-                          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                            <div style={{ width:30, height:30, borderRadius:'50%', background:'linear-gradient(135deg,#a020f0,#6d28d9)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:'#fff', flexShrink:0 }}>
-                              {(u.name||u.username).charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <div style={{ fontSize:12, fontWeight:700, color:'#e8dff0' }}>{u.name||u.username}</div>
-                              <div style={{ fontSize:10, color:'#887995', fontFamily:'monospace' }}>@{u.username}</div>
-                            </div>
-                          </div>
-                          <button type="button" onClick={e => handleDeleteRememberedUser(e, u.username)} style={{ background:'none', border:'none', cursor:'pointer', color:'#887995', padding:4, borderRadius:8, display:'flex', transition:'color .15s' }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#f87171'; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='#887995'; }}
-                            title="حذف من القائمة"
+                  return (
+                    <>
+                      <div style={{ position:'relative' }}>
+                        <span style={{ position:'absolute', right:15, top:'50%', transform:'translateY(-50%)', color:'#c084fc', fontSize:16, pointerEvents:'none', display:'flex', alignItems:'center' }}>
+                          <User size={16} />
+                        </span>
+                        <input
+                          ref={usernameInputRef}
+                          type="text"
+                          value={username}
+                          onChange={e => setUsername(e.target.value)}
+                          disabled={!isCardReady}
+                          className="rz-input"
+                          placeholder="أدخل اسم المستخدم"
+                          aria-label="اسم المستخدم"
+                          autoComplete="username"
+                          style={{ paddingLeft: showUserArrow ? 46 : 16 }}
+                        />
+                        {/* يظهر السهم عند تفعيل زر تذكرني أو وجود مستخدمين مسجلين */}
+                        {showUserArrow && (
+                          <button 
+                            type="button" 
+                            onClick={() => setShowUserDropdown(!showUserDropdown)} 
+                            title={showUserDropdown ? 'إغلاق قائمة الحسابات' : 'عرض الحسابات المتاحة'}
+                            style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#a99ab5', display:'flex', alignItems:'center', padding:4, borderRadius:8, transition:'all .2s' }}
                           >
-                            <Trash2 size={13} />
+                            <ChevronDown size={16} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180 text-purple-400' : 'text-slate-400 hover:text-purple-300'}`} style={{ color: showUserDropdown ? '#cf57ff' : undefined }} />
                           </button>
+                        )}
+                      </div>
+
+                      {/* Saved / Available users dropdown */}
+                      {showUserDropdown && showUserArrow && (
+                        <div style={{ position:'absolute', left:0, right:0, marginTop:8, borderRadius:16, background:'rgba(13,7,21,0.96)', backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)', border:'1px solid rgba(221,190,245,0.18)', boxShadow:'0 20px 60px rgba(0,0,0,0.6)', zIndex:50, overflow:'hidden' }}>
+                          <div style={{ padding:'10px 14px 8px', borderBottom:'1px solid rgba(225,185,255,0.1)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                            <span style={{ fontSize:11, color:'#b9a9c7', fontWeight:600 }}>الحسابات المتاحة لتسجيل الدخول</span>
+                            <span style={{ fontSize:10, color:'#e4a8ff', background:'rgba(207,87,255,0.15)', padding:'1px 8px', borderRadius:99, fontWeight:700 }}>{availableLoginUsers.length}</span>
+                          </div>
+                          <div style={{ maxHeight:185, overflowY:'auto', padding:6 }}>
+                            {availableLoginUsers.map(u => {
+                              const uStyle = getUserAvatarStyle(u);
+                              const isSaved = rememberedUsers.some(ru => ru.username.toLowerCase() === u.username.toLowerCase());
+                              return (
+                                <div 
+                                  key={u.username} 
+                                  onClick={() => handleSelectRememberedUser(u)} 
+                                  style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 10px', borderRadius:12, cursor:'pointer', transition:'background .15s' }}
+                                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(225,185,255,0.07)'; }}
+                                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; }}
+                                >
+                                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                                    {/* صورة/أفاتار الحساب: ذهبي للمدير، وألوان حيوية مختلفة للموظفين والكاشير */}
+                                    <div style={{ 
+                                      width:32, 
+                                      height:32, 
+                                      borderRadius:'50%', 
+                                      background: uStyle.cssBackground, 
+                                      display:'flex', 
+                                      alignItems:'center', 
+                                      justifyContent:'center', 
+                                      fontSize:12, 
+                                      fontWeight:800, 
+                                      color: uStyle.textColor, 
+                                      flexShrink:0,
+                                      border: `1.5px solid ${uStyle.borderColor}`,
+                                      boxShadow: `0 0 10px ${uStyle.shadowColor}`
+                                    }}>
+                                      {(u.name||u.username).charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                      <div style={{ fontSize:12, fontWeight:700, color:'#e8dff0', display:'flex', alignItems:'center', gap:6 }}>
+                                        <span>{u.name||u.username}</span>
+                                        {uStyle.isAdmin ? (
+                                          <span style={{ fontSize:9, fontWeight:800, padding:'1px 6px', borderRadius:99, background:'rgba(245,158,11,0.2)', color:'#fbbf24', border:'1px solid rgba(245,158,11,0.5)' }}>
+                                            مدير النظام
+                                          </span>
+                                        ) : (
+                                          <span style={{ fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:99, background:'rgba(168,85,247,0.15)', color:'#e4a8ff', border:'1px solid rgba(168,85,247,0.3)' }}>
+                                            {uStyle.label}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div style={{ fontSize:10, color:'#887995', fontFamily:'monospace' }}>@{u.username}</div>
+                                    </div>
+                                  </div>
+                                  {isSaved && (
+                                    <button type="button" onClick={e => handleDeleteRememberedUser(e, u.username)} style={{ background:'none', border:'none', cursor:'pointer', color:'#887995', padding:4, borderRadius:8, display:'flex', transition:'color .15s' }}
+                                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#f87171'; }}
+                                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='#887995'; }}
+                                      title="حذف من القائمة المحفوظة"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Password */}
