@@ -14,6 +14,7 @@ export interface UpdateInfo {
     downloadUrl?: string;
   } | null;
   htmlUrl?: string;
+  skippedVersions?: string[];
 }
 
 interface UpdateModalProps {
@@ -270,6 +271,19 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
                   )}
                 </div>
               </div>
+
+                {/* تنبيه تجاوز الإصدارات الوسيطة لتوفير باقة الإنترنت والأمان */}
+                {updateInfo.skippedVersions && updateInfo.skippedVersions.length > 0 && (
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-right flex items-start gap-2.5 my-2">
+                    <Shield size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                    <div className="text-xs text-amber-200 leading-relaxed">
+                      <span className="font-bold text-amber-300 block mb-0.5">
+                        🛡️ توفير باقة الإنترنت والأمان:
+                      </span>
+                      تم تجاوز الإصدارات السابقة ({updateInfo.skippedVersions.join('، ')}) تلقائياً والترقية مباشرة لأحدث إصدار ({updateInfo.latestVersion}) لحماية باقة الإنترنت وتجنب التنزيلات المتكررة مع دمج كافة التحسينات لضمان أمان النظام.
+                    </div>
+                  </div>
+                )}
 
               {/* قسم مميزات وإصلاحات التحديث */}
               <div className="space-y-1.5">

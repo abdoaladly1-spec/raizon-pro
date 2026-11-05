@@ -850,6 +850,19 @@ function isNewerVersion(latest, current) {
   return false;
 }
 
+// دالة مقارنة الإصدارات الدلالية لترتيب التحديثات تصاعدياً/تنازلياً
+function compareVersions(v1, v2) {
+  const c1 = String(v1 || '').replace(/^[^\d]*/i, '').trim().split('.').map(n => parseInt(n, 10) || 0);
+  const c2 = String(v2 || '').replace(/^[^\d]*/i, '').trim().split('.').map(n => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(c1.length, c2.length); i++) {
+    const a = c1[i] || 0;
+    const b = c2[i] || 0;
+    if (a > b) return 1;
+    if (a < b) return -1;
+  }
+  return 0;
+}
+
 // قفل لمنع تشغيل أكثر من عملية تنزيل/تحديث في الوقت نفسه
 let isDownloadingUpdate = false;
 let downloadAbortController = null;
@@ -974,43 +987,110 @@ ipcMain.handle('updater:check', async (event, opts = {}) => {
   }
 
   try {
-    // جلب أحدث إصدار مستقر فقط (releases/latest تستبعد تلقائياً مسودات draft والإصدارات التجريبية prerelease)
-    const apiUrl = 'https://api.github.com/repos/' + owner + '/' + repo + '/releases/latest';
-    const res = await fetch(apiUrl, { headers });
-    
-    if (res.status === 404) {
-      return { 
-        ok: false, 
-        currentVersion,
-        error: 'لم يتم العثور على مستودع أو إصدارات منشورة على GitHub (' + owner + '/' + repo + ').'
-      };
-    }
-    if (res.status === 401 || res.status === 403) {
-      return { 
-        ok: false, 
-        currentVersion,
-        error: 'تم تجاوز حد طلبات GitHub أو انتهت الصلاحية. يرجى المحاولة لاحقاً.' 
-      };
-    }
-    if (!res.ok) {
-      return { ok: false, currentVersion, error: 'استجابة غير متوقعة من GitHub (كود ' + res.status + ')' };
+    // جلب قائمة الإصدارات المنشورة للتحقق الذكي:
+    // عند وجود أكثر من تحديث (تحديثين أو أكثر)، يقوم النظام بترك وتخطي التحديثات الوسيطة والانتقال مباشرة للتحديث الأحدث
+    // لمنع استنزاف باقة الإنترنت وتجنب التنزيلات المتكررة وضمان عمل النظام بأقصى درجات الأمان والسلامة
+    let releasesList = [];
+    try {
+      const listUrl = 'https://api.github.com/repos/' + owner + '/' + repo + '/releases?per_page=20';
+      const listRes = await fetch(listUrl, { headers });
+      if (listRes.ok) {
+        releasesList = await listRes.json();
+      }
+    } catch (e) {
+      console.warn('[Updater] Releases list fetch error, fallback to latest:', e?.message);
     }
 
-    const data = await res.json();
-    const latestVersion = (data.tag_name || data.name || '').replace(/^[^\d]*/, '');
-    const hasUpdate = isNewerVersion(latestVersion, currentVersion);
+    // احتياطي: إذا تعذر جلب القائمة الكاملة، نطلب /releases/latest مباشرة
+    if (!Array.isArray(releasesList) || releasesList.length === 0) {
+      const apiUrl = 'https://api.github.com/repos/' + owner + '/' + repo + '/releases/latest';
+      const res = await fetch(apiUrl, { headers });
+      if (res.status === 404) {
+        return { 
+          ok: false, 
+          currentVersion,
+          error: 'لم يتم العثور على مستودع أو إصدارات منشورة على GitHub (' + owner + '/' + repo + ').'
+        };
+      }
+      if (res.status === 401 || res.status === 403) {
+        return { 
+          ok: false, 
+          currentVersion,
+          error: 'تم تجاوز حد طلبات GitHub أو انتهت الصلاحية. يرجى المحاولة لاحقاً.' 
+        };
+      }
+      if (res.ok) {
+        const single = await res.json();
+        releasesList = [single];
+      }
+    }
 
-    // البحث عن ملف التثبيت الرسمي في assets
-    const assets = Array.isArray(data.assets) ? data.assets : [];
+    if (!Array.isArray(releasesList) || releasesList.length === 0) {
+      return { ok: false, currentVersion, error: 'تعذر الحصول على معلومات التحديثات من GitHub' };
+    }
+
+    // 1. تصفية الإصدارات المستقرة فقط (استبعاد مسودات draft والإصدارات التجريبية prerelease)
+    const stableReleases = releasesList.filter(r => !r.draft && !r.prerelease);
+    if (stableReleases.length === 0) {
+      return { ok: true, hasUpdate: false, currentVersion, message: 'لا توجد إصدارات مستقرة جديدة' };
+    }
+
+    // 2. تصفية الإصدارات الأحدث من الإصدار الحالي وترتيبها تنازلياً من الأحدث للأقدم
+    const newerReleases = stableReleases
+      .filter(r => isNewerVersion(r.tag_name || r.name, currentVersion))
+      .sort((a, b) => compareVersions(b.tag_name || b.name, a.tag_name || a.name));
+
+    if (newerReleases.length === 0) {
+      return {
+        ok: true,
+        hasUpdate: false,
+        currentVersion,
+        latestVersion: currentVersion,
+        message: 'أنت تستخدم أحدث إصدار بالفعل'
+      };
+    }
+
+    // 3. أحدث إصدار نهائي (ننتقل إليه مباشرة دون المرور بالإصدارات الوسيطة)
+    const targetRelease = newerReleases[0];
+    const latestVersion = (targetRelease.tag_name || targetRelease.name || '').replace(/^[^\d]*/, '');
+
+    // 4. حصر الإصدارات الوسيطة التي تم تجاوزها لتوفير باقة الإنترنت
+    const skippedReleases = newerReleases.slice(1);
+    const skippedVersions = skippedReleases.map(r => (r.tag_name || r.name || '').replace(/^[^\d]*/, ''));
+
+    if (skippedVersions.length > 0) {
+      console.log(`[Updater] 🚀 Skipped ${skippedVersions.length} intermediate release(s): [${skippedVersions.join(', ')}] -> Upgrading directly to latest: ${targetRelease.tag_name || latestVersion}`);
+
+      // إذا كانت هناك عملية تنزيل جارية لإصدار وسيط أقدم، نلغيها فوراً لحماية باقة الإنترنت
+      if (isDownloadingUpdate && downloadedReleaseInfo && isNewerVersion(latestVersion, downloadedReleaseInfo.latestVersion)) {
+        if (downloadAbortController) {
+          downloadAbortController.abort();
+        }
+        isDownloadingUpdate = false;
+        downloadAbortController = null;
+      }
+
+      // إذا كان قد تم تنزيل ملف لإصدار وسيط سابق، نحذفه فوراً لتفادي تثبيت نسخة قديمة بالخطأ وتوفير المساحة
+      if (downloadedInstallerPath && fs.existsSync(downloadedInstallerPath)) {
+        if (downloadedReleaseInfo && downloadedReleaseInfo.latestVersion !== (targetRelease.tag_name || latestVersion)) {
+          try { fs.unlinkSync(downloadedInstallerPath); } catch (e) {}
+          downloadedInstallerPath = null;
+          downloadedReleaseInfo = null;
+        }
+      }
+    }
+
+    // البحث عن ملف التثبيت الرسمي في assets لأحدث إصدار
+    const assets = Array.isArray(targetRelease.assets) ? targetRelease.assets : [];
     const installerAsset = assets.find(a => 
       a.name.toLowerCase().endsWith('.exe') || 
       a.name.toLowerCase().includes('setup')
     ) || assets[0] || null;
 
-    // فحص هل تم تنزيل هذا الإصدار مسبقاً وهو جاهز بالفعل
+    // فحص هل أحدث إصدار منزّل بالفعل وجاهز للتثبيت الفوري
     let isAlreadyDownloaded = false;
-    if (hasUpdate && downloadedInstallerPath && fs.existsSync(downloadedInstallerPath)) {
-      if (downloadedReleaseInfo && downloadedReleaseInfo.latestVersion === (data.tag_name || latestVersion)) {
+    if (downloadedInstallerPath && fs.existsSync(downloadedInstallerPath)) {
+      if (downloadedReleaseInfo && downloadedReleaseInfo.latestVersion === (targetRelease.tag_name || latestVersion)) {
         const fileCheck = verifyDownloadedFile(downloadedInstallerPath);
         if (fileCheck.valid) {
           isAlreadyDownloaded = true;
@@ -1018,22 +1098,33 @@ ipcMain.handle('updater:check', async (event, opts = {}) => {
       }
     }
 
+    // دمج سجل التغييرات لجميع الإصدارات التي تم تخطيها حتى لا يفوت المستخدم أي ميزة أو إصلاح
+    let combinedNotes = targetRelease.body || '';
+    if (skippedReleases.length > 0) {
+      combinedNotes += `\n\n---\n> 🛡️ **توفير باقة الإنترنت والأمان:** تم تجاوز الإصدارات الوسيطة (${skippedVersions.map(v => 'v' + v).join('، ')}) والانتقال مباشرة لأحدث إصدار مستقر (v${latestVersion}) لتوفير استهلاك الإنترنت وضمان أعلى أداء واستقرار.\n`;
+      combinedNotes += '\n### 📋 ملخص التغييرات والمميزات من الإصدارات السابقة:\n';
+      for (const sk of skippedReleases) {
+        combinedNotes += `\n**إصدار ${sk.name || sk.tag_name}:**\n${sk.body || 'تحسينات عامة في الأداء والاستقرار.'}\n`;
+      }
+    }
+
     return {
       ok: true,
-      hasUpdate,
+      hasUpdate: true,
       isAlreadyDownloaded,
       currentVersion,
-      latestVersion: data.tag_name || latestVersion,
-      releaseName: data.name || data.tag_name || 'تحديث جديد',
-      releaseNotes: data.body || '',
-      publishedAt: data.published_at,
-      downloadUrl: installerAsset ? (installerAsset.url || installerAsset.browser_download_url) : data.html_url,
+      latestVersion: targetRelease.tag_name || latestVersion,
+      releaseName: targetRelease.name || targetRelease.tag_name || 'تحديث جديد',
+      releaseNotes: combinedNotes,
+      publishedAt: targetRelease.published_at,
+      downloadUrl: installerAsset ? (installerAsset.url || installerAsset.browser_download_url) : targetRelease.html_url,
       installerAsset: installerAsset ? {
         name: installerAsset.name,
         size: installerAsset.size,
         downloadUrl: installerAsset.browser_download_url
       } : null,
-      htmlUrl: data.html_url
+      skippedVersions: skippedVersions.map(v => 'v' + v),
+      htmlUrl: targetRelease.html_url
     };
   } catch (err) {
     return { 
@@ -1052,8 +1143,25 @@ ipcMain.handle('updater:download', async (event, opts = {}) => {
     return { ok: false, error: 'رابط التحميل غير متوفر' };
   }
 
+  // إذا كان هناك ملف سابق لإصدار قديم، نحذفه فوراً لتوفير المساحة وتجنب أي تعارض
+  if (downloadedInstallerPath && fs.existsSync(downloadedInstallerPath)) {
+    if (downloadedReleaseInfo && downloadedReleaseInfo.latestVersion !== opts.version) {
+      try { fs.unlinkSync(downloadedInstallerPath); } catch (e) {}
+      downloadedInstallerPath = null;
+      downloadedReleaseInfo = null;
+    }
+  }
+
+  // إذا كانت هناك عملية تنزيل جارية لإصدار أقدم، نلغيها ونبدأ تنزيل الإصدار الأحدث فوراً لتوفير الباقة
   if (isDownloadingUpdate) {
-    return { ok: false, inProgress: true, error: 'هناك عملية تنزيل تحديث جارية بالفعل في الخلفية' };
+    if (downloadedReleaseInfo && isNewerVersion(opts.version, downloadedReleaseInfo.latestVersion)) {
+      if (downloadAbortController) {
+        downloadAbortController.abort();
+      }
+      isDownloadingUpdate = false;
+    } else {
+      return { ok: false, inProgress: true, error: 'هناك عملية تنزيل تحديث جارية بالفعل في الخلفية' };
+    }
   }
 
   isDownloadingUpdate = true;

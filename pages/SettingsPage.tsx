@@ -72,6 +72,7 @@ export const SettingsPage = () => {
         htmlUrl?: string;
         installerAsset?: any;
         error?: string;
+        skippedVersions?: string[];
     } | null>(null);
     const [isDownloaded, setIsDownloaded] = useState<boolean>(false);
     const [customRepo, setCustomRepo] = useState<string>(state.settings?.githubRepo || 'abdoaladly1-spec/raizon-pro');
@@ -141,7 +142,8 @@ export const SettingsPage = () => {
                         publishedAt: res.publishedAt,
                         downloadUrl: res.downloadUrl,
                         htmlUrl: res.htmlUrl,
-                        installerAsset: res.installerAsset
+                        installerAsset: res.installerAsset,
+                        skippedVersions: res.skippedVersions
                     });
                     addToast(language === 'ar' ? `يتوفر إصدار جديد: ${res.latestVersion}` : `New update available: ${res.latestVersion}`, 'info');
                 } else {
@@ -1113,6 +1115,21 @@ export const SettingsPage = () => {
                                         </span>
                                     </div>
                                 </div>
+
+                                {/* شارة تخطي الإصدارات الوسيطة لتوفير باقة الإنترنت */}
+                                {updateResult.skippedVersions && updateResult.skippedVersions.length > 0 && (
+                                    <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-200">
+                                        <Shield size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                                        <div className="leading-relaxed">
+                                            <span className="font-bold text-amber-300 block mb-0.5">
+                                                {language === 'ar' ? '🛡️ ميزة توفير باقة الإنترنت والأمان:' : '🛡️ Bandwidth Saver & Safety:'}
+                                            </span>
+                                            {language === 'ar' 
+                                                ? `تم تجاوز الإصدارات السابقة (${updateResult.skippedVersions.join('، ')}) تلقائياً والانتقال مباشرة لأحدث إصدار مستقر (v${updateResult.latestVersion}) لحماية باقة الإنترنت وتجنب التحميل المتكرر مع دمج كافة الإصلاحات لضمان عمل النظام بأعلى كفاءة.`
+                                                : `Skipped intermediate versions (${updateResult.skippedVersions.join(', ')}) directly to v${updateResult.latestVersion} to save bandwidth and ensure maximum system safety.`}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* سجل التغييرات */}
                                 {updateResult.releaseNotes && (

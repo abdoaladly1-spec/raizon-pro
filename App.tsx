@@ -1720,7 +1720,8 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                             releaseNotes: res.releaseNotes,
                             downloadUrl: res.downloadUrl,
                             installerAsset: res.installerAsset,
-                            htmlUrl: res.htmlUrl
+                            htmlUrl: res.htmlUrl,
+                            skippedVersions: res.skippedVersions
                         };
                         setPendingUpdate(updateData);
 
