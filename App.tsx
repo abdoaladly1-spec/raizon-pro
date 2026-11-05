@@ -1784,30 +1784,14 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                 )}
               </button>
 
-              {/* Bottom Dual Pill Badges (مطابق للكبسولتين أسفل الزر في الصورة) */}
-              <div className="flex items-center gap-2.5 pt-2">
-                {/* Developer Direct Call Pill */}
-                <a 
-                  href="tel:01026695879" 
-                  className="flex-1 py-2.5 px-3 rounded-xl bg-[#090713]/85 hover:bg-[#120f26] border border-white/[0.08] text-slate-300 hover:text-white text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer"
-                  title="اتصال بالمطور: 01026695879"
-                  dir="ltr"
-                >
-                  <Phone size={13} className="text-purple-400 shrink-0" />
-                  <span className="font-mono text-[11px] font-semibold">01026695879</span>
-                </a>
-
-                {/* App Version Pill */}
-                <div className="flex-1 py-2.5 px-3 rounded-xl bg-[#090713]/85 border border-white/[0.08] text-slate-400 text-xs font-medium flex items-center justify-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                  <span className="font-mono text-[11px] text-slate-300">v{appVersion}</span>
-                </div>
-              </div>
-
-              {/* Developer Attribution Note */}
-              <div className="pt-2 text-center">
-                <p className="text-[11px] text-slate-500 font-medium tracking-wide">
-                  برمجة وتصميم: م / عبد الرحمن فتحي العادلي
+              {/* Developer Attribution Text Only (نص فقط حسب طلب المستخدم) */}
+              <div className="pt-4 pb-1 text-center">
+                <p className="text-xs text-slate-400 font-medium tracking-wide">
+                  <span>برمجة وتصميم: م / عبد الرحمن فتحي العادلي</span>
+                  <span className="mx-2 text-slate-500">-</span>
+                  <a href="tel:01026695879" className="hover:text-purple-400 transition-colors inline-block" dir="ltr">
+                    ت/01026695879
+                  </a>
                 </p>
               </div>
 
