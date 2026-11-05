@@ -992,9 +992,7 @@ export const ReservationsPage = () => {
                                                                     <div className="text-[11px] text-slate-400 font-mono">{c.phone || '-'}</div>
                                                                 </div>
                                                             </div>
-                                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold">
-                                                                {c.tier || 'Client'}
-                                                            </span>
+
                                                         </button>
                                                     ))}
                                                 </div>

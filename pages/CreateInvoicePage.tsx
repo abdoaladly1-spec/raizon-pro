@@ -783,11 +783,11 @@ export const CreateInvoice = ({ onClose }: any) => {
                                                         <span className="font-semibold text-slate-800 dark:text-slate-200">{c.phone}</span>
                                                         <span className="opacity-40">•</span>
                                                         <span>كود: #{c.id}</span>
-                                                        {c.tier && (
+                                                        {c.isVip && (
                                                             <>
                                                                 <span className="opacity-40">•</span>
-                                                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${c.tier === 'Gold' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300' : c.tier === 'Silver' ? 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200' : 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300'}`}>
-                                                                    {c.tier}
+                                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                                                    VIP
                                                                 </span>
                                                             </>
                                                         )}
@@ -828,9 +828,11 @@ export const CreateInvoice = ({ onClose }: any) => {
                                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('last_visit')}: {formatDate(new Date(existingCustomer.lastVisit))}</p>
                              </div>
                         </div>
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${existingCustomer.tier === 'Gold' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' : existingCustomer.tier === 'Silver' ? 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600' : 'bg-amber-50/60 text-amber-800 border-amber-200/80 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900'}`}>
-                            {t(existingCustomer.tier?.toLowerCase() || 'bronze')}
-                        </span>
+                        {existingCustomer.isVip && (
+                            <span className="px-2.5 py-1 rounded-lg text-xs font-bold border bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800">
+                                عميل VIP
+                            </span>
+                        )}
                     </div>
                 )}
              </Card>

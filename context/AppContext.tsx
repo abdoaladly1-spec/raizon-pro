@@ -2734,10 +2734,6 @@ export const AppProvider = ({ children }: any) => {
         if (c.id === invoiceData.customerId) {
           const newTotalSpent = c.totalSpent + invoiceData.total;
 
-          let newTier: 'Bronze' | 'Silver' | 'Gold' = 'Bronze';
-          if (newTotalSpent > 10000) newTier = 'Gold';
-          else if (newTotalSpent > 5000) newTier = 'Silver';
-
           const isCredit = invoiceData.paymentMethod === 'credit';
           const newBalance = (c.balance || 0) + (isCredit ? invoiceData.total : 0);
 
@@ -2746,8 +2742,7 @@ export const AppProvider = ({ children }: any) => {
             totalSpent: newTotalSpent,
             lastVisit: new Date().toISOString(),
             balance: newBalance,
-            loyaltyPoints: 0,
-            tier: newTier
+            loyaltyPoints: 0
           };
         }
         return c;
@@ -2864,14 +2859,10 @@ export const AppProvider = ({ children }: any) => {
       customers = prev.customers.map(c => {
         if (c.id !== rec.customerId) return c;
         const newTotalSpent = Math.max(0, (Number(c.totalSpent) || 0) - (Number(rec.refundAmount) || 0));
-        let newTier: 'Bronze' | 'Silver' | 'Gold' = 'Bronze';
-        if (newTotalSpent > 10000) newTier = 'Gold';
-        else if (newTotalSpent > 5000) newTier = 'Silver';
         return {
           ...c,
           totalSpent: newTotalSpent,
           loyaltyPoints: Math.max(0, (Number(c.loyaltyPoints) || 0) - reversed),
-          tier: newTier,
         };
       });
     }
@@ -3100,8 +3091,7 @@ export const AppProvider = ({ children }: any) => {
       id: newId,
       totalSpent: 0,
       lastVisit: new Date().toISOString(),
-      loyaltyPoints: 0,
-      tier: 'Bronze'
+      loyaltyPoints: 0
     };
     setState(prev => ({
       ...prev,
