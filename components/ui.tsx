@@ -45,20 +45,28 @@ export const Card = ({ children, className = "" }: any) => (
 
 export const Button = ({ children, variant = "primary", className = "", ...props }: any) => {
   const variants = {
-    primary: "bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white shadow-sm border border-primary-700/20",
-    secondary: "bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 active:bg-slate-100 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm",
-    danger: "bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white shadow-sm border border-rose-700/20",
-    success: "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-sm border border-emerald-700/20",
-    purple: "bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white shadow-sm border border-purple-700/20",
-    info: "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-sm border border-blue-700/20",
-    warning: "bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white shadow-sm border border-amber-600/20",
-    gray: "bg-slate-600 hover:bg-slate-700 active:bg-slate-800 text-white shadow-sm border border-slate-700/20",
-    ghost: "bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 border border-transparent"
+    // 1. Blue (Primary / Theme default): Changes with the theme
+    primary: "bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white shadow-sm border border-primary-700/20 font-bold",
+    info: "bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white shadow-sm border border-primary-700/20 font-bold",
+    purple: "bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white shadow-sm border border-primary-700/20 font-bold",
+
+    // 2. Green (Success / Confirm / Settle / Save / Deposit):
+    success: "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-sm border border-emerald-700/20 font-bold",
+
+    // 3. Red (Danger / Delete / Advance Withdrawal / Discard / Cancel):
+    danger: "bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white shadow-sm border border-rose-700/20 font-bold",
+    warning: "bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white shadow-sm border border-rose-700/20 font-bold",
+
+    // Secondary & Text Actions:
+    secondary: "bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 active:bg-slate-100 dark:active:bg-slate-700 text-slate-800 dark:text-white border border-slate-300 dark:border-slate-600 shadow-sm font-bold",
+    gray: "bg-slate-600 hover:bg-slate-700 active:bg-slate-800 text-white shadow-sm border border-slate-700/20 font-bold",
+    ghost: "bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-bold border border-transparent",
+    text: "bg-transparent hover:bg-primary-500/10 text-primary-600 dark:text-primary-400 font-bold hover:underline border-0"
   };
   const v = variants[variant as keyof typeof variants] || variants.primary;
   return (
     <button 
-      className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-150 inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none ${v} ${className}`}
+      className={`px-3.5 py-2 rounded-lg text-sm font-bold transition-all duration-150 inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none ${v} ${className}`}
       {...props}
     >
       {children}

@@ -561,3 +561,195 @@ html:not(.dark) kbd {
   color: #0f172a !important;
   font-weight: 700 !important;
 }
+
+/* ==============================================================
+   1. وضع التباين العالي الليلي: النصوص جميعها بولد وبلون أبيض ناصع
+   (Dark Mode: All texts bold and crisp pure white)
+   ============================================================== */
+html.dark,
+.dark {
+  color-scheme: dark;
+  color: #ffffff;
+}
+
+.dark body,
+.dark main {
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+/* جعل جميع العناوين والفقرات والتسميات والقوائم والجداول بولد وبلون أبيض */
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6,
+.dark p,
+.dark label,
+.dark dt,
+.dark dd,
+.dark li,
+.dark td,
+.dark th,
+.dark strong,
+.dark b {
+  font-weight: 700 !important;
+}
+
+/* تحويل الألوان الرمادية الباهتة في الوضع الليلي إلى الأبيض الناصع والبولد */
+.dark .text-slate-100,
+.dark .text-slate-200,
+.dark .text-slate-300,
+.dark .text-slate-400,
+.dark .text-slate-500,
+.dark .text-gray-100,
+.dark .text-gray-200,
+.dark .text-gray-300,
+.dark .text-gray-400,
+.dark .text-gray-500 {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* ==============================================================
+   2. الأزرار النصية (Text Buttons): بلون أزرق واضح
+   (Text buttons like 'Forgot Password' in blue)
+   ============================================================== */
+.btn-text,
+.btn-link,
+.text-btn-blue,
+.text-blue-link,
+button.text-link {
+  color: var(--pri-500, #0284c7) !important;
+  font-weight: 800 !important;
+  background: transparent !important;
+  transition: all 0.15s ease-in-out;
+}
+
+.dark .btn-text,
+.dark .btn-link,
+.dark .text-btn-blue,
+.dark .text-blue-link,
+.dark button.text-link {
+  color: #38bdf8 !important;
+  font-weight: 800 !important;
+}
+
+.btn-text:hover,
+.btn-link:hover,
+.text-btn-blue:hover,
+.dark .btn-text:hover,
+.dark .btn-link:hover,
+.dark .text-btn-blue:hover {
+  color: #60a5fa !important;
+  text-decoration: underline;
+}
+
+/* ==============================================================
+   3. الأرقام: أحمر للخصم والسحب والحذف / أخضر للزيادة والمبيعات / أزرق افتراضي يتغير مع الثيم
+   ============================================================== */
+
+/* أ) الأرقام الحمراء: خصم، سحب، سلفة، حذف، مصروفات، مرتجعات */
+.text-rose-400,
+.text-rose-500,
+.text-rose-600,
+.text-red-400,
+.text-red-500,
+.text-red-600,
+.dark .text-rose-400,
+.dark .text-rose-500,
+.dark .text-rose-600,
+.dark .text-red-400,
+.dark .text-red-500,
+.dark .text-red-600,
+.num-red,
+.num-negative,
+.num-expense,
+.num-advance,
+.num-discount {
+  color: #ef4444 !important;
+  font-weight: 800 !important;
+}
+
+/* ب) الأرقام الخضراء: زيادة، نجاح، إيداع، مبيعات، إيرادات، أرباح، رصيد مستحق */
+.text-emerald-400,
+.text-emerald-500,
+.text-emerald-600,
+.text-green-400,
+.text-green-500,
+.text-green-600,
+.dark .text-emerald-400,
+.dark .text-emerald-500,
+.dark .text-emerald-600,
+.dark .text-green-400,
+.dark .text-green-500,
+.dark .text-green-600,
+.num-green,
+.num-positive,
+.num-sales,
+.num-deposit,
+.num-profit,
+.num-due {
+  color: #10b981 !important;
+  font-weight: 800 !important;
+}
+
+/* ج) الأرقام الزرقاء الافتراضية: تتغير تلقائياً مع الثيم كـ لون أساسي / ثانوي */
+.text-blue-400,
+.text-blue-500,
+.text-blue-600,
+.text-primary-400,
+.text-primary-500,
+.text-primary-600,
+.dark .text-blue-400,
+.dark .text-blue-500,
+.dark .text-blue-600,
+.dark .text-primary-400,
+.dark .text-primary-500,
+.dark .text-primary-600,
+.num-blue,
+.num-neutral,
+.num-default {
+  color: var(--pri-500, #0ea5e9) !important;
+  font-weight: 800 !important;
+}
+
+/* ==============================================================
+   4. الأزرار الثلاثية المنضبطة (أحمر، أخضر، والأزرق الافتراضي التابع للثيم)
+   ============================================================== */
+/* الزر الأزرق الافتراضي (إضافة، تعديل، طباعة، كشف حساب، إجراء رئيسي): يتغير مع الثيم */
+.btn-primary,
+.btn-blue {
+  background-color: var(--pri-600, #0284c7) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+.btn-primary:hover,
+.btn-blue:hover {
+  background-color: var(--pri-700, #0369a1) !important;
+}
+
+/* الزر الأخضر (تأكيد، حفظ، صرف، سداد، تصفية، إيداع) */
+.btn-success,
+.btn-green {
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+.btn-success:hover,
+.btn-green:hover {
+  background-color: #059669 !important;
+}
+
+/* الزر الأحمر (حذف، سحب سلفة، إلغاء، استرجاع، خطر) */
+.btn-danger,
+.btn-red {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+.btn-danger:hover,
+.btn-red:hover {
+  background-color: #dc2626 !important;
+}

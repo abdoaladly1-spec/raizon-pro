@@ -2186,7 +2186,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                     اسم المستخدم
                   </label>
                   {rememberedUsers.length > 0 && (
-                    <button type="button" onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ fontSize:11.5, color: isDark ? '#e4a8ff' : '#7e22ce', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:800, padding:0 }}>
+                    <button type="button" onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ fontSize:11.5, color: isDark ? '#38bdf8' : '#0284c7', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:800, padding:0 }}>
                       حسابات محفوظة ({rememberedUsers.length})
                     </button>
                   )}
@@ -2373,9 +2373,9 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                   <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} style={{ width:16, height:16, padding:0, accentColor: isDark ? '#bd38f2' : '#7e22ce' }} />
                   <span>تذكرني</span>
                 </label>
-                <button type="button" onClick={() => alert(t('contact_admin_reset_pwd'))} style={{ color: isDark ? '#e4a8ff' : '#7e22ce', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:12.5, fontWeight:700, padding:0, transition:'color .15s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#ffd15b' : '#d97706'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#e4a8ff' : '#7e22ce'; }}
+                <button type="button" onClick={() => alert(t('contact_admin_reset_pwd'))} style={{ color: isDark ? '#38bdf8' : '#0284c7', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:12.5, fontWeight:800, padding:0, transition:'color .15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#60a5fa'; (e.currentTarget as HTMLElement).style.textDecoration = 'underline'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#38bdf8' : '#0284c7'; (e.currentTarget as HTMLElement).style.textDecoration = 'none'; }}
                 >
                   {t('forgot_password')}
                 </button>

@@ -498,7 +498,7 @@ export const StaffPage = () => {
                             <button
                                 type="button"
                                 onClick={() => handleOpenAdvanceModal(selectedStaff.id)}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 cursor-pointer transition-all shadow-2xs"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-500/30 cursor-pointer transition-all shadow-2xs"
                             >
                                 <Banknote size={15} />
                                 <span>{isAr ? 'سحب سلفة' : 'Draw Advance'}</span>
@@ -507,7 +507,7 @@ export const StaffPage = () => {
                             <button
                                 type="button"
                                 onClick={() => handleOpenPaymentModal(selectedStaff.id, 'salary')}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 dark:text-blue-400 border border-blue-500/30 cursor-pointer transition-all shadow-2xs"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer transition-all shadow-2xs"
                             >
                                 <Wallet size={15} />
                                 <span>{isAr ? 'صرف راتب / دفعة' : 'Pay Salary'}</span>
@@ -569,7 +569,7 @@ export const StaffPage = () => {
                                 <Award size={16} className="text-purple-500" />
                             </div>
                             <div className="mt-2 flex items-baseline gap-1">
-                                <span className="text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">
+                                <span className="text-2xl font-bold font-mono text-emerald-500">
                                     {formatNumber(currentStaffFin?.totalCommissions || 0)}
                                 </span>
                                 <span className="text-xs text-slate-400">ج.م</span>
@@ -585,7 +585,7 @@ export const StaffPage = () => {
                                 <Banknote size={16} className="text-amber-500" />
                             </div>
                             <div className="mt-2 flex items-baseline gap-1">
-                                <span className="text-2xl font-bold font-mono text-amber-500">
+                                <span className="text-2xl font-bold font-mono text-rose-500">
                                     {formatNumber(currentStaffFin?.totalAdvances || 0)}
                                 </span>
                                 <span className="text-xs text-slate-400">ج.م</span>
@@ -810,7 +810,7 @@ export const StaffPage = () => {
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                                         {staffInvoicesList.map(inv => (
                                             <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                                <td className="py-3 px-3 font-mono font-bold text-purple-600 dark:text-purple-400">
+                                                <td className="py-3 px-3 font-mono font-bold text-emerald-500">
                                                     #{inv.id}
                                                 </td>
                                                 <td className="py-3 px-3 text-slate-500 font-mono text-[11px]">
@@ -960,7 +960,7 @@ export const StaffPage = () => {
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div>
                             <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
-                                <span className="p-2 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                                <span className="p-2 rounded-xl bg-purple-500/15 text-emerald-500 border border-purple-500/20">
                                     <Users size={20} />
                                 </span>
                                 <span>{isAr ? 'إدارة الموظفين وفريق العمل' : 'Staff Management'}</span>
@@ -989,7 +989,7 @@ export const StaffPage = () => {
                                 type="button"
                                 onClick={() => handleOpenAdvanceModal()}
                                 disabled={(state.staff || []).length === 0}
-                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 cursor-pointer transition-all shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-500/30 cursor-pointer transition-all shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Banknote size={16} />
                                 <span>{isAr ? 'سحب سلفة سريعة' : 'Quick Advance'}</span>
@@ -1015,7 +1015,7 @@ export const StaffPage = () => {
                                 <Users size={16} className="text-purple-500" />
                             </div>
                             <div className="mt-2 flex items-baseline gap-2">
-                                <span className="text-2xl font-bold font-mono text-slate-900 dark:text-slate-100">{teamSummary.total}</span>
+                                <span className="text-2xl font-bold font-mono text-primary-600 dark:text-primary-400">{teamSummary.total}</span>
                                 <span className="text-xs text-emerald-500 font-bold">({teamSummary.active} {isAr ? 'نشط' : 'active'})</span>
                             </div>
                             <p className="text-[11px] text-slate-400 mt-1">
@@ -1029,7 +1029,7 @@ export const StaffPage = () => {
                                 <Award size={16} className="text-purple-500" />
                             </div>
                             <div className="mt-2 flex items-baseline gap-1">
-                                <span className="text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">
+                                <span className="text-2xl font-bold font-mono text-emerald-500">
                                     {formatNumber(teamSummary.totalCommissions)}
                                 </span>
                                 <span className="text-xs text-slate-400">ج.م</span>
@@ -1045,7 +1045,7 @@ export const StaffPage = () => {
                                 <Banknote size={16} className="text-amber-500" />
                             </div>
                             <div className="mt-2 flex items-baseline gap-1">
-                                <span className="text-2xl font-bold font-mono text-amber-500">
+                                <span className="text-2xl font-bold font-mono text-rose-500">
                                     {formatNumber(teamSummary.totalAdvances)}
                                 </span>
                                 <span className="text-xs text-slate-400">ج.م</span>
@@ -1203,7 +1203,7 @@ export const StaffPage = () => {
                                             <div className="flex items-center gap-1.5 text-[11px]">
                                                 <span className="text-slate-400">{isAr ? 'العمولة:' : 'Commission:'}</span>
                                                 {commVal > 0 ? (
-                                                    <span className="font-bold text-purple-600 dark:text-purple-400">
+                                                    <span className="font-bold text-emerald-500">
                                                         {staff.commissionType === 'fixed'
                                                             ? `${commVal} ج.م / فاتورة`
                                                             : `${commVal}% على الفاتورة`}
@@ -1220,7 +1220,7 @@ export const StaffPage = () => {
                                         <div className="mt-3.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 grid grid-cols-3 gap-2 text-center">
                                             <div>
                                                 <p className="text-[10px] text-slate-400 font-bold">{isAr ? 'العمولات' : 'Commissions'}</p>
-                                                <p className="text-xs font-bold font-mono text-purple-600 dark:text-purple-400 mt-0.5">
+                                                <p className="text-xs font-bold font-mono text-emerald-500 mt-0.5">
                                                     {formatNumber(fin?.totalCommissions || 0)}
                                                 </p>
                                             </div>
@@ -1255,7 +1255,7 @@ export const StaffPage = () => {
                                         <button
                                             type="button"
                                             onClick={() => handleOpenAdvanceModal(staff.id)}
-                                            className="px-2.5 py-2 rounded-xl text-xs font-bold bg-amber-500/10 hover:bg-amber-500 text-amber-500 hover:text-white border border-amber-500/25 transition-all cursor-pointer flex items-center gap-1"
+                                            className="px-2.5 py-2 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-500/25 transition-all cursor-pointer flex items-center gap-1"
                                             title={isAr ? 'سحب سلفة لهذا الموظف' : 'Draw Advance'}
                                         >
                                             <Banknote size={14} />
@@ -1265,7 +1265,7 @@ export const StaffPage = () => {
                                         <button
                                             type="button"
                                             onClick={() => handleOpenPaymentModal(staff.id, 'salary')}
-                                            className="px-2.5 py-2 rounded-xl text-xs font-bold bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white border border-blue-500/25 transition-all cursor-pointer flex items-center gap-1"
+                                            className="px-2.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all cursor-pointer flex items-center gap-1"
                                             title={isAr ? 'صرف راتب أو دفعة' : 'Pay Salary'}
                                         >
                                             <Wallet size={14} />
@@ -1531,7 +1531,7 @@ export const StaffPage = () => {
                             <Button variant="secondary" onClick={() => setShowAdvanceModal(false)}>
                                 {isAr ? 'إلغاء' : 'Cancel'}
                             </Button>
-                            <Button variant="warning" onClick={handleConfirmAdvance} className="flex items-center gap-1.5">
+                            <Button variant="danger" onClick={handleConfirmAdvance} className="flex items-center gap-1.5">
                                 <Banknote size={15} />
                                 <span>{isAr ? 'تأكيد وصرف السلفة' : 'Confirm Advance'}</span>
                             </Button>
@@ -1593,7 +1593,7 @@ export const StaffPage = () => {
                                     <button
                                         type="button"
                                         onClick={() => setPaymentAmount(String(staffFinancials.get(paymentStaffId)!.netDue))}
-                                        className="text-[11px] text-purple-600 dark:text-purple-400 font-bold hover:underline cursor-pointer"
+                                        className="text-[11px] text-emerald-500 font-bold hover:underline cursor-pointer"
                                     >
                                         {isAr ? `تعبئة كامل المستحق (${formatNumber(staffFinancials.get(paymentStaffId)!.netDue)} ج.م)` : 'Fill Net Due'}
                                     </button>
