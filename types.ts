@@ -1,3 +1,36 @@
+export interface CustomReceiptTemplate {
+  id: string;
+  name: string;
+  desc?: string;
+  createdAt: number;
+  config: {
+    pageSize: '80mm' | '58mm' | 'A4' | 'A5';
+    marginMm: number;
+    baseFontSize: number;
+    titleText?: string;
+    footerText?: string;
+    enableShading?: boolean;
+    showBarcode?: boolean;
+    primaryColor?: string;
+    accentColor?: string;
+    textColor?: string;
+    template?: string;
+  };
+  initialConfig: {
+    pageSize: '80mm' | '58mm' | 'A4' | 'A5';
+    marginMm: number;
+    baseFontSize: number;
+    titleText?: string;
+    footerText?: string;
+    enableShading?: boolean;
+    showBarcode?: boolean;
+    primaryColor?: string;
+    accentColor?: string;
+    textColor?: string;
+    template?: string;
+  };
+}
+
 export type Language = 'ar' | 'en';
 
 export type Role = 'admin' | 'cashier' | 'manager' | 'waiter';
@@ -472,6 +505,8 @@ export interface AppState {
     githubRepo?: string;
     autoCheckUpdates?: boolean;
     githubToken?: string;
+    activeTemplateId?: string;
+    customReceiptTemplates?: CustomReceiptTemplate[];
     printDesign: {
       pageSize: 'A4' | 'A5' | '80mm' | '58mm';
       marginMm: number;

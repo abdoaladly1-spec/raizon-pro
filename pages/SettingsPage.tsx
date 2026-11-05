@@ -7,9 +7,9 @@ import {
     Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, 
     ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, 
     ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw,
-    Building, Bell, Lock, Save, Key, Shield, Download
+    Building, Bell, Lock, Save, Key, Shield, Download, Edit
 } from '../components/Icons';
-import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier, AppState } from '../types';
+import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier, AppState, CustomReceiptTemplate } from '../types';
 import { Card, Button, Input, ToastContainer, ModalShell } from '../components/ui';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AuditLogs } from './AuditLogsPage';
@@ -1872,6 +1872,241 @@ export const SettingsPage = () => {
     );
 
     // =========================================================================
+
+    // ---------- إدارة قوالب الإيصال الحرارية (Thermal Receipt Templates) ----------
+    const [showTemplateModal, setShowTemplateModal] = useState(false);
+    const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+    const [templateModalForm, setTemplateModalForm] = useState({
+        name: '',
+        desc: '',
+        pageSize: '80mm' as '80mm' | '58mm',
+        baseFontSize: 12,
+        marginMm: 4,
+        titleText: '',
+        footerText: '',
+        enableShading: true,
+        showBarcode: false,
+    });
+
+    const openCreateTemplateModal = () => {
+        setEditingTemplateId(null);
+        setTemplateModalForm({
+            name: '',
+            desc: '',
+            pageSize: (form.printDesign?.pageSize === '58mm' ? '58mm' : '80mm') as '80mm' | '58mm',
+            baseFontSize: form.printDesign?.baseFontSize || 12,
+            marginMm: form.printDesign?.marginMm ?? 4,
+            titleText: form.printDesign?.titleText || '',
+            footerText: form.printDesign?.footerText || '',
+            enableShading: form.printDesign?.enableShading !== false,
+            showBarcode: Boolean(form.printDesign?.showBarcode),
+        });
+        setShowTemplateModal(true);
+    };
+
+    const openEditTemplateModal = (tpl: CustomReceiptTemplate) => {
+        setEditingTemplateId(tpl.id);
+        setTemplateModalForm({
+            name: tpl.name,
+            desc: tpl.desc || '',
+            pageSize: (tpl.config.pageSize === '58mm' ? '58mm' : '80mm') as '80mm' | '58mm',
+            baseFontSize: tpl.config.baseFontSize || 12,
+            marginMm: tpl.config.marginMm ?? 4,
+            titleText: tpl.config.titleText || '',
+            footerText: tpl.config.footerText || '',
+            enableShading: tpl.config.enableShading !== false,
+            showBarcode: Boolean(tpl.config.showBarcode),
+        });
+        setShowTemplateModal(true);
+    };
+
+    const handleSaveTemplateModal = (applyNow: boolean = false) => {
+        const cleanName = templateModalForm.name.trim();
+        if (!cleanName) {
+            addToast(language === 'ar' ? 'يرجى إدخال اسم القالب' : 'Please enter template name', 'error');
+            return;
+        }
+
+        const tplConfig = {
+            pageSize: templateModalForm.pageSize,
+            marginMm: templateModalForm.marginMm,
+            baseFontSize: templateModalForm.baseFontSize,
+            titleText: templateModalForm.titleText,
+            footerText: templateModalForm.footerText,
+            enableShading: templateModalForm.enableShading,
+            showBarcode: templateModalForm.showBarcode,
+            primaryColor: '#000000',
+            accentColor: '#333333',
+            textColor: '#000000',
+            template: 'thermal',
+        };
+
+        const existingList: CustomReceiptTemplate[] = form.customReceiptTemplates || [];
+
+        if (editingTemplateId) {
+            const updated = existingList.map(item => {
+                if (item.id === editingTemplateId) {
+                    return {
+                        ...item,
+                        name: cleanName,
+                        desc: templateModalForm.desc.trim(),
+                        config: { ...item.config, ...tplConfig },
+                    };
+                }
+                return item;
+            });
+
+            const isCurrentActive = form.activeTemplateId === editingTemplateId || applyNow;
+            setForm(prev => ({
+                ...prev,
+                customReceiptTemplates: updated,
+                ...(isCurrentActive ? {
+                    activeTemplateId: editingTemplateId,
+                    printDesign: {
+                        ...prev.printDesign,
+                        ...tplConfig,
+                    }
+                } : {})
+            }));
+            addToast(language === 'ar' ? `تم تحديث قالب (${cleanName}) بنجاح` : 'Template updated successfully', 'success');
+        } else {
+            const newId = 'tpl_' + Date.now();
+            const newTemplate: CustomReceiptTemplate = {
+                id: newId,
+                name: cleanName,
+                desc: templateModalForm.desc.trim(),
+                createdAt: Date.now(),
+                config: { ...tplConfig },
+                initialConfig: { ...tplConfig },
+            };
+
+            setForm(prev => ({
+                ...prev,
+                customReceiptTemplates: [...(prev.customReceiptTemplates || []), newTemplate],
+                ...(applyNow ? {
+                    activeTemplateId: newId,
+                    printDesign: {
+                        ...prev.printDesign,
+                        ...tplConfig,
+                    }
+                } : {})
+            }));
+            addToast(language === 'ar' ? `تم إنشاء قالب (${cleanName}) بنجاح` : 'Template created successfully', 'success');
+        }
+
+        setShowTemplateModal(false);
+    };
+
+    const handleResetThermalDefault = () => {
+        const factoryThermal = {
+            pageSize: '80mm' as const,
+            marginMm: 4,
+            baseFontSize: 12,
+            primaryColor: '#000000',
+            accentColor: '#333333',
+            textColor: '#000000',
+            titleText: '',
+            footerText: '',
+            enableShading: true,
+            showBarcode: false,
+            template: 'thermal',
+        };
+
+        setForm(prev => ({
+            ...prev,
+            activeTemplateId: 'thermal',
+            printDesign: {
+                ...prev.printDesign,
+                ...factoryThermal,
+            }
+        }));
+        addToast(language === 'ar' ? 'تمت استعادة الإعدادات الافتراضية لقالب حراري بون (80mm)' : 'Thermal receipt reset to factory defaults', 'success');
+    };
+
+    const handleResetCustomTemplate = (tplId: string) => {
+        const tpl = (form.customReceiptTemplates || []).find(t => t.id === tplId);
+        if (!tpl) return;
+
+        const initial = tpl.initialConfig || tpl.config;
+        const updated = (form.customReceiptTemplates || []).map(item => {
+            if (item.id === tplId) {
+                return {
+                    ...item,
+                    config: { ...initial },
+                };
+            }
+            return item;
+        });
+
+        const isActive = form.activeTemplateId === tplId;
+        setForm(prev => ({
+            ...prev,
+            customReceiptTemplates: updated,
+            ...(isActive ? {
+                printDesign: {
+                    ...prev.printDesign,
+                    ...initial,
+                }
+            } : {})
+        }));
+
+        addToast(language === 'ar' ? `تمت استعادة شكل القالب (${tpl.name}) إلى وضعه عند الإنشاء` : 'Template reset to initial creation state', 'success');
+    };
+
+    const handleDeleteCustomTemplate = (tplId: string, name: string) => {
+        if (!window.confirm(language === 'ar' ? `هل أنت متأكد من حذف قالب "${name}"؟` : `Delete template "${name}"?`)) {
+            return;
+        }
+
+        const updated = (form.customReceiptTemplates || []).filter(t => t.id !== tplId);
+        const wasActive = form.activeTemplateId === tplId;
+
+        setForm(prev => ({
+            ...prev,
+            customReceiptTemplates: updated,
+            ...(wasActive ? {
+                activeTemplateId: 'thermal',
+                printDesign: {
+                    ...prev.printDesign,
+                    pageSize: '80mm',
+                    template: 'thermal',
+                }
+            } : {})
+        }));
+
+        addToast(language === 'ar' ? `تم حذف قالب "${name}" بنجاح` : 'Template deleted', 'info');
+    };
+
+    const handleApplyTemplate = (tplId: string) => {
+        if (tplId === 'thermal') {
+            setForm(prev => ({
+                ...prev,
+                activeTemplateId: 'thermal',
+                printDesign: {
+                    ...prev.printDesign,
+                    pageSize: '80mm',
+                    template: 'thermal',
+                }
+            }));
+            addToast(language === 'ar' ? 'تم تطبيق القالب الافتراضي: حراري بون (80mm)' : 'Default Thermal template applied', 'info');
+            return;
+        }
+
+        const tpl = (form.customReceiptTemplates || []).find(t => t.id === tplId);
+        if (!tpl) return;
+
+        setForm(prev => ({
+            ...prev,
+            activeTemplateId: tplId,
+            printDesign: {
+                ...prev.printDesign,
+                ...tpl.config,
+                template: 'thermal',
+            }
+        }));
+        addToast(language === 'ar' ? `تم تطبيق قالب: ${tpl.name}` : `Template applied: ${tpl.name}`, 'info');
+    };
+
     // 6. تبويب الطباعة وتصميم الفواتير (Print)
     // =========================================================================
     const renderPrint = () => {
@@ -1918,44 +2153,228 @@ export const SettingsPage = () => {
                     </div>
                 </Card>
 
-                {/* اختيار قالب الفاتورة */}
+                {/* اختيار وإنشاء قوالب الفاتورة */}
                 <Card>
-                    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                        <span className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"><Settings size={20} /></span>
-                        <div>
-                            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                                {language === 'ar' ? 'قوالب وتنسيق الإيصال' : 'Receipt Templates'}
-                            </h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                {language === 'ar' ? 'اختر نمط الفاتورة المناسب لنشاطك التجاري وطابعتك' : 'Select the best layout for your printer'}
-                            </p>
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
+                        <div className="flex items-center gap-2">
+                            <span className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400">
+                                <Printer size={20} />
+                            </span>
+                            <div>
+                                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                                    {language === 'ar' ? 'قوالب وتنسيق الإيصال' : 'Receipt Templates'}
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    {language === 'ar' 
+                                        ? 'القالب الأساسي المعتمد هو حراري بون، ويمكنك إنشاء وتخصيص قوالب إضافية وتطبيقها بسهولة' 
+                                        : 'Primary template is thermal receipt. You can also create and apply custom templates.'}
+                                </p>
+                            </div>
                         </div>
+
+                        <button
+                            type="button"
+                            onClick={openCreateTemplateModal}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                            <Plus size={15} />
+                            <span>{language === 'ar' ? 'إنشاء قالب جديد' : 'New Template'}</span>
+                        </button>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {PRESET_OPTIONS.map((p) => {
-                            const active = normalizeTemplate(d.template) === p.id;
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* 1. القالب الافتراضي المعتمد: حراري بون (غير قابل للحذف نهائياً) */}
+                        {(() => {
+                            const isThermalActive = !form.activeTemplateId || form.activeTemplateId === 'thermal';
                             return (
-                                <button
-                                    key={p.id}
-                                    type="button"
-                                    onClick={() => applyTemplate(p.id)}
-                                    className={`p-4 rounded-2xl border text-right transition-all cursor-pointer ${
-                                        active
-                                            ? 'border-primary-500 ring-2 ring-primary-500/20 bg-primary-50/50 dark:bg-primary-950/30'
-                                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-400 bg-white dark:bg-slate-800'
+                                <div
+                                    className={`relative p-4 rounded-2xl border text-right transition-all flex flex-col justify-between ${
+                                        isThermalActive
+                                            ? 'border-purple-500 ring-2 ring-purple-500/20 bg-purple-50/40 dark:bg-purple-950/25 shadow-xs'
+                                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-slate-300'
                                     }`}
                                 >
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100">{p.name}</span>
-                                        {active && <span className="flex items-center gap-1 text-xs bg-primary-600 text-white px-2.5 py-0.5 rounded-full font-bold"><Check size={12} /><span>نشط</span></span>}
+                                    <div>
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
+                                                        {language === 'ar' ? 'حراري بون (Thermal)' : 'Thermal Receipt'}
+                                                    </span>
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
+                                                        {language === 'ar' ? 'افتراضي أساسي' : 'Default'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                                                    {language === 'ar' 
+                                                        ? 'القالب القياسي المعتمد لطابعات البون الحرارية السريعة (80 مم) - ثابت وغير قابل للحذف.' 
+                                                        : 'Standard reliable layout for 80mm thermal printers (Permanent).'}
+                                                </p>
+                                            </div>
+                                            {isThermalActive && (
+                                                <span className="flex items-center gap-1 text-[11px] bg-purple-600 text-white px-2.5 py-0.5 rounded-full font-bold shrink-0 shadow-2xs">
+                                                    <Check size={11} />
+                                                    <span>{language === 'ar' ? 'نشط' : 'Active'}</span>
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-1.5 my-2.5">
+                                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold">
+                                                80mm
+                                            </span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold">
+                                                {language === 'ar' ? `خط: ${isThermalActive ? d.baseFontSize : 12}pt` : 'Font: 12pt'}
+                                            </span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold">
+                                                {language === 'ar' ? `هامش: ${isThermalActive ? d.marginMm : 4}mm` : 'Margin: 4mm'}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 leading-relaxed">{p.desc}</p>
-                                    <span className="inline-block text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold">
-                                        مقاس {p.pageSize}
-                                    </span>
-                                </button>
+
+                                    <div className="pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-2 mt-2">
+                                        {!isThermalActive ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleApplyTemplate('thermal')}
+                                                className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold cursor-pointer transition-all"
+                                            >
+                                                {language === 'ar' ? 'تطبيق القالب' : 'Apply'}
+                                            </button>
+                                        ) : (
+                                            <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                                                <Check size={13} />
+                                                {language === 'ar' ? 'مطبق حالياً للطباعة' : 'Current active layout'}
+                                            </span>
+                                        )}
+
+                                        <button
+                                            type="button"
+                                            onClick={handleResetThermalDefault}
+                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold cursor-pointer transition-all"
+                                            title={language === 'ar' ? 'استعادة إعدادات حراري بون الأصلية' : 'Reset to factory defaults'}
+                                        >
+                                            <RefreshCw size={12} />
+                                            <span>{language === 'ar' ? 'إعادة تعيين للافتراضي' : 'Reset Default'}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* 2. القوالب المخصصة المنشأة بواسطة المستخدم */}
+                        {(form.customReceiptTemplates || []).map((tpl) => {
+                            const isActive = form.activeTemplateId === tpl.id;
+                            return (
+                                <div
+                                    key={tpl.id}
+                                    className={`relative p-4 rounded-2xl border text-right transition-all flex flex-col justify-between ${
+                                        isActive
+                                            ? 'border-purple-500 ring-2 ring-purple-500/20 bg-purple-50/40 dark:bg-purple-950/25 shadow-xs'
+                                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-slate-300'
+                                    }`}
+                                >
+                                    <div>
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100">
+                                                        {tpl.name}
+                                                    </span>
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50">
+                                                        {language === 'ar' ? 'قالب مخصص' : 'Custom'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed line-clamp-2">
+                                                    {tpl.desc || (language === 'ar' ? 'قالب إيصال مخصص تم إنشاؤه في التطبيق' : 'Custom created receipt template')}
+                                                </p>
+                                            </div>
+                                            {isActive && (
+                                                <span className="flex items-center gap-1 text-[11px] bg-purple-600 text-white px-2.5 py-0.5 rounded-full font-bold shrink-0 shadow-2xs">
+                                                    <Check size={11} />
+                                                    <span>{language === 'ar' ? 'نشط' : 'Active'}</span>
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-1.5 my-2.5">
+                                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold">
+                                                {tpl.config.pageSize || '80mm'}
+                                            </span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold">
+                                                {language === 'ar' ? `خط: ${tpl.config.baseFontSize || 12}pt` : `Font: ${tpl.config.baseFontSize || 12}pt`}
+                                            </span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold">
+                                                {language === 'ar' ? `هامش: ${tpl.config.marginMm ?? 4}mm` : `Margin: ${tpl.config.marginMm ?? 4}mm`}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-3 border-t border-slate-100 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-1.5 mt-2">
+                                        <div className="flex items-center gap-1.5">
+                                            {!isActive ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleApplyTemplate(tpl.id)}
+                                                    className="px-2.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold cursor-pointer transition-all"
+                                                >
+                                                    {language === 'ar' ? 'تطبيق' : 'Apply'}
+                                                </button>
+                                            ) : (
+                                                <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                                                    <Check size={12} />
+                                                    {language === 'ar' ? 'نشط' : 'Active'}
+                                                </span>
+                                            )}
+
+                                            <button
+                                                type="button"
+                                                onClick={() => openEditTemplateModal(tpl)}
+                                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer transition-all"
+                                                title={language === 'ar' ? 'تعديل بيانات القالب' : 'Edit template'}
+                                            >
+                                                <Edit size={13} />
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => handleResetCustomTemplate(tpl.id)}
+                                                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-bold cursor-pointer transition-all"
+                                                title={language === 'ar' ? 'استعادة شكل القالب عند إنشائه أول مرة' : 'Reset to initial creation state'}
+                                            >
+                                                <RefreshCw size={11} />
+                                                <span>{language === 'ar' ? 'إعادة تعيين' : 'Reset'}</span>
+                                            </button>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteCustomTemplate(tpl.id, tpl.name)}
+                                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 cursor-pointer transition-all"
+                                            title={language === 'ar' ? 'حذف هذا القالب' : 'Delete template'}
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
                             );
                         })}
+
+                        {/* 3. بطاقة إنشاء قالب جديد */}
+                        <div
+                            onClick={openCreateTemplateModal}
+                            className="p-5 rounded-2xl border-2 border-dashed border-purple-300 dark:border-purple-700/60 hover:border-purple-500 bg-purple-50/20 hover:bg-purple-50/50 dark:bg-purple-950/10 dark:hover:bg-purple-950/25 transition-all flex flex-col items-center justify-center text-center cursor-pointer min-h-[160px] group"
+                        >
+                            <div className="w-11 h-11 rounded-2xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-xs">
+                                <Plus size={22} />
+                            </div>
+                            <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 mb-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                                {language === 'ar' ? 'إنشاء قالب إيصال جديد' : 'Create New Template'}
+                            </h4>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-[220px] leading-relaxed">
+                                {language === 'ar' ? 'صمّم قالب فواتير مخصص بالخيارات والمقاسات التي تناسبك' : 'Customize a new receipt layout easily'}
+                            </p>
+                        </div>
                     </div>
                 </Card>
 
@@ -2324,6 +2743,198 @@ export const SettingsPage = () => {
                     </div>
                 </ModalShell>
             )}
-        </div>
+        
+            {/* نافذة إنشاء وتعديل قالب إيصال الطباعة */}
+            {showTemplateModal && (
+                <ModalShell
+                    title={
+                        editingTemplateId
+                            ? (language === 'ar' ? 'تعديل قالب الإيصال' : 'Edit Receipt Template')
+                            : (language === 'ar' ? 'إنشاء قالب إيصال جديد' : 'Create New Receipt Template')
+                    }
+                    onClose={() => setShowTemplateModal(false)}
+                    maxWidth="max-w-xl"
+                >
+                    <div className="space-y-4 text-right" dir="rtl">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <Input
+                                label={language === 'ar' ? 'اسم القالب *' : 'Template Name *'}
+                                value={templateModalForm.name}
+                                placeholder={language === 'ar' ? 'مثال: بون حراري كافيه / بون 58 مم' : 'e.g. Thermal 58mm'}
+                                onChange={(e: any) => setTemplateModalForm(prev => ({ ...prev, name: e.target.value }))}
+                            />
+                            <Input
+                                label={language === 'ar' ? 'وصف أو ملاحظة (اختياري)' : 'Description (optional)'}
+                                value={templateModalForm.desc}
+                                placeholder={language === 'ar' ? 'ملاحظة تميز استخدام هذا القالب' : 'Short description'}
+                                onChange={(e: any) => setTemplateModalForm(prev => ({ ...prev, desc: e.target.value }))}
+                            />
+                        </div>
+
+                        {/* اختيار مقاس الورق الحراري */}
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                {language === 'ar' ? 'مقاس الورق الحراري' : 'Thermal Paper Size'}
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setTemplateModalForm(prev => ({ ...prev, pageSize: '80mm' }))}
+                                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                                        templateModalForm.pageSize === '80mm'
+                                            ? 'border-purple-600 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-bold ring-2 ring-purple-500/20'
+                                            : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                    }`}
+                                >
+                                    <div className="text-sm font-extrabold mb-0.5">80mm</div>
+                                    <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        {language === 'ar' ? 'بون حراري قياسي (الأكثر شيوعاً)' : 'Standard Cashier Roll'}
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setTemplateModalForm(prev => ({ ...prev, pageSize: '58mm' }))}
+                                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                                        templateModalForm.pageSize === '58mm'
+                                            ? 'border-purple-600 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-bold ring-2 ring-purple-500/20'
+                                            : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                    }`}
+                                >
+                                    <div className="text-sm font-extrabold mb-0.5">58mm</div>
+                                    <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        {language === 'ar' ? 'بون صغير / طابعة بلوتوث ومحمولة' : 'Compact Mobile Printer'}
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* حجم الخط والهامش الجانبي */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+                            <div>
+                                <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                    <span>{language === 'ar' ? 'حجم الخط الأساسي' : 'Base Font Size'}</span>
+                                    <span className="font-mono text-purple-600 dark:text-purple-400 font-extrabold">{templateModalForm.baseFontSize} pt</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min={9}
+                                    max={15}
+                                    value={templateModalForm.baseFontSize}
+                                    onChange={(e) => setTemplateModalForm(prev => ({ ...prev, baseFontSize: Number(e.target.value) }))}
+                                    className="w-full accent-purple-600 cursor-pointer"
+                                />
+                                <div className="flex justify-between text-[10px] text-slate-400 mt-0.5 font-mono">
+                                    <span>9pt</span>
+                                    <span>12pt (قياسي)</span>
+                                    <span>15pt</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                    <span>{language === 'ar' ? 'الهامش الجانبي' : 'Side Margin'}</span>
+                                    <span className="font-mono text-purple-600 dark:text-purple-400 font-extrabold">{templateModalForm.marginMm} mm</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min={0}
+                                    max={10}
+                                    value={templateModalForm.marginMm}
+                                    onChange={(e) => setTemplateModalForm(prev => ({ ...prev, marginMm: Number(e.target.value) }))}
+                                    className="w-full accent-purple-600 cursor-pointer"
+                                />
+                                <div className="flex justify-between text-[10px] text-slate-400 mt-0.5 font-mono">
+                                    <span>0mm</span>
+                                    <span>4mm (موصى به)</span>
+                                    <span>10mm</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* نصوص مخصصة للترويسة والتذييل */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <Input
+                                label={language === 'ar' ? 'عنوان الترويسة (اختياري)' : 'Header Title (optional)'}
+                                value={templateModalForm.titleText}
+                                placeholder={form.shopName || (language === 'ar' ? 'فاتورة ضريبية مبسطة' : 'Sales Receipt')}
+                                onChange={(e: any) => setTemplateModalForm(prev => ({ ...prev, titleText: e.target.value }))}
+                            />
+                            <Input
+                                label={language === 'ar' ? 'تذييل الفاتورة والشكر (اختياري)' : 'Footer Text (optional)'}
+                                value={templateModalForm.footerText}
+                                placeholder={language === 'ar' ? 'شكراً لزيارتكم - نسعد بخدمتكم دائماً' : 'Thank you for your visit!'}
+                                onChange={(e: any) => setTemplateModalForm(prev => ({ ...prev, footerText: e.target.value }))}
+                            />
+                        </div>
+
+                        {/* خيارات إضافية: التظليل والباركود */}
+                        <div className="space-y-2 pt-1">
+                            <label className="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={templateModalForm.enableShading}
+                                    onChange={(e) => setTemplateModalForm(prev => ({ ...prev, enableShading: e.target.checked }))}
+                                    className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                />
+                                <div className="text-right">
+                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                        {language === 'ar' ? 'تظليل الجداول وعناوين الأصناف' : 'Enable Table Shading'}
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        {language === 'ar' ? 'تظليل خفيف مخصص للطباعة الحرارية بالأبيض والأسود لتسهيل القراءة' : 'Subtle monochrome shading for clear reading'}
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label className="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={templateModalForm.showBarcode}
+                                    onChange={(e) => setTemplateModalForm(prev => ({ ...prev, showBarcode: e.target.checked }))}
+                                    className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                />
+                                <div className="text-right">
+                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                        {language === 'ar' ? 'إظهار باركود الفاتورة' : 'Show Invoice Barcode'}
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        {language === 'ar' ? 'طباعة رمز الباركود التلقائي أسفل الإيصال' : 'Print barcode at the bottom of the receipt'}
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+
+                        {/* أزرار الإجراءات */}
+                        <div className="pt-3 border-t border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setShowTemplateModal(false)}
+                                className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-all"
+                            >
+                                {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => handleSaveTemplateModal(false)}
+                                className="px-4 py-2 rounded-xl border border-purple-300 dark:border-purple-700 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-xs font-bold cursor-pointer transition-all"
+                            >
+                                {language === 'ar' ? 'حفظ القالب فقط' : 'Save Only'}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => handleSaveTemplateModal(true)}
+                                className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold cursor-pointer transition-all shadow-xs"
+                            >
+                                {language === 'ar' ? 'حفظ وتطبيق القالب الآن' : 'Save & Apply Now'}
+                            </button>
+                        </div>
+                    </div>
+                </ModalShell>
+            )}
+
+</div>
     );
 };
