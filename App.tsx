@@ -1478,297 +1478,284 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
     }, []);
   
         // نجوم الخلفية - Deterministic memoized star field
-    const backgroundStars = useMemo(() => {
-      const stars = [
-        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size: 10, top:  5, left: 10, dur: 4.2, del: 0.0, dx:  4, dy: -6 },
-        { glyph: '•',  color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size:  3, top: 11, left: 88, dur: 3.5, del: 0.8, dx: -3, dy:  5 },
-        { glyph: '✧', color: '#67e8f9', glow: 'rgba(103,232,249,0.8)',  size:  8, top: 18, left: 22, dur: 5.1, del: 1.2, dx:  6, dy: -4 },
-        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size: 12, top:  8, left: 72, dur: 3.8, del: 2.0, dx: -5, dy:  7 },
-        { glyph: '⋆', color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size:  7, top: 25, left: 55, dur: 4.6, del: 0.4, dx:  3, dy: -8 },
-        { glyph: '•',  color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  2, top: 32, left:  8, dur: 3.2, del: 1.6, dx: -2, dy:  3 },
-        { glyph: '✦', color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size:  9, top: 38, left: 85, dur: 5.4, del: 0.0, dx:  5, dy: -5 },
-        { glyph: '✧', color: '#93c5fd', glow: 'rgba(147,197,253,0.75)', size:  6, top: 42, left: 42, dur: 4.0, del: 2.4, dx: -4, dy:  6 },
-        { glyph: '•',  color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size:  4, top: 14, left: 38, dur: 3.6, del: 1.0, dx:  3, dy: -4 },
-        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size: 11, top: 55, left: 15, dur: 4.8, del: 0.6, dx: -6, dy:  4 },
-        { glyph: '⋆', color: '#67e8f9', glow: 'rgba(103,232,249,0.8)',  size:  7, top: 62, left: 78, dur: 3.3, del: 1.8, dx:  4, dy: -7 },
-        { glyph: '•',  color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  3, top: 70, left: 50, dur: 4.4, del: 0.2, dx: -3, dy:  5 },
-        { glyph: '✧', color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size:  8, top: 78, left: 28, dur: 5.0, del: 2.8, dx:  5, dy: -3 },
-        { glyph: '✦', color: '#93c5fd', glow: 'rgba(147,197,253,0.75)', size: 10, top: 85, left: 68, dur: 3.7, del: 1.4, dx: -4, dy:  6 },
-        { glyph: '•',  color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size:  2, top: 90, left: 92, dur: 4.3, del: 0.8, dx:  2, dy: -5 },
-        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  9, top: 48, left: 95, dur: 3.9, del: 2.2, dx: -5, dy:  3 },
-        { glyph: '⋆', color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size:  6, top: 20, left:  4, dur: 5.2, del: 0.6, dx:  3, dy: -6 },
-        { glyph: '•',  color: '#67e8f9', glow: 'rgba(103,232,249,0.8)',  size:  4, top: 93, left: 35, dur: 3.4, del: 1.0, dx: -2, dy:  4 },
-        { glyph: '✧', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  7, top:  3, left: 60, dur: 4.5, del: 1.6, dx:  4, dy: -5 },
-        { glyph: '✦', color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size: 11, top: 60, left:  3, dur: 3.6, del: 2.6, dx: -6, dy:  5 },
-        { glyph: '•',  color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size:  3, top: 35, left: 65, dur: 4.2, del: 0.3, dx:  3, dy: -3 },
-        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  8, top: 72, left: 48, dur: 5.3, del: 1.4, dx: -4, dy:  7 },
-        { glyph: '⋆', color: '#93c5fd', glow: 'rgba(147,197,253,0.75)', size:  6, top: 80, left: 85, dur: 3.8, del: 2.0, dx:  5, dy: -4 },
-        { glyph: '•',  color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  2, top: 50, left: 30, dur: 4.0, del: 0.9, dx: -2, dy:  3 },
-        { glyph: '✧', color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size:  9, top: 15, left: 95, dur: 3.5, del: 1.8, dx:  5, dy: -6 },
-        { glyph: '✦', color: '#67e8f9', glow: 'rgba(103,232,249,0.8)',  size: 10, top: 44, left: 18, dur: 4.7, del: 0.0, dx: -5, dy:  4 },
-        { glyph: '•',  color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size:  3, top: 97, left: 60, dur: 3.3, del: 2.4, dx:  3, dy: -3 },
-        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  7, top: 28, left: 44, dur: 5.0, del: 1.2, dx: -4, dy:  5 },
-        { glyph: '⋆', color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size:  6, top: 65, left: 62, dur: 4.4, del: 0.5, dx:  4, dy: -4 },
-        { glyph: '•',  color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  4, top:  7, left: 30, dur: 3.6, del: 1.0, dx: -3, dy:  6 },
-        { glyph: '✧', color: '#67e8f9', glow: 'rgba(103,232,249,0.8)',  size:  8, top: 88, left: 10, dur: 4.9, del: 2.1, dx:  5, dy: -5 },
-        { glyph: '✦', color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size: 12, top: 52, left: 72, dur: 3.4, del: 0.7, dx: -6, dy:  3 },
-        { glyph: '•',  color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size:  2, top: 30, left: 20, dur: 4.1, del: 1.5, dx:  2, dy: -4 },
-        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  9, top: 75, left: 97, dur: 5.1, del: 2.9, dx: -5, dy:  6 },
-        { glyph: '⋆', color: '#93c5fd', glow: 'rgba(147,197,253,0.75)', size:  7, top: 22, left: 80, dur: 3.9, del: 0.4, dx:  4, dy: -7 },
-        { glyph: '•',  color: '#c084fc', glow: 'rgba(192,132,252,0.85)', size:  3, top: 58, left: 38, dur: 4.6, del: 1.3, dx: -3, dy:  5 },
-        { glyph: '✧', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  6, top: 40, left: 55, dur: 3.7, del: 2.0, dx:  3, dy: -4 },
-        { glyph: '✦', color: '#67e8f9', glow: 'rgba(103,232,249,0.8)',  size: 11, top: 95, left: 78, dur: 4.3, del: 0.9, dx: -5, dy:  4 },
-        { glyph: '•',  color: '#a78bfa', glow: 'rgba(167,139,250,0.8)',  size:  4, top: 12, left: 50, dur: 3.5, del: 1.7, dx:  3, dy: -6 },
-        { glyph: '✦', color: '#fff',    glow: 'rgba(255,255,255,0.9)',   size:  8, top: 68, left: 25, dur: 5.2, del: 0.1, dx: -4, dy:  5 },
+    const bgStars = useMemo(() => {
+      const list = [
+        { g:'✦', c:'rgba(255,255,255,0.9)',   s:10, t: 5, l:10, d:4.2, dl:0.0, dx: 4, dy:-6 },
+        { g:'•',  c:'rgba(207,87,255,0.75)',   s: 3, t:11, l:88, d:3.5, dl:0.8, dx:-3, dy: 5 },
+        { g:'✧', c:'rgba(255,191,36,0.6)',    s: 7, t:18, l:22, d:5.1, dl:1.2, dx: 6, dy:-4 },
+        { g:'✦', c:'rgba(255,255,255,0.85)',  s:12, t: 8, l:72, d:3.8, dl:2.0, dx:-5, dy: 7 },
+        { g:'⋆', c:'rgba(207,87,255,0.65)',   s: 7, t:25, l:55, d:4.6, dl:0.4, dx: 3, dy:-8 },
+        { g:'•',  c:'rgba(255,255,255,0.8)',   s: 2, t:32, l: 8, d:3.2, dl:1.6, dx:-2, dy: 3 },
+        { g:'✦', c:'rgba(207,87,255,0.8)',    s: 9, t:38, l:85, d:5.4, dl:0.0, dx: 5, dy:-5 },
+        { g:'✧', c:'rgba(255,191,36,0.55)',   s: 6, t:42, l:42, d:4.0, dl:2.4, dx:-4, dy: 6 },
+        { g:'•',  c:'rgba(207,87,255,0.6)',    s: 4, t:14, l:38, d:3.6, dl:1.0, dx: 3, dy:-4 },
+        { g:'✦', c:'rgba(255,255,255,0.9)',   s:11, t:55, l:15, d:4.8, dl:0.6, dx:-6, dy: 4 },
+        { g:'⋆', c:'rgba(255,191,36,0.6)',    s: 7, t:62, l:78, d:3.3, dl:1.8, dx: 4, dy:-7 },
+        { g:'•',  c:'rgba(255,255,255,0.75)',  s: 3, t:70, l:50, d:4.4, dl:0.2, dx:-3, dy: 5 },
+        { g:'✧', c:'rgba(207,87,255,0.7)',    s: 8, t:78, l:28, d:5.0, dl:2.8, dx: 5, dy:-3 },
+        { g:'✦', c:'rgba(255,191,36,0.5)',    s:10, t:85, l:68, d:3.7, dl:1.4, dx:-4, dy: 6 },
+        { g:'•',  c:'rgba(207,87,255,0.6)',    s: 2, t:90, l:92, d:4.3, dl:0.8, dx: 2, dy:-5 },
+        { g:'✦', c:'rgba(255,255,255,0.85)',  s: 9, t:48, l:95, d:3.9, dl:2.2, dx:-5, dy: 3 },
+        { g:'⋆', c:'rgba(207,87,255,0.65)',   s: 6, t:20, l: 4, d:5.2, dl:0.6, dx: 3, dy:-6 },
+        { g:'•',  c:'rgba(255,191,36,0.55)',   s: 4, t:93, l:35, d:3.4, dl:1.0, dx:-2, dy: 4 },
+        { g:'✧', c:'rgba(255,255,255,0.8)',   s: 7, t: 3, l:60, d:4.5, dl:1.6, dx: 4, dy:-5 },
+        { g:'✦', c:'rgba(207,87,255,0.75)',   s:11, t:60, l: 3, d:3.6, dl:2.6, dx:-6, dy: 5 },
+        { g:'•',  c:'rgba(255,191,36,0.6)',    s: 3, t:35, l:65, d:4.2, dl:0.3, dx: 3, dy:-3 },
+        { g:'✦', c:'rgba(255,255,255,0.9)',   s: 8, t:72, l:48, d:5.3, dl:1.4, dx:-4, dy: 7 },
+        { g:'⋆', c:'rgba(207,87,255,0.6)',    s: 6, t:80, l:85, d:3.8, dl:2.0, dx: 5, dy:-4 },
+        { g:'•',  c:'rgba(255,255,255,0.75)',  s: 2, t:50, l:30, d:4.0, dl:0.9, dx:-2, dy: 3 },
+        { g:'✧', c:'rgba(255,191,36,0.55)',   s: 9, t:15, l:95, d:3.5, dl:1.8, dx: 5, dy:-6 },
+        { g:'✦', c:'rgba(207,87,255,0.7)',    s:10, t:44, l:18, d:4.7, dl:0.0, dx:-5, dy: 4 },
+        { g:'•',  c:'rgba(255,255,255,0.8)',   s: 3, t:97, l:60, d:3.3, dl:2.4, dx: 3, dy:-3 },
+        { g:'✦', c:'rgba(207,87,255,0.8)',    s: 7, t:28, l:44, d:5.0, dl:1.2, dx:-4, dy: 5 },
+        { g:'⋆', c:'rgba(255,191,36,0.6)',    s: 6, t:65, l:62, d:4.4, dl:0.5, dx: 4, dy:-4 },
+        { g:'•',  c:'rgba(255,255,255,0.7)',   s: 4, t: 7, l:30, d:3.6, dl:1.0, dx:-3, dy: 6 },
+        { g:'✧', c:'rgba(207,87,255,0.65)',   s: 8, t:88, l:10, d:4.9, dl:2.1, dx: 5, dy:-5 },
+        { g:'✦', c:'rgba(255,191,36,0.5)',    s:12, t:52, l:72, d:3.4, dl:0.7, dx:-6, dy: 3 },
+        { g:'•',  c:'rgba(207,87,255,0.55)',   s: 2, t:30, l:20, d:4.1, dl:1.5, dx: 2, dy:-4 },
+        { g:'✦', c:'rgba(255,255,255,0.85)',  s: 9, t:75, l:97, d:5.1, dl:2.9, dx:-5, dy: 6 },
+        { g:'⋆', c:'rgba(255,191,36,0.55)',   s: 7, t:22, l:80, d:3.9, dl:0.4, dx: 4, dy:-7 },
+        { g:'•',  c:'rgba(207,87,255,0.6)',    s: 3, t:58, l:38, d:4.6, dl:1.3, dx:-3, dy: 5 },
+        { g:'✧', c:'rgba(255,255,255,0.8)',   s: 6, t:40, l:55, d:3.7, dl:2.0, dx: 3, dy:-4 },
+        { g:'✦', c:'rgba(207,87,255,0.75)',   s:11, t:95, l:78, d:4.3, dl:0.9, dx:-5, dy: 4 },
+        { g:'•',  c:'rgba(255,191,36,0.55)',   s: 4, t:12, l:50, d:3.5, dl:1.7, dx: 3, dy:-6 },
+        { g:'✦', c:'rgba(255,255,255,0.9)',   s: 8, t:68, l:25, d:5.2, dl:0.1, dx:-4, dy: 5 },
       ];
-      return stars.map((s, i) => ({ ...s, id: i }));
+      return list.map((s, i) => ({ ...s, id: i }));
     }, []);
 
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#06040f] relative overflow-hidden select-none" dir="rtl">
-        {/* CSS Keyframes & utility classes */}
+      <div
+        className="min-h-screen w-full flex flex-col items-center justify-center select-none"
+        dir="rtl"
+        style={{
+          fontFamily: '"Cairo", Tahoma, sans-serif',
+          background: 'radial-gradient(ellipse at 18% 18%, rgba(137,36,185,0.28), transparent 38%), radial-gradient(ellipse at 85% 82%, rgba(255,157,25,0.11), transparent 30%), linear-gradient(135deg, #100819 0%, #1b0d2b 48%, #100819 100%)',
+          padding: '28px 18px',
+          position: 'relative',
+          overflow: 'hidden',
+          minHeight: '100vh',
+        }}
+      >
+        {/* Global styles */}
         <style>{`
-          @keyframes starTwinkle {
-            0%, 100% { opacity: 0.15; transform: translate(0,0) scale(0.8); }
-            50% { opacity: 1; transform: translate(var(--sdx,4px), var(--sdy,-6px)) scale(1.25); }
+          @keyframes rz-starFloat {
+            0%,100% { opacity:.15; transform:translate(0,0) scale(.8); }
+            50% { opacity:1; transform:translate(var(--dx,4px),var(--dy,-6px)) scale(1.22); }
           }
-          @keyframes beamPulse {
-            0%, 100% { opacity: 0.75; transform: rotate(-30deg) scaleY(1); }
-            50% { opacity: 0.52; transform: rotate(-33deg) scaleY(1.08) translateY(18px); }
+          @keyframes rz-cardIn {
+            0% { opacity:0; transform:translateY(28px) scale(.95); filter:blur(14px); }
+            65% { opacity:.75; transform:translateY(7px) scale(.985); filter:blur(3px); }
+            100% { opacity:1; transform:translateY(0) scale(1); filter:blur(0); }
           }
-          @keyframes orbFloat {
-            0%, 100% { transform: translate(0,0) scale(1); }
-            50% { transform: translate(20px,-30px) scale(1.1); }
+          @keyframes rz-pulse {
+            0%,100% { transform:scale(1); opacity:.22; }
+            50% { transform:scale(1.08); opacity:.3; }
           }
-          @keyframes cardReveal {
-            0% { opacity:0; transform: translateY(32px) scale(0.94); filter: blur(16px); }
-            65% { opacity:0.7; transform: translateY(8px) scale(0.98); filter: blur(4px); }
-            100% { opacity:1; transform: translateY(0) scale(1); filter: blur(0); }
+          @keyframes rz-shake {
+            0%,100% { transform:translateX(0); }
+            15% { transform:translateX(-8px); }
+            30% { transform:translateX(8px); }
+            45% { transform:translateX(-6px); }
+            60% { transform:translateX(6px); }
+            75% { transform:translateX(-3px); }
+            90% { transform:translateX(3px); }
           }
-          @keyframes logoSpin {
-            100% { transform: rotate(360deg); }
+          @keyframes rz-ripple {
+            0% { transform:scale(.6); opacity:.6; }
+            100% { transform:scale(2.2); opacity:0; }
           }
-          @keyframes logoPulse {
-            0%, 100% { opacity: 0.5; transform: scale(1); }
-            50% { opacity: 0.9; transform: scale(1.08); }
+          @keyframes rz-shimmer {
+            0% { background-position: 200% center; }
+            100% { background-position: -200% center; }
           }
-          @keyframes rippleOut {
-            0% { transform: scale(0.6); opacity: 0.7; }
-            100% { transform: scale(2.2); opacity: 0; }
+          .rz-input {
+            width:100%; height:54px; border-radius:13px; outline:none;
+            border:1px solid rgba(221,190,245,.18);
+            background:rgba(13,7,21,.48);
+            color:#fff; padding:0 46px 0 46px;
+            font:500 14px "Cairo",sans-serif;
+            transition:.22s ease;
+            caret-color:#cf57ff;
           }
-          @keyframes shoot1 {
-            0%,88% { transform: translateX(0) translateY(0) rotate(-38deg) scaleX(0); opacity:0; }
-            90% { opacity:0.9; transform: translateX(30px) translateY(22px) rotate(-38deg) scaleX(1); }
-            96% { transform: translateX(500px) translateY(380px) rotate(-38deg) scaleX(1.5); opacity:0; }
-            100% { opacity:0; transform: translateX(500px) translateY(380px) rotate(-38deg) scaleX(0); }
+          .rz-input::placeholder { color:#887995; }
+          .rz-input:focus {
+            border-color:rgba(207,87,255,.85);
+            box-shadow:0 0 0 3px rgba(168,85,247,.15);
+            background:rgba(13,7,21,.68);
           }
-          @keyframes shoot2 {
-            0%,80% { transform: translateX(0) translateY(0) rotate(-42deg) scaleX(0); opacity:0; }
-            82% { opacity:0.75; transform: translateX(25px) translateY(20px) rotate(-42deg) scaleX(1); }
-            88% { transform: translateX(420px) translateY(336px) rotate(-42deg) scaleX(1.4); opacity:0; }
-            100% { opacity:0; transform: translateX(420px) translateY(336px) rotate(-42deg) scaleX(0); }
+          .rz-input:disabled { opacity:.5; cursor:not-allowed; }
+          .rz-btn {
+            width:100%; height:55px; border:0; border-radius:14px;
+            cursor:pointer; color:#190b24;
+            font:800 16px "Cairo",sans-serif;
+            background:linear-gradient(105deg, #ffd84d 0%, #ffad24 38%, #e94cf4 100%);
+            box-shadow:0 10px 28px rgba(188,53,229,.24), inset 0 1px 0 rgba(255,255,255,.55);
+            transition:transform .2s, filter .2s, box-shadow .2s;
+            position:relative; overflow:hidden;
           }
-          @keyframes shakeX {
-            0%,100% { transform: translateX(0); }
-            15% { transform: translateX(-8px); }
-            30% { transform: translateX(8px); }
-            45% { transform: translateX(-6px); }
-            60% { transform: translateX(6px); }
-            75% { transform: translateX(-3px); }
-            90% { transform: translateX(3px); }
+          .rz-btn::after {
+            content:''; position:absolute; inset:0;
+            background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent);
+            transform:translateX(-100%); transition:transform .5s ease;
           }
-          .login-input {
-            width: 100%;
-            padding: 13px 16px;
-            border-radius: 14px;
-            font-size: 14px;
-            font-weight: 500;
-            outline: none;
-            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-            font-family: 'Cairo', Tahoma, sans-serif;
-            color: #f1f5f9;
-            background: rgba(255,255,255,0.055);
-            border: 1px solid rgba(255,255,255,0.12);
-            box-shadow: inset 0 1px 1px rgba(255,255,255,0.08);
-            caret-color: #a78bfa;
-          }
-          .login-input::placeholder { color: rgba(148,163,184,0.6); }
-          .login-input:focus {
-            background: rgba(139,92,246,0.09);
-            border-color: rgba(139,92,246,0.55);
-            box-shadow: 0 0 0 3px rgba(139,92,246,0.18), inset 0 1px 1px rgba(255,255,255,0.1);
-          }
-          .login-input:disabled { opacity: 0.5; cursor: not-allowed; }
-          .login-btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 15px;
-            font-family: 'Cairo', Tahoma, sans-serif;
-            color: white;
-            border: none;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
-            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 60%, #5b21b6 100%);
-            box-shadow: 0 4px 22px rgba(109,40,217,0.5), inset 0 1px 0 rgba(255,255,255,0.15);
-          }
-          .login-btn::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
-            transform: translateX(-100%);
-            transition: transform 0.5s ease;
-          }
-          .login-btn:hover::after { transform: translateX(100%); }
-          .login-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(109,40,217,0.65), inset 0 1px 0 rgba(255,255,255,0.15); }
-          .login-btn:active { transform: scale(0.98); }
-          .login-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-          .card-shake { animation: shakeX 0.5s ease !important; }
+          .rz-btn:hover::after { transform:translateX(100%); }
+          .rz-btn:hover { transform:translateY(-2px); filter:brightness(1.08); box-shadow:0 14px 36px rgba(188,53,229,.35); }
+          .rz-btn:active { transform:translateY(0) scale(.98); }
+          .rz-btn:disabled { opacity:.55; cursor:not-allowed; transform:none; }
+          .rz-card-shake { animation:rz-shake .5s ease !important; }
+          .rz-orb { position:fixed; border-radius:50%; filter:blur(90px); pointer-events:none; z-index:0; animation:rz-pulse 10s ease-in-out infinite alternate; }
         `}</style>
 
-        {/* BG: deep gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0d0520] via-[#06040f] to-[#06040f]" />
-
-        {/* BG: atmospheric orbs */}
-        <div className="absolute pointer-events-none" style={{ top:'-15%', left:'-10%', width:480, height:480, borderRadius:'50%', background:'radial-gradient(circle, rgba(109,40,217,0.32) 0%, transparent 68%)', filter:'blur(65px)', animation:'orbFloat 10s ease-in-out infinite alternate' }} />
-        <div className="absolute pointer-events-none" style={{ bottom:'-15%', right:'-10%', width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle, rgba(79,70,229,0.25) 0%, transparent 68%)', filter:'blur(70px)', animation:'orbFloat 13s ease-in-out infinite alternate-reverse' }} />
-        <div className="absolute pointer-events-none" style={{ top:'35%', left:'35%', width:280, height:280, borderRadius:'50%', background:'radial-gradient(circle, rgba(6,182,212,0.07) 0%, transparent 70%)', filter:'blur(50px)', animation:'orbFloat 8s ease-in-out infinite alternate' }} />
-
-        {/* BG: diagonal spotlight beam */}
-        <div className="absolute pointer-events-none" style={{ top:'-30%', left:'48%', width:300, height:1000, transformOrigin:'top center', background:'linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(210,180,255,0.6) 18%, rgba(139,92,246,0.3) 42%, transparent 70%)', filter:'blur(55px)', animation:'beamPulse 9s ease-in-out infinite alternate' }} />
-        <div className="absolute pointer-events-none" style={{ top:'-22%', left:'53%', width:85, height:660, transformOrigin:'top center', background:'linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(245,235,255,0.88) 22%, rgba(167,139,250,0.35) 52%, transparent 78%)', filter:'blur(18px)', animation:'beamPulse 9s ease-in-out infinite alternate' }} />
-
-        {/* BG: wing flares bottom L/R */}
-        <div className="absolute pointer-events-none" style={{ bottom:'12%', left:'4%', width:380, height:170, borderRadius:'50%', background:'radial-gradient(ellipse at center, rgba(109,40,217,0.34) 0%, rgba(79,70,229,0.1) 55%, transparent 75%)', filter:'blur(55px)', animation:'orbFloat 11s ease-in-out infinite alternate' }} />
-        <div className="absolute pointer-events-none" style={{ bottom:'12%', right:'4%', width:380, height:170, borderRadius:'50%', background:'radial-gradient(ellipse at center, rgba(109,40,217,0.34) 0%, rgba(79,70,229,0.1) 55%, transparent 75%)', filter:'blur(55px)', animation:'orbFloat 11s ease-in-out infinite alternate-reverse' }} />
+        {/* BG: fixed blur orbs */}
+        <div className="rz-orb" style={{ width:340, height:340, background:'#a020f0', top:-150, right:-100, opacity:.22 }} />
+        <div className="rz-orb" style={{ width:340, height:340, background:'#ff9f1c', bottom:-190, left:-100, opacity:.12, animationDelay:'4s' }} />
 
         {/* BG: star field */}
-        {backgroundStars.map((s) => (
-          <div key={s.id} className="absolute pointer-events-none select-none font-mono leading-none" style={{ top:`${s.top}%`, left:`${s.left}%`, fontSize:s.size, color:s.color, textShadow:`0 0 6px ${s.glow}, 0 0 14px ${s.glow}`, '--sdx':`${s.dx}px`, '--sdy':`${s.dy}px`, animation:`starTwinkle ${s.dur}s ease-in-out ${s.del}s infinite alternate` } as React.CSSProperties}>
-            {s.glyph}
+        {bgStars.map(s => (
+          <div key={s.id} className="absolute pointer-events-none select-none" style={{ top:`${s.t}%`, left:`${s.l}%`, fontSize:s.s, color:s.c, textShadow:`0 0 6px ${s.c}`, '--dx':`${s.dx}px`, '--dy':`${s.dy}px`, animation:`rz-starFloat ${s.d}s ease-in-out ${s.dl}s infinite alternate`, fontFamily:'monospace' } as React.CSSProperties}>
+            {s.g}
           </div>
         ))}
 
-        {/* BG: shooting stars */}
-        <div className="absolute pointer-events-none" style={{ top:'5%', left:'8%', width:120, height:2, borderRadius:2, background:'linear-gradient(90deg, white, rgba(167,139,250,0.5), transparent)', boxShadow:'0 0 8px white, 0 0 18px rgba(167,139,250,0.6)', transformOrigin:'left center', animation:'shoot1 14s ease-in-out 2s infinite' }} />
-        <div className="absolute pointer-events-none" style={{ top:'22%', right:'12%', width:100, height:2, borderRadius:2, background:'linear-gradient(90deg, white, rgba(103,232,249,0.5), transparent)', boxShadow:'0 0 8px white, 0 0 16px rgba(103,232,249,0.6)', transformOrigin:'left center', animation:'shoot2 18s ease-in-out 8s infinite' }} />
-
         {/* Theme toggle */}
-        <button onClick={toggleTheme} className="absolute top-5 left-5 z-30 cursor-pointer" style={{ padding:'10px', borderRadius:16, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)', transition:'background 0.2s' }} title="تبديل المظهر" aria-label="تبديل المظهر">
-          {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-purple-300" />}
+        <button
+          onClick={toggleTheme}
+          className="absolute top-5 left-5 z-30 cursor-pointer"
+          style={{ padding:9, borderRadius:14, background:'rgba(35,18,49,0.7)', border:'1px solid rgba(225,185,255,0.18)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', transition:'background .2s', color:'#e8dff0' }}
+          aria-label="تبديل المظهر"
+        >
+          {theme === 'dark' ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} style={{ color:'#cf57ff' }} />}
         </button>
 
-        {/* Pre-card ripple (1.5s loading animation) */}
+        {/* Pre-card ripple */}
         {!isCardReady && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-            <div className="rounded-full" style={{ width:160, height:160, border:'1px solid rgba(139,92,246,0.3)', animation:'rippleOut 1.5s cubic-bezier(0.16,1,0.3,1) forwards' }} />
-            <div className="absolute rounded-full" style={{ width:250, height:250, border:'1px solid rgba(139,92,246,0.15)', animation:'rippleOut 1.5s cubic-bezier(0.16,1,0.3,1) 0.35s forwards' }} />
+            <div style={{ width:160, height:160, borderRadius:'50%', border:'1px solid rgba(207,87,255,0.3)', animation:'rz-ripple 1.5s cubic-bezier(0.16,1,0.3,1) forwards' }} />
+            <div style={{ position:'absolute', width:260, height:260, borderRadius:'50%', border:'1px solid rgba(207,87,255,0.15)', animation:'rz-ripple 1.5s cubic-bezier(0.16,1,0.3,1) .35s forwards' }} />
           </div>
         )}
 
-        {/* ═══ THE LOGIN CARD ═══ */}
-        <div className="relative z-20 w-full px-4" style={{ maxWidth:440 }}>
-          <div className={isShaking ? 'card-shake' : ''} style={{ borderRadius:28, padding:'36px 32px 28px', background:'linear-gradient(145deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 50%, rgba(10,6,30,0.4) 100%)', backdropFilter:'blur(44px) saturate(185%)', WebkitBackdropFilter:'blur(44px) saturate(185%)', border:'1px solid rgba(255,255,255,0.14)', boxShadow:'inset 0 1.5px 1px rgba(255,255,255,0.4), inset 0 -1px 1px rgba(255,255,255,0.05), 0 32px 80px -16px rgba(0,0,0,0.75), 0 0 0 1px rgba(0,0,0,0.3)', animation:'cardReveal 1.5s cubic-bezier(0.16,1,0.3,1) forwards' }}>
+        {/* ═══ MAIN CARD ═══ */}
+        <div style={{ width:'min(100%, 440px)', position:'relative', zIndex:1 }}>
+          <div
+            className={isShaking ? 'rz-card-shake' : ''}
+            style={{
+              position:'relative', padding:'34px 34px 30px', borderRadius:26,
+              background:'rgba(35,18,49,0.58)',
+              border:'1px solid rgba(225,185,255,0.16)',
+              backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)',
+              boxShadow:'0 24px 80px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 38px rgba(160,32,240,0.10)',
+              overflow:'hidden',
+              animation:'rz-cardIn 1.5s cubic-bezier(0.16,1,0.3,1) forwards',
+            }}
+          >
+            {/* Top shimmer line */}
+            <div style={{ position:'absolute', top:0, left:'18%', right:'18%', height:1, background:'linear-gradient(90deg, transparent, #e879f9, #ffc52e, transparent)', opacity:.9, zIndex:2 }} />
 
-            {/* ── LOGO SECTION ── */}
-            <div className="flex flex-col items-center mb-6">
-              {/* Logo with spinning conic border + glow */}
-              <div className="relative mb-4" style={{ width:88, height:88 }}>
-                {/* Spinning ring */}
-                <div className="absolute inset-0 rounded-[22px]" style={{ background:'conic-gradient(from 0deg, #7c3aed, #c084fc, #67e8f9, #a78bfa, #7c3aed)', borderRadius:22, animation:'logoSpin 4s linear infinite', padding:1.5 }} />
-                {/* Glow behind */}
-                <div className="absolute" style={{ inset:'-4px', borderRadius:26, background:'rgba(109,40,217,0.35)', filter:'blur(14px)', animation:'logoPulse 3s ease-in-out infinite' }} />
-                {/* Inner glass */}
-                <div className="absolute" style={{ inset:2, borderRadius:20, background:'linear-gradient(145deg, rgba(255,255,255,0.12) 0%, rgba(10,6,30,0.82) 100%)', backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)', border:'1px solid rgba(255,255,255,0.18)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'inset 0 1px 1px rgba(255,255,255,0.3)' }}>
-                  <img src="/img/logo-transparent.png" alt="RaiZon Pro" style={{ width:52, height:52, objectFit:'contain', filter:'drop-shadow(0 0 10px rgba(167,139,250,0.75))' }} />
+            {/* ── BRAND / LOGO ── */}
+            <header style={{ textAlign:'center', marginBottom:22 }}>
+              <img
+                src="/img/logo-transparent.png"
+                alt="RIZON PRO"
+                style={{ width:'min(100%,250px)', height:155, objectFit:'contain', display:'block', margin:'-5px auto 0', filter:'drop-shadow(0 8px 22px rgba(187,46,255,0.26))' }}
+              />
+              <p style={{ margin:'2px 0 0', color:'#cbbbd8', fontSize:11, letterSpacing:'2.5px', direction:'ltr', fontWeight:600 }}>
+                SMART CASHIER MANAGEMENT SYSTEM
+              </p>
+            </header>
+
+            {/* Title + subtitle */}
+            <h1 style={{ fontSize:25, lineHeight:1.5, margin:'0 0 4px', textAlign:'center', fontWeight:800, color:'#fff' }}>
+              مرحباً بعودتك
+            </h1>
+            <p style={{ color:'#b9a9c7', textAlign:'center', fontSize:13, margin:'0 0 24px' }}>
+              سجّل الدخول لإدارة أعمالك ومتابعة مبيعاتك
+            </p>
+
+            {/* License badge */}
+            {liveRemainingText && (
+              <div style={{ display:'flex', justifyContent:'center', marginBottom:14 }}>
+                <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px 14px', borderRadius:99, background:'rgba(255,191,36,0.1)', border:'1px solid rgba(255,191,36,0.25)', fontSize:11 }}>
+                  <Clock size={11} style={{ color:'#ffbf24' }} className="animate-pulse" />
+                  <span style={{ color:'#ffbf24', fontWeight:700 }}>{liveRemainingText}</span>
                 </div>
               </div>
+            )}
 
-              {/* Brand name */}
-              <h1 style={{ fontSize:26, fontWeight:800, letterSpacing:'-0.5px', margin:'0 0 4px', display:'flex', gap:7, alignItems:'center' }}>
-                <span style={{ color:'#fbbf24', textShadow:'0 0 20px rgba(251,191,36,0.4)' }}>RaiZon</span>
-                <span style={{ color:'#a78bfa', textShadow:'0 0 20px rgba(167,139,250,0.4)' }}>Pro</span>
-              </h1>
-              <p style={{ fontSize:12, color:'rgba(148,163,184,0.8)', margin:0, fontWeight:500, letterSpacing:'0.3px' }}>
-                نظام كاشير المتكامل لإدارة المبيعات
-              </p>
-
-              {/* License badge */}
-              {liveRemainingText && (
-                <div className="mt-3 inline-flex items-center gap-1.5" style={{ padding:'4px 12px', borderRadius:99, background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.25)', fontSize:11 }}>
-                  <Clock size={11} className="text-amber-400 animate-pulse" />
-                  <span className="text-amber-400 font-semibold">{liveRemainingText}</span>
-                </div>
-              )}
-
-              {/* Update available */}
-              {pendingUpdate && !showUpdateModal && (
-                <button type="button" onClick={() => setShowUpdateModal(true)} style={{ marginTop:8, display:'inline-flex', alignItems:'center', gap:6, padding:'4px 12px', borderRadius:99, background:'rgba(139,92,246,0.12)', border:'1px solid rgba(139,92,246,0.3)', fontSize:11, cursor:'pointer', fontFamily:'inherit' }}>
-                  <RefreshCw size={11} className="text-purple-400 animate-spin" />
-                  <span className="text-purple-300 font-semibold">إصدار جديد ({pendingUpdate.latestVersion}) — اضغط للتحديث</span>
+            {/* Update badge */}
+            {pendingUpdate && !showUpdateModal && (
+              <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}>
+                <button type="button" onClick={() => setShowUpdateModal(true)} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px 14px', borderRadius:99, background:'rgba(207,87,255,0.1)', border:'1px solid rgba(207,87,255,0.3)', fontSize:11, cursor:'pointer', fontFamily:'inherit', color:'#e4a8ff' }}>
+                  <RefreshCw size={11} className="animate-spin" />
+                  <span style={{ fontWeight:700 }}>إصدار جديد ({pendingUpdate.latestVersion}) — اضغط للتحديث</span>
                 </button>
-              )}
-            </div>
-
-            {/* Thin divider */}
-            <div style={{ height:1, background:'linear-gradient(90deg, transparent, rgba(255,255,255,0.11), transparent)', marginBottom:22 }} />
+              </div>
+            )}
 
             {/* ── FORM ── */}
-            <form onSubmit={handleLogin} style={{ display:'flex', flexDirection:'column', gap:14 }} dir="rtl">
+            <form onSubmit={handleLogin} dir="rtl">
 
               {/* Username */}
-              <div className="relative" ref={userDropdownRef}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:7 }}>
-                  <label style={{ fontSize:12, fontWeight:600, color:'rgba(203,213,225,0.88)' }}>
-                    اسم المستخدم <span style={{ color:'#a78bfa' }}>*</span>
+              <div style={{ marginBottom:17 }} ref={userDropdownRef}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', margin:'0 3px 8px' }}>
+                  <label style={{ color:'#e8dff0', fontSize:13, fontWeight:600 }}>
+                    اسم المستخدم
                   </label>
                   {rememberedUsers.length > 0 && (
-                    <button type="button" onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ fontSize:11, color:'#a78bfa', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:600, padding:0 }}>
+                    <button type="button" onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ fontSize:11, color:'#e4a8ff', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:700, padding:0 }}>
                       حسابات محفوظة ({rememberedUsers.length})
                     </button>
                   )}
                 </div>
-                <div style={{ position:'relative', display:'flex', alignItems:'center' }}>
-                  <span style={{ position:'absolute', right:12, color:'rgba(148,163,184,0.45)', pointerEvents:'none', display:'flex', alignItems:'center' }}>
-                    <User size={15} />
+                <div style={{ position:'relative' }}>
+                  <span style={{ position:'absolute', right:15, top:'50%', transform:'translateY(-50%)', color:'#c084fc', fontSize:16, pointerEvents:'none', display:'flex', alignItems:'center' }}>
+                    <User size={16} />
                   </span>
-                  <input ref={usernameInputRef} type="text" value={username} onChange={(e) => setUsername(e.target.value)} disabled={!isCardReady} className="login-input" style={{ paddingRight:36, paddingLeft: rememberedUsers.length > 0 ? 36 : 16 }} placeholder="اكتب اسم المستخدم..." aria-label="اسم المستخدم" autoComplete="username" />
+                  <input
+                    ref={usernameInputRef}
+                    type="text"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    disabled={!isCardReady}
+                    className="rz-input"
+                    placeholder="أدخل اسم المستخدم"
+                    aria-label="اسم المستخدم"
+                    autoComplete="username"
+                    style={{ paddingLeft: rememberedUsers.length > 0 ? 46 : 16 }}
+                  />
                   {rememberedUsers.length > 0 && (
-                    <button type="button" onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ position:'absolute', left:10, color:'rgba(148,163,184,0.5)', background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', padding:2 }}>
-                      <ChevronDown size={15} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180 text-purple-400' : ''}`} />
+                    <button type="button" onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#a99ab5', display:'flex', alignItems:'center', padding:0 }}>
+                      <ChevronDown size={15} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} style={{ color: showUserDropdown ? '#cf57ff' : undefined }} />
                     </button>
                   )}
                 </div>
 
                 {/* Saved users dropdown */}
                 {showUserDropdown && rememberedUsers.length > 0 && (
-                  <div className="absolute top-full end-0 start-0 z-50 overflow-hidden" style={{ marginTop:8, borderRadius:16, background:'rgba(13,8,35,0.95)', backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)', border:'1px solid rgba(255,255,255,0.11)', boxShadow:'0 20px 60px rgba(0,0,0,0.6)' }}>
-                    <div style={{ padding:'10px 12px 8px', borderBottom:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                      <span style={{ fontSize:11, color:'rgba(148,163,184,0.7)', fontWeight:600 }}>الحسابات المحفوظة</span>
-                      <span style={{ fontSize:10, color:'#a78bfa', background:'rgba(139,92,246,0.15)', padding:'1px 7px', borderRadius:99, fontWeight:700 }}>{rememberedUsers.length}</span>
+                  <div style={{ position:'absolute', left:0, right:0, marginTop:8, borderRadius:16, background:'rgba(13,7,21,0.96)', backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)', border:'1px solid rgba(221,190,245,0.18)', boxShadow:'0 20px 60px rgba(0,0,0,0.6)', zIndex:50, overflow:'hidden' }}>
+                    <div style={{ padding:'10px 14px 8px', borderBottom:'1px solid rgba(225,185,255,0.1)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                      <span style={{ fontSize:11, color:'#b9a9c7', fontWeight:600 }}>الحسابات المحفوظة</span>
+                      <span style={{ fontSize:10, color:'#e4a8ff', background:'rgba(207,87,255,0.15)', padding:'1px 8px', borderRadius:99, fontWeight:700 }}>{rememberedUsers.length}</span>
                     </div>
                     <div style={{ maxHeight:176, overflowY:'auto', padding:6 }}>
-                      {rememberedUsers.map((u) => (
-                        <div key={u.username} onClick={() => handleSelectRememberedUser(u)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 10px', borderRadius:12, cursor:'pointer', transition:'background 0.15s' }}
-                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'; }}
-                          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                      {rememberedUsers.map(u => (
+                        <div key={u.username} onClick={() => handleSelectRememberedUser(u)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 10px', borderRadius:12, cursor:'pointer', transition:'background .15s' }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(225,185,255,0.07)'; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; }}
                         >
                           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                            <div style={{ width:30, height:30, borderRadius:'50%', background:'linear-gradient(135deg, #7c3aed, #4f46e5)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:'white', flexShrink:0 }}>
-                              {(u.name || u.username).charAt(0).toUpperCase()}
+                            <div style={{ width:30, height:30, borderRadius:'50%', background:'linear-gradient(135deg,#a020f0,#6d28d9)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:'#fff', flexShrink:0 }}>
+                              {(u.name||u.username).charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <div style={{ fontSize:12, fontWeight:700, color:'#e2e8f0' }}>{u.name || u.username}</div>
-                              <div style={{ fontSize:10, color:'rgba(148,163,184,0.6)', fontFamily:'monospace' }}>@{u.username}</div>
+                              <div style={{ fontSize:12, fontWeight:700, color:'#e8dff0' }}>{u.name||u.username}</div>
+                              <div style={{ fontSize:10, color:'#887995', fontFamily:'monospace' }}>@{u.username}</div>
                             </div>
                           </div>
-                          <button type="button" onClick={(e) => handleDeleteRememberedUser(e, u.username)} style={{ background:'none', border:'none', cursor:'pointer', color:'rgba(148,163,184,0.45)', padding:4, borderRadius:8, display:'flex', transition:'color 0.15s' }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#f87171'; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'rgba(148,163,184,0.45)'; }}
+                          <button type="button" onClick={e => handleDeleteRememberedUser(e, u.username)} style={{ background:'none', border:'none', cursor:'pointer', color:'#887995', padding:4, borderRadius:8, display:'flex', transition:'color .15s' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#f87171'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='#887995'; }}
                             title="حذف من القائمة"
                           >
                             <Trash2 size={13} />
@@ -1781,133 +1768,134 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
               </div>
 
               {/* Password */}
-              <div>
-                <label style={{ display:'block', fontSize:12, fontWeight:600, color:'rgba(203,213,225,0.88)', marginBottom:7 }}>
-                  كلمة المرور <span style={{ color:'#a78bfa' }}>*</span>
+              <div style={{ marginBottom:3, position:'relative' }}>
+                <label style={{ display:'block', color:'#e8dff0', fontSize:13, fontWeight:600, margin:'0 3px 8px' }}>
+                  كلمة المرور
                 </label>
-                <div style={{ position:'relative', display:'flex', alignItems:'center' }}>
-                  <span style={{ position:'absolute', right:12, color:'rgba(148,163,184,0.45)', pointerEvents:'none', display:'flex', alignItems:'center' }}>
-                    <Lock size={15} />
+                <div style={{ position:'relative' }}>
+                  <span style={{ position:'absolute', right:15, top:'50%', transform:'translateY(-50%)', color:'#c084fc', fontSize:16, pointerEvents:'none', display:'flex', alignItems:'center' }}>
+                    <Lock size={16} />
                   </span>
-                  <input ref={passwordInputRef} type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} disabled={!isCardReady} className="login-input" style={{ paddingRight:36, paddingLeft:36 }} placeholder="اكتب كلمة المرور..." aria-label="كلمة المرور" autoComplete="current-password" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position:'absolute', left:10, color:'rgba(148,163,184,0.45)', background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', padding:2, transition:'color 0.15s' }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#a78bfa'; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'rgba(148,163,184,0.45)'; }}
+                  <input
+                    ref={passwordInputRef}
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    disabled={!isCardReady}
+                    className="rz-input"
+                    placeholder="أدخل كلمة المرور"
+                    aria-label="كلمة المرور"
+                    autoComplete="current-password"
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', border:0, background:'transparent', color:'#a99ab5', cursor:'pointer', fontSize:17, display:'flex', alignItems:'center', padding:0, transition:'color .15s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#cf57ff'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='#a99ab5'; }}
                     aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                   >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                   </button>
                 </div>
               </div>
 
               {/* Error */}
               {error && (
-                <div role="alert" style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderRadius:12, background:'rgba(239,68,68,0.11)', border:'1px solid rgba(239,68,68,0.28)', fontSize:13, color:'#fca5a5', fontWeight:500 }}>
+                <div role="alert" style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderRadius:12, background:'rgba(239,68,68,0.11)', border:'1px solid rgba(239,68,68,0.28)', fontSize:13, color:'#fca5a5', fontWeight:500, margin:'12px 0 0' }}>
                   <AlertCircle size={15} style={{ color:'#f87171', flexShrink:0 }} />
                   <span>{t('login_error')}</span>
                 </div>
               )}
 
-              {/* Remember me + forgot password */}
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', userSelect:'none' }}>
-                  <input type="checkbox" className="sr-only" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-                  <div style={{ width:18, height:18, borderRadius:6, border:`1.5px solid ${rememberMe ? '#7c3aed' : 'rgba(255,255,255,0.18)'}`, background:rememberMe ? '#7c3aed' : 'rgba(255,255,255,0.04)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s', boxShadow:rememberMe ? '0 0 10px rgba(124,58,237,0.5)' : 'none', flexShrink:0 }}>
-                    {rememberMe && <Check size={11} strokeWidth={3} style={{ color:'white' }} />}
-                  </div>
-                  <span style={{ fontSize:12, color: rememberMe ? '#c4b5fd' : 'rgba(148,163,184,0.7)', fontWeight: rememberMe ? 600 : 400, transition:'color 0.2s' }}>
-                    {t('remember_me')}
-                  </span>
+              {/* Options row */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, margin:'14px 1px 22px', fontSize:12 }}>
+                <label style={{ display:'flex', alignItems:'center', gap:7, color:'#c9bbd3', cursor:'pointer', userSelect:'none' }}>
+                  <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} style={{ width:15, height:15, padding:0, accentColor:'#bd38f2' }} />
+                  <span>تذكرني</span>
                 </label>
-                <button type="button" onClick={() => alert(t('contact_admin_reset_pwd'))} style={{ fontSize:12, color:'rgba(148,163,184,0.6)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'color 0.15s', padding:0 }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#a78bfa'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'rgba(148,163,184,0.6)'; }}
+                <button type="button" onClick={() => alert(t('contact_admin_reset_pwd'))} style={{ color:'#e4a8ff', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:12, padding:0, transition:'color .15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#ffd15b'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='#e4a8ff'; }}
                 >
                   {t('forgot_password')}
                 </button>
               </div>
 
               {/* Submit */}
-              <button disabled={busy || !isCardReady} type="submit" className="login-btn" style={{ marginTop:4 }}>
+              <button disabled={busy || !isCardReady} type="submit" className="rz-btn">
                 {busy ? (
                   <span style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                    <RefreshCw size={16} className="animate-spin" />
+                    <RefreshCw size={16} className="animate-spin" style={{ color:'#190b24' }} />
                     <span>جاري التحقق والاتصال...</span>
                   </span>
                 ) : (
-                  <span>تسجيل الدخول</span>
+                  <span>تسجيل الدخول &nbsp;←</span>
                 )}
               </button>
-
-              {/* Biometric */}
-              {state.settings.enableBiometricLogin && (
-                <div style={{ display:'flex', justifyContent:'center' }}>
-                  <button type="button" onClick={handleBiometricLogin} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'rgba(148,163,184,0.5)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'color 0.15s' }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#a78bfa'; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'rgba(148,163,184,0.5)'; }}
-                  >
-                    <Fingerprint size={17} />
-                    <span>تسجيل الدخول الحيوي</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Developer credit */}
-              <div style={{ paddingTop:6, textAlign:'center' }}>
-                <p style={{ fontSize:11, color:'rgba(100,116,139,0.75)', margin:0, lineHeight:1.7 }}>
-                  <span>برمجة وتصميم: م / عبد الرحمن فتحي العادلي</span>
-                  <span style={{ margin:'0 6px', color:'rgba(100,116,139,0.35)' }}>·</span>
-                  <a href="tel:01026695879" dir="ltr" style={{ color:'rgba(100,116,139,0.75)', textDecoration:'none', transition:'color 0.15s' }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#a78bfa'; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'rgba(100,116,139,0.75)'; }}
-                  >ت/01026695879</a>
-                </p>
-              </div>
             </form>
+
+            {/* Biometric */}
+            {state.settings.enableBiometricLogin && (
+              <div style={{ display:'flex', justifyContent:'center', marginTop:12 }}>
+                <button type="button" onClick={handleBiometricLogin} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'#9f90aa', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'color .15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#cf57ff'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='#9f90aa'; }}
+                >
+                  <Fingerprint size={17} />
+                  <span>تسجيل الدخول الحيوي</span>
+                </button>
+              </div>
+            )}
+
+            {/* Secure note */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:7, color:'#9f90aa', fontSize:11, marginTop:20 }}>
+              <span style={{ color:'#c8a0ef' }}>✦</span>
+              <span>نظام آمن لإدارة عملياتك اليومية</span>
+              <span style={{ color:'#c8a0ef' }}>✦</span>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{ textAlign:'center', color:'#786985', fontSize:11, marginTop:20, direction:'ltr', letterSpacing:'1.5px' }}>
+            RIZON PRO &nbsp;•&nbsp; برمجة وتصميم: م / عبد الرحمن فتحي العادلي &nbsp;•&nbsp;
+            <a href="tel:01026695879" style={{ color:'#9f90aa', textDecoration:'none' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#e4a8ff'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='#9f90aa'; }}
+            >01026695879</a>
           </div>
         </div>
 
-        {/* WhatsNew Modal */}
+        {/* Modals */}
         <WhatsNewModal isOpen={showWhatsNew} version={whatsNewInfo.version} releaseName={whatsNewInfo.name} releaseNotes={whatsNewInfo.notes} onClose={() => { localStorage.removeItem('raizon_just_updated'); setShowWhatsNew(false); }} />
-
-        {/* Update Modal */}
         <UpdateModal isOpen={showUpdateModal} updateInfo={pendingUpdate} token={state.settings?.githubToken || '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'} onClose={() => setShowUpdateModal(false)} onSkip={() => { if (pendingUpdate?.latestVersion) { sessionStorage.setItem('skipped_update_version', pendingUpdate.latestVersion); } setShowUpdateModal(false); }} />
 
         {/* Quick PIN Keypad */}
         {showPinPad && (
           <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 w-full max-w-xs animate-scale-in">
-              <div className="text-center mb-5">
-                <div className="mx-auto w-12 h-12 bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 rounded-2xl flex items-center justify-center text-purple-600 dark:text-purple-400 mb-3 shadow-xs">
+            <div style={{ background:'rgba(27,13,43,0.98)', borderRadius:22, border:'1px solid rgba(225,185,255,0.18)', padding:24, width:'100%', maxWidth:320, backdropFilter:'blur(28px)' }}>
+              <div style={{ textAlign:'center', marginBottom:20 }}>
+                <div style={{ width:48, height:48, borderRadius:14, background:'rgba(160,32,240,0.15)', border:'1px solid rgba(207,87,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px', color:'#cf57ff' }}>
                   <Keypad size={22} />
                 </div>
-                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{t('quick_pin')}</h3>
+                <h3 style={{ fontWeight:800, fontSize:17, color:'#fff', margin:0 }}>{t('quick_pin')}</h3>
               </div>
-              <div className={`flex justify-center gap-2 mb-5 ${pinError ? 'animate-shake' : ''}`}>
+              <div className={`flex justify-center gap-2 mb-5 ${pinError ? 'rz-card-shake' : ''}`}>
                 {[0,1,2,3,4,5].map(i => (
-                  <span key={i} className={`w-3.5 h-3.5 rounded-full transition-colors ${i < pin.length ? (pinError ? 'bg-red-500' : 'bg-amber-500') : 'bg-slate-300 dark:bg-slate-600'}`}></span>
+                  <span key={i} style={{ width:14, height:14, borderRadius:'50%', display:'inline-block', background: i < pin.length ? (pinError ? '#ef4444' : '#ffad24') : 'rgba(225,185,255,0.2)', transition:'background .15s' }} />
                 ))}
               </div>
-              {pinHint && <p className="text-center text-red-500 text-xs mb-3">{pinHint}</p>}
-              <div className="grid grid-cols-3 gap-2.5">
+              {pinHint && <p style={{ textAlign:'center', color:'#f87171', fontSize:12, marginBottom:12 }}>{pinHint}</p>}
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
                 {['1','2','3','4','5','6','7','8','9','','0',''].map((n, idx) => {
                   if (n === '') {
-                    if (idx === 10) return (
-                      <button key={idx} type="button" onClick={() => setPin(p => p + '0')} className="py-3.5 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 font-bold text-xl text-slate-800 dark:text-slate-100 transition-colors active:scale-95">0</button>
-                    );
-                    if (idx === 11) return (
-                      <button key={idx} type="button" onClick={() => setPin(p => p.slice(0, -1))} className="py-3.5 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 font-bold text-slate-600 dark:text-slate-300 transition-colors active:scale-95">⌫</button>
-                    );
-                    return <span key={idx}></span>;
+                    if (idx === 10) return <button key={idx} type="button" onClick={() => setPin(p => p + '0')} style={{ padding:'14px 0', borderRadius:12, background:'rgba(225,185,255,0.08)', border:'1px solid rgba(225,185,255,0.12)', color:'#fff', fontWeight:800, fontSize:18, cursor:'pointer', fontFamily:'inherit' }}>0</button>;
+                    if (idx === 11) return <button key={idx} type="button" onClick={() => setPin(p => p.slice(0,-1))} style={{ padding:'14px 0', borderRadius:12, background:'rgba(225,185,255,0.08)', border:'1px solid rgba(225,185,255,0.12)', color:'#b9a9c7', fontWeight:700, fontSize:16, cursor:'pointer', fontFamily:'inherit' }}>⌫</button>;
+                    return <span key={idx} />;
                   }
-                  return (
-                    <button key={idx} type="button" onClick={() => { if (pin.length < 6) setPin(p => p + n); }} className="py-3.5 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 font-bold text-xl text-slate-800 dark:text-slate-100 transition-colors active:scale-95">{n}</button>
-                  );
+                  return <button key={idx} type="button" onClick={() => { if (pin.length < 6) setPin(p => p + n); }} style={{ padding:'14px 0', borderRadius:12, background:'rgba(225,185,255,0.08)', border:'1px solid rgba(225,185,255,0.12)', color:'#fff', fontWeight:800, fontSize:18, cursor:'pointer', fontFamily:'inherit', transition:'background .15s' }}>{n}</button>;
                 })}
               </div>
-              <div className="grid grid-cols-2 gap-2.5 mt-4">
-                <button type="button" onClick={() => { setShowPinPad(false); setPin(''); setPinHint(''); }} className="py-3 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">{t('cancel')}</button>
-                <button type="button" onClick={handlePinLogin} disabled={pin.length < 4} className="py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm transition-all active:scale-95 disabled:opacity-50">{t('login_btn')}</button>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginTop:12 }}>
+                <button type="button" onClick={() => { setShowPinPad(false); setPin(''); setPinHint(''); }} style={{ padding:'12px 0', borderRadius:12, background:'rgba(225,185,255,0.06)', border:'1px solid rgba(225,185,255,0.14)', color:'#b9a9c7', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:'inherit' }}>{t('cancel')}</button>
+                <button type="button" onClick={handlePinLogin} disabled={pin.length < 4} style={{ padding:'12px 0', borderRadius:12, background:'linear-gradient(105deg,#ffd84d,#ffad24,#e94cf4)', border:'none', color:'#190b24', fontWeight:800, fontSize:13, cursor:'pointer', fontFamily:'inherit', opacity:pin.length < 4 ? .5 : 1 }}>{t('login_btn')}</button>
               </div>
             </div>
           </div>
