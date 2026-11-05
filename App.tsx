@@ -253,8 +253,8 @@ const MainContent = () => {
     <div className={`flex h-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 ${language === 'ar' ? 'font-cairo' : ''}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <ToastContainer />
         {/* Sidebar */}
-        <aside className={`${sidebarCollapsed ? "w-16" : "w-20 lg:w-60"} bg-white dark:bg-[#0c0617] border-e border-slate-200/80 dark:border-purple-900/30 flex flex-col transition-all duration-300 z-20 flex-shrink-0`}>
-            <div className="h-16 flex items-center justify-between gap-2.5 border-b border-slate-200/80 dark:border-purple-900/30 px-3.5 shrink-0">
+        <aside className={`${sidebarCollapsed ? "w-16" : "w-20 lg:w-60"} bg-white dark:bg-[#0c0617] border-e border-slate-300 dark:border-purple-900/30 flex flex-col transition-all duration-300 z-20 flex-shrink-0`}>
+            <div className="h-16 flex items-center justify-between gap-2.5 border-b border-slate-300 dark:border-purple-900/30 px-3.5 shrink-0">
                 <div className="flex items-center gap-2.5 min-w-0">
                     <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-8 h-8 object-contain shrink-0 drop-shadow-[0_2px_10px_rgba(168,85,247,0.35)]" />
                     {!sidebarCollapsed && (
@@ -289,7 +289,7 @@ const MainContent = () => {
                                     ${sidebarCollapsed ? 'justify-center' : '' }
                                     ${isActive 
                                         ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-bold border border-purple-200 dark:border-purple-800/60 shadow-2xs' 
-                                        : 'text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
+                                        : 'text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-950 dark:hover:text-white'
                                     }`}
                             >
                                 {(() => {
@@ -310,7 +310,7 @@ const MainContent = () => {
                 })}
             </nav>
 
-            <div className="p-4 border-t border-slate-100 dark:border-slate-700 space-y-2">
+            <div className="p-4 border-t border-slate-300 dark:border-slate-700 space-y-2">
                  <button onClick={toggleTheme} className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                     {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                     <span className="hidden lg:block text-sm">{theme === 'dark' ? t('light_mode') : t('dark_mode')}</span>
@@ -333,17 +333,17 @@ const MainContent = () => {
                 const currentNavItem = navItems.find(i => i.id === activeTab);
                 const ActiveTabIcon = currentNavItem?.icon;
                 return (
-                    <header className="h-16 bg-white/95 dark:bg-[#0c0617]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-purple-900/30 flex items-center justify-between px-3 md:px-5 z-10 sticky top-0 shadow-xs transition-colors duration-200">
+                    <header className="h-16 bg-white/95 dark:bg-[#0c0617]/90 backdrop-blur-md border-b border-slate-300 dark:border-purple-900/30 flex items-center justify-between px-3 md:px-5 z-10 sticky top-0 shadow-xs transition-colors duration-200">
                         {/* Right: Active Page Breadcrumb & Title */}
                         <div className="flex items-center gap-3 shrink-0">
-                            <div className="w-9 h-9 rounded-xl bg-purple-500/10 dark:bg-purple-500/15 border border-purple-500/25 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-xs">
+                            <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-500/15 border border-purple-300 dark:border-purple-500/25 flex items-center justify-center text-purple-700 dark:text-purple-400 shadow-xs">
                                 {ActiveTabIcon ? <ActiveTabIcon size={19} /> : <FileText size={19} />}
                             </div>
                             <div className="flex flex-col text-right">
                                 <h2 className="text-sm md:text-base font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5 leading-tight">
                                     <span>{currentNavItem?.label || t('dashboard')}</span>
                                 </h2>
-                                <span className="text-[10px] font-semibold text-slate-400 dark:text-purple-300/60 leading-none mt-0.5">
+                                <span className="text-[10px] font-semibold text-slate-500 dark:text-purple-300/60 font-bold leading-none mt-0.5">
                                     {currentNavItem?.group || 'RaiZon Pro'}
                                 </span>
                             </div>
@@ -354,14 +354,14 @@ const MainContent = () => {
                             <button
                                 type="button"
                                 onClick={() => setShowSearch(true)}
-                                className="w-full flex items-center justify-between gap-2.5 px-3.5 h-10 rounded-xl border border-slate-200/90 dark:border-purple-500/20 bg-slate-100/70 hover:bg-slate-200/70 dark:bg-purple-950/20 dark:hover:bg-purple-950/40 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-semibold transition-all cursor-pointer shadow-inner group"
+                                className="w-full flex items-center justify-between gap-2.5 px-3.5 h-10 rounded-xl border border-slate-300 dark:border-purple-500/20 bg-slate-100 hover:bg-slate-200/80 dark:bg-purple-950/20 dark:hover:bg-purple-950/40 text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-slate-100 text-xs font-bold transition-all cursor-pointer shadow-inner group"
                                 title={language === 'ar' ? 'بحث فوري في كل الصفحات والفواتير والعملاء (Ctrl + K)' : 'Quick Search (Ctrl + K)'}
                             >
                                 <div className="flex items-center gap-2 truncate">
                                     <Search size={14} className="text-purple-500 dark:text-purple-400 group-hover:scale-110 transition-transform shrink-0" />
                                     <span className="truncate">{language === 'ar' ? 'بحث سريع وتنقل بين الصفحات...' : 'Quick search...'}</span>
                                 </div>
-                                <kbd className="px-2 py-0.5 rounded-md bg-white dark:bg-purple-900/40 text-[10px] font-mono text-slate-600 dark:text-purple-200 border border-slate-200 dark:border-purple-500/30 shadow-2xs font-bold shrink-0">Ctrl K</kbd>
+                                <kbd className="px-2 py-0.5 rounded-md bg-white dark:bg-purple-900/40 text-[10px] font-mono text-slate-700 dark:text-purple-200 border border-slate-300 dark:border-purple-500/30 shadow-2xs font-extrabold shrink-0">Ctrl K</kbd>
                             </button>
                         </div>
                         
@@ -388,7 +388,7 @@ const MainContent = () => {
                              {!syncStatus.lastError && syncStatus.lastSyncAt > 0 && (
                                 <span
                                     title={t('last_sync_at')}
-                                    className="hidden lg:flex items-center gap-1.5 px-2.5 h-9 rounded-xl bg-slate-100/80 dark:bg-purple-950/20 border border-slate-200/80 dark:border-purple-900/30 text-xs font-mono text-slate-600 dark:text-slate-300"
+                                    className="hidden lg:flex items-center gap-1.5 px-2.5 h-9 rounded-xl bg-slate-100/80 dark:bg-purple-950/20 border border-slate-300 dark:border-purple-900/30 text-xs font-mono text-slate-700 dark:text-slate-300 font-semibold"
                                 >
                                     <Clock size={12} className="text-purple-500 dark:text-purple-400 shrink-0" />
                                     <span dir="ltr">{new Date(syncStatus.lastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -405,7 +405,7 @@ const MainContent = () => {
                              <div className="relative">
                                  <button
                                      onClick={() => setShowNotifications(prev => !prev)}
-                                     className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100/80 hover:bg-slate-200/80 dark:bg-purple-950/25 dark:hover:bg-purple-900/40 border border-slate-200/80 dark:border-purple-500/20 text-slate-600 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-300 transition-all hover:scale-105 active:scale-95 relative cursor-pointer shadow-xs"
+                                     className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-purple-950/25 dark:hover:bg-purple-900/40 border border-slate-300 dark:border-purple-500/20 text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-300 transition-all hover:scale-105 active:scale-95 relative cursor-pointer shadow-xs"
                                      title="مركز التنبيهات الذكية"
                                  >
                                      <Bell size={17} />
@@ -489,7 +489,7 @@ const MainContent = () => {
                              {/* Shortcuts button */}
                              <button
                                  onClick={() => setShowShortcuts(true)}
-                                 className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100/80 hover:bg-slate-200/80 dark:bg-purple-950/25 dark:hover:bg-purple-900/40 border border-slate-200/80 dark:border-purple-500/20 text-slate-600 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-300 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+                                 className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-purple-950/25 dark:hover:bg-purple-900/40 border border-slate-300 dark:border-purple-500/20 text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-300 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
                                  title={t('shortcuts')}
                              >
                                 <Keyboard size={17} />
@@ -527,7 +527,7 @@ const MainContent = () => {
                              })()}
                              
                              {/* User Profile Pill & Divider */}
-                             <div className="flex items-center gap-2.5 ps-3 md:ps-3.5 border-s border-slate-200 dark:border-purple-900/40">
+                             <div className="flex items-center gap-2.5 ps-3 md:ps-3.5 border-s border-slate-300 dark:border-purple-900/40">
                                  <div className="text-right hidden sm:block leading-tight">
                                      <div className="flex items-center justify-end gap-1.5">
                                          <p className="text-xs md:text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">{currentUser?.name || 'Admin'}</p>
