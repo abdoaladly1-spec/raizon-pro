@@ -7,7 +7,7 @@
 import React, { useState, useRef, useMemo, useEffect, lazy, Suspense } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Intro } from './components/Intro';
-import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, ChevronDown, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Truck, Bell, AlertTriangle, Shield, Phone, Copy, Building } from './components/Icons';
+import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, Lock, ArrowLeft, ChevronRight, ChevronDown, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Truck, Bell, AlertTriangle, Shield, Phone, Copy, Building } from './components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from './types';
 import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, type SyncStatus } from './lib/serverSync';
 import { Card, Button, Input, ToastContainer, SimpleBarChart, useSound, useLiveTick } from './components/ui';
@@ -1492,7 +1492,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
         </button>
 
         {/* Card Container with Left-Right Shake Animation on Error */}
-        <div className={`relative z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800/90 p-8 rounded-3xl shadow-2xl w-full max-w-md transition-all ${
+        <div className={`relative z-10 bg-white/95 dark:bg-[#0f141c]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-white/[0.08] p-8 sm:p-9 rounded-[28px] shadow-2xl shadow-slate-950/20 dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] w-full max-w-[440px] transition-all ${
           isShaking 
             ? 'animate-shake ring-2 ring-red-500/50 border-red-500/50 shadow-red-500/10' 
             : 'animate-scale-in'
@@ -1500,22 +1500,22 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
           
           {/* Header with Logo */}
           <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-2.5 flex items-center justify-center shadow-xs">
+            <div className="w-20 h-20 mx-auto mb-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-white/10 rounded-2xl p-2.5 flex items-center justify-center shadow-xs">
                 <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight mb-1">
-                <span className="text-amber-500 dark:text-amber-400">RaiZon</span> <span className="text-purple-600 dark:text-purple-400">Pro</span>
+            <h1 className="text-[28px] font-extrabold tracking-tight mb-1 text-slate-900 dark:text-white">
+                <span className="text-amber-500 dark:text-amber-400 drop-shadow-[0_2px_10px_rgba(245,158,11,0.25)]">RaiZon</span>{' '}
+                <span className="text-purple-600 dark:text-purple-400 drop-shadow-[0_2px_10px_rgba(168,85,247,0.25)]">Pro</span>
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-xs font-medium tracking-wide">{t('login_title')}</p>
+            <p className="text-slate-600 dark:text-slate-300 text-xs font-semibold tracking-wide">{t('login_title')}</p>
 
-            
             {/* شارة توفر التحديث في حال التخطي */}
             {pendingUpdate && !showUpdateModal && (
-              <div className="mt-2 text-center">
+              <div className="mt-3 text-center">
                 <button
                   type="button"
                   onClick={() => setShowUpdateModal(true)}
-                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30 hover:bg-purple-500/25 transition-all cursor-pointer animate-pulse"
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30 hover:bg-purple-500/25 transition-all cursor-pointer animate-pulse"
                 >
                   <span className="flex items-center gap-1.5"><RefreshCw size={12} className="shrink-0" /> يتوفر إصدار جديد ({pendingUpdate.latestVersion}) — اضغط للتحديث</span>
                 </button>
@@ -1524,17 +1524,17 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
 
             {/* عرض المدة المتبقية على انتهاء الترخيص */}
             {liveRemainingText && (
-              <div className="mt-4 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-sm">
+              <div className="mt-3 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-xs">
                 <Clock size={14} className="animate-pulse text-amber-500" />
                 <span>{liveRemainingText}</span>
               </div>
             )}
           </div>
           
-          <form onSubmit={handleLogin} className="space-y-5 text-right">
+          <form onSubmit={handleLogin} className="space-y-6 text-right">
             {/* Username Input with User Dropdown Arrow */}
             <div className="relative" ref={userDropdownRef}>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center justify-between">
+              <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center justify-between">
                 <span>{t('username')}</span>
                 {rememberedUsers.length > 0 && (
                   <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">
@@ -1542,31 +1542,36 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                   </span>
                 )}
               </label>
-              <div className="relative flex items-center">
+              <div className="relative flex items-center group">
+                {/* Leading User Icon */}
+                <div className="absolute inset-y-0 start-0 ps-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-purple-500 transition-colors">
+                  <User size={19} />
+                </div>
+
                 <input 
                   type="text" 
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-4 py-3.5 pe-20 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-bold outline-none focus:border-purple-600 focus:ring-4 focus:ring-purple-500/15 shadow-sm transition-all placeholder:text-slate-400 placeholder:font-normal"
+                  className="w-full ps-11 pe-12 py-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/70 dark:bg-[#151c28] hover:bg-white dark:hover:bg-[#1a2333] focus:bg-white dark:focus:bg-[#1a2333] text-slate-900 dark:text-[#f0f9ff] text-sm font-bold outline-none focus:border-purple-600 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 shadow-xs transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:font-normal"
                   placeholder={t('ph_username_login') || 'ادخل اسم المستخدم'}
+                  aria-label={t('username')}
+                  autoComplete="username"
                 />
 
-                {/* Arrow & User icons */}
-                <div className="absolute inset-y-0 end-0 pe-2.5 flex items-center gap-1">
-                  {rememberedUsers.length > 0 && (
+                {/* Trailing Saved Users Button (if any) */}
+                {rememberedUsers.length > 0 && (
+                  <div className="absolute inset-y-0 end-0 pe-2.5 flex items-center">
                     <button
                       type="button"
                       onClick={() => setShowUserDropdown(!showUserDropdown)}
-                      className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-purple-600 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-700/60 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer"
                       title={language === 'ar' ? 'عرض المستخدمين المسجلين مسبقاً' : 'Show saved users'}
+                      aria-label="المستخدمين المسجلين مسبقاً"
                     >
-                      <ChevronDown size={18} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180 text-purple-600' : ''}`} />
+                      <ChevronDown size={18} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180 text-purple-600 dark:text-purple-400' : ''}`} />
                     </button>
-                  )}
-                  <div className="pe-1 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
-                    <Users size={18} />
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Dropdown Menu of Remembered Users */}
@@ -1615,68 +1620,125 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
               )}
             </div>
 
-            {/* Password Input */}
+            {/* Password Input with Lock Icon & Eye Toggle */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-2">
                 {t('password')}
               </label>
-              <div className="relative">
+              <div className="relative flex items-center group">
+                {/* Leading Lock Icon */}
+                <div className="absolute inset-y-0 start-0 ps-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-purple-500 transition-colors">
+                  <Lock size={19} />
+                </div>
+
                 <input 
                   ref={passwordInputRef}
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3.5 pe-12 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-bold outline-none focus:border-purple-600 focus:ring-4 focus:ring-purple-500/15 shadow-sm transition-all placeholder:text-slate-400 placeholder:font-normal"
+                  className="w-full ps-11 pe-12 py-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/70 dark:bg-[#151c28] hover:bg-white dark:hover:bg-[#1a2333] focus:bg-white dark:focus:bg-[#1a2333] text-slate-900 dark:text-[#f0f9ff] text-sm font-bold outline-none focus:border-purple-600 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 shadow-xs transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:font-normal"
                   placeholder={t('ph_password_login') || 'ادخل كلمة المرور'}
+                  aria-label={t('password')}
+                  autoComplete="current-password"
                 />
-                <button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 end-0 pe-3.5 flex items-center text-slate-400 dark:text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors outline-none"
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
+
+                {/* Trailing Show/Hide Password Eye Button */}
+                <div className="absolute inset-y-0 end-0 pe-2.5 flex items-center">
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="p-1.5 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-700/60 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer"
+                    title={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                    aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                  >
+                    {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                  </button>
+                </div>
               </div>
             </div>
             
+            {/* Error Message with Shake Animation and High-Contrast Icon */}
             {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-500 dark:text-red-400 text-sm p-3 rounded-xl flex items-center gap-2 animate-shake">
-                    <AlertCircle size={16} />
-                    {t('login_error')}
+                <div role="alert" className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm py-3 px-4 rounded-2xl flex items-center gap-3 animate-shake shadow-xs">
+                    <div className="w-8 h-8 rounded-xl bg-red-500/15 flex items-center justify-center shrink-0">
+                      <AlertCircle size={18} className="text-red-500" />
+                    </div>
+                    <span className="font-semibold text-xs sm:text-sm">{t('login_error')}</span>
                 </div>
             )}
             
-            <div className="flex items-center justify-between mb-6">
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${rememberMe ? 'bg-purple-600 border-purple-600' : 'border-slate-300 dark:border-slate-600 group-hover:border-purple-500'}`}>
-                  {rememberMe && <div className="w-3 h-2 border-b-2 border-l-2 border-white rotate-[-45deg] translate-y-[-1px]"></div>}
-                </div>
-                <input type="checkbox" className="hidden" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-                <span className={`text-sm transition-colors ${rememberMe ? 'text-purple-600 dark:text-purple-400 font-bold' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`}>{t('remember_me')}</span>
+            {/* Remember Me & Forgot Password Row */}
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2.5 cursor-pointer group select-none">
+                <span className="relative flex items-center justify-center">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    aria-label={t('remember_me')}
+                  />
+                  <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-purple-500/50 ${
+                    rememberMe 
+                      ? 'bg-gradient-to-tr from-purple-600 to-fuchsia-600 border-purple-600 shadow-sm shadow-purple-500/30 text-white scale-100' 
+                      : 'border-slate-300 dark:border-slate-600 bg-white/50 dark:bg-slate-800/60 group-hover:border-purple-500 dark:group-hover:border-purple-400'
+                  }`}>
+                    {rememberMe && (
+                      <Check size={13} strokeWidth={3} className="text-white animate-scale-in" />
+                    )}
+                  </div>
+                </span>
+                <span className={`text-sm font-semibold transition-colors duration-150 ${
+                  rememberMe 
+                    ? 'text-purple-600 dark:text-purple-300' 
+                    : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white'
+                }`}>
+                  {t('remember_me')}
+                </span>
               </label>
-              <button type="button" onClick={() => alert(t('contact_admin_reset_pwd'))} className="text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 text-sm transition-colors">
+
+              <button 
+                type="button" 
+                onClick={() => alert(t('contact_admin_reset_pwd'))} 
+                className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-semibold text-sm transition-colors hover:underline cursor-pointer"
+              >
                   {t('forgot_password')}
               </button>
             </div>
             
-            <button disabled={busy} className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-600/20 transition-all active:scale-95 flex items-center justify-center gap-2 group disabled:opacity-60">
-              {t('login_btn')}
-              <span className="group-hover:translate-x-1 transition-transform">→</span>
+            {/* Primary Submit Button with Gradient, Hover Scale, and Loading State */}
+            <button 
+              disabled={busy} 
+              type="submit"
+              className="w-full relative overflow-hidden bg-gradient-to-r from-purple-600 via-fuchsia-600 to-purple-700 hover:from-purple-500 hover:via-fuchsia-500 hover:to-purple-600 text-white font-bold py-4 px-6 rounded-2xl shadow-xl shadow-purple-600/25 hover:shadow-purple-600/40 hover:scale-[1.02] hover:brightness-105 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-3 group disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
+            >
+              {busy ? (
+                <div className="flex items-center gap-2.5">
+                  <RefreshCw size={18} className="animate-spin text-white" />
+                  <span className="text-sm font-bold tracking-wide">جاري التحقق والاتصال...</span>
+                </div>
+              ) : (
+                <>
+                  <span className="text-base font-bold tracking-wide">{t('login_btn')}</span>
+                  <span className="text-lg transition-transform duration-200 group-hover:-translate-x-1 rtl:group-hover:-translate-x-1 ltr:group-hover:translate-x-1">←</span>
+                </>
+              )}
             </button>
 
             {state.settings.enableBiometricLogin && (
-              <div className="flex items-center justify-center mt-6">
-                <button type="button" onClick={handleBiometricLogin} className="text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 text-sm transition-colors flex items-center gap-2 animate-pulse">
+              <div className="flex items-center justify-center pt-2">
+                <button type="button" onClick={handleBiometricLogin} className="text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 text-sm transition-colors flex items-center gap-2 animate-pulse cursor-pointer">
                   <Fingerprint size={24} />
                 </button>
               </div>
             )}
           </form>
           
-          <div className="mt-8 text-center">
-            <p className="text-xs text-slate-500">
-                {t('developed_by')}
-            </p>
+          {/* بيانات المطور الرسمية */}
+          <div className="mt-8 pt-6 border-t border-slate-200/60 dark:border-slate-800/80 text-center">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-white/5 text-[11px] font-semibold text-slate-600 dark:text-slate-300 backdrop-blur-xs">
+              <span>{t('developed_by')}</span>
+            </div>
           </div>
         </div>
 
