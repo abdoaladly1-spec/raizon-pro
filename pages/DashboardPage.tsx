@@ -852,24 +852,24 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                         {/* 4. بطاقة المبلغ المتوقع في الدرج (بجانب المصروفات مباشرة) */}
                         <div 
                             onClick={() => setActiveModal('drawer')}
-                            className="rounded-2xl p-4.5 bg-white dark:bg-slate-800/95 border border-emerald-500/30 dark:border-emerald-500/30 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden"
+                            className="rounded-2xl p-4.5 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden"
                             title="انقر لعرض العملية الحسابية وتفاصيل المبلغ المتوقع بالدرج"
                         >
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
                                     <span>المتوقع بالدرج</span>
-                                    <span className="text-[9px] text-emerald-500 font-bold group-hover:underline">الجرد ←</span>
+                                    <span className="text-[9px] text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 font-bold">الجرد ←</span>
                                 </span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
                                     الدرج الآن
                                 </span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-110 transition-transform">
+                                <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
                                     <Wallet size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-2xl font-bold font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
+                                    <h3 className="text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
                                         {expectedDrawerCash.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                                     </h3>
                                     <p className="text-[10px] text-slate-400 mt-0.5">
@@ -888,14 +888,14 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
                                     <span>الرصيد الافتتاحي</span>
-                                    <span className="text-[9px] text-purple-500 font-bold group-hover:underline">عهدة البداية ←</span>
+                                    <span className="text-[9px] text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 font-bold">عهدة البداية ←</span>
                                 </span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
                                     افتتاحي
                                 </span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="w-11 h-11 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200/60 dark:border-purple-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-110 transition-transform">
+                                <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
                                     <Banknote size={22} />
                                 </div>
                                 <div className="min-w-0">

@@ -521,13 +521,13 @@ const MainContent = () => {
                              {/* ساعة وتوقيت جهاز الكمبيوتر الحية */}
                              <div
                                  title={language === 'ar' ? 'ساعة النظام متزامنة لحظياً مع جهاز الكمبيوتر' : 'Live System Clock (Synced with Computer)'}
-                                 className="flex items-center gap-2 h-9 px-3 rounded-xl bg-slate-100/90 dark:bg-purple-950/25 border border-slate-300 dark:border-purple-800/40 text-xs font-mono font-bold text-slate-800 dark:text-purple-200 shadow-xs cursor-default select-none"
+                                 className="flex items-center gap-2 h-9 px-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-mono text-slate-700 dark:text-slate-300 shadow-xs cursor-default select-none"
                              >
-                                 <Clock size={13} className="text-purple-600 dark:text-purple-400 shrink-0 animate-pulse" />
-                                 <span className="font-extrabold tracking-wider" dir="ltr">
+                                 <Clock size={13} className="text-slate-500 dark:text-slate-400 shrink-0" />
+                                 <span className="font-semibold tracking-wider text-slate-800 dark:text-slate-200" dir="ltr">
                                      {systemClockFormatted}
                                  </span>
-                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.9)] shrink-0" title={language === 'ar' ? 'متزامن مع ساعة الكمبيوتر' : 'Synced with PC'}></span>
+                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title={language === 'ar' ? 'متزامن مع ساعة الكمبيوتر' : 'Synced with PC'}></span>
                              </div>
 
                              {syncStatus.pending > 0 && (
@@ -2150,7 +2150,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             {liveRemainingText && (
               <div style={{ display:'flex', justifyContent:'center', marginBottom:10 }}>
                 <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px 14px', borderRadius:99, background: isDark ? 'rgba(255,191,36,0.1)' : 'rgba(245,158,11,0.12)', border: isDark ? '1px solid rgba(255,191,36,0.25)' : '1px solid rgba(245,158,11,0.35)', fontSize:11 }}>
-                  <Clock size={11} style={{ color: isDark ? '#ffbf24' : '#b45309' }} className="animate-pulse" />
+                  <Clock size={11} style={{ color: isDark ? '#ffbf24' : '#b45309' }} />
                   <span style={{ color: isDark ? '#ffbf24' : '#b45309', fontWeight:700 }}>{liveRemainingText}</span>
                 </div>
               </div>

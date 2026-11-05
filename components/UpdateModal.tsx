@@ -230,7 +230,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
             {/* الشعار الفني للمثبت */}
             <div className="hidden md:flex md:col-span-4 flex-col items-center justify-center relative">
               <div className="relative w-36 h-36 flex items-center justify-center">
-                <div className="absolute inset-0 bg-[#9333ea]/25 rounded-full blur-2xl animate-pulse"></div>
+                <div className="absolute inset-0 bg-purple-900/20 rounded-full blur-2xl"></div>
                 <img 
                   src="/public/img/pos-bg.jpg" 
                   onError={(e) => {
@@ -252,7 +252,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
               
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#8b5cf6]/20 text-[#d8b4fe] border border-[#8b5cf6]/40 mb-2">
-                  <Sparkles size={13} className="text-amber-400 animate-pulse" />
+                  <Sparkles size={13} className="text-amber-400" />
                   <span>{releaseTitle}</span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-wide">
@@ -324,7 +324,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
                         background: 'linear-gradient(90deg, #8b5cf6 0%, #c084fc 100%)'
                       }}
                     >
-                      <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                      <div className="absolute inset-0 bg-white/20 "></div>
                     </div>
                   </div>
 

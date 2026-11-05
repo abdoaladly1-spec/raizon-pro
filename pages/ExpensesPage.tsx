@@ -257,34 +257,34 @@ export const ExpensesPage = () => {
                 </div>
 
                 {/* بطاقة المبلغ المتوقع في الدرج */}
-                <div className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-amber-300/80 dark:border-amber-600/50">
+                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wide">المبلغ المتوقع في الدرج</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">لحظي</span>
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">المبلغ المتوقع في الدرج</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">لحظي</span>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-700 rounded-2xl flex items-center justify-center shrink-0 shadow-xs">
+                        <div className="w-11 h-11 bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-2xl flex items-center justify-center shrink-0 shadow-xs">
                             <Banknote size={22} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400 tracking-tight">{expectedDrawerCash.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
+                            <h3 className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">{expectedDrawerCash.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
                             <p className="text-[10px] text-slate-400 mt-0.5">النقد الفعلي المفترض تواجده بالدرج</p>
                         </div>
                     </div>
                 </div>
 
                 {/* بطاقة الرصيد الافتتاحي */}
-                <div className="bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-purple-300/80 dark:border-purple-600/50">
+                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wide">الرصيد الافتتاحي</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">بداية اليوم</span>
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الرصيد الافتتاحي</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">بداية اليوم</span>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-700 rounded-2xl flex items-center justify-center shrink-0 shadow-xs">
+                        <div className="w-11 h-11 bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-2xl flex items-center justify-center shrink-0 shadow-xs">
                             <Wallet size={22} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-bold font-mono text-purple-600 dark:text-purple-400 tracking-tight">{drawerOpeningBalance.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
+                            <h3 className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">{drawerOpeningBalance.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
                             <p className="text-[10px] text-slate-400 mt-0.5">رصيد عهدة الدرج المعتمد</p>
                         </div>
                     </div>

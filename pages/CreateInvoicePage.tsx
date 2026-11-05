@@ -733,7 +733,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                             <Plus size={14}/> {language === 'ar' ? 'عميل جديد' : 'New Client'}
                         </button>
                         {state.heldInvoices.length > 0 && (
-                            <button onClick={() => setShowHeldInvoices(true)} className="flex items-center gap-1 text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full hover:bg-amber-200 transition-colors font-bold animate-pulse-slow">
+                            <button onClick={() => setShowHeldInvoices(true)} className="flex items-center gap-1 text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full hover:bg-amber-200 transition-colors font-bold ">
                                 <PauseCircle size={14}/> {state.heldInvoices.length} {t('held')}
                             </button>
                         )}
@@ -1197,7 +1197,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                              </button>
                          )}
                          <span className="text-xs text-slate-400 font-mono flex items-center gap-1.5" title={language === 'ar' ? 'ساعة وتاريخ النظام متزامنة مع الكمبيوتر' : 'Synced with system clock'}>
-                            <Clock size={12} className="text-purple-500 animate-pulse" />
+                            <Clock size={12} className="text-slate-400" />
                             <span>{formatDateTime(new Date())}</span>
                         </span>
                     </div>

@@ -1009,7 +1009,7 @@ export const SettingsPage = () => {
                                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
                                 : 'bg-slate-800/60 border-white/10 text-slate-400'
                         }`}>
-                            <Sparkles size={22} className={autoUpdate ? "animate-pulse" : ""} />
+                            <Sparkles size={22} className="text-slate-400" />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
@@ -1092,7 +1092,7 @@ export const SettingsPage = () => {
                     <Button 
                         onClick={handleCheckForUpdates} 
                         disabled={updateChecking || updateDownloading} 
-                        className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-purple-900/30 flex items-center gap-2 cursor-pointer active:scale-95"
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-colors"
                     >
                         <RefreshCw size={16} className={updateChecking ? 'animate-spin' : ''} />
                         <span>{updateChecking ? (language === 'ar' ? 'جارٍ التحقق...' : 'Checking...') : (language === 'ar' ? ' التحقق من وجود تحديث' : 'Check for Updates')}</span>
@@ -1106,7 +1106,7 @@ export const SettingsPage = () => {
                             <div className="p-5 rounded-2xl bg-purple-950/40 border border-purple-500/40 shadow-lg space-y-4">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div className="flex items-center gap-2">
-                                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 text-slate-950 animate-bounce">
+                                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 text-slate-950 ">
                                             {language === 'ar' ? 'إصدار جديد' : 'New Update'}
                                         </span>
                                         <h4 className="text-lg font-bold text-white">{updateResult.releaseName}</h4>
@@ -1278,7 +1278,7 @@ export const SettingsPage = () => {
                         {/* حالة مزامنة ساعة النظام مع الكمبيوتر */}
                         <div className="mt-2.5 p-2.5 rounded-xl bg-purple-500/5 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 flex items-center justify-between text-xs">
                             <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.9)] animate-pulse"></span>
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
                                 <span className="text-slate-600 dark:text-slate-300 font-medium">
                                     {language === 'ar' ? 'ساعة النظام متزامنة مع جهاز الكمبيوتر' : 'Synced with computer system clock'}
                                 </span>
