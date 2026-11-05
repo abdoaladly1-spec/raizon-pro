@@ -500,7 +500,7 @@ html:not(.dark) aside {
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
 }
 
-html:not(.dark) header {
+html:not(.dark) header:not(.rz-no-override) {
   background-color: rgba(255, 255, 255, 0.98) !important;
   border-color: #94a3b8 !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);

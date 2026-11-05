@@ -1604,6 +1604,8 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
   
+    const isDark = theme === 'dark';
+
     return (
       <div
         className="min-h-screen w-full flex flex-col items-center justify-center select-none relative overflow-hidden"
@@ -1611,11 +1613,11 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
         style={{
           fontFamily: '"Cairo", Tahoma, sans-serif',
           minHeight: '100vh',
-          padding: '28px 18px',
+          padding: '24px 16px',
         }}
       >
         {/* Animated Canvas Constellation & Glow Background */}
-        <AnimatedBackground isDark={theme === 'dark'} />
+        <AnimatedBackground isDark={isDark} />
 
         {/* Global styles */}
         <style>{`
@@ -1638,38 +1640,56 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             100% { transform:scale(2.2); opacity:0; }
           }
           .rz-input {
-            width:100%; height:46px; border-radius:12px; outline:none;
-            border:1px solid rgba(221,190,245,.18);
-            background:rgba(13,7,21,.52);
-            color:#fff; padding:0 46px 0 46px;
-            font:500 14px "Cairo",sans-serif;
-            transition:.22s ease;
-            caret-color:#cf57ff;
+            width:100% !important;
+            height:46px !important;
+            border-radius:12px !important;
+            outline:none !important;
+            font:600 14px "Cairo",sans-serif !important;
+            transition:all .22s ease !important;
           }
-          .rz-input::placeholder { color:#887995; }
-          .rz-input:focus {
-            border-color:rgba(207,87,255,.85);
-            box-shadow:0 0 0 3px rgba(168,85,247,.15);
-            background:rgba(13,7,21,.75);
+          html.dark .rz-input {
+            border:1px solid rgba(221,190,245,.2) !important;
+            background:rgba(13,7,21,.58) !important;
+            color:#ffffff !important;
+            caret-color:#cf57ff !important;
           }
-          .rz-input:disabled { opacity:.5; cursor:not-allowed; }
+          html.dark .rz-input::placeholder { color:#887995 !important; }
+          html.dark .rz-input:focus {
+            border-color:rgba(207,87,255,.9) !important;
+            box-shadow:0 0 0 3px rgba(168,85,247,.2) !important;
+            background:rgba(13,7,21,.82) !important;
+          }
+          html:not(.dark) .rz-input {
+            border:1.5px solid rgba(168,85,247,.32) !important;
+            background:rgba(255,255,255,0.92) !important;
+            color:#0f172a !important;
+            caret-color:#7e22ce !important;
+          }
+          html:not(.dark) .rz-input::placeholder { color:#64748b !important; }
+          html:not(.dark) .rz-input:focus {
+            border-color:#9333ea !important;
+            box-shadow:0 0 0 3px rgba(147,51,234,.18) !important;
+            background:#ffffff !important;
+          }
+          .rz-input:disabled { opacity:.5 !important; cursor:not-allowed !important; }
           .rz-btn {
             width:100%; height:48px; border-radius:12px;
-            cursor:pointer; color:#190b24;
+            cursor:pointer; color:#180b29;
             font:800 16px "Cairo",sans-serif;
             background:linear-gradient(105deg, #ffd84d 0%, #ffad24 38%, #e94cf4 100%);
-            box-shadow:0 10px 28px rgba(188,53,229,.24), inset 0 1px 0 rgba(255,255,255,.55);
+            box-shadow:0 10px 28px rgba(188,53,229,.26), inset 0 1px 0 rgba(255,255,255,.6);
             transition:transform .2s, filter .2s, box-shadow .2s;
             position:relative; overflow:hidden;
+            border:none;
           }
           .rz-btn::after {
             content:''; position:absolute; inset:0;
-            background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent);
+            background:linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent);
             transform:translateX(-100%); transition:transform .5s ease;
           }
           .rz-btn:hover::after { transform:translateX(100%); }
-          .rz-btn:hover { transform:translateY(-2px); filter:brightness(1.08); box-shadow:0 14px 36px rgba(188,53,229,.35); }
-          .rz-btn:active { transform:translateY(0) scale(.98); }
+          .rz-btn:hover { transform:translateY(-2px); filter:brightness(1.06); box-shadow:0 14px 34px rgba(188,53,229,.35); }
+          .rz-btn:active { transform:translateY(0) scale(.985); }
           .rz-btn:disabled { opacity:.55; cursor:not-allowed; transform:none; }
           .rz-card-shake { animation:rz-shake .5s ease !important; }
         `}</style>
@@ -1678,60 +1698,93 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
         <button
           onClick={toggleTheme}
           className="absolute top-5 left-5 z-30 cursor-pointer"
-          style={{ padding:9, borderRadius:14, background:'rgba(35,18,49,0.7)', border:'1px solid rgba(225,185,255,0.18)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', transition:'background .2s', color:'#e8dff0' }}
+          style={{
+            padding: 9,
+            borderRadius: 14,
+            background: isDark ? 'rgba(35,18,49,0.75)' : 'rgba(255,255,255,0.92)',
+            border: isDark ? '1px solid rgba(225,185,255,0.2)' : '1px solid rgba(192,132,252,0.35)',
+            boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.35)' : '0 6px 20px rgba(126,34,206,0.12)',
+            backdropFilter: 'blur(14px)',
+            WebkitBackdropFilter: 'blur(14px)',
+            transition: 'all .2s ease',
+            color: isDark ? '#e8dff0' : '#7e22ce'
+          }}
           aria-label="تبديل المظهر"
         >
-          {theme === 'dark' ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} style={{ color:'#cf57ff' }} />}
+          {isDark ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} style={{ color:'#7e22ce' }} />}
         </button>
 
         {/* Pre-card ripple */}
         {!isCardReady && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-            <div style={{ width:160, height:160, borderRadius:'50%', border:'1px solid rgba(207,87,255,0.3)', animation:'rz-ripple 1.5s cubic-bezier(0.16,1,0.3,1) forwards' }} />
-            <div style={{ position:'absolute', width:260, height:260, borderRadius:'50%', border:'1px solid rgba(207,87,255,0.15)', animation:'rz-ripple 1.5s cubic-bezier(0.16,1,0.3,1) .35s forwards' }} />
+            <div style={{ width:160, height:160, borderRadius:'50%', border: isDark ? '1px solid rgba(207,87,255,0.3)' : '1px solid rgba(147,51,234,0.35)', animation:'rz-ripple 1.5s cubic-bezier(0.16,1,0.3,1) forwards' }} />
+            <div style={{ position:'absolute', width:260, height:260, borderRadius:'50%', border: isDark ? '1px solid rgba(207,87,255,0.15)' : '1px solid rgba(147,51,234,0.18)', animation:'rz-ripple 1.5s cubic-bezier(0.16,1,0.3,1) .35s forwards' }} />
           </div>
         )}
 
         {/* ═══ MAIN CARD ═══ */}
-        <div style={{ width:'min(100%, 440px)', position:'relative', zIndex:1 }}>
+        <div style={{ width:'min(100%, 430px)', position:'relative', zIndex:1 }}>
           <div
             className={isShaking ? 'rz-card-shake' : ''}
             style={{
-              position:'relative', padding:'24px 28px 18px', borderRadius:24,
-              background:'rgba(35,18,49,0.58)',
-              border:'1px solid rgba(225,185,255,0.16)',
-              backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)',
-              boxShadow:'0 24px 80px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 38px rgba(160,32,240,0.10)',
+              position:'relative',
+              padding:'24px 28px 18px',
+              borderRadius:24,
+              background: isDark ? 'rgba(22, 10, 36, 0.74)' : 'rgba(255, 255, 255, 0.90)',
+              border: isDark ? '1px solid rgba(225,185,255,0.16)' : '1px solid rgba(192,132,252,0.35)',
+              backdropFilter:'blur(28px)',
+              WebkitBackdropFilter:'blur(28px)',
+              boxShadow: isDark
+                ? '0 24px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 38px rgba(160,32,240,0.14)'
+                : '0 24px 60px -10px rgba(126, 34, 206, 0.16), inset 0 1px 0 rgba(255,255,255,0.95), 0 8px 24px rgba(0,0,0,0.04)',
               overflow:'hidden',
               animation:'rz-cardIn 1.5s cubic-bezier(0.16,1,0.3,1) forwards',
             }}
           >
             {/* Top shimmer line */}
-            <div style={{ position:'absolute', top:0, left:'18%', right:'18%', height:1, background:'linear-gradient(90deg, transparent, #e879f9, #ffc52e, transparent)', opacity:.9, zIndex:2 }} />
+            <div style={{
+              position:'absolute',
+              top:0,
+              left:'16%',
+              right:'16%',
+              height:1.5,
+              background: isDark
+                ? 'linear-gradient(90deg, transparent, #e879f9, #ffc52e, transparent)'
+                : 'linear-gradient(90deg, transparent, #a855f7, #f59e0b, transparent)',
+              opacity:.9,
+              zIndex:2
+            }} />
 
-            {/* ── BRAND / LOGO (لوجو مدمج وتصميم متناسق) ── */}
-            <header style={{ textAlign:'center', marginBottom:12 }}>
+            {/* ── BRAND / LOGO (لوجو مدمج وتصميم متناسق بدون أي خلفيات بيضاء) ── */}
+            <div className="rz-login-brand rz-no-override" style={{ textAlign:'center', marginBottom:14, background:'transparent', border:'none', boxShadow:'none' }}>
               <img
                 src="/img/logo-transparent.png"
                 alt="RaiZon Pro"
-                style={{ width:'min(100%,160px)', height:82, objectFit:'contain', display:'block', margin:'0 auto', filter:'drop-shadow(0 6px 18px rgba(187,46,255,0.26))' }}
+                style={{
+                  width:'min(100%,145px)',
+                  height:74,
+                  objectFit:'contain',
+                  display:'block',
+                  margin:'0 auto',
+                  filter: isDark ? 'drop-shadow(0 6px 18px rgba(187,46,255,0.32))' : 'drop-shadow(0 4px 14px rgba(147,51,234,0.22))'
+                }}
               />
               {/* اسم التطبيق أسفل اللوجو مباشرة - LTR ليكون ريزون برو وليس برو رايزون */}
-              <h1 dir="ltr" style={{ fontSize:22, fontWeight:800, margin:'4px 0 1px', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
-                <span style={{ color:'#ffbf24', textShadow:'0 0 14px rgba(255,191,36,0.35)' }}>RaiZon</span>
-                <span style={{ color:'#cf57ff', textShadow:'0 0 14px rgba(207,87,255,0.35)' }}>Pro</span>
+              <h1 dir="ltr" style={{ fontSize:22, fontWeight:800, margin:'5px 0 2px', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
+                <span style={{ color: isDark ? '#ffbf24' : '#d97706', textShadow: isDark ? '0 0 14px rgba(255,191,36,0.35)' : 'none' }}>RaiZon</span>
+                <span style={{ color: isDark ? '#cf57ff' : '#7e22ce', textShadow: isDark ? '0 0 14px rgba(207,87,255,0.35)' : 'none' }}>Pro</span>
               </h1>
-              <p style={{ color:'#b9a9c7', textAlign:'center', fontSize:12, margin:'1px 0 0' }}>
+              <p style={{ color: isDark ? '#b9a9c7' : '#475569', textAlign:'center', fontSize:12.5, fontWeight: isDark ? 500 : 600, margin:'2px 0 0' }}>
                 سجّل الدخول لإدارة أعمالك ومتابعة مبيعاتك
               </p>
-            </header>
+            </div>
 
             {/* License badge */}
             {liveRemainingText && (
               <div style={{ display:'flex', justifyContent:'center', marginBottom:10 }}>
-                <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px 14px', borderRadius:99, background:'rgba(255,191,36,0.1)', border:'1px solid rgba(255,191,36,0.25)', fontSize:11 }}>
-                  <Clock size={11} style={{ color:'#ffbf24' }} className="animate-pulse" />
-                  <span style={{ color:'#ffbf24', fontWeight:700 }}>{liveRemainingText}</span>
+                <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px 14px', borderRadius:99, background: isDark ? 'rgba(255,191,36,0.1)' : 'rgba(245,158,11,0.12)', border: isDark ? '1px solid rgba(255,191,36,0.25)' : '1px solid rgba(245,158,11,0.35)', fontSize:11 }}>
+                  <Clock size={11} style={{ color: isDark ? '#ffbf24' : '#b45309' }} className="animate-pulse" />
+                  <span style={{ color: isDark ? '#ffbf24' : '#b45309', fontWeight:700 }}>{liveRemainingText}</span>
                 </div>
               </div>
             )}
@@ -1739,7 +1792,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             {/* Update badge */}
             {pendingUpdate && !showUpdateModal && (
               <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}>
-                <button type="button" onClick={() => setShowUpdateModal(true)} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px 14px', borderRadius:99, background:'rgba(207,87,255,0.1)', border:'1px solid rgba(207,87,255,0.3)', fontSize:11, cursor:'pointer', fontFamily:'inherit', color:'#e4a8ff' }}>
+                <button type="button" onClick={() => setShowUpdateModal(true)} style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px 14px', borderRadius:99, background: isDark ? 'rgba(207,87,255,0.1)' : 'rgba(147,51,234,0.1)', border: isDark ? '1px solid rgba(207,87,255,0.3)' : '1px solid rgba(147,51,234,0.35)', fontSize:11, cursor:'pointer', fontFamily:'inherit', color: isDark ? '#e4a8ff' : '#7e22ce' }}>
                   <RefreshCw size={11} className="animate-spin" />
                   <span style={{ fontWeight:700 }}>إصدار جديد ({pendingUpdate.latestVersion}) — اضغط للتحديث</span>
                 </button>
@@ -1752,11 +1805,11 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
               {/* Username */}
               <div style={{ marginBottom:12 }} ref={userDropdownRef}>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', margin:'0 3px 8px' }}>
-                  <label style={{ color:'#e8dff0', fontSize:13, fontWeight:600 }}>
+                  <label style={{ color: isDark ? '#f3e8ff' : '#1e1035', fontSize:13, fontWeight:700 }}>
                     اسم المستخدم
                   </label>
                   {rememberedUsers.length > 0 && (
-                    <button type="button" onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ fontSize:11, color:'#e4a8ff', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:700, padding:0 }}>
+                    <button type="button" onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ fontSize:11.5, color: isDark ? '#e4a8ff' : '#7e22ce', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:800, padding:0 }}>
                       حسابات محفوظة ({rememberedUsers.length})
                     </button>
                   )}
@@ -1777,7 +1830,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                   return (
                     <>
                       <div style={{ position:'relative' }}>
-                        <span style={{ position:'absolute', right:15, top:'50%', transform:'translateY(-50%)', color:'#c084fc', fontSize:16, pointerEvents:'none', display:'flex', alignItems:'center' }}>
+                        <span style={{ position:'absolute', right:15, top:'50%', transform:'translateY(-50%)', color: isDark ? '#c084fc' : '#7e22ce', fontSize:16, pointerEvents:'none', display:'flex', alignItems:'center' }}>
                           <User size={16} />
                         </span>
                         <input
@@ -1790,7 +1843,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                           placeholder="أدخل اسم المستخدم"
                           aria-label="اسم المستخدم"
                           autoComplete="username"
-                          style={{ paddingLeft: showUserArrow ? 46 : 16 }}
+                          style={{ paddingLeft: showUserArrow ? 46 : 16, paddingRight: 46 }}
                         />
                         {/* يظهر السهم عند تفعيل زر تذكرني أو وجود مستخدمين مسجلين */}
                         {showUserArrow && (
@@ -1798,19 +1851,38 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                             type="button" 
                             onClick={() => setShowUserDropdown(!showUserDropdown)} 
                             title={showUserDropdown ? 'إغلاق قائمة الحسابات' : 'عرض الحسابات المتاحة'}
-                            style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#a99ab5', display:'flex', alignItems:'center', padding:4, borderRadius:8, transition:'all .2s' }}
+                            style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color: isDark ? '#a99ab5' : '#64748b', display:'flex', alignItems:'center', padding:4, borderRadius:8, transition:'all .2s' }}
                           >
-                            <ChevronDown size={16} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180 text-purple-400' : 'text-slate-400 hover:text-purple-300'}`} style={{ color: showUserDropdown ? '#cf57ff' : undefined }} />
+                            <ChevronDown size={16} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180 text-purple-600 dark:text-purple-400' : 'hover:text-purple-600 dark:hover:text-purple-300'}`} style={{ color: showUserDropdown ? (isDark ? '#cf57ff' : '#7e22ce') : undefined }} />
                           </button>
                         )}
                       </div>
 
                       {/* Saved / Available users dropdown */}
                       {showUserDropdown && showUserArrow && (
-                        <div style={{ position:'absolute', left:0, right:0, marginTop:8, borderRadius:16, background:'rgba(13,7,21,0.96)', backdropFilter:'blur(28px)', WebkitBackdropFilter:'blur(28px)', border:'1px solid rgba(221,190,245,0.18)', boxShadow:'0 20px 60px rgba(0,0,0,0.6)', zIndex:50, overflow:'hidden' }}>
-                          <div style={{ padding:'10px 14px 8px', borderBottom:'1px solid rgba(225,185,255,0.1)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                            <span style={{ fontSize:11, color:'#b9a9c7', fontWeight:600 }}>الحسابات المتاحة لتسجيل الدخول</span>
-                            <span style={{ fontSize:10, color:'#e4a8ff', background:'rgba(207,87,255,0.15)', padding:'1px 8px', borderRadius:99, fontWeight:700 }}>{availableLoginUsers.length}</span>
+                        <div style={{
+                          position:'absolute',
+                          left:0,
+                          right:0,
+                          marginTop:8,
+                          borderRadius:16,
+                          background: isDark ? 'rgba(13,7,21,0.97)' : 'rgba(255,255,255,0.98)',
+                          backdropFilter:'blur(28px)',
+                          WebkitBackdropFilter:'blur(28px)',
+                          border: isDark ? '1px solid rgba(221,190,245,0.18)' : '1px solid rgba(192,132,252,0.35)',
+                          boxShadow: isDark ? '0 20px 60px rgba(0,0,0,0.6)' : '0 20px 50px rgba(126,34,206,0.16)',
+                          zIndex:50,
+                          overflow:'hidden'
+                        }}>
+                          <div style={{
+                            padding:'10px 14px 8px',
+                            borderBottom: isDark ? '1px solid rgba(225,185,255,0.1)' : '1px solid rgba(226,232,240,0.9)',
+                            display:'flex',
+                            alignItems:'center',
+                            justifyContent:'space-between'
+                          }}>
+                            <span style={{ fontSize:11.5, color: isDark ? '#b9a9c7' : '#475569', fontWeight:700 }}>الحسابات المتاحة لتسجيل الدخول</span>
+                            <span style={{ fontSize:10.5, color: isDark ? '#e4a8ff' : '#7e22ce', background: isDark ? 'rgba(207,87,255,0.15)' : 'rgba(147,51,234,0.1)', padding:'1px 8px', borderRadius:99, fontWeight:800 }}>{availableLoginUsers.length}</span>
                           </div>
                           <div style={{ maxHeight:185, overflowY:'auto', padding:6 }}>
                             {availableLoginUsers.map(u => {
@@ -1821,8 +1893,8 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                                   key={u.username} 
                                   onClick={() => handleSelectRememberedUser(u)} 
                                   style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 10px', borderRadius:12, cursor:'pointer', transition:'background .15s' }}
-                                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='rgba(225,185,255,0.07)'; }}
-                                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; }}
+                                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = isDark ? 'rgba(225,185,255,0.08)' : 'rgba(243,232,255,0.7)'; }}
+                                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                                 >
                                   <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                                     {/* صورة/أفاتار الحساب: ذهبي للمدير، وألوان حيوية مختلفة للموظفين والكاشير */}
@@ -1844,25 +1916,25 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                                       {(u.name||u.username).charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                      <div style={{ fontSize:12, fontWeight:700, color:'#e8dff0', display:'flex', alignItems:'center', gap:6 }}>
+                                      <div style={{ fontSize:12, fontWeight:700, color: isDark ? '#e8dff0' : '#0f172a', display:'flex', alignItems:'center', gap:6 }}>
                                         <span>{u.name||u.username}</span>
                                         {uStyle.isAdmin ? (
-                                          <span style={{ fontSize:9, fontWeight:800, padding:'1px 6px', borderRadius:99, background:'rgba(245,158,11,0.2)', color:'#fbbf24', border:'1px solid rgba(245,158,11,0.5)' }}>
+                                          <span style={{ fontSize:9, fontWeight:800, padding:'1px 6px', borderRadius:99, background: isDark ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.15)', color: isDark ? '#fbbf24' : '#b45309', border: isDark ? '1px solid rgba(245,158,11,0.5)' : '1px solid rgba(245,158,11,0.4)' }}>
                                             مدير النظام
                                           </span>
                                         ) : (
-                                          <span style={{ fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:99, background:'rgba(168,85,247,0.15)', color:'#e4a8ff', border:'1px solid rgba(168,85,247,0.3)' }}>
+                                          <span style={{ fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:99, background: isDark ? 'rgba(168,85,247,0.15)' : 'rgba(147,51,234,0.1)', color: isDark ? '#e4a8ff' : '#7e22ce', border: isDark ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(147,51,234,0.3)' }}>
                                             {uStyle.label}
                                           </span>
                                         )}
                                       </div>
-                                      <div style={{ fontSize:10, color:'#887995', fontFamily:'monospace' }}>@{u.username}</div>
+                                      <div style={{ fontSize:10.5, color: isDark ? '#887995' : '#64748b', fontFamily:'monospace' }}>@{u.username}</div>
                                     </div>
                                   </div>
                                   {isSaved && (
-                                    <button type="button" onClick={e => handleDeleteRememberedUser(e, u.username)} style={{ background:'none', border:'none', cursor:'pointer', color:'#887995', padding:4, borderRadius:8, display:'flex', transition:'color .15s' }}
-                                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#f87171'; }}
-                                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='#887995'; }}
+                                    <button type="button" onClick={e => handleDeleteRememberedUser(e, u.username)} style={{ background:'none', border:'none', cursor:'pointer', color: isDark ? '#887995' : '#94a3b8', padding:4, borderRadius:8, display:'flex', transition:'color .15s' }}
+                                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#ef4444'; }}
+                                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#887995' : '#94a3b8'; }}
                                       title="حذف من القائمة المحفوظة"
                                     >
                                       <Trash2 size={13} />
@@ -1881,11 +1953,11 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
 
               {/* Password */}
               <div style={{ marginBottom:3, position:'relative' }}>
-                <label style={{ display:'block', color:'#e8dff0', fontSize:13, fontWeight:600, margin:'0 3px 8px' }}>
+                <label style={{ display:'block', color: isDark ? '#f3e8ff' : '#1e1035', fontSize:13, fontWeight:700, margin:'0 3px 8px' }}>
                   كلمة المرور
                 </label>
                 <div style={{ position:'relative' }}>
-                  <span style={{ position:'absolute', right:15, top:'50%', transform:'translateY(-50%)', color:'#c084fc', fontSize:16, pointerEvents:'none', display:'flex', alignItems:'center' }}>
+                  <span style={{ position:'absolute', right:15, top:'50%', transform:'translateY(-50%)', color: isDark ? '#c084fc' : '#7e22ce', fontSize:16, pointerEvents:'none', display:'flex', alignItems:'center' }}>
                     <Lock size={16} />
                   </span>
                   <input
@@ -1898,10 +1970,11 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                     placeholder="أدخل كلمة المرور"
                     aria-label="كلمة المرور"
                     autoComplete="current-password"
+                    style={{ paddingLeft: 42, paddingRight: 46 }}
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', border:0, background:'transparent', color:'#a99ab5', cursor:'pointer', fontSize:17, display:'flex', alignItems:'center', padding:0, transition:'color .15s' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#cf57ff'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='#a99ab5'; }}
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', border:0, background:'transparent', color: isDark ? '#a99ab5' : '#64748b', cursor:'pointer', fontSize:17, display:'flex', alignItems:'center', padding:0, transition:'color .15s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#cf57ff' : '#7e22ce'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#a99ab5' : '#64748b'; }}
                     aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                   >
                     {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
@@ -1911,21 +1984,21 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
 
               {/* Error */}
               {error && (
-                <div role="alert" style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderRadius:12, background:'rgba(239,68,68,0.11)', border:'1px solid rgba(239,68,68,0.28)', fontSize:13, color:'#fca5a5', fontWeight:500, margin:'12px 0 0' }}>
-                  <AlertCircle size={15} style={{ color:'#f87171', flexShrink:0 }} />
+                <div role="alert" style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderRadius:12, background: isDark ? 'rgba(239,68,68,0.11)' : 'rgba(239,68,68,0.08)', border: isDark ? '1px solid rgba(239,68,68,0.28)' : '1px solid rgba(239,68,68,0.35)', fontSize:13, color: isDark ? '#fca5a5' : '#b91c1c', fontWeight:600, margin:'12px 0 0' }}>
+                  <AlertCircle size={15} style={{ color: isDark ? '#f87171' : '#dc2626', flexShrink:0 }} />
                   <span>{t('login_error')}</span>
                 </div>
               )}
 
               {/* Options row */}
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, margin:'10px 1px 16px', fontSize:12 }}>
-                <label style={{ display:'flex', alignItems:'center', gap:7, color:'#c9bbd3', cursor:'pointer', userSelect:'none' }}>
-                  <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} style={{ width:15, height:15, padding:0, accentColor:'#bd38f2' }} />
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, margin:'12px 2px 16px', fontSize:12.5 }}>
+                <label style={{ display:'flex', alignItems:'center', gap:7, color: isDark ? '#c9bbd3' : '#334155', fontWeight:600, cursor:'pointer', userSelect:'none' }}>
+                  <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} style={{ width:16, height:16, padding:0, accentColor: isDark ? '#bd38f2' : '#7e22ce' }} />
                   <span>تذكرني</span>
                 </label>
-                <button type="button" onClick={() => alert(t('contact_admin_reset_pwd'))} style={{ color:'#e4a8ff', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:12, padding:0, transition:'color .15s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#ffd15b'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='#e4a8ff'; }}
+                <button type="button" onClick={() => alert(t('contact_admin_reset_pwd'))} style={{ color: isDark ? '#e4a8ff' : '#7e22ce', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:12.5, fontWeight:700, padding:0, transition:'color .15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#ffd15b' : '#d97706'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#e4a8ff' : '#7e22ce'; }}
                 >
                   {t('forgot_password')}
                 </button>
@@ -1935,7 +2008,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
               <button disabled={busy || !isCardReady} type="submit" className="rz-btn">
                 {busy ? (
                   <span style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                    <RefreshCw size={16} className="animate-spin" style={{ color:'#190b24' }} />
+                    <RefreshCw size={16} className="animate-spin" style={{ color:'#180b29' }} />
                     <span>جاري التحقق والاتصال...</span>
                   </span>
                 ) : (
@@ -1945,12 +2018,12 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
 
               {/* بيانات المطور أسفل زر تسجيل الدخول مباشرة */}
               <div style={{ textAlign:'center', marginTop:14 }}>
-                <p style={{ fontSize:12, color:'#b9a9c7', margin:0, fontWeight:500, lineHeight:1.7 }}>
+                <p style={{ fontSize:12, color: isDark ? '#b9a9c7' : '#475569', margin:0, fontWeight:600, lineHeight:1.7 }}>
                   <span>برمجة وتصميم: م / عبد الرحمن فتحي العادلي</span>
-                  <span style={{ margin:'0 6px', color:'#c084fc' }}>•</span>
-                  <a href="tel:01026695879" dir="ltr" style={{ color:'#ffd15b', textDecoration:'none', fontWeight:700, display:'inline-block' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#cf57ff'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='#ffd15b'; }}
+                  <span style={{ margin:'0 6px', color: isDark ? '#c084fc' : '#7e22ce' }}>•</span>
+                  <a href="tel:01026695879" dir="ltr" style={{ color: isDark ? '#ffd15b' : '#b45309', textDecoration:'none', fontWeight:800, display:'inline-block' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#cf57ff' : '#7e22ce'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#ffd15b' : '#b45309'; }}
                   >
                     01026695879
                   </a>
@@ -1961,9 +2034,9 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             {/* Biometric */}
             {state.settings.enableBiometricLogin && (
               <div style={{ display:'flex', justifyContent:'center', marginTop:12 }}>
-                <button type="button" onClick={handleBiometricLogin} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'#9f90aa', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'color .15s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#cf57ff'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='#9f90aa'; }}
+                <button type="button" onClick={handleBiometricLogin} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color: isDark ? '#9f90aa' : '#64748b', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'color .15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#cf57ff' : '#7e22ce'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#9f90aa' : '#64748b'; }}
                 >
                   <Fingerprint size={17} />
                   <span>تسجيل الدخول الحيوي</span>
@@ -1971,19 +2044,19 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
               </div>
             )}
 
-
           </div>
 
           {/* رقم الإصدار بالمنتصف في الربع الأخير أسفل البطاقة */}
-          <div style={{ textAlign:'center', marginTop:18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ textAlign:'center', marginTop:16, display:'flex', alignItems:'center', justifyContent:'center' }}>
             <div style={{
-              display:'inline-flex', alignItems:'center', gap:7, padding:'5px 16px', borderRadius:99,
-              background:'rgba(35,18,49,0.75)', border:'1px solid rgba(225,185,255,0.16)',
+              display:'inline-flex', alignItems:'center', gap:7, padding:'5px 18px', borderRadius:99,
+              background: isDark ? 'rgba(35,18,49,0.75)' : 'rgba(255,255,255,0.92)',
+              border: isDark ? '1px solid rgba(225,185,255,0.16)' : '1px solid rgba(192,132,252,0.35)',
               backdropFilter:'blur(16px)', WebkitBackdropFilter:'blur(16px)',
-              boxShadow:'0 8px 24px rgba(0,0,0,0.35)'
+              boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.35)' : '0 6px 20px rgba(126,34,206,0.10)'
             }}>
               <span style={{ width:7, height:7, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981' }} />
-              <span style={{ color:'#cbbbd8', fontSize:11, letterSpacing:'1.5px', fontWeight:600, fontFamily:'monospace' }} dir="ltr">
+              <span style={{ color: isDark ? '#cbbbd8' : '#334155', fontSize:11.5, letterSpacing:'1px', fontWeight:700, fontFamily:'monospace' }} dir="ltr">
                 الإصدار v{appVersion.replace(/^v/i, '')}
               </span>
             </div>
@@ -1997,38 +2070,37 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
         {/* Quick PIN Keypad */}
         {showPinPad && (
           <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div style={{ background:'rgba(27,13,43,0.98)', borderRadius:22, border:'1px solid rgba(225,185,255,0.18)', padding:24, width:'100%', maxWidth:320, backdropFilter:'blur(28px)' }}>
+            <div style={{ background: isDark ? 'rgba(27,13,43,0.98)' : 'rgba(255,255,255,0.98)', borderRadius:22, border: isDark ? '1px solid rgba(225,185,255,0.18)' : '1px solid rgba(192,132,252,0.35)', padding:24, width:'100%', maxWidth:320, backdropFilter:'blur(28px)', boxShadow: isDark ? '0 20px 60px rgba(0,0,0,0.6)' : '0 20px 50px rgba(126,34,206,0.16)' }}>
               <div style={{ textAlign:'center', marginBottom:20 }}>
-                <div style={{ width:48, height:48, borderRadius:14, background:'rgba(160,32,240,0.15)', border:'1px solid rgba(207,87,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px', color:'#cf57ff' }}>
+                <div style={{ width:48, height:48, borderRadius:14, background: isDark ? 'rgba(160,32,240,0.15)' : 'rgba(147,51,234,0.1)', border: isDark ? '1px solid rgba(207,87,255,0.3)' : '1px solid rgba(147,51,234,0.3)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px', color: isDark ? '#cf57ff' : '#7e22ce' }}>
                   <Keypad size={22} />
                 </div>
-                <h3 style={{ fontWeight:800, fontSize:17, color:'#fff', margin:0 }}>{t('quick_pin')}</h3>
+                <h3 style={{ fontWeight:800, fontSize:17, color: isDark ? '#fff' : '#0f172a', margin:0 }}>{t('quick_pin')}</h3>
               </div>
               <div className={`flex justify-center gap-2 mb-5 ${pinError ? 'rz-card-shake' : ''}`}>
                 {[0,1,2,3,4,5].map(i => (
-                  <span key={i} style={{ width:14, height:14, borderRadius:'50%', display:'inline-block', background: i < pin.length ? (pinError ? '#ef4444' : '#ffad24') : 'rgba(225,185,255,0.2)', transition:'background .15s' }} />
+                  <span key={i} style={{ width:14, height:14, borderRadius:'50%', display:'inline-block', background: i < pin.length ? (pinError ? '#ef4444' : '#ffad24') : (isDark ? 'rgba(225,185,255,0.2)' : 'rgba(147,51,234,0.15)'), transition:'background .15s' }} />
                 ))}
               </div>
-              {pinHint && <p style={{ textAlign:'center', color:'#f87171', fontSize:12, marginBottom:12 }}>{pinHint}</p>}
+              {pinHint && <p style={{ textAlign:'center', color:'#ef4444', fontSize:12, marginBottom:12, fontWeight:600 }}>{pinHint}</p>}
               <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
                 {['1','2','3','4','5','6','7','8','9','','0',''].map((n, idx) => {
                   if (n === '') {
-                    if (idx === 10) return <button key={idx} type="button" onClick={() => setPin(p => p + '0')} style={{ padding:'14px 0', borderRadius:12, background:'rgba(225,185,255,0.08)', border:'1px solid rgba(225,185,255,0.12)', color:'#fff', fontWeight:800, fontSize:18, cursor:'pointer', fontFamily:'inherit' }}>0</button>;
-                    if (idx === 11) return <button key={idx} type="button" onClick={() => setPin(p => p.slice(0,-1))} style={{ padding:'14px 0', borderRadius:12, background:'rgba(225,185,255,0.08)', border:'1px solid rgba(225,185,255,0.12)', color:'#b9a9c7', fontWeight:700, fontSize:16, cursor:'pointer', fontFamily:'inherit' }}>⌫</button>;
+                    if (idx === 10) return <button key={idx} type="button" onClick={() => setPin(p => p + '0')} style={{ padding:'14px 0', borderRadius:12, background: isDark ? 'rgba(225,185,255,0.08)' : 'rgba(243,232,255,0.7)', border: isDark ? '1px solid rgba(225,185,255,0.12)' : '1px solid rgba(192,132,252,0.3)', color: isDark ? '#fff' : '#0f172a', fontWeight:800, fontSize:18, cursor:'pointer', fontFamily:'inherit' }}>0</button>;
+                    if (idx === 11) return <button key={idx} type="button" onClick={() => setPin(p => p.slice(0,-1))} style={{ padding:'14px 0', borderRadius:12, background: isDark ? 'rgba(225,185,255,0.08)' : 'rgba(243,232,255,0.7)', border: isDark ? '1px solid rgba(225,185,255,0.12)' : '1px solid rgba(192,132,252,0.3)', color: isDark ? '#b9a9c7' : '#475569', fontWeight:700, fontSize:16, cursor:'pointer', fontFamily:'inherit' }}>⌫</button>;
                     return <span key={idx} />;
                   }
-                  return <button key={idx} type="button" onClick={() => { if (pin.length < 6) setPin(p => p + n); }} style={{ padding:'14px 0', borderRadius:12, background:'rgba(225,185,255,0.08)', border:'1px solid rgba(225,185,255,0.12)', color:'#fff', fontWeight:800, fontSize:18, cursor:'pointer', fontFamily:'inherit', transition:'background .15s' }}>{n}</button>;
+                  return <button key={idx} type="button" onClick={() => { if (pin.length < 6) setPin(p => p + n); }} style={{ padding:'14px 0', borderRadius:12, background: isDark ? 'rgba(225,185,255,0.08)' : 'rgba(243,232,255,0.7)', border: isDark ? '1px solid rgba(225,185,255,0.12)' : '1px solid rgba(192,132,252,0.3)', color: isDark ? '#fff' : '#0f172a', fontWeight:800, fontSize:18, cursor:'pointer', fontFamily:'inherit', transition:'background .15s' }}>{n}</button>;
                 })}
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginTop:12 }}>
-                <button type="button" onClick={() => { setShowPinPad(false); setPin(''); setPinHint(''); }} style={{ padding:'12px 0', borderRadius:12, background:'rgba(225,185,255,0.06)', border:'1px solid rgba(225,185,255,0.14)', color:'#b9a9c7', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:'inherit' }}>{t('cancel')}</button>
-                <button type="button" onClick={handlePinLogin} disabled={pin.length < 4} style={{ padding:'12px 0', borderRadius:12, background:'linear-gradient(105deg,#ffd84d,#ffad24,#e94cf4)', border:'none', color:'#190b24', fontWeight:800, fontSize:13, cursor:'pointer', fontFamily:'inherit', opacity:pin.length < 4 ? .5 : 1 }}>{t('login_btn')}</button>
+                <button type="button" onClick={() => { setShowPinPad(false); setPin(''); setPinHint(''); }} style={{ padding:'12px 0', borderRadius:12, background: isDark ? 'rgba(225,185,255,0.06)' : 'rgba(241,245,249,0.9)', border: isDark ? '1px solid rgba(225,185,255,0.14)' : '1px solid rgba(203,213,225,0.8)', color: isDark ? '#b9a9c7' : '#475569', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:'inherit' }}>{t('cancel')}</button>
+                <button type="button" onClick={handlePinLogin} disabled={pin.length < 4} style={{ padding:'12px 0', borderRadius:12, background:'linear-gradient(105deg,#ffd84d,#ffad24,#e94cf4)', border:'none', color:'#180b29', fontWeight:800, fontSize:13, cursor:'pointer', fontFamily:'inherit', opacity:pin.length < 4 ? .5 : 1 }}>{t('login_btn')}</button>
               </div>
             </div>
           </div>
         )}
-      </div>
-    );
+      </div>    );
 };
 
 /* Tailwind Custom Animations - Add to global CSS ideally but keeping here for single-file portability */
