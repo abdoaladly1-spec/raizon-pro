@@ -7,6 +7,7 @@
 import React, { useState, useRef, useMemo, useEffect, lazy, Suspense } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Intro } from './components/Intro';
+import { AnimatedBackground } from './components/AnimatedBackground';
 import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, Lock, ArrowLeft, ChevronRight, ChevronDown, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Truck, Bell, AlertTriangle, Shield, Phone, Copy, Building } from './components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from './types';
 import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, type SyncStatus } from './lib/serverSync';
@@ -1477,80 +1478,25 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
   
-        // نجوم الخلفية - Deterministic memoized star field
-    const bgStars = useMemo(() => {
-      const list = [
-        { g:'✦', c:'rgba(255,255,255,0.9)',   s:10, t: 5, l:10, d:4.2, dl:0.0, dx: 4, dy:-6 },
-        { g:'•',  c:'rgba(207,87,255,0.75)',   s: 3, t:11, l:88, d:3.5, dl:0.8, dx:-3, dy: 5 },
-        { g:'✧', c:'rgba(255,191,36,0.6)',    s: 7, t:18, l:22, d:5.1, dl:1.2, dx: 6, dy:-4 },
-        { g:'✦', c:'rgba(255,255,255,0.85)',  s:12, t: 8, l:72, d:3.8, dl:2.0, dx:-5, dy: 7 },
-        { g:'⋆', c:'rgba(207,87,255,0.65)',   s: 7, t:25, l:55, d:4.6, dl:0.4, dx: 3, dy:-8 },
-        { g:'•',  c:'rgba(255,255,255,0.8)',   s: 2, t:32, l: 8, d:3.2, dl:1.6, dx:-2, dy: 3 },
-        { g:'✦', c:'rgba(207,87,255,0.8)',    s: 9, t:38, l:85, d:5.4, dl:0.0, dx: 5, dy:-5 },
-        { g:'✧', c:'rgba(255,191,36,0.55)',   s: 6, t:42, l:42, d:4.0, dl:2.4, dx:-4, dy: 6 },
-        { g:'•',  c:'rgba(207,87,255,0.6)',    s: 4, t:14, l:38, d:3.6, dl:1.0, dx: 3, dy:-4 },
-        { g:'✦', c:'rgba(255,255,255,0.9)',   s:11, t:55, l:15, d:4.8, dl:0.6, dx:-6, dy: 4 },
-        { g:'⋆', c:'rgba(255,191,36,0.6)',    s: 7, t:62, l:78, d:3.3, dl:1.8, dx: 4, dy:-7 },
-        { g:'•',  c:'rgba(255,255,255,0.75)',  s: 3, t:70, l:50, d:4.4, dl:0.2, dx:-3, dy: 5 },
-        { g:'✧', c:'rgba(207,87,255,0.7)',    s: 8, t:78, l:28, d:5.0, dl:2.8, dx: 5, dy:-3 },
-        { g:'✦', c:'rgba(255,191,36,0.5)',    s:10, t:85, l:68, d:3.7, dl:1.4, dx:-4, dy: 6 },
-        { g:'•',  c:'rgba(207,87,255,0.6)',    s: 2, t:90, l:92, d:4.3, dl:0.8, dx: 2, dy:-5 },
-        { g:'✦', c:'rgba(255,255,255,0.85)',  s: 9, t:48, l:95, d:3.9, dl:2.2, dx:-5, dy: 3 },
-        { g:'⋆', c:'rgba(207,87,255,0.65)',   s: 6, t:20, l: 4, d:5.2, dl:0.6, dx: 3, dy:-6 },
-        { g:'•',  c:'rgba(255,191,36,0.55)',   s: 4, t:93, l:35, d:3.4, dl:1.0, dx:-2, dy: 4 },
-        { g:'✧', c:'rgba(255,255,255,0.8)',   s: 7, t: 3, l:60, d:4.5, dl:1.6, dx: 4, dy:-5 },
-        { g:'✦', c:'rgba(207,87,255,0.75)',   s:11, t:60, l: 3, d:3.6, dl:2.6, dx:-6, dy: 5 },
-        { g:'•',  c:'rgba(255,191,36,0.6)',    s: 3, t:35, l:65, d:4.2, dl:0.3, dx: 3, dy:-3 },
-        { g:'✦', c:'rgba(255,255,255,0.9)',   s: 8, t:72, l:48, d:5.3, dl:1.4, dx:-4, dy: 7 },
-        { g:'⋆', c:'rgba(207,87,255,0.6)',    s: 6, t:80, l:85, d:3.8, dl:2.0, dx: 5, dy:-4 },
-        { g:'•',  c:'rgba(255,255,255,0.75)',  s: 2, t:50, l:30, d:4.0, dl:0.9, dx:-2, dy: 3 },
-        { g:'✧', c:'rgba(255,191,36,0.55)',   s: 9, t:15, l:95, d:3.5, dl:1.8, dx: 5, dy:-6 },
-        { g:'✦', c:'rgba(207,87,255,0.7)',    s:10, t:44, l:18, d:4.7, dl:0.0, dx:-5, dy: 4 },
-        { g:'•',  c:'rgba(255,255,255,0.8)',   s: 3, t:97, l:60, d:3.3, dl:2.4, dx: 3, dy:-3 },
-        { g:'✦', c:'rgba(207,87,255,0.8)',    s: 7, t:28, l:44, d:5.0, dl:1.2, dx:-4, dy: 5 },
-        { g:'⋆', c:'rgba(255,191,36,0.6)',    s: 6, t:65, l:62, d:4.4, dl:0.5, dx: 4, dy:-4 },
-        { g:'•',  c:'rgba(255,255,255,0.7)',   s: 4, t: 7, l:30, d:3.6, dl:1.0, dx:-3, dy: 6 },
-        { g:'✧', c:'rgba(207,87,255,0.65)',   s: 8, t:88, l:10, d:4.9, dl:2.1, dx: 5, dy:-5 },
-        { g:'✦', c:'rgba(255,191,36,0.5)',    s:12, t:52, l:72, d:3.4, dl:0.7, dx:-6, dy: 3 },
-        { g:'•',  c:'rgba(207,87,255,0.55)',   s: 2, t:30, l:20, d:4.1, dl:1.5, dx: 2, dy:-4 },
-        { g:'✦', c:'rgba(255,255,255,0.85)',  s: 9, t:75, l:97, d:5.1, dl:2.9, dx:-5, dy: 6 },
-        { g:'⋆', c:'rgba(255,191,36,0.55)',   s: 7, t:22, l:80, d:3.9, dl:0.4, dx: 4, dy:-7 },
-        { g:'•',  c:'rgba(207,87,255,0.6)',    s: 3, t:58, l:38, d:4.6, dl:1.3, dx:-3, dy: 5 },
-        { g:'✧', c:'rgba(255,255,255,0.8)',   s: 6, t:40, l:55, d:3.7, dl:2.0, dx: 3, dy:-4 },
-        { g:'✦', c:'rgba(207,87,255,0.75)',   s:11, t:95, l:78, d:4.3, dl:0.9, dx:-5, dy: 4 },
-        { g:'•',  c:'rgba(255,191,36,0.55)',   s: 4, t:12, l:50, d:3.5, dl:1.7, dx: 3, dy:-6 },
-        { g:'✦', c:'rgba(255,255,255,0.9)',   s: 8, t:68, l:25, d:5.2, dl:0.1, dx:-4, dy: 5 },
-      ];
-      return list.map((s, i) => ({ ...s, id: i }));
-    }, []);
-
     return (
       <div
-        className="min-h-screen w-full flex flex-col items-center justify-center select-none"
+        className="min-h-screen w-full flex flex-col items-center justify-center select-none relative overflow-hidden"
         dir="rtl"
         style={{
           fontFamily: '"Cairo", Tahoma, sans-serif',
-          background: 'radial-gradient(ellipse at 18% 18%, rgba(137,36,185,0.28), transparent 38%), radial-gradient(ellipse at 85% 82%, rgba(255,157,25,0.11), transparent 30%), linear-gradient(135deg, #100819 0%, #1b0d2b 48%, #100819 100%)',
-          padding: '28px 18px',
-          position: 'relative',
-          overflow: 'hidden',
           minHeight: '100vh',
+          padding: '28px 18px',
         }}
       >
+        {/* Animated Canvas Constellation & Glow Background */}
+        <AnimatedBackground isDark={theme === 'dark'} />
+
         {/* Global styles */}
         <style>{`
-          @keyframes rz-starFloat {
-            0%,100% { opacity:.15; transform:translate(0,0) scale(.8); }
-            50% { opacity:1; transform:translate(var(--dx,4px),var(--dy,-6px)) scale(1.22); }
-          }
           @keyframes rz-cardIn {
             0% { opacity:0; transform:translateY(28px) scale(.95); filter:blur(14px); }
             65% { opacity:.75; transform:translateY(7px) scale(.985); filter:blur(3px); }
             100% { opacity:1; transform:translateY(0) scale(1); filter:blur(0); }
-          }
-          @keyframes rz-pulse {
-            0%,100% { transform:scale(1); opacity:.22; }
-            50% { transform:scale(1.08); opacity:.3; }
           }
           @keyframes rz-shake {
             0%,100% { transform:translateX(0); }
@@ -1565,14 +1511,10 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             0% { transform:scale(.6); opacity:.6; }
             100% { transform:scale(2.2); opacity:0; }
           }
-          @keyframes rz-shimmer {
-            0% { background-position: 200% center; }
-            100% { background-position: -200% center; }
-          }
           .rz-input {
             width:100%; height:54px; border-radius:13px; outline:none;
             border:1px solid rgba(221,190,245,.18);
-            background:rgba(13,7,21,.48);
+            background:rgba(13,7,21,.52);
             color:#fff; padding:0 46px 0 46px;
             font:500 14px "Cairo",sans-serif;
             transition:.22s ease;
@@ -1582,7 +1524,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
           .rz-input:focus {
             border-color:rgba(207,87,255,.85);
             box-shadow:0 0 0 3px rgba(168,85,247,.15);
-            background:rgba(13,7,21,.68);
+            background:rgba(13,7,21,.75);
           }
           .rz-input:disabled { opacity:.5; cursor:not-allowed; }
           .rz-btn {
@@ -1604,19 +1546,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
           .rz-btn:active { transform:translateY(0) scale(.98); }
           .rz-btn:disabled { opacity:.55; cursor:not-allowed; transform:none; }
           .rz-card-shake { animation:rz-shake .5s ease !important; }
-          .rz-orb { position:fixed; border-radius:50%; filter:blur(90px); pointer-events:none; z-index:0; animation:rz-pulse 10s ease-in-out infinite alternate; }
         `}</style>
-
-        {/* BG: fixed blur orbs */}
-        <div className="rz-orb" style={{ width:340, height:340, background:'#a020f0', top:-150, right:-100, opacity:.22 }} />
-        <div className="rz-orb" style={{ width:340, height:340, background:'#ff9f1c', bottom:-190, left:-100, opacity:.12, animationDelay:'4s' }} />
-
-        {/* BG: star field */}
-        {bgStars.map(s => (
-          <div key={s.id} className="absolute pointer-events-none select-none" style={{ top:`${s.t}%`, left:`${s.l}%`, fontSize:s.s, color:s.c, textShadow:`0 0 6px ${s.c}`, '--dx':`${s.dx}px`, '--dy':`${s.dy}px`, animation:`rz-starFloat ${s.d}s ease-in-out ${s.dl}s infinite alternate`, fontFamily:'monospace' } as React.CSSProperties}>
-            {s.g}
-          </div>
-        ))}
 
         {/* Theme toggle */}
         <button
