@@ -1477,6 +1477,56 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
   
+        // نجوم الخلفية العشوائية المضيئة والمتحركة (Cosmic Stars Random Generator)
+    const backgroundStars = useMemo(() => {
+      const glyphs = ['✦', '✧', '⋆', '•', '✦', '✧', '•'];
+      const palettes = [
+        { color: '#ffffff', glow: 'rgba(255, 255, 255, 0.95)' },
+        { color: '#f3e8ff', glow: 'rgba(233, 213, 255, 0.85)' },
+        { color: '#c084fc', glow: 'rgba(192, 132, 252, 0.85)' },
+        { color: '#a855f7', glow: 'rgba(168, 85, 247, 0.80)' },
+        { color: '#67e8f9', glow: 'rgba(103, 232, 249, 0.75)' },
+        { color: '#93c5fd', glow: 'rgba(147, 197, 253, 0.70)' }
+      ];
+
+      // 65 نجمة موزعة بعشوائية وتناسق تغطي كامل أرجاء الشاشة
+      return Array.from({ length: 65 }, (_, i) => {
+        const glyph = glyphs[i % glyphs.length];
+        const isDot = glyph === '•';
+        const isProminent = i % 7 === 0;
+        const pal = palettes[i % palettes.length];
+
+        // خوارزمية توزيع شبه عشوائي تغطي 2% إلى 98% طولاً وعرضاً
+        const top = Math.min(97, Math.max(2, (((i * 47) % 94) + 2)));
+        const left = Math.min(97, Math.max(2, (((i * 73 + 17) % 94) + 2)));
+
+        const size = isDot 
+          ? (i % 3 === 0 ? '3.5px' : '2px')
+          : isProminent 
+            ? `${11 + (i % 4)}px`
+            : `${6 + (i % 5)}px`;
+
+        const duration = (3.2 + (i % 5) * 1.1).toFixed(1) + 's';
+        const delay = ((i % 8) * 0.6).toFixed(1) + 's';
+        const dx = (((i % 5) - 2) * 5) + 'px';
+        const dy = ((((i * 3) % 5) - 2) * 6) + 'px';
+
+        return {
+          id: i,
+          glyph,
+          top: `${top}%`,
+          left: `${left}%`,
+          size,
+          color: pal.color,
+          glow: pal.glow,
+          duration,
+          delay,
+          dx,
+          dy
+        };
+      });
+    }, []);
+
     return (
       <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#07060c] relative overflow-hidden p-4 font-sans select-none" dir="rtl">
         {/* CSS Keyframes for Moving Background & iPhone Liquid Glass Intro */}
@@ -1509,6 +1559,54 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             50% {
               transform: rotate(16deg) scale(1.18) translateY(-12px);
               opacity: 0.60;
+            }
+          }
+          @keyframes cosmicStarDrift {
+            0%, 100% {
+              opacity: 0.2;
+              transform: translate(0px, 0px) scale(0.85);
+              filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.4));
+            }
+            50% {
+              opacity: 0.95;
+              transform: translate(var(--dx, 6px), var(--dy, -8px)) scale(1.3);
+              filter: drop-shadow(0 0 6px var(--glow, rgba(168, 85, 247, 0.9))) drop-shadow(0 0 12px var(--glow, rgba(168, 85, 247, 0.5)));
+            }
+          }
+          @keyframes shootingStar1 {
+            0%, 90% {
+              transform: translateX(0) translateY(0) rotate(-35deg) scaleX(0);
+              opacity: 0;
+            }
+            92% {
+              opacity: 0.9;
+              transform: translateX(50px) translateY(35px) rotate(-35deg) scaleX(1);
+            }
+            95% {
+              transform: translateX(450px) translateY(315px) rotate(-35deg) scaleX(1.4);
+              opacity: 0;
+            }
+            100% {
+              opacity: 0;
+              transform: translateX(450px) translateY(315px) rotate(-35deg) scaleX(0);
+            }
+          }
+          @keyframes shootingStar2 {
+            0%, 88% {
+              transform: translateX(0) translateY(0) rotate(-40deg) scaleX(0);
+              opacity: 0;
+            }
+            90% {
+              opacity: 0.85;
+              transform: translateX(40px) translateY(33px) rotate(-40deg) scaleX(1);
+            }
+            93% {
+              transform: translateX(400px) translateY(335px) rotate(-40deg) scaleX(1.3);
+              opacity: 0;
+            }
+            100% {
+              opacity: 0;
+              transform: translateX(400px) translateY(335px) rotate(-40deg) scaleX(0);
             }
           }
           @keyframes starFloat {
@@ -1616,39 +1714,60 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
           }}
         />
 
-        {/* 3. Star Dust / Floating Crosses & Specks (تحريك النجوم المضيئة) */}
-        {[
-          { top: '16%', left: '24%', char: '✦', size: '10px', delay: '0s' },
-          { top: '24%', left: '32%', char: '•', size: '4px', delay: '1s' },
-          { top: '36%', left: '18%', char: '✦', size: '8px', delay: '2s' },
-          { top: '18%', left: '74%', char: '✦', size: '11px', delay: '0.5s' },
-          { top: '28%', left: '80%', char: '•', size: '4px', delay: '1.5s' },
-          { top: '44%', left: '86%', char: '✦', size: '9px', delay: '2.5s' },
-          { top: '64%', left: '16%', char: '•', size: '5px', delay: '0.8s' },
-          { top: '76%', left: '22%', char: '✦', size: '10px', delay: '1.8s' },
-          { top: '66%', left: '80%', char: '✦', size: '8px', delay: '2.8s' },
-          { top: '82%', left: '74%', char: '•', size: '4px', delay: '1.2s' },
-          { top: '52%', left: '34%', char: '✦', size: '7px', delay: '0.3s' },
-          { top: '54%', left: '66%', char: '✦', size: '7px', delay: '1.7s' },
-          { top: '30%', left: '52%', char: '✦', size: '6px', delay: '2.1s' }
-        ].map((star, idx) => (
+{/* 3. Cosmic Moving & Glowing Random Stars (نجوم متحركة ومضيئة بعشوائية في الخلفية) */}
+        {backgroundStars.map((star) => (
           <div 
-            key={idx}
-            className="absolute pointer-events-none select-none text-white font-mono"
+            key={star.id}
+            className="absolute pointer-events-none select-none font-mono"
             style={{
               top: star.top,
               left: star.left,
               fontSize: star.size,
-              textShadow: '0 0 6px rgba(255, 255, 255, 0.8), 0 0 12px rgba(168, 85, 247, 0.6)',
-              animation: 'starFloat 4s ease-in-out infinite alternate',
+              color: star.color,
+              // @ts-ignore
+              '--dx': star.dx,
+              '--dy': star.dy,
+              '--glow': star.glow,
+              textShadow: `0 0 6px ${star.glow}, 0 0 14px ${star.glow}`,
+              animation: `cosmicStarDrift ${star.duration} ease-in-out infinite alternate`,
               animationDelay: star.delay
-            }}
+            } as React.CSSProperties}
           >
-            {star.char}
+            {star.glyph}
           </div>
         ))}
 
-        {/* 4. Preliminary 1.5s Liquid Energy Ripple before Card Materializes */}
+        {/* Dynamic Shooting Stars across background */}
+        <div 
+          className="absolute pointer-events-none z-1 overflow-hidden"
+          style={{
+            top: '8%',
+            left: '12%',
+            width: '130px',
+            height: '2px',
+            background: 'linear-gradient(90deg, rgba(255,255,255,0.95), rgba(192,132,252,0.6), transparent)',
+            boxShadow: '0 0 8px #c084fc, 0 0 16px #ffffff',
+            transformOrigin: 'left center',
+            animation: 'shootingStar1 12s cubic-bezier(0.2, 0, 0.4, 1) infinite',
+            animationDelay: '1.5s'
+          }}
+        />
+        <div 
+          className="absolute pointer-events-none z-1 overflow-hidden"
+          style={{
+            top: '24%',
+            right: '16%',
+            width: '110px',
+            height: '2px',
+            background: 'linear-gradient(90deg, rgba(255,255,255,0.95), rgba(103,232,249,0.6), transparent)',
+            boxShadow: '0 0 8px #67e8f9, 0 0 14px #ffffff',
+            transformOrigin: 'left center',
+            animation: 'shootingStar2 15s cubic-bezier(0.2, 0, 0.4, 1) infinite',
+            animationDelay: '7s'
+          }}
+        />
+
+                {/* 4. Preliminary 1.5s Liquid Energy Ripple before Card Materializes */}
         {!isCardReady && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
             <div 
