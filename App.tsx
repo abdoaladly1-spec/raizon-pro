@@ -350,56 +350,70 @@ const MainContent = () => {
     <div className={`flex h-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 ${language === 'ar' ? 'font-cairo' : ''}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <ToastContainer />
         {/* Sidebar */}
-        <aside className={`${sidebarCollapsed ? "w-16" : "w-20 lg:w-60"} bg-white dark:bg-[#0c0617] border-e border-slate-300 dark:border-purple-900/30 flex flex-col transition-all duration-300 z-20 flex-shrink-0`}>
-            <div className="h-16 flex items-center justify-between gap-2.5 border-b border-slate-300 dark:border-purple-900/30 px-3.5 shrink-0">
-                <div className="flex items-center gap-2.5 min-w-0">
-                    <img src={RAIZON_LOGO_URI} alt="RaiZon Pro" className="w-8 h-8 object-contain shrink-0 drop-shadow-[0_2px_10px_rgba(168,85,247,0.35)]" />
-                    {!sidebarCollapsed && (
-                        <span className="hidden lg:block font-bold text-base font-cairo truncate animate-fade-in tracking-tight">
-                            <span className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]">RaiZon</span> <span className="text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.3)]">Pro</span>
-                        </span>
-                    )}
-                </div>
-                <button
-                    onClick={() => setSidebarCollapsed(p => !p)}
-                    className="hidden lg:flex w-7 h-7 rounded-lg items-center justify-center text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 dark:hover:bg-purple-950/50 border border-transparent hover:border-purple-500/20 transition-all shrink-0 cursor-pointer"
-                    aria-label="طي الشريط"
-                >
-                    <ChevronRight size={16} className={`transition-transform duration-300 ${sidebarCollapsed ? "" : "rotate-180"}`} />
-                </button>
+        <aside className={`${sidebarCollapsed ? "w-16" : "w-60"} bg-white dark:bg-[#0c0617] border-e border-slate-300 dark:border-purple-900/30 flex flex-col transition-all duration-300 z-20 flex-shrink-0 select-none`}>
+            {/* Sidebar Top Header */}
+            <div className={`h-16 flex items-center ${sidebarCollapsed ? 'justify-center px-1.5' : 'justify-between px-3.5'} gap-2 border-b border-slate-300 dark:border-purple-900/30 shrink-0`}>
+                {sidebarCollapsed ? (
+                    <button
+                        onClick={() => setSidebarCollapsed(false)}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 dark:hover:bg-purple-950/50 transition-all cursor-pointer relative group"
+                        title="توسيع الشريط الجانبي"
+                        aria-label="توسيع الشريط الجانبي"
+                    >
+                        <img src={RAIZON_LOGO_URI} alt="RaiZon Pro" className="w-7 h-7 object-contain shrink-0 drop-shadow-[0_2px_8px_rgba(168,85,247,0.35)] group-hover:scale-95 transition-transform" />
+                        <div className="absolute inset-0 rounded-xl bg-purple-600/15 dark:bg-purple-400/15 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <ChevronRight size={17} className="rotate-180 text-purple-700 dark:text-purple-300" />
+                        </div>
+                    </button>
+                ) : (
+                    <>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <img src={RAIZON_LOGO_URI} alt="RaiZon Pro" className="w-8 h-8 object-contain shrink-0 drop-shadow-[0_2px_10px_rgba(168,85,247,0.35)]" />
+                            <span className="font-bold text-base font-cairo truncate animate-fade-in tracking-tight">
+                                <span className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]">RaiZon</span> <span className="text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.3)]">Pro</span>
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => setSidebarCollapsed(true)}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 dark:hover:bg-purple-950/50 border border-transparent hover:border-purple-500/20 transition-all shrink-0 cursor-pointer"
+                            title="طي الشريط الجانبي"
+                            aria-label="طي الشريط الجانبي"
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    </>
+                )}
             </div>
             
-            <nav className="flex-1 overflow-y-auto py-4 space-y-1 px-2 custom-scrollbar">
+            {/* Navigation Items */}
+            <nav className="flex-1 overflow-y-auto py-3 space-y-1 px-2 custom-scrollbar">
                 {navItems.map((item, idx) => {
                     const isActive = activeTab === item.id;
                     const showGroup = idx === 0 || navItems[idx - 1].group !== item.group;
                     return (
                         <div key={item.id}>
                             {showGroup && (
-                                <div className="hidden lg:block px-4 pt-3 pb-1 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                                    {item.group}
-                                </div>
+                                sidebarCollapsed ? (
+                                    <div className="my-2 border-t border-slate-200 dark:border-purple-900/30 mx-1.5" />
+                                ) : (
+                                    <div className="px-3.5 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-purple-300/60 truncate">
+                                        {item.group}
+                                    </div>
+                                )
                             )}
                             <button
                                 onClick={() => { handleNavigate(item.id as any); playBeep(); }}
-                                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 group relative cursor-pointer
-                                    ${sidebarCollapsed ? 'justify-center' : '' }
+                                title={sidebarCollapsed ? item.label : undefined}
+                                className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-0 h-10' : 'gap-3 px-3.5 py-2.5'} rounded-xl transition-all duration-200 group relative cursor-pointer
                                     ${isActive 
                                         ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-bold border border-purple-200 dark:border-purple-800/60 shadow-2xs' 
                                         : 'text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-950 dark:hover:text-white'
                                     }`}
                             >
-                                {(() => {
-                                    const activeItem = navItems.find((n:any) => n.id === item.id);
-                                    return activeItem ? (
-                                        <>
-                                            <activeItem.icon size={22} className={`transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
-                                            {!sidebarCollapsed && <span className="hidden lg:block text-sm">{activeItem.label}</span>}
-                                        </>
-                                    ) : null;
-                                })()}
+                                <item.icon size={21} className={`transition-transform duration-200 group-hover:scale-110 shrink-0 ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
+                                {!sidebarCollapsed && <span className="text-sm truncate leading-none">{item.label}</span>}
                                 {isActive && (
-                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-purple-600 dark:bg-purple-400 rounded-l-full"></div>
+                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-purple-600 dark:bg-purple-400 rounded-l-full"></div>
                                 )}
                             </button>
                         </div>
@@ -407,18 +421,33 @@ const MainContent = () => {
                 })}
             </nav>
 
-            <div className="p-4 border-t border-slate-300 dark:border-slate-700 space-y-2">
-                 <button onClick={toggleTheme} className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                    {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-                    <span className="hidden lg:block text-sm">{theme === 'dark' ? t('light_mode') : t('dark_mode')}</span>
+            {/* Sidebar Bottom Controls */}
+            <div className={`p-2.5 ${sidebarCollapsed ? 'px-1.5' : 'p-3.5'} border-t border-slate-300 dark:border-purple-900/30 space-y-1 shrink-0`}>
+                 <button 
+                    onClick={toggleTheme} 
+                    title={theme === 'dark' ? t('light_mode') : t('dark_mode')}
+                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-0 h-9' : 'gap-3 px-3 py-2'} rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-950 dark:hover:text-white transition-all cursor-pointer`}
+                 >
+                    {theme === 'dark' ? <Sun size={19} className="text-amber-400 shrink-0" /> : <Moon size={19} className="text-purple-600 shrink-0" />}
+                    {!sidebarCollapsed && <span className="text-xs font-semibold truncate">{theme === 'dark' ? t('light_mode') : t('dark_mode')}</span>}
                  </button>
-                 <button onClick={toggleLanguage} className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                    <Globe size={20} />
-                    <span className="hidden lg:block text-sm">{language === 'ar' ? 'English' : 'العربية'}</span>
+
+                 <button 
+                    onClick={toggleLanguage} 
+                    title={language === 'ar' ? 'English' : 'العربية'}
+                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-0 h-9' : 'gap-3 px-3 py-2'} rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-950 dark:hover:text-white transition-all cursor-pointer`}
+                 >
+                    <Globe size={19} className="shrink-0 text-slate-400" />
+                    {!sidebarCollapsed && <span className="text-xs font-semibold truncate">{language === 'ar' ? 'English' : 'العربية'}</span>}
                  </button>
-                 <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                    <LogOut size={20} />
-                    <span className="hidden lg:block text-sm font-medium">{t('logout')}</span>
+
+                 <button 
+                    onClick={logout} 
+                    title={t('logout')}
+                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-0 h-9' : 'gap-3 px-3 py-2'} rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 transition-all cursor-pointer font-bold`}
+                 >
+                    <LogOut size={19} className="shrink-0 text-red-500" />
+                    {!sidebarCollapsed && <span className="text-xs truncate">{t('logout')}</span>}
                  </button>
             </div>
         </aside>
