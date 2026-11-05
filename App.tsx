@@ -1467,198 +1467,232 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
     }, []);
   
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-950 relative overflow-hidden transition-colors duration-300 p-4 font-sans" dir="rtl">
-        {/* Animated Colorful Background Effects */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-100/40 via-slate-50 to-slate-100 dark:from-purple-950/40 dark:via-slate-950 dark:to-slate-900 pointer-events-none z-0" />
-        <div className="absolute top-[-15%] right-[-10%] w-[550px] h-[550px] bg-gradient-to-br from-purple-600/25 via-fuchsia-600/20 to-transparent rounded-full blur-[110px] animate-pulse pointer-events-none" />
-        <div className="absolute bottom-[-15%] left-[-10%] w-[550px] h-[550px] bg-gradient-to-tr from-indigo-600/25 via-sky-600/20 to-transparent rounded-full blur-[110px] animate-pulse pointer-events-none" style={{ animationDelay: '1.5s', animationDuration: '6s' }} />
-        <div className="absolute top-[35%] left-[15%] w-[380px] h-[380px] bg-gradient-to-r from-amber-500/15 to-purple-500/15 rounded-full blur-[100px] animate-float pointer-events-none" />
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#07060c] relative overflow-hidden p-4 font-sans select-none" dir="rtl">
+        {/* Theme Toggle Button */}
+        <button 
+          onClick={toggleTheme} 
+          className="absolute top-6 left-6 z-30 p-2.5 rounded-xl bg-white/[0.05] border border-white/[0.1] text-slate-300 hover:text-white hover:bg-white/[0.1] transition-all shadow-md backdrop-blur-md cursor-pointer"
+          title="تبديل المظهر"
+          aria-label="تبديل المظهر"
+        >
+          {theme === 'dark' ? <Sun size={19} className="text-amber-400" /> : <Moon size={19} className="text-purple-300" />}
+        </button>
 
-        {/* Ambient Grid overlay: شبكة نقاط متناسقة وموزعة في الخلفية بالكامل */}
+        {/* 1. Dramatic Diagonal Overhead Purple Spotlight Beam (مطابق للصورة تماماً) */}
         <div 
-          className="absolute inset-0 pointer-events-none z-0 text-slate-800 dark:text-white opacity-40 dark:opacity-60"
+          className="absolute pointer-events-none"
           style={{
-            backgroundImage: 'radial-gradient(currentColor 1.5px, transparent 1.5px)',
-            backgroundSize: '24px 24px'
+            top: '-25%',
+            left: '52%',
+            width: '360px',
+            height: '920px',
+            transform: 'rotate(-28deg)',
+            transformOrigin: 'top center',
+            background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(220, 185, 255, 0.78) 20%, rgba(147, 51, 234, 0.55) 45%, rgba(109, 40, 217, 0.15) 75%, transparent 100%)',
+            filter: 'blur(45px)',
+            opacity: 0.92
+          }}
+        />
+        <div 
+          className="absolute pointer-events-none"
+          style={{
+            top: '-20%',
+            left: '55%',
+            width: '110px',
+            height: '700px',
+            transform: 'rotate(-28deg)',
+            transformOrigin: 'top center',
+            background: 'linear-gradient(180deg, #ffffff 0%, rgba(240, 225, 255, 0.95) 25%, rgba(168, 85, 247, 0.4) 55%, transparent 100%)',
+            filter: 'blur(20px)',
+            opacity: 0.98
           }}
         />
 
-        {/* Theme Toggle */}
-        <button 
-            onClick={toggleTheme} 
-            className="absolute top-6 left-6 z-20 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-xs cursor-pointer"
-        >
-            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
+        {/* 2. Symmetrical Soft Purple Wing Flares on Lower Left & Right */}
+        <div 
+          className="absolute pointer-events-none"
+          style={{
+            bottom: '16%',
+            left: '8%',
+            width: '420px',
+            height: '200px',
+            borderRadius: '50%',
+            background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.42) 0%, rgba(109, 40, 217, 0.18) 50%, transparent 75%)',
+            filter: 'blur(60px)',
+            transform: 'rotate(-12deg)'
+          }}
+        />
+        <div 
+          className="absolute pointer-events-none"
+          style={{
+            bottom: '16%',
+            right: '8%',
+            width: '420px',
+            height: '200px',
+            borderRadius: '50%',
+            background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.42) 0%, rgba(109, 40, 217, 0.18) 50%, transparent 75%)',
+            filter: 'blur(60px)',
+            transform: 'rotate(12deg)'
+          }}
+        />
 
-        {/* CSS Keyframes for Logo Neon Spin Animation */}
-        <style>{`
-          @keyframes loginLogoSpin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-          @keyframes neonPulseGlow {
-            0%, 100% { opacity: 0.15; transform: scale(1); }
-            50% { opacity: 0.28; transform: scale(1.01); }
-          }
-        `}</style>
-
-        {/* Card Wrapper */}
-        <div className="relative z-10 w-full max-w-[440px] flex items-center justify-center">
-          {/* Subtle perimeter neon pulse glow */}
+        {/* 3. Star Dust / Twinkling Crosses & Specks (مطابق لنجوم الصورة) */}
+        {[
+          { top: '16%', left: '24%', char: '✦', size: '10px', opacity: 0.45 },
+          { top: '24%', left: '32%', char: '•', size: '4px', opacity: 0.6 },
+          { top: '36%', left: '18%', char: '✦', size: '8px', opacity: 0.35 },
+          { top: '18%', left: '74%', char: '✦', size: '11px', opacity: 0.5 },
+          { top: '28%', left: '80%', char: '•', size: '4px', opacity: 0.6 },
+          { top: '44%', left: '86%', char: '✦', size: '9px', opacity: 0.4 },
+          { top: '64%', left: '16%', char: '•', size: '5px', opacity: 0.5 },
+          { top: '76%', left: '22%', char: '✦', size: '10px', opacity: 0.3 },
+          { top: '66%', left: '80%', char: '✦', size: '8px', opacity: 0.35 },
+          { top: '82%', left: '74%', char: '•', size: '4px', opacity: 0.6 },
+          { top: '52%', left: '34%', char: '✦', size: '7px', opacity: 0.25 },
+          { top: '54%', left: '66%', char: '✦', size: '7px', opacity: 0.25 },
+          { top: '30%', left: '52%', char: '✦', size: '6px', opacity: 0.3 }
+        ].map((star, idx) => (
           <div 
-            className="absolute -inset-1 rounded-[32px] border border-purple-500/30 blur-xs pointer-events-none"
-            style={{ animation: 'neonPulseGlow 4s ease-in-out infinite' }}
-          />
+            key={idx}
+            className="absolute pointer-events-none select-none text-white font-mono"
+            style={{
+              top: star.top,
+              left: star.left,
+              fontSize: star.size,
+              opacity: star.opacity,
+              textShadow: '0 0 6px rgba(255, 255, 255, 0.8), 0 0 12px rgba(168, 85, 247, 0.6)'
+            }}
+          >
+            {star.char}
+          </div>
+        ))}
 
-          {/* Card Container: بطاقة زجاجية بنقاط بيضاء مطابقة للخلفية وتوهج نيون هادئ */}
-          <div className={`relative z-10 w-full overflow-hidden bg-white/80 dark:bg-[#0c1017]/80 backdrop-blur-xl border border-purple-500/30 dark:border-purple-500/35 p-8 sm:p-9 rounded-[28px] shadow-[0_0_20px_rgba(168,85,247,0.15),0_20px_50px_-15px_rgba(0,0,0,0.6)] transition-all ${
+        {/* 4. The Glassmorphic Card (مطابق للبطاقة الزجاجية الداكنة في الصورة) */}
+        <div className="relative z-10 w-full max-w-[420px]">
+          <div className={`relative w-full rounded-[24px] bg-[#0c0a16]/60 backdrop-blur-2xl border border-white/[0.09] p-8 sm:p-9 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] transition-all ${
             isShaking 
               ? 'animate-shake ring-4 ring-red-500/60 border-red-500/80 shadow-[0_0_40px_rgba(239,68,68,0.5)]' 
               : 'animate-scale-in'
           }`}>
-            {/* Ambient Grid overlay inside card: نفس النقط البيضاء الموجودة في الخلفية بالكامل */}
-            <div 
-              className="absolute inset-0 pointer-events-none rounded-[28px] z-0 text-slate-800 dark:text-white opacity-40 dark:opacity-60"
-              style={{
-                backgroundImage: 'radial-gradient(currentColor 1.5px, transparent 1.5px)',
-                backgroundSize: '24px 24px'
-              }}
-            />
             
-            {/* Header with Animated Neon Purple Logo */}
-            <div className="text-center mb-8 relative z-10">
-              {/* Logo with Soft Purple Neon Ring Animation (مخفف وناعم خلف اللوجو) */}
-              <div className="relative w-24 h-24 mx-auto mb-4 flex items-center justify-center">
-                {/* Delicate subtle halo behind the logo */}
-                <div className="absolute -inset-0.5 rounded-[24px] bg-gradient-to-tr from-purple-600 via-fuchsia-500 to-purple-800 opacity-10 blur-xs" />
-                
-                {/* Thin, crisp spinning conic neon ring */}
-                <div className="relative w-full h-full rounded-[24px] p-[1.5px] overflow-hidden flex items-center justify-center shadow-[0_0_10px_rgba(168,85,247,0.2)]">
-                  <div 
-                    className="absolute inset-[-50%]"
-                    style={{
-                      background: 'conic-gradient(from 0deg, transparent 0%, rgba(168, 85, 247, 0.7) 25%, rgba(232, 121, 249, 0.85) 35%, transparent 45%, rgba(147, 51, 234, 0.7) 75%, transparent 85%)',
-                      animation: 'loginLogoSpin 3.5s linear infinite'
-                    }}
-                  />
-                  
-                  {/* Inner Logo Badge */}
-                  <div className="relative z-10 w-full h-full bg-slate-900/90 dark:bg-[#090d16]/95 rounded-[22px] p-2.5 flex items-center justify-center border border-purple-500/20 backdrop-blur-md">
-                    <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-full h-full object-contain drop-shadow-[0_0_4px_rgba(168,85,247,0.35)]" />
+            {/* Header: Clean Brand & Title */}
+            <div className="mb-6 text-right">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/30 p-2 flex items-center justify-center shadow-xs">
+                    <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-white tracking-tight flex items-center gap-1">
+                      <span className="text-amber-400">RaiZon</span>
+                      <span className="text-purple-400">Pro</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-medium">كاشير برو المتكامل</div>
                   </div>
                 </div>
+
+                {liveRemainingText && (
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-xs">
+                    <Clock size={11} className="animate-pulse" />
+                    <span>{liveRemainingText}</span>
+                  </div>
+                )}
               </div>
 
-              <h1 className="text-[28px] font-extrabold tracking-tight mb-1 text-slate-900 dark:text-white">
-                  <span className="text-amber-500 dark:text-amber-400 drop-shadow-[0_2px_10px_rgba(245,158,11,0.25)]">RaiZon</span>{' '}
-                  <span className="text-purple-600 dark:text-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">Pro</span>
+              <h1 className="text-2xl sm:text-[26px] font-bold text-white tracking-tight mb-1">
+                تسجيل الدخول
               </h1>
-              <p className="text-slate-600 dark:text-slate-300 text-xs font-semibold tracking-wide">{t('login_title')}</p>
+              <p className="text-xs text-slate-400 font-normal">
+                أهلاً بك، ادخل بيانات حسابك للمتابعة في النظام.
+              </p>
 
-              {/* شارة توفر التحديث في حال التخطي */}
               {pendingUpdate && !showUpdateModal && (
-                <div className="mt-3 text-center">
+                <div className="mt-2.5">
                   <button
                     type="button"
                     onClick={() => setShowUpdateModal(true)}
-                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30 hover:bg-purple-500/25 transition-all cursor-pointer animate-pulse"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30 hover:bg-purple-500/25 transition-all cursor-pointer animate-pulse"
                   >
-                    <span className="flex items-center gap-1.5"><RefreshCw size={12} className="shrink-0" /> يتوفر إصدار جديد ({pendingUpdate.latestVersion}) — اضغط للتحديث</span>
+                    <RefreshCw size={11} className="shrink-0" />
+                    <span>يتوفر إصدار جديد ({pendingUpdate.latestVersion}) — اضغط للتحديث</span>
                   </button>
                 </div>
               )}
-
-              {/* عرض المدة المتبقية على انتهاء الترخيص */}
-              {liveRemainingText && (
-                <div className="mt-3 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-xs">
-                  <Clock size={14} className="animate-pulse text-amber-500" />
-                  <span>{liveRemainingText}</span>
-                </div>
-              )}
             </div>
-            
-            <form onSubmit={handleLogin} className="space-y-6 text-right">
-              {/* Username Input with User Dropdown Arrow */}
-              <div className="relative" ref={userDropdownRef}>
-                <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center justify-between">
-                  <span>{t('username')}</span>
-                  {rememberedUsers.length > 0 && (
-                    <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">
-                      {language === 'ar' ? 'حسابات محفوظة' : 'Saved accounts'}
-                    </span>
-                  )}
-                </label>
-                <div className="relative flex items-center group">
-                  {/* Leading User Icon */}
-                  <div className="absolute inset-y-0 start-0 ps-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-purple-500 transition-colors">
-                    <User size={19} />
-                  </div>
 
+            {/* Form */}
+            <form onSubmit={handleLogin} className="space-y-4 text-right">
+              {/* Field 1: Username */}
+              <div className="relative" ref={userDropdownRef}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-medium text-slate-300">
+                    اسم المستخدم<span className="text-purple-400 ms-0.5">*</span>
+                  </label>
+                  {rememberedUsers.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowUserDropdown(!showUserDropdown)}
+                      className="text-[11px] font-semibold text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"
+                    >
+                      حسابات محفوظة ({rememberedUsers.length})
+                    </button>
+                  )}
+                </div>
+
+                <div className="relative flex items-center">
                   <input 
                     type="text" 
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full ps-11 pe-12 py-4 rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-slate-50/80 dark:bg-[#151c28]/90 hover:bg-white dark:hover:bg-[#1a2333] focus:bg-white dark:focus:bg-[#1a2333] text-slate-900 dark:text-[#f0f9ff] text-sm font-bold outline-none focus:border-purple-600 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 shadow-xs transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:font-normal"
-                    placeholder={t('ph_username_login') || 'ادخل اسم المستخدم'}
-                    aria-label={t('username')}
+                    className="w-full px-4 py-3 rounded-xl bg-[#080712]/75 border border-white/[0.08] focus:border-purple-500 focus:bg-[#0d0a1e]/90 text-white text-sm font-medium outline-none transition-all placeholder:text-slate-500"
+                    placeholder="اكتب اسم المستخدم..."
+                    aria-label="اسم المستخدم"
                     autoComplete="username"
                   />
-
-                  {/* Trailing Saved Users Button (if any) */}
                   {rememberedUsers.length > 0 && (
-                    <div className="absolute inset-y-0 end-0 pe-2.5 flex items-center">
-                      <button
-                        type="button"
-                        onClick={() => setShowUserDropdown(!showUserDropdown)}
-                        className="p-1.5 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-700/60 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer"
-                        title={language === 'ar' ? 'عرض المستخدمين المسجلين مسبقاً' : 'Show saved users'}
-                        aria-label="المستخدمين المسجلين مسبقاً"
-                      >
-                        <ChevronDown size={18} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180 text-purple-600 dark:text-purple-400' : ''}`} />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowUserDropdown(!showUserDropdown)}
+                      className="absolute inset-y-0 end-0 pe-3 flex items-center text-slate-400 hover:text-purple-400 transition-colors cursor-pointer"
+                      aria-label="عرض الحسابات المحفوظة"
+                    >
+                      <ChevronDown size={17} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180 text-purple-400' : ''}`} />
+                    </button>
                   )}
                 </div>
 
                 {/* Dropdown Menu of Remembered Users */}
                 {showUserDropdown && rememberedUsers.length > 0 && (
-                  <div className="absolute top-full start-0 end-0 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 overflow-hidden animate-scale-in">
-                    <div className="p-2.5 bg-slate-50 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                      <span>{language === 'ar' ? 'المستخدمين المحفوظين (تذكرني)' : 'Saved Accounts'}</span>
-                      <span className="text-[10px] bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full font-mono font-bold">
+                  <div className="absolute top-full start-0 end-0 mt-2 bg-[#0c0a18] border border-white/[0.1] rounded-2xl shadow-2xl z-50 overflow-hidden animate-scale-in">
+                    <div className="p-2.5 bg-white/[0.03] border-b border-white/[0.06] text-xs font-bold text-slate-400 flex items-center justify-between">
+                      <span>الحسابات المحفوظة</span>
+                      <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-mono font-bold">
                         {rememberedUsers.length}
                       </span>
                     </div>
-                    <div className="max-h-52 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/60 p-1">
+                    <div className="max-h-48 overflow-y-auto divide-y divide-white/[0.04] p-1">
                       {rememberedUsers.map((u) => (
                         <div
                           key={u.username}
                           onClick={() => handleSelectRememberedUser(u)}
-                          className={`p-2.5 rounded-xl flex items-center justify-between gap-3 cursor-pointer transition-colors ${
-                            username.toLowerCase() === u.username.toLowerCase()
-                              ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200'
-                              : 'hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200'
-                          }`}
+                          className="p-2.5 rounded-xl flex items-center justify-between gap-3 cursor-pointer hover:bg-white/[0.06] text-slate-200 transition-colors"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 text-white flex items-center justify-center text-xs font-black shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
                               {u.name ? u.name.charAt(0).toUpperCase() : u.username.charAt(0).toUpperCase()}
                             </div>
                             <div className="truncate text-right">
-                              <div className="text-xs font-black truncate">{u.name || u.username}</div>
-                              <div className="text-[11px] text-slate-400 font-mono truncate">@{u.username}</div>
+                              <div className="text-xs font-bold truncate">{u.name || u.username}</div>
+                              <div className="text-[10px] text-slate-400 font-mono truncate">@{u.username}</div>
                             </div>
                           </div>
-
-                          {/* Trash Button to delete user from list */}
                           <button
                             type="button"
                             onClick={(e) => handleDeleteRememberedUser(e, u.username)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors shrink-0 cursor-pointer"
-                            title={language === 'ar' ? 'حذف من القائمة' : 'Remove from list'}
+                            className="p-1 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0 cursor-pointer"
+                            title="حذف من القائمة"
                           >
-                            <Trash2 size={15} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       ))}
@@ -1667,78 +1701,59 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                 )}
               </div>
 
-              {/* Password Input with Lock Icon & Eye Toggle */}
+              {/* Field 2: Password */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-2">
-                  {t('password')}
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  كلمة المرور<span className="text-purple-400 ms-0.5">*</span>
                 </label>
-                <div className="relative flex items-center group">
-                  {/* Leading Lock Icon */}
-                  <div className="absolute inset-y-0 start-0 ps-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-purple-500 transition-colors">
-                    <Lock size={19} />
-                  </div>
-
+                <div className="relative flex items-center">
                   <input 
                     ref={passwordInputRef}
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full ps-11 pe-12 py-4 rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-slate-50/80 dark:bg-[#151c28]/90 hover:bg-white dark:hover:bg-[#1a2333] focus:bg-white dark:focus:bg-[#1a2333] text-slate-900 dark:text-[#f0f9ff] text-sm font-bold outline-none focus:border-purple-600 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 shadow-xs transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500 placeholder:font-normal"
-                    placeholder={t('ph_password_login') || 'ادخل كلمة المرور'}
-                    aria-label={t('password')}
+                    className="w-full px-4 py-3 pe-11 rounded-xl bg-[#080712]/75 border border-white/[0.08] focus:border-purple-500 focus:bg-[#0d0a1e]/90 text-white text-sm font-medium outline-none transition-all placeholder:text-slate-500"
+                    placeholder="اكتب كلمة المرور..."
+                    aria-label="كلمة المرور"
                     autoComplete="current-password"
                   />
-
-                  {/* Trailing Show/Hide Password Eye Button */}
-                  <div className="absolute inset-y-0 end-0 pe-2.5 flex items-center">
-                    <button 
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="p-1.5 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-700/60 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer"
-                      title={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
-                      aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
-                    >
-                      {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
-                    </button>
-                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 end-0 pe-3 flex items-center text-slate-400 hover:text-purple-400 transition-colors cursor-pointer"
+                    aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
-              
-              {/* Error Message with Shake Animation and High-Contrast Icon */}
+
+              {/* Error Message */}
               {error && (
-                  <div role="alert" className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm py-3 px-4 rounded-2xl flex items-center gap-3 animate-shake shadow-xs">
-                      <div className="w-8 h-8 rounded-xl bg-red-500/15 flex items-center justify-center shrink-0">
-                        <AlertCircle size={18} className="text-red-500" />
-                      </div>
-                      <span className="font-semibold text-xs sm:text-sm">{t('login_error')}</span>
-                  </div>
+                <div role="alert" className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs py-2.5 px-3.5 rounded-xl flex items-center gap-2.5 animate-shake">
+                  <AlertCircle size={16} className="text-red-400 shrink-0" />
+                  <span className="font-medium">{t('login_error')}</span>
+                </div>
               )}
-              
-              {/* Remember Me & Forgot Password Row */}
-              <div className="flex items-center justify-between pt-1">
-                <label className="flex items-center gap-2.5 cursor-pointer group select-none">
-                  <span className="relative flex items-center justify-center">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      aria-label={t('remember_me')}
-                    />
-                    <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-purple-500/50 ${
-                      rememberMe 
-                        ? 'bg-gradient-to-tr from-purple-600 to-fuchsia-600 border-purple-600 shadow-sm shadow-purple-500/30 text-white scale-100' 
-                        : 'border-slate-300 dark:border-slate-600 bg-white/50 dark:bg-slate-800/60 group-hover:border-purple-500 dark:group-hover:border-purple-400'
-                    }`}>
-                      {rememberMe && (
-                        <Check size={13} strokeWidth={3} className="text-white animate-scale-in" />
-                      )}
-                    </div>
-                  </span>
-                  <span className={`text-sm font-semibold transition-colors duration-150 ${
+
+              {/* Remember Me & Forgot Password */}
+              <div className="flex items-center justify-between pt-0.5">
+                <label className="flex items-center gap-2 cursor-pointer group select-none">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  <div className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center transition-all ${
                     rememberMe 
-                      ? 'text-purple-600 dark:text-purple-300' 
-                      : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white'
+                      ? 'bg-purple-600 border-purple-600 text-white shadow-xs' 
+                      : 'border-white/20 bg-white/[0.04] group-hover:border-purple-400'
+                  }`}>
+                    {rememberMe && <Check size={12} strokeWidth={3} className="text-white" />}
+                  </div>
+                  <span className={`text-xs transition-colors ${
+                    rememberMe ? 'text-purple-300 font-semibold' : 'text-slate-400 group-hover:text-slate-200'
                   }`}>
                     {t('remember_me')}
                   </span>
@@ -1747,61 +1762,67 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                 <button 
                   type="button" 
                   onClick={() => alert(t('contact_admin_reset_pwd'))} 
-                  className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-semibold text-sm transition-colors hover:underline cursor-pointer"
+                  className="text-xs text-slate-400 hover:text-purple-400 transition-colors cursor-pointer"
                 >
-                    {t('forgot_password')}
+                  {t('forgot_password')}
                 </button>
               </div>
-              
-              {/* Primary Submit Button with Gradient, Neon Shadow, Hover Scale, and Loading State */}
+
+              {/* Primary Purple Submit Button (مطابق تماماً لزر الصورة Create account) */}
               <button 
                 disabled={busy} 
                 type="submit"
-                className="w-full relative overflow-hidden bg-gradient-to-r from-purple-600 via-fuchsia-600 to-purple-700 hover:from-purple-500 hover:via-fuchsia-500 hover:to-purple-600 text-white font-bold py-4 px-6 rounded-2xl shadow-[0_0_25px_rgba(168,85,247,0.4)] hover:shadow-[0_0_35px_rgba(168,85,247,0.6)] hover:scale-[1.02] hover:brightness-105 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-3 group disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
+                className="w-full bg-[#7c3aed] hover:bg-[#6d28d9] active:scale-[0.98] text-white font-semibold py-3.5 px-4 rounded-xl shadow-[0_4px_25px_rgba(124,58,237,0.45)] hover:shadow-[0_6px_30px_rgba(124,58,237,0.6)] transition-all cursor-pointer text-sm text-center flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none mt-2"
               >
                 {busy ? (
-                  <div className="flex items-center gap-2.5">
-                    <RefreshCw size={18} className="animate-spin text-white" />
-                    <span className="text-sm font-bold tracking-wide">جاري التحقق والاتصال...</span>
+                  <div className="flex items-center gap-2">
+                    <RefreshCw size={16} className="animate-spin text-white" />
+                    <span>جاري التحقق والاتصال...</span>
                   </div>
                 ) : (
-                  <>
-                    <span className="text-base font-bold tracking-wide">{t('login_btn')}</span>
-                    <span className="text-lg transition-transform duration-200 group-hover:-translate-x-1 rtl:group-hover:-translate-x-1 ltr:group-hover:translate-x-1">←</span>
-                  </>
+                  <span>تسجيل الدخول</span>
                 )}
               </button>
 
+              {/* Bottom Dual Pill Badges (مطابق للكبسولتين أسفل الزر في الصورة) */}
+              <div className="flex items-center gap-2.5 pt-2">
+                {/* Developer Direct Call Pill */}
+                <a 
+                  href="tel:01026695879" 
+                  className="flex-1 py-2.5 px-3 rounded-xl bg-[#090713]/85 hover:bg-[#120f26] border border-white/[0.08] text-slate-300 hover:text-white text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  title="اتصال بالمطور: 01026695879"
+                  dir="ltr"
+                >
+                  <Phone size={13} className="text-purple-400 shrink-0" />
+                  <span className="font-mono text-[11px] font-semibold">01026695879</span>
+                </a>
+
+                {/* App Version Pill */}
+                <div className="flex-1 py-2.5 px-3 rounded-xl bg-[#090713]/85 border border-white/[0.08] text-slate-400 text-xs font-medium flex items-center justify-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                  <span className="font-mono text-[11px] text-slate-300">v{appVersion}</span>
+                </div>
+              </div>
+
+              {/* Developer Attribution Note */}
+              <div className="pt-2 text-center">
+                <p className="text-[11px] text-slate-500 font-medium tracking-wide">
+                  برمجة وتصميم: م / عبد الرحمن فتحي العادلي
+                </p>
+              </div>
+
               {state.settings.enableBiometricLogin && (
-                <div className="flex items-center justify-center pt-2">
-                  <button type="button" onClick={handleBiometricLogin} className="text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 text-sm transition-colors flex items-center gap-2 animate-pulse cursor-pointer">
-                    <Fingerprint size={24} />
+                <div className="flex items-center justify-center pt-1">
+                  <button type="button" onClick={handleBiometricLogin} className="text-slate-500 hover:text-purple-400 text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
+                    <Fingerprint size={18} />
+                    <span>تسجيل الدخول الحيوي</span>
                   </button>
                 </div>
               )}
             </form>
-            
-            {/* بيانات المطور الرسمية */}
-            <div className="mt-8 pt-6 border-t border-purple-500/20 text-center">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100/80 dark:bg-slate-800/60 border border-purple-500/20 text-[11px] font-semibold text-slate-600 dark:text-slate-300 backdrop-blur-xs shadow-[0_0_15px_rgba(168,85,247,0.15)]">
-                <span>{t('developed_by')}</span>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* الربع الأخير بالأسفل بالمنتصف: شارة الإصدار الحالي بتصميم وخط متصل أنيق */}
-        <div className="absolute bottom-6 inset-x-0 flex flex-col items-center justify-center gap-1.5 z-20 pointer-events-auto select-none" dir="rtl">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/80 dark:bg-slate-800/90 border border-slate-200/20 dark:border-white/10 backdrop-blur-md shadow-lg">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs font-bold text-slate-200 font-sans">
-              الإصدار <span className="font-mono text-purple-300 font-bold">{appVersion}</span>
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium tracking-wide">
-            جميع الحقوق محفوظة © RaiZon Pro
-          </p>
-        </div>
 
         {/* نافذة ما بعد التحديث الصغير (المميزات الجديدة) */}
         <WhatsNewModal
