@@ -253,19 +253,19 @@ const MainContent = () => {
     <div className={`flex h-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 ${language === 'ar' ? 'font-cairo' : ''}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <ToastContainer />
         {/* Sidebar */}
-        <aside className={`${sidebarCollapsed ? "w-16" : "w-20 lg:w-60"} bg-white dark:bg-slate-900 border-e border-slate-200 dark:border-slate-700/80 flex flex-col transition-all duration-300 z-20 flex-shrink-0`}>
-            <div className="h-16 flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700/80 px-3 shrink-0">
-                <div className="flex items-center gap-2 min-w-0">
-                    <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-8 h-8 object-contain shrink-0" />
+        <aside className={`${sidebarCollapsed ? "w-16" : "w-20 lg:w-60"} bg-white dark:bg-[#0c0617] border-e border-slate-200/80 dark:border-purple-900/30 flex flex-col transition-all duration-300 z-20 flex-shrink-0`}>
+            <div className="h-16 flex items-center justify-between gap-2.5 border-b border-slate-200/80 dark:border-purple-900/30 px-3.5 shrink-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-8 h-8 object-contain shrink-0 drop-shadow-[0_2px_10px_rgba(168,85,247,0.35)]" />
                     {!sidebarCollapsed && (
-                        <span className="hidden lg:block font-bold text-base font-cairo truncate animate-fade-in">
-                            <span className="text-amber-500 dark:text-amber-400">RaiZon</span> <span className="text-purple-500 dark:text-purple-400">Pro</span>
+                        <span className="hidden lg:block font-bold text-base font-cairo truncate animate-fade-in tracking-tight">
+                            <span className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]">RaiZon</span> <span className="text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.3)]">Pro</span>
                         </span>
                     )}
                 </div>
                 <button
                     onClick={() => setSidebarCollapsed(p => !p)}
-                    className="hidden lg:flex w-7 h-7 rounded-md items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shrink-0"
+                    className="hidden lg:flex w-7 h-7 rounded-lg items-center justify-center text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 dark:hover:bg-purple-950/50 border border-transparent hover:border-purple-500/20 transition-all shrink-0 cursor-pointer"
                     aria-label="طي الشريط"
                 >
                     <ChevronRight size={16} className={`transition-transform duration-300 ${sidebarCollapsed ? "" : "rotate-180"}`} />
@@ -328,201 +328,224 @@ const MainContent = () => {
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-            {/* Header */}
-            <header className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700/80 flex items-center justify-between px-5 z-10 sticky top-0">
-                <div className="flex items-center gap-4">
-                    {/* Left Side Placeholder */}
-                </div>
-
-                <div className="flex-1 flex items-center justify-between gap-4 mr-2">
-                    <h2 className="text-base font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        <span>{navItems.find(i => i.id === activeTab)?.label}</span>
-                    </h2>
-
-                    <button
-                        type="button"
-                        onClick={() => setShowSearch(true)}
-                        className="hidden md:flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-100/70 hover:bg-slate-200/70 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-semibold transition-all cursor-pointer shadow-inner group"
-                        title={language === 'ar' ? 'بحث فوري في كل الصفحات والفواتير والعملاء (Ctrl + K)' : 'Quick Search (Ctrl + K)'}
-                    >
-                        <Search size={14} className="text-primary-500 group-hover:scale-110 transition-transform" />
-                        <span>{language === 'ar' ? 'بحث سريع وتنقل بين الصفحات...' : 'Quick search...'}</span>
-                        <kbd className="px-1.5 py-0.5 rounded-md bg-white dark:bg-slate-700 text-[10px] font-mono text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-600 shadow-2xs">Ctrl K</kbd>
-                    </button>
-                </div>
-                
-                <div className="flex items-center gap-4">
-                     {syncStatus.pending > 0 && (
-                        <button
-                            onClick={() => flushQueue({ url: state.settings.serverUrl || '', apiKey: state.settings.serverApiKey || '' })}
-                            title={t('pending_sync')}
-                            className="flex items-center gap-1 bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs px-2 py-1 rounded-lg font-bold border border-amber-500/30"
-                        >
-                            <ArrowUp size={12} className={syncStatus.syncing ? 'animate-pulse' : ''} /> {syncStatus.pending}
-                        </button>
-                     )}
-                     {syncStatus.lastError && (
-                        <button
-                            onClick={() => flushQueue({ url: state.settings.serverUrl || '', apiKey: state.settings.serverApiKey || '' })}
-                            title={`${t('server_failed')}: ${syncStatus.lastError}`}
-                            className="flex items-center gap-1 bg-red-500/15 text-red-600 dark:text-red-400 text-xs px-2 py-1 rounded-lg font-bold border border-red-500/30"
-                        >
-                            <RefreshCw size={12} className={syncStatus.syncing ? 'animate-spin' : ''} /> {t('sync_retry')}
-                        </button>
-                     )}
-                     {!syncStatus.lastError && syncStatus.lastSyncAt > 0 && (
-                        <span
-                            title={t('last_sync_at')}
-                            className="hidden md:flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500 font-medium"
-                        >
-                            <Check size={12} className="text-green-500" />
-                            {new Date(syncStatus.lastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                     )}
-                     {!isOnline && (
-                        <div className="bg-red-500 text-white text-xs px-2 py-1 rounded flex items-center gap-1 animate-pulse">
-                            <WifiOff size={12} /> {t('offline_status')}
+            {/* Header (الشريط العلوي المطور بتصميم انسيابي فاخر) */}
+            {(() => {
+                const currentNavItem = navItems.find(i => i.id === activeTab);
+                const ActiveTabIcon = currentNavItem?.icon;
+                return (
+                    <header className="h-16 bg-white/95 dark:bg-[#0c0617]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-purple-900/30 flex items-center justify-between px-3 md:px-5 z-10 sticky top-0 shadow-xs transition-colors duration-200">
+                        {/* Right: Active Page Breadcrumb & Title */}
+                        <div className="flex items-center gap-3 shrink-0">
+                            <div className="w-9 h-9 rounded-xl bg-purple-500/10 dark:bg-purple-500/15 border border-purple-500/25 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-xs">
+                                {ActiveTabIcon ? <ActiveTabIcon size={19} /> : <FileText size={19} />}
+                            </div>
+                            <div className="flex flex-col text-right">
+                                <h2 className="text-sm md:text-base font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5 leading-tight">
+                                    <span>{currentNavItem?.label || t('dashboard')}</span>
+                                </h2>
+                                <span className="text-[10px] font-semibold text-slate-400 dark:text-purple-300/60 leading-none mt-0.5">
+                                    {currentNavItem?.group || 'RaiZon Pro'}
+                                </span>
+                            </div>
                         </div>
-                     )}
-                     
-                     {/* Smart Notification Center */}
-                     <div className="relative">
-                         <button
-                             onClick={() => setShowNotifications(prev => !prev)}
-                             className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors relative"
-                             title="مركز التنبيهات الذكية"
-                         >
-                             <Bell size={18} />
-                             {totalNotifications > 0 && (
-                                 <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                                     {totalNotifications}
-                                 </span>
-                             )}
-                         </button>
 
-                         {showNotifications && (
-                             <div 
-                                 className="absolute left-0 sm:right-auto sm:left-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700/80 p-3 z-50 animate-scale-in"
-                                 onClick={(e) => e.stopPropagation()}
-                             >
-                                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/80 pb-2 mb-2">
-                                     <h4 className="font-bold text-xs text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                                         <Bell size={14} className="text-primary-500" />
-                                         مركز التنبيهات المباشرة ({totalNotifications})
-                                     </h4>
-                                     <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-600">
-                                         <X size={14} />
-                                     </button>
-                                 </div>
-                                 <div className="max-h-64 overflow-y-auto space-y-2 text-xs custom-scrollbar">
-                                     {totalNotifications === 0 ? (
-                                         <div className="py-6 text-center text-slate-400">
-                                             لا توجد تنبيهات عاجلة حالياً
-                                         </div>
-                                     ) : (
-                                         <>
-                                             {lowStockItems.length > 0 && (
-                                                 <div 
-                                                     onClick={() => { handleNavigate('inventory'); setShowNotifications(false); }}
-                                                     className="p-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 cursor-pointer hover:bg-red-100/50 transition-colors"
-                                                 >
-                                                     <div className="font-bold text-red-700 dark:text-red-400 flex items-center gap-1">
-                                                         <AlertTriangle size={13} />
-                                                         تنبيه نفاد مخزون ({lowStockItems.length} صنف)
-                                                     </div>
-                                                     <p className="text-[11px] text-red-600/80 dark:text-red-300/80 mt-0.5">
-                                                         الأصناف وصلت لحد الخطر وتحتاج إعادة طلب فوراً.
-                                                     </p>
-                                                 </div>
-                                             )}
-                                             {heldCount > 0 && (
-                                                 <div 
-                                                     onClick={() => { handleNavigate('create_invoice'); setShowNotifications(false); }}
-                                                     className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 cursor-pointer hover:bg-amber-100/50 transition-colors"
-                                                 >
-                                                     <div className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1">
-                                                         <Clock size={13} />
-                                                         فواتير معلقة ({heldCount})
-                                                     </div>
-                                                     <p className="text-[11px] text-amber-600/80 dark:text-amber-300/80 mt-0.5">
-                                                         يوجد فواتير قيد الانتظار لم تُستكمل بعد.
-                                                     </p>
-                                                 </div>
-                                             )}
-                                             {upcomingReservations.length > 0 && (
-                                                 <div 
-                                                     onClick={() => { handleNavigate('reservations'); setShowNotifications(false); }}
-                                                     className="p-2.5 rounded-lg bg-purple-50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-900/30 cursor-pointer hover:bg-purple-100/50 transition-colors"
-                                                 >
-                                                     <div className="font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1">
-                                                         <Calendar size={13} />
-                                                         حجوزات اليوم القادمة ({upcomingReservations.length})
-                                                     </div>
-                                                     <p className="text-[11px] text-purple-600/80 dark:text-purple-300/80 mt-0.5">
-                                                         تأكد من جاهزية الموظفين لاستقبال العملاء.
-                                                     </p>
-                                                 </div>
-                                             )}
-                                         </>
-                                     )}
-                                 </div>
-                             </div>
-                         )}
-                     </div>
-
-                     <button onClick={() => setShowShortcuts(true)} className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors" title={t('shortcuts')}>
-                        <Keyboard size={18} />
-                     </button>
-
-                     {/* Glass Toggle Removed as requested */}
-
-                     {/* مؤشر الفرع الحالي وتبديل الفروع للمدير */}
-                     {(() => {
-                        const activeBranch = state.locations.find(l => l.id === state.settings.currentLocationId) || state.locations[0];
-                        if (!activeBranch) return null;
-                        const isAdmin = currentUser?.role === 'admin';
-                        const hasMultipleBranches = state.locations.filter(l => l.active !== false).length > 1;
-
-                        if (isAdmin && hasMultipleBranches) {
-                          return (
+                        {/* Center: Search & Navigation Palette */}
+                        <div className="flex-1 max-w-md mx-3 lg:mx-6 hidden md:flex items-center justify-center">
                             <button
-                              type="button"
-                              onClick={() => setShowBranchSwitcherModal(true)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 transition-all shadow-xs cursor-pointer group"
-                              title={language === 'ar' ? 'تبديل الفرع المدار' : 'Switch managed branch'}
+                                type="button"
+                                onClick={() => setShowSearch(true)}
+                                className="w-full flex items-center justify-between gap-2.5 px-3.5 h-10 rounded-xl border border-slate-200/90 dark:border-purple-500/20 bg-slate-100/70 hover:bg-slate-200/70 dark:bg-purple-950/20 dark:hover:bg-purple-950/40 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-semibold transition-all cursor-pointer shadow-inner group"
+                                title={language === 'ar' ? 'بحث فوري في كل الصفحات والفواتير والعملاء (Ctrl + K)' : 'Quick Search (Ctrl + K)'}
                             >
-                              <Building size={14} className="text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
-                              <span className="hidden sm:inline text-slate-500 dark:text-slate-400">{language === 'ar' ? 'فرع:' : 'Branch:'}</span>
-                              <span className="font-extrabold text-slate-900 dark:text-white max-w-[120px] truncate">{activeBranch.name}</span>
-                              <ChevronDown size={13} className="text-purple-500 opacity-70 group-hover:opacity-100 transition-opacity" />
+                                <div className="flex items-center gap-2 truncate">
+                                    <Search size={14} className="text-purple-500 dark:text-purple-400 group-hover:scale-110 transition-transform shrink-0" />
+                                    <span className="truncate">{language === 'ar' ? 'بحث سريع وتنقل بين الصفحات...' : 'Quick search...'}</span>
+                                </div>
+                                <kbd className="px-2 py-0.5 rounded-md bg-white dark:bg-purple-900/40 text-[10px] font-mono text-slate-600 dark:text-purple-200 border border-slate-200 dark:border-purple-500/30 shadow-2xs font-bold shrink-0">Ctrl K</kbd>
                             </button>
-                          );
-                        }
+                        </div>
+                        
+                        {/* Left: Quick Actions & Status Controls */}
+                        <div className="flex items-center gap-2 md:gap-3 shrink-0">
+                             {syncStatus.pending > 0 && (
+                                <button
+                                    onClick={() => flushQueue({ url: state.settings.serverUrl || '', apiKey: state.settings.serverApiKey || '' })}
+                                    title={t('pending_sync')}
+                                    className="flex items-center gap-1.5 h-9 px-2.5 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs font-bold border border-amber-500/30 hover:bg-amber-500/25 transition-all cursor-pointer"
+                                >
+                                    <ArrowUp size={13} className={syncStatus.syncing ? 'animate-pulse' : ''} /> {syncStatus.pending}
+                                </button>
+                             )}
+                             {syncStatus.lastError && (
+                                <button
+                                    onClick={() => flushQueue({ url: state.settings.serverUrl || '', apiKey: state.settings.serverApiKey || '' })}
+                                    title={`${t('server_failed')}: ${syncStatus.lastError}`}
+                                    className="flex items-center gap-1.5 h-9 px-2.5 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 text-xs font-bold border border-rose-500/30 hover:bg-rose-500/25 transition-all cursor-pointer"
+                                >
+                                    <RefreshCw size={13} className={syncStatus.syncing ? 'animate-spin' : ''} /> {t('sync_retry')}
+                                </button>
+                             )}
+                             {!syncStatus.lastError && syncStatus.lastSyncAt > 0 && (
+                                <span
+                                    title={t('last_sync_at')}
+                                    className="hidden lg:flex items-center gap-1.5 px-2.5 h-9 rounded-xl bg-slate-100/80 dark:bg-purple-950/20 border border-slate-200/80 dark:border-purple-900/30 text-xs font-mono text-slate-600 dark:text-slate-300"
+                                >
+                                    <Clock size={12} className="text-purple-500 dark:text-purple-400 shrink-0" />
+                                    <span dir="ltr">{new Date(syncStatus.lastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    <Check size={13} className="text-emerald-500 shrink-0" />
+                                </span>
+                             )}
+                             {!isOnline && (
+                                <div className="bg-rose-500/90 text-white text-xs px-2.5 h-9 rounded-xl flex items-center gap-1.5 animate-pulse font-bold shadow-xs">
+                                    <WifiOff size={13} /> {t('offline_status')}
+                                </div>
+                             )}
+                             
+                             {/* Smart Notification Center */}
+                             <div className="relative">
+                                 <button
+                                     onClick={() => setShowNotifications(prev => !prev)}
+                                     className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100/80 hover:bg-slate-200/80 dark:bg-purple-950/25 dark:hover:bg-purple-900/40 border border-slate-200/80 dark:border-purple-500/20 text-slate-600 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-300 transition-all hover:scale-105 active:scale-95 relative cursor-pointer shadow-xs"
+                                     title="مركز التنبيهات الذكية"
+                                 >
+                                     <Bell size={17} />
+                                     {totalNotifications > 0 && (
+                                         <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-sm shadow-rose-500/40 animate-pulse">
+                                             {totalNotifications}
+                                         </span>
+                                     )}
+                                 </button>
 
-                        return (
-                          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
-                            <Building size={13} className="text-slate-400" />
-                            <span className="max-w-[120px] truncate">{activeBranch.name}</span>
-                          </div>
-                        );
-                     })()}
-                     
-                     <div className="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
-                         <div className="text-right hidden md:block">
-                             <div className="flex items-center justify-end gap-2">
-                                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{currentUser?.name}</p>
-                                <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse " title={t('online')}></span>
+                                 {showNotifications && (
+                                     <div 
+                                         className="absolute left-0 sm:right-auto sm:left-0 mt-2 w-80 bg-white dark:bg-[#140b22] rounded-2xl shadow-2xl border border-slate-200 dark:border-purple-500/30 p-3.5 z-50 animate-scale-in"
+                                         onClick={(e) => e.stopPropagation()}
+                                     >
+                                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-purple-900/40 pb-2.5 mb-2.5">
+                                             <h4 className="font-bold text-xs text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                                 <Bell size={14} className="text-purple-500" />
+                                                 مركز التنبيهات المباشرة ({totalNotifications})
+                                             </h4>
+                                             <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+                                                 <X size={14} />
+                                             </button>
+                                         </div>
+                                         <div className="max-h-64 overflow-y-auto space-y-2 text-xs custom-scrollbar">
+                                             {totalNotifications === 0 ? (
+                                                 <div className="py-6 text-center text-slate-400">
+                                                     لا توجد تنبيهات عاجلة حالياً
+                                                 </div>
+                                             ) : (
+                                                 <>
+                                                     {lowStockItems.length > 0 && (
+                                                         <div 
+                                                             onClick={() => { handleNavigate('inventory'); setShowNotifications(false); }}
+                                                             className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/25 border border-rose-200/60 dark:border-rose-900/40 cursor-pointer hover:bg-rose-100/60 transition-colors"
+                                                         >
+                                                             <div className="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
+                                                                 <AlertTriangle size={13} />
+                                                                 تنبيه نفاد مخزون ({lowStockItems.length} صنف)
+                                                             </div>
+                                                             <p className="text-[11px] text-rose-600/80 dark:text-rose-300/80 mt-0.5">
+                                                                 الأصناف وصلت لحد الخطر وتحتاج إعادة طلب فوراً.
+                                                             </p>
+                                                         </div>
+                                                     )}
+                                                     {heldCount > 0 && (
+                                                         <div 
+                                                             onClick={() => { handleNavigate('create_invoice'); setShowNotifications(false); }}
+                                                             className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/25 border border-amber-200/60 dark:border-amber-900/40 cursor-pointer hover:bg-amber-100/60 transition-colors"
+                                                         >
+                                                             <div className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                                                                 <Clock size={13} />
+                                                                 فواتير معلقة ({heldCount})
+                                                             </div>
+                                                             <p className="text-[11px] text-amber-600/80 dark:text-amber-300/80 mt-0.5">
+                                                                 يوجد فواتير قيد الانتظار لم تُستكمل بعد.
+                                                             </p>
+                                                         </div>
+                                                     )}
+                                                     {upcomingReservations.length > 0 && (
+                                                         <div 
+                                                             onClick={() => { handleNavigate('reservations'); setShowNotifications(false); }}
+                                                             className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/25 border border-purple-200/60 dark:border-purple-900/40 cursor-pointer hover:bg-purple-100/60 transition-colors"
+                                                         >
+                                                             <div className="font-bold text-purple-700 dark:text-purple-400 flex items-center gap-1.5">
+                                                                 <Calendar size={13} />
+                                                                 حجوزات اليوم القادمة ({upcomingReservations.length})
+                                                             </div>
+                                                             <p className="text-[11px] text-purple-600/80 dark:text-purple-300/80 mt-0.5">
+                                                                 تأكد من جاهزية الموظفين لاستقبال العملاء.
+                                                             </p>
+                                                         </div>
+                                                     )}
+                                                 </>
+                                             )}
+                                         </div>
+                                     </div>
+                                 )}
                              </div>
-                             <p className="text-xs text-slate-500 capitalize">{t(currentUser?.role || '')}</p>
-                         </div>
-                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg border-2 border-white dark:border-slate-600 shadow-sm relative overflow-hidden
-                            ${currentUser?.role === 'admin' ? 'bg-amber-500' : 'bg-purple-600'}`}>
-                             {/* WhatsApp-style avatar default */}
-                             <User size={24} />
-                         </div>
-                     </div>
-                </div>
-            </header>
+
+                             {/* Shortcuts button */}
+                             <button
+                                 onClick={() => setShowShortcuts(true)}
+                                 className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100/80 hover:bg-slate-200/80 dark:bg-purple-950/25 dark:hover:bg-purple-900/40 border border-slate-200/80 dark:border-purple-500/20 text-slate-600 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-300 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+                                 title={t('shortcuts')}
+                             >
+                                <Keyboard size={17} />
+                             </button>
+
+                             {/* Branch selector */}
+                             {(() => {
+                                const activeBranch = state.locations.find(l => l.id === state.settings.currentLocationId) || state.locations[0];
+                                if (!activeBranch) return null;
+                                const isAdmin = currentUser?.role === 'admin';
+                                const hasMultipleBranches = state.locations.filter(l => l.active !== false).length > 1;
+
+                                if (isAdmin && hasMultipleBranches) {
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowBranchSwitcherModal(true)}
+                                      className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-bold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/30 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-200 border border-purple-200 dark:border-purple-500/30 transition-all shadow-xs cursor-pointer group hover:border-purple-400/50"
+                                      title={language === 'ar' ? 'تبديل الفرع المدار' : 'Switch managed branch'}
+                                    >
+                                      <Building size={14} className="text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
+                                      <span className="hidden xl:inline text-slate-500 dark:text-purple-300/70">{language === 'ar' ? 'فرع:' : 'Branch:'}</span>
+                                      <span className="font-extrabold text-slate-900 dark:text-white max-w-[110px] truncate">{activeBranch.name}</span>
+                                      <ChevronDown size={13} className="text-purple-500 opacity-70 group-hover:opacity-100 transition-opacity" />
+                                    </button>
+                                  );
+                                }
+
+                                return (
+                                  <div className="hidden sm:flex items-center gap-1.5 px-2.5 h-9 rounded-xl text-xs font-semibold bg-slate-100/80 dark:bg-purple-950/20 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-purple-900/30 shadow-xs">
+                                    <Building size={13} className="text-purple-400 shrink-0" />
+                                    <span className="max-w-[110px] truncate">{activeBranch.name}</span>
+                                  </div>
+                                );
+                             })()}
+                             
+                             {/* User Profile Pill & Divider */}
+                             <div className="flex items-center gap-2.5 ps-3 md:ps-3.5 border-s border-slate-200 dark:border-purple-900/40">
+                                 <div className="text-right hidden sm:block leading-tight">
+                                     <div className="flex items-center justify-end gap-1.5">
+                                         <p className="text-xs md:text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">{currentUser?.name || 'Admin'}</p>
+                                         <span className="w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse shrink-0" title={t('online')}></span>
+                                     </div>
+                                     <p className="text-[11px] font-semibold text-purple-600 dark:text-amber-400/90 capitalize leading-none mt-0.5">{t(currentUser?.role || '')}</p>
+                                 </div>
+                                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shadow-md relative overflow-hidden transition-transform hover:scale-105 shrink-0
+                                    ${currentUser?.role === 'admin' 
+                                        ? 'bg-gradient-to-tr from-amber-600 via-amber-500 to-amber-300 text-slate-950 shadow-amber-500/20 ring-1 ring-amber-400/50' 
+                                        : 'bg-gradient-to-tr from-purple-700 via-purple-600 to-fuchsia-500 text-white shadow-purple-500/20 ring-1 ring-purple-400/50'}`}>
+                                     <User size={18} className="drop-shadow-xs" />
+                                 </div>
+                             </div>
+                        </div>
+                    </header>
+                );
+            })()}
 
             {/* Content Area */}
             <div className="flex-1 overflow-auto p-5 relative flex flex-col bg-slate-50 dark:bg-slate-900/50">
