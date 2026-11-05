@@ -370,6 +370,48 @@ th.invoice-header-shaded {
   animation: shimmer 1.6s ease-in-out infinite;
 }
 
+/* Cyber & Tech Effects */
+@keyframes cyberGridMove {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 40px;
+  }
+}
+
+.animate-cyber-grid {
+  animation: cyberGridMove 2s linear infinite;
+}
+
+@keyframes radarSweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-radar {
+  animation: radarSweep 5s linear infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.04);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
 /* ==============================================================
    تحسين وضوح وتباين النصوص في الوضع النهاري (Light Mode High Contrast)
    ============================================================== */
