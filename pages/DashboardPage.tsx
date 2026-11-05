@@ -10,7 +10,7 @@ import {
 } from '../components/Icons';
 import { Card, SimpleBarChart, ModalShell } from '../components/ui';
 import { parseInvoiceDate } from '../lib/dates';
-import { round2 } from '../lib/payments';
+import { round2, isCashExpense } from '../lib/payments';
 import { 
     sumRevenue, sumReturns, sumExpenses, countableInvoice, calcPeriod, 
     periodInvoices, periodExpenses, periodReturns, byStaff, profitBreakdown,
@@ -19,7 +19,7 @@ import {
 import { Customer, Invoice, Expense, ReturnRecord } from '../types';
 
 export type DashboardRange = 'today' | 'day' | 'week' | 'month' | 'year' | 'all';
-type DetailModalType = 'revenue' | 'profit' | 'expenses' | 'debts' | 'invoices' | 'avg' | 'returns' | 'staff' | null;
+type DetailModalType = 'revenue' | 'profit' | 'expenses' | 'debts' | 'invoices' | 'avg' | 'returns' | 'staff' | 'drawer' | 'opening' | null;
 
 export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) => void, showStats: boolean }) => {
     const { state, t, language, formatDate, formatTime, currentUser, formatNumber } = useApp();
@@ -220,6 +220,121 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
     const staffModalRows = useMemo(() => {
         return byStaff(staffModalInvoices, t('unknown_staff'));
     }, [staffModalInvoices, t]);
+
+    // =========================================================================
+    // حسابات حركة الدرج اليومية والمبلغ المتوقع والرصيد الافتتاحي بدقة 100%
+    // =========================================================================
+    const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+    // 1. الرصيد الافتتاحي المعتمد للدرج لليوم
+    const sortedClosingReports = useMemo(() => {
+        return [...(state.closingReports || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    }, [state.closingReports]);
+
+    const previousClosingReport = useMemo(() => {
+        return sortedClosingReports.find(r => r.date !== todayStr) || null;
+    }, [sortedClosingReports, todayStr]);
+
+    const yesterdayRemainingInDrawer = useMemo(() => {
+        if (!previousClosingReport) return null;
+        if (typeof previousClosingReport.retainedInDrawer === 'number') {
+            return previousClosingReport.retainedInDrawer;
+        }
+        return previousClosingReport.actualCash;
+    }, [previousClosingReport]);
+
+    const hasManualOverrideToday = state.settings.manualOpeningDate === todayStr && typeof state.settings.cashDrawerOpening === 'number';
+
+    const drawerOpeningBalance = useMemo(() => {
+        return hasManualOverrideToday
+            ? Number(state.settings.cashDrawerOpening)
+            : (yesterdayRemainingInDrawer !== null ? yesterdayRemainingInDrawer : (Number(state.settings.cashDrawerOpening) || 0));
+    }, [hasManualOverrideToday, state.settings.cashDrawerOpening, yesterdayRemainingInDrawer]);
+
+    // 2. حركات الدرج لليوم (استبعاد أي رصيد افتتاحي مسجل كإيداع لتفادي الازدواجية نهائياً)
+    const isOpeningMovement = (m: any) => {
+        const r = (m.reason || '').toLowerCase();
+        return r.includes('افتتاحي') || r.includes('opening') || r.includes('بداية') || r.includes('رصيد الدرج');
+    };
+
+    const todayDrawerMovements = useMemo(() => {
+        return (state.drawerMovements || []).filter(m => m.date === todayStr);
+    }, [state.drawerMovements, todayStr]);
+
+    const todayDrawerDeposits = useMemo(() => {
+        return todayDrawerMovements
+            .filter(m => m.type === 'deposit' && !isOpeningMovement(m))
+            .reduce((s, m) => s + (m.amount || 0), 0);
+    }, [todayDrawerMovements]);
+
+    const todayDrawerWithdrawals = useMemo(() => {
+        return todayDrawerMovements
+            .filter(m => m.type === 'withdrawal')
+            .reduce((s, m) => s + (m.amount || 0), 0);
+    }, [todayDrawerMovements]);
+
+    // 3. المبيعات النقدية المحصلة بالدرج كاش اليوم
+    const todayCashSales = useMemo(() => {
+        return state.invoices
+            .filter(inv => countableInvoice(inv) && (inv.date === todayStr || (inv.timestamp && new Date(inv.timestamp).toISOString().split('T')[0] === todayStr)))
+            .reduce((s, inv) => {
+                if (inv.paymentParts && inv.paymentParts.length > 0) {
+                    return s + inv.paymentParts.filter(p => p.method === 'cash').reduce((ps, p) => ps + p.amount, 0);
+                }
+                return s + (inv.paymentMethod === 'cash' ? (inv.cashPaid !== undefined ? inv.cashPaid : inv.total) : 0);
+            }, 0);
+    }, [state.invoices, todayStr]);
+
+    // 4. سداد ديون العملاء كاش اليوم
+    const todayCustomerDebtCash = useMemo(() => {
+        return (state.customerPayments || [])
+            .filter(cp => cp.date === todayStr && (cp.paymentMethod === 'cash' || !cp.paymentMethod))
+            .reduce((s, cp) => s + (cp.amount || 0), 0);
+    }, [state.customerPayments, todayStr]);
+
+    // 5. المصروفات النقدية المسحوبة من الدرج اليوم
+    const todayCashExpensesDeducted = useMemo(() => {
+        return state.expenses
+            .filter(e => e.date === todayStr && isCashExpense(e))
+            .reduce((s, e) => s + (e.amount || 0), 0);
+    }, [state.expenses, todayStr]);
+
+    // 6. المرتجعات النقدية المردودة كاش اليوم
+    const todayCashReturnsDeducted = useMemo(() => {
+        return (state.returns || [])
+            .filter(r => r.date === todayStr && (r.refundMethod === 'cash' || !r.refundMethod))
+            .reduce((s, r) => s + (r.total || 0), 0);
+    }, [state.returns, todayStr]);
+
+    // 7. سلف ومرتبات كاش مدفوعة من الدرج اليوم
+    const todayStaffCashPayouts = useMemo(() => {
+        return (state.staffPayments || [])
+            .filter((sp: any) => sp.date === todayStr && (sp.method || 'cash') === 'cash' && ['advance', 'salary', 'bonus'].includes(sp.type))
+            .reduce((s, sp) => s + (sp.amount || 0), 0);
+    }, [state.staffPayments, todayStr]);
+
+    // 8. المبلغ المتوقع بالدرج حالياً بدقة 100%
+    const expectedDrawerCash = useMemo(() => {
+        return round2(
+            drawerOpeningBalance +
+            todayCashSales +
+            todayCustomerDebtCash +
+            todayDrawerDeposits -
+            todayCashExpensesDeducted -
+            todayDrawerWithdrawals -
+            todayCashReturnsDeducted -
+            todayStaffCashPayouts
+        );
+    }, [
+        drawerOpeningBalance,
+        todayCashSales,
+        todayCustomerDebtCash,
+        todayDrawerDeposits,
+        todayCashExpensesDeducted,
+        todayDrawerWithdrawals,
+        todayCashReturnsDeducted,
+        todayStaffCashPayouts
+    ]);
 
     // حساب ساعة الذروة في الفترة المحددة
     const peakHour = useMemo(() => {
@@ -642,8 +757,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
             {/* 3. شبكة البطاقات الإحصائية التفاعلية (قابلة للنقر لعرض التفاصيل الكاملة والطباعة) */}
             {showStats && (
                 <div className="space-y-3.5 animate-fade-in">
-                    {/* الصف الأول: المبيعات، صافي الأرباح، المصروفات، ديون العملاء */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                    {/* الصف الأول: المبيعات، صافي الأرباح، المصروفات، المتوقع بالدرج، الرصيد الافتتاحي، ديون العملاء */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
                         {/* 1. المبيعات */}
                         <div 
                             onClick={() => setActiveModal('revenue')}
@@ -728,13 +843,73 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                         {totalExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                                     </h3>
                                     <p className="text-[10px] text-slate-400 mt-0.5">
-                                        عدد البنود: {periodFilteredExpenses.length} بنود
+                                        المتوقع بالدرج: {expectedDrawerCash.toLocaleString('en-US')} ج.م
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* 4. بطاقة ديون العملاء (مطلوبة ومربوطة بصافي الأرباح) */}
+                        {/* 4. بطاقة المبلغ المتوقع في الدرج (بجانب المصروفات مباشرة) */}
+                        <div 
+                            onClick={() => setActiveModal('drawer')}
+                            className="rounded-2xl p-4.5 bg-white dark:bg-slate-800/95 border border-emerald-500/30 dark:border-emerald-500/30 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden"
+                            title="انقر لعرض العملية الحسابية وتفاصيل المبلغ المتوقع بالدرج"
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
+                                    <span>المتوقع بالدرج</span>
+                                    <span className="text-[9px] text-emerald-500 font-bold group-hover:underline">الجرد ←</span>
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                    الدرج الآن
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-110 transition-transform">
+                                    <Wallet size={22} />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="text-2xl font-bold font-mono tracking-tight text-emerald-600 dark:text-emerald-400">
+                                        {expectedDrawerCash.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                                    </h3>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">
+                                        كاش مبيعات: +{todayCashSales.toLocaleString('en-US')} ج.م
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 5. بطاقة الرصيد الافتتاحي للدرج (بجانب المتوقع بالدرج) */}
+                        <div 
+                            onClick={() => setActiveModal('opening')}
+                            className="rounded-2xl p-4.5 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden"
+                            title="انقر لعرض تفاصيل الرصيد الافتتاحي المعتمد لبداية اليوم"
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
+                                    <span>الرصيد الافتتاحي</span>
+                                    <span className="text-[9px] text-purple-500 font-bold group-hover:underline">عهدة البداية ←</span>
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                                    افتتاحي
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-11 h-11 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200/60 dark:border-purple-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-110 transition-transform">
+                                    <Banknote size={22} />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white font-mono tracking-tight">
+                                        {drawerOpeningBalance.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                                    </h3>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">
+                                        {hasManualOverrideToday ? 'تم تعيينه يدوياً' : (yesterdayRemainingInDrawer !== null ? 'مرحل من تقفيل الأمس' : 'رصيد الأساس')}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 6. بطاقة ديون العملاء (مطلوبة ومربوطة بصافي الأرباح) */}
                         <div 
                             onClick={() => setActiveModal('debts')}
                             className="rounded-2xl p-4.5 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden"
@@ -1651,6 +1826,127 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                 <span>طباعة تقرير المرتجعات</span>
                             </button>
                             <button
+                                onClick={() => setActiveModal(null)}
+                                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-200 cursor-pointer"
+                            >
+                                إغلاق
+                            </button>
+                        </div>
+                    </div>
+                </ModalShell>
+            )}
+
+            {/* نافذة تفاصيل المبلغ المتوقع بالدرج */}
+            {activeModal === 'drawer' && (
+                <ModalShell 
+                    title="العملية الحسابية وتفاصيل المبلغ المتوقع في الدرج حالياً" 
+                    onClose={() => setActiveModal(null)}
+                    maxWidth="max-w-xl"
+                >
+                    <div className="space-y-4 text-right" dir="rtl">
+                        <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 space-y-2 text-xs">
+                            <p className="font-bold text-emerald-900 dark:text-emerald-200">المعادلة المحاسبية المعتمدة للدرج:</p>
+                            <p className="font-mono text-emerald-700 dark:text-emerald-300 leading-relaxed text-[11px]">
+                                المبلغ المتوقع = الرصيد الافتتاحي + مبيعات الكاش + سداد ديون العملاء كاش + إيداعات العهدة - المصروفات النقدية - مسحوبات الدرج - المرتجعات النقدية - سلف الموظفين
+                            </p>
+                        </div>
+
+                        <div className="space-y-2 text-xs border border-slate-100 dark:border-slate-800 rounded-xl p-3 divide-y divide-slate-100 dark:divide-slate-800 font-mono">
+                            <div className="flex justify-between py-1.5 font-bold text-slate-800 dark:text-slate-100">
+                                <span>[+] الرصيد الافتتاحي المعتمد للدرج:</span>
+                                <span className="text-purple-600">{drawerOpeningBalance.toLocaleString('en-US')} ج.م</span>
+                            </div>
+                            <div className="flex justify-between py-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                                <span>[+] مبيعات الكاش المحصلة بالدرج اليوم:</span>
+                                <span>+{todayCashSales.toLocaleString('en-US')} ج.م</span>
+                            </div>
+                            {todayCustomerDebtCash > 0 && (
+                                <div className="flex justify-between py-1.5 text-emerald-600 dark:text-emerald-400">
+                                    <span>[+] سداد ديون العملاء نقداً اليوم:</span>
+                                    <span>+{todayCustomerDebtCash.toLocaleString('en-US')} ج.م</span>
+                                </div>
+                            )}
+                            {todayDrawerDeposits > 0 && (
+                                <div className="flex justify-between py-1.5 text-sky-600 dark:text-sky-400">
+                                    <span>[+] إيداعات نقدية إضافية بالدرج اليوم:</span>
+                                    <span>+{todayDrawerDeposits.toLocaleString('en-US')} ج.م</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between py-1.5 text-rose-600 dark:text-rose-400">
+                                <span>[-] المصروفات النقدية المسحوبة من الدرج اليوم:</span>
+                                <span>-{todayCashExpensesDeducted.toLocaleString('en-US')} ج.م</span>
+                            </div>
+                            {todayDrawerWithdrawals > 0 && (
+                                <div className="flex justify-between py-1.5 text-amber-600 dark:text-amber-400">
+                                    <span>[-] مسحوبات عهدة من الدرج اليوم:</span>
+                                    <span>-{todayDrawerWithdrawals.toLocaleString('en-US')} ج.م</span>
+                                </div>
+                            )}
+                            {todayCashReturnsDeducted > 0 && (
+                                <div className="flex justify-between py-1.5 text-rose-500">
+                                    <span>[-] مرتجعات نقدية مردودة كاش اليوم:</span>
+                                    <span>-{todayCashReturnsDeducted.toLocaleString('en-US')} ج.م</span>
+                                </div>
+                            )}
+                            {todayStaffCashPayouts > 0 && (
+                                <div className="flex justify-between py-1.5 text-orange-500">
+                                    <span>[-] سلف وأجور مدفوعة كاش من الدرج اليوم:</span>
+                                    <span>-{todayStaffCashPayouts.toLocaleString('en-US')} ج.م</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between pt-3 font-bold text-base text-slate-900 dark:text-white border-t-2 border-slate-300 dark:border-slate-700">
+                                <span>(=) المبلغ المتوقع في الدرج حالياً:</span>
+                                <span className="text-emerald-500 text-lg font-mono font-bold">{expectedDrawerCash.toLocaleString('en-US')} ج.م</span>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setActiveModal(null);
+                                    onNavigate('closing');
+                                }}
+                                className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md cursor-pointer flex items-center gap-2"
+                            >
+                                <Wallet size={15} />
+                                <span>الانتقال لتقفيل الوردية والجرد الفعلي ←</span>
+                            </button>
+                            <button 
+                                onClick={() => setActiveModal(null)}
+                                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-200 cursor-pointer"
+                            >
+                                إغلاق
+                            </button>
+                        </div>
+                    </div>
+                </ModalShell>
+            )}
+
+            {/* نافذة تفاصيل الرصيد الافتتاحي */}
+            {activeModal === 'opening' && (
+                <ModalShell 
+                    title="تفاصيل الرصيد الافتتاحي لدرج الكاشير" 
+                    onClose={() => setActiveModal(null)}
+                    maxWidth="max-w-md"
+                >
+                    <div className="space-y-4 text-right" dir="rtl">
+                        <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 space-y-2 text-xs">
+                            <p className="font-bold text-purple-900 dark:text-purple-200">الرصيد الافتتاحي المعتمد لبداية اليوم:</p>
+                            <div className="text-3xl font-bold font-mono text-purple-600 dark:text-purple-400">
+                                {drawerOpeningBalance.toLocaleString('en-US')} <span className="text-sm font-normal text-slate-500">ج.م</span>
+                            </div>
+                            <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed mt-2 pt-2 border-t border-purple-200/50 dark:border-purple-800/50">
+                                {hasManualOverrideToday 
+                                    ? 'تم تعيين هذا الرصيد يدوياً من إعدادات النظام كبداية لليوم.' 
+                                    : (yesterdayRemainingInDrawer !== null 
+                                        ? 'تم ترحيل هذا المبلغ تلقائياً من المتبقي بالدرج في تقفيل الأمس.' 
+                                        : 'هو الرصيد الأساسي المسجل في إعدادات النظام.')}
+                            </p>
+                        </div>
+
+                        <div className="flex justify-end pt-2">
+                            <button 
                                 onClick={() => setActiveModal(null)}
                                 className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-200 cursor-pointer"
                             >

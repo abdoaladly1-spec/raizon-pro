@@ -1326,14 +1326,7 @@ const InitialAdminSetupWizard = () => {
           firstAdminSetupDone: true,
         });
 
-        // 4. تسجيل حركة إيداع افتتاحي للدرج إن وُجد مبلغ
-        if (cashAmount > 0) {
-          addDrawerMovement({
-            type: 'deposit',
-            amount: cashAmount,
-            reason: language === 'ar' ? 'رصيد افتتاحي لدرج الكاشير عند إعداد النظام' : 'Opening drawer balance at initial system setup',
-          });
-        }
+        // الرصيد الافتتاحي مسجل في الإعدادات كأساس لدرج الكاشير (بدون تسجيل حركة إيداع إضافية لتفادي ازدواج الحساب)
 
         addAuditLog('Setup', `Completed initial admin setup: Name=${realName.trim()}, CashDrawer=${cashAmount} EGP`);
         addToast(

@@ -5,7 +5,7 @@ import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, 
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from '../types';
 import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, useSound, useLiveTick } from '../components/ui';
 import { FilterModal } from '../components/FilterModal';
-import { isCashExpense } from '../lib/payments';
+import { isCashExpense, round2 } from '../lib/payments';
 import { CreateInvoice } from './CreateInvoicePage';
 import { AuditLogs } from './AuditLogsPage';
 import { AdminUsers } from './AdminUsersPage';
@@ -75,13 +75,119 @@ export const ExpensesPage = () => {
     };
 
     const totalExpenses = state.expenses.reduce((acc, curr) => acc + curr.amount, 0);
+    const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
     const todayExpenses = state.expenses
-        .filter(e => e.date === new Date().toISOString().split('T')[0])
+        .filter(e => e.date === todayStr)
         .reduce((acc, curr) => acc + curr.amount, 0);
     // المصروفات النقدية فقط (تلك التي تُخصم من درج النقدية عند الإغلاق)
     const todayCashExpenses = state.expenses
-        .filter(e => e.date === new Date().toISOString().split('T')[0] && isCashExpense(e))
+        .filter(e => e.date === todayStr && isCashExpense(e))
         .reduce((acc, curr) => acc + curr.amount, 0);
+
+    // =========================================================================
+    // حسابات حركة الدرج اليومية والمبلغ المتوقع والرصيد الافتتاحي
+    // =========================================================================
+    const sortedClosingReports = useMemo(() => {
+        return [...(state.closingReports || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    }, [state.closingReports]);
+
+    const previousClosingReport = useMemo(() => {
+        return sortedClosingReports.find(r => r.date !== todayStr) || null;
+    }, [sortedClosingReports, todayStr]);
+
+    const yesterdayRemainingInDrawer = useMemo(() => {
+        if (!previousClosingReport) return null;
+        if (typeof previousClosingReport.retainedInDrawer === 'number') {
+            return previousClosingReport.retainedInDrawer;
+        }
+        return previousClosingReport.actualCash;
+    }, [previousClosingReport]);
+
+    const hasManualOverrideToday = state.settings.manualOpeningDate === todayStr && typeof state.settings.cashDrawerOpening === 'number';
+
+    const drawerOpeningBalance = useMemo(() => {
+        return hasManualOverrideToday
+            ? Number(state.settings.cashDrawerOpening)
+            : (yesterdayRemainingInDrawer !== null ? yesterdayRemainingInDrawer : (Number(state.settings.cashDrawerOpening) || 0));
+    }, [hasManualOverrideToday, state.settings.cashDrawerOpening, yesterdayRemainingInDrawer]);
+
+    const isOpeningMovement = (m: any) => {
+        const r = (m.reason || '').toLowerCase();
+        return r.includes('افتتاحي') || r.includes('opening') || r.includes('بداية') || r.includes('رصيد الدرج');
+    };
+
+    const todayDrawerMovements = useMemo(() => {
+        return (state.drawerMovements || []).filter(m => m.date === todayStr);
+    }, [state.drawerMovements, todayStr]);
+
+    const todayDrawerDeposits = useMemo(() => {
+        return todayDrawerMovements
+            .filter(m => m.type === 'deposit' && !isOpeningMovement(m))
+            .reduce((s, m) => s + (m.amount || 0), 0);
+    }, [todayDrawerMovements]);
+
+    const todayDrawerWithdrawals = useMemo(() => {
+        return todayDrawerMovements
+            .filter(m => m.type === 'withdrawal')
+            .reduce((s, m) => s + (m.amount || 0), 0);
+    }, [todayDrawerMovements]);
+
+    const todayCashSales = useMemo(() => {
+        return state.invoices
+            .filter(inv => (inv.status !== 'cancelled' && inv.status !== 'refunded') && (inv.date === todayStr || (inv.timestamp && new Date(inv.timestamp).toISOString().split('T')[0] === todayStr)))
+            .reduce((s, inv) => {
+                if (inv.paymentParts && inv.paymentParts.length > 0) {
+                    return s + inv.paymentParts.filter(p => p.method === 'cash').reduce((ps, p) => ps + p.amount, 0);
+                }
+                return s + (inv.paymentMethod === 'cash' ? (inv.cashPaid !== undefined ? inv.cashPaid : inv.total) : 0);
+            }, 0);
+    }, [state.invoices, todayStr]);
+
+    const todayCustomerDebtCash = useMemo(() => {
+        return (state.customerPayments || [])
+            .filter(cp => cp.date === todayStr && (cp.paymentMethod === 'cash' || !cp.paymentMethod))
+            .reduce((s, cp) => s + (cp.amount || 0), 0);
+    }, [state.customerPayments, todayStr]);
+
+    const todayCashExpensesDeducted = useMemo(() => {
+        return state.expenses
+            .filter(e => e.date === todayStr && isCashExpense(e))
+            .reduce((s, e) => s + (e.amount || 0), 0);
+    }, [state.expenses, todayStr]);
+
+    const todayCashReturnsDeducted = useMemo(() => {
+        return (state.returns || [])
+            .filter(r => r.date === todayStr && (r.refundMethod === 'cash' || !r.refundMethod))
+            .reduce((s, r) => s + (r.total || 0), 0);
+    }, [state.returns, todayStr]);
+
+    const todayStaffCashPayouts = useMemo(() => {
+        return (state.staffPayments || [])
+            .filter((sp: any) => sp.date === todayStr && (sp.method || 'cash') === 'cash' && ['advance', 'salary', 'bonus'].includes(sp.type))
+            .reduce((s, sp) => s + (sp.amount || 0), 0);
+    }, [state.staffPayments, todayStr]);
+
+    const expectedDrawerCash = useMemo(() => {
+        return round2(
+            drawerOpeningBalance +
+            todayCashSales +
+            todayCustomerDebtCash +
+            todayDrawerDeposits -
+            todayCashExpensesDeducted -
+            todayDrawerWithdrawals -
+            todayCashReturnsDeducted -
+            todayStaffCashPayouts
+        );
+    }, [
+        drawerOpeningBalance,
+        todayCashSales,
+        todayCustomerDebtCash,
+        todayDrawerDeposits,
+        todayCashExpensesDeducted,
+        todayDrawerWithdrawals,
+        todayCashReturnsDeducted,
+        todayStaffCashPayouts
+    ]);
 
     return (
         <div className="space-y-6 animate-fade-in pb-24">
@@ -104,7 +210,7 @@ export const ExpensesPage = () => {
             </div>
 
             {/* Stats Cards Elevated */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 ">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('total_expenses')}</span>
@@ -146,6 +252,40 @@ export const ExpensesPage = () => {
                         </div>
                         <div>
                             <h3 className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">{todayCashExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
+                        </div>
+                    </div>
+                </div>
+
+                {/* بطاقة المبلغ المتوقع في الدرج */}
+                <div className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-amber-300/80 dark:border-amber-600/50">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wide">المبلغ المتوقع في الدرج</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">لحظي</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-700 rounded-2xl flex items-center justify-center shrink-0 shadow-xs">
+                            <Banknote size={22} />
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400 tracking-tight">{expectedDrawerCash.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
+                            <p className="text-[10px] text-slate-400 mt-0.5">النقد الفعلي المفترض تواجده بالدرج</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* بطاقة الرصيد الافتتاحي */}
+                <div className="bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-purple-300/80 dark:border-purple-600/50">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wide">الرصيد الافتتاحي</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">بداية اليوم</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-700 rounded-2xl flex items-center justify-center shrink-0 shadow-xs">
+                            <Wallet size={22} />
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-bold font-mono text-purple-600 dark:text-purple-400 tracking-tight">{drawerOpeningBalance.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
+                            <p className="text-[10px] text-slate-400 mt-0.5">رصيد عهدة الدرج المعتمد</p>
                         </div>
                     </div>
                 </div>

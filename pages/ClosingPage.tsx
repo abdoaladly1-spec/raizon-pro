@@ -65,8 +65,15 @@ export const ClosingPage = () => {
         return todayMovements.filter(m => m.type === 'withdrawal').reduce((a, m) => a + m.amount, 0);
     }, [todayMovements]);
 
+    const isOpeningMovement = (m: any) => {
+        const r = (m.reason || '').toLowerCase();
+        return r.includes('افتتاحي') || r.includes('opening') || r.includes('بداية') || r.includes('رصيد الدرج');
+    };
+
     const deposits = useMemo(() => {
-        return todayMovements.filter(m => m.type === 'deposit').reduce((a, m) => a + m.amount, 0);
+        return todayMovements
+            .filter(m => m.type === 'deposit' && !isOpeningMovement(m))
+            .reduce((a, m) => a + m.amount, 0);
     }, [todayMovements]);
 
     // صافي رصيد العهدة النقدية في الدرج (الأساس + إيداعات اليوم - مسحوبات اليوم)
@@ -621,13 +628,15 @@ export const ClosingPage = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card className="bg-slate-900/60 border border-slate-800 p-4">
                     <span className="text-xs font-bold text-slate-400 block mb-1">
-                        {language === 'ar' ? 'الافتتاحي + الإيداعات' : 'Opening & Float'}
+                        {language === 'ar' ? 'الرصيد الافتتاحي المعتمد' : 'Opening Drawer Balance'}
                     </span>
                     <p className="text-xl font-bold text-slate-800 dark:text-slate-100 font-mono">
-                        {(baseOpeningBalance + deposits).toLocaleString('en-US')}
+                        {baseOpeningBalance.toLocaleString('en-US')}
                     </p>
                     <p className="text-[11px] text-slate-500 mt-1">
-                        {language === 'ar' ? `أساس: ${baseOpeningBalance.toLocaleString('en-US')}` : `Base: ${baseOpeningBalance}`}
+                        {deposits > 0 
+                            ? (language === 'ar' ? `+ إيداعات إضافية: ${deposits.toLocaleString('en-US')}` : `+ Extra Deposits: ${deposits.toLocaleString('en-US')}`)
+                            : (language === 'ar' ? 'رصيد بداية اليوم بالدرج' : 'Start of day balance')}
                     </p>
                 </Card>
 
@@ -686,8 +695,10 @@ export const ClosingPage = () => {
                         </div>
                         <div className="text-right text-[11px] text-slate-400 space-y-0.5 font-mono">
                             <div>الافتتاحي: {baseOpeningBalance.toLocaleString('en-US')}</div>
-                            <div className="text-emerald-400">+ كاش: {cashSales.toLocaleString('en-US')}</div>
+                            {deposits > 0 && <div className="text-sky-400">+ إيداعات إضافية: {deposits.toLocaleString('en-US')}</div>}
+                            <div className="text-emerald-400">+ كاش مبيعات: {cashSales.toLocaleString('en-US')}</div>
                             <div className="text-rose-400">- خصومات: {totalCashDeductions.toLocaleString('en-US')}</div>
+                            {withdrawals > 0 && <div className="text-amber-400">- مسحوبات: {withdrawals.toLocaleString('en-US')}</div>}
                         </div>
                     </div>
 
