@@ -1474,11 +1474,11 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
         <div className="absolute bottom-[-15%] left-[-10%] w-[550px] h-[550px] bg-gradient-to-tr from-indigo-600/25 via-sky-600/20 to-transparent rounded-full blur-[110px] animate-pulse pointer-events-none" style={{ animationDelay: '1.5s', animationDuration: '6s' }} />
         <div className="absolute top-[35%] left-[15%] w-[380px] h-[380px] bg-gradient-to-r from-amber-500/15 to-purple-500/15 rounded-full blur-[100px] animate-float pointer-events-none" />
 
-        {/* Ambient Grid overlay (شبكة النقاط البيضاء بالخلفية واضحة وجذابة) */}
+        {/* Ambient Grid overlay: شبكة نقاط بيضاء واضحة وموزعة في الخلفية بالكامل */}
         <div 
-          className="absolute inset-0 opacity-[0.14] dark:opacity-[0.25] text-slate-700 dark:text-white pointer-events-none"
+          className="absolute inset-0 pointer-events-none z-0"
           style={{
-            backgroundImage: `radial-gradient(currentColor 1.5px, transparent 1.5px)`,
+            backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.4) 1.5px, transparent 1.5px)',
             backgroundSize: '24px 24px'
           }}
         />
@@ -1511,8 +1511,8 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             style={{ animation: 'neonPulseGlow 4s ease-in-out infinite' }}
           />
 
-          {/* Card Container: بطاقة زجاجية شفافة تُظهر النقاط البيضاء التي خلفها بالكامل */}
-          <div className={`relative z-10 w-full bg-white/55 dark:bg-[#0c1017]/45 backdrop-blur-[5px] border border-purple-500/30 dark:border-purple-500/40 p-8 sm:p-9 rounded-[28px] shadow-[0_0_25px_rgba(168,85,247,0.18),0_20px_50px_-15px_rgba(0,0,0,0.6)] transition-all ${
+          {/* Card Container: بطاقة شفافة تماماً بدون طمس ضبابي لتظهر النقاط البيضاء التي خلفها بوضوح كامل */}
+          <div className={`relative z-10 w-full bg-white/10 dark:bg-[#0c1017]/20 border border-purple-500/30 dark:border-purple-500/40 p-8 sm:p-9 rounded-[28px] shadow-[0_0_20px_rgba(168,85,247,0.15),0_20px_50px_-15px_rgba(0,0,0,0.6)] transition-all ${
             isShaking 
               ? 'animate-shake ring-4 ring-red-500/60 border-red-500/80 shadow-[0_0_40px_rgba(239,68,68,0.5)]' 
               : 'animate-scale-in'
