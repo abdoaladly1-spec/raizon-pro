@@ -1512,7 +1512,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             100% { transform:scale(2.2); opacity:0; }
           }
           .rz-input {
-            width:100%; height:54px; border-radius:13px; outline:none;
+            width:100%; height:46px; border-radius:12px; outline:none;
             border:1px solid rgba(221,190,245,.18);
             background:rgba(13,7,21,.52);
             color:#fff; padding:0 46px 0 46px;
@@ -1528,7 +1528,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
           }
           .rz-input:disabled { opacity:.5; cursor:not-allowed; }
           .rz-btn {
-            width:100%; height:55px; border:0; border-radius:14px;
+            width:100%; height:48px; border-radius:12px;
             cursor:pointer; color:#190b24;
             font:800 16px "Cairo",sans-serif;
             background:linear-gradient(105deg, #ffd84d 0%, #ffad24 38%, #e94cf4 100%);
@@ -1571,7 +1571,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
           <div
             className={isShaking ? 'rz-card-shake' : ''}
             style={{
-              position:'relative', padding:'34px 34px 30px', borderRadius:26,
+              position:'relative', padding:'24px 28px 18px', borderRadius:24,
               background:'rgba(35,18,49,0.58)',
               border:'1px solid rgba(225,185,255,0.16)',
               backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)',
@@ -1583,26 +1583,26 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             {/* Top shimmer line */}
             <div style={{ position:'absolute', top:0, left:'18%', right:'18%', height:1, background:'linear-gradient(90deg, transparent, #e879f9, #ffc52e, transparent)', opacity:.9, zIndex:2 }} />
 
-            {/* ── BRAND / LOGO ── */}
-            <header style={{ textAlign:'center', marginBottom:20 }}>
+            {/* ── BRAND / LOGO (لوجو مدمج وتصميم متناسق) ── */}
+            <header style={{ textAlign:'center', marginBottom:12 }}>
               <img
                 src="/img/logo-transparent.png"
                 alt="RaiZon Pro"
-                style={{ width:'min(100%,240px)', height:140, objectFit:'contain', display:'block', margin:'-5px auto 0', filter:'drop-shadow(0 8px 22px rgba(187,46,255,0.26))' }}
+                style={{ width:'min(100%,160px)', height:82, objectFit:'contain', display:'block', margin:'0 auto', filter:'drop-shadow(0 6px 18px rgba(187,46,255,0.26))' }}
               />
               {/* اسم التطبيق أسفل اللوجو مباشرة - LTR ليكون ريزون برو وليس برو رايزون */}
-              <h1 dir="ltr" style={{ fontSize:26, fontWeight:800, margin:'8px 0 2px', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                <span style={{ color:'#ffbf24', textShadow:'0 0 16px rgba(255,191,36,0.35)' }}>RaiZon</span>
-                <span style={{ color:'#cf57ff', textShadow:'0 0 16px rgba(207,87,255,0.35)' }}>Pro</span>
+              <h1 dir="ltr" style={{ fontSize:22, fontWeight:800, margin:'4px 0 1px', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
+                <span style={{ color:'#ffbf24', textShadow:'0 0 14px rgba(255,191,36,0.35)' }}>RaiZon</span>
+                <span style={{ color:'#cf57ff', textShadow:'0 0 14px rgba(207,87,255,0.35)' }}>Pro</span>
               </h1>
-              <p style={{ color:'#b9a9c7', textAlign:'center', fontSize:13, margin:'2px 0 0' }}>
+              <p style={{ color:'#b9a9c7', textAlign:'center', fontSize:12, margin:'1px 0 0' }}>
                 سجّل الدخول لإدارة أعمالك ومتابعة مبيعاتك
               </p>
             </header>
 
             {/* License badge */}
             {liveRemainingText && (
-              <div style={{ display:'flex', justifyContent:'center', marginBottom:14 }}>
+              <div style={{ display:'flex', justifyContent:'center', marginBottom:10 }}>
                 <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px 14px', borderRadius:99, background:'rgba(255,191,36,0.1)', border:'1px solid rgba(255,191,36,0.25)', fontSize:11 }}>
                   <Clock size={11} style={{ color:'#ffbf24' }} className="animate-pulse" />
                   <span style={{ color:'#ffbf24', fontWeight:700 }}>{liveRemainingText}</span>
@@ -1624,7 +1624,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             <form onSubmit={handleLogin} dir="rtl">
 
               {/* Username */}
-              <div style={{ marginBottom:17 }} ref={userDropdownRef}>
+              <div style={{ marginBottom:12 }} ref={userDropdownRef}>
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', margin:'0 3px 8px' }}>
                   <label style={{ color:'#e8dff0', fontSize:13, fontWeight:600 }}>
                     اسم المستخدم
@@ -1733,7 +1733,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
               )}
 
               {/* Options row */}
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, margin:'14px 1px 22px', fontSize:12 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, margin:'10px 1px 16px', fontSize:12 }}>
                 <label style={{ display:'flex', alignItems:'center', gap:7, color:'#c9bbd3', cursor:'pointer', userSelect:'none' }}>
                   <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} style={{ width:15, height:15, padding:0, accentColor:'#bd38f2' }} />
                   <span>تذكرني</span>
@@ -1786,12 +1786,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
               </div>
             )}
 
-            {/* Secure note */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:7, color:'#9f90aa', fontSize:11, marginTop:20 }}>
-              <span style={{ color:'#c8a0ef' }}>✦</span>
-              <span>نظام آمن لإدارة عملياتك اليومية</span>
-              <span style={{ color:'#c8a0ef' }}>✦</span>
-            </div>
+
           </div>
 
           {/* رقم الإصدار بالمنتصف في الربع الأخير أسفل البطاقة */}
