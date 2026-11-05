@@ -70,14 +70,14 @@ export const InvoiceReceipt = ({
     ident?.phone ||
     identityOverride?.phone ||
     state.settings.phone ||
-    '01016828238 - 01102002750'
+    '01000000000-01000000001'
   ).trim();
 
   const shopAddress = (
     ident?.address ||
     identityOverride?.address ||
     state.settings.address ||
-    'شارع حديقة الطفل بجوار البنك الاهلي القديم'
+    'العنوان هنا'
   ).trim();
 
   // بيانات نظام الولاء المرتبطة بالعميل والفاتورة
@@ -219,53 +219,27 @@ export const InvoiceReceipt = ({
                           }}
                         />
                       ) : (
-                        <div className="mx-auto my-0.5 flex flex-col items-center justify-center">
+                        <div className="mx-auto my-1 flex flex-col items-center justify-center">
                           <svg
-                            viewBox="0 0 200 200"
-                            className="w-[125px] h-[125px] text-black"
+                            viewBox="0 0 140 140"
+                            className="w-[105px] h-[105px] text-black"
                             fill="none"
-                            stroke="currentColor"
                           >
-                            <circle cx="100" cy="100" r="92" strokeWidth="2.5" />
-                            <circle cx="100" cy="100" r="85" strokeWidth="1" strokeDasharray="3 2" />
-                            <circle cx="100" cy="100" r="68" strokeWidth="2" />
-
-                            <path id="curveTop" d="M 34 94 A 66 66 0 0 1 166 94" fill="none" />
-                            <text className="text-[14px] font-black tracking-[3px]" fill="#000" stroke="none" style={{ fontFamily: 'Tahoma, Arial, sans-serif' }}>
-                              <textPath href="#curveTop" startOffset="50%" textAnchor="middle">
-                                BARBERSHOP
-                              </textPath>
-                            </text>
-
-                            <g transform="translate(100, 92)" strokeWidth="2.5" strokeLinecap="round" stroke="#000">
-                              <line x1="-26" y1="20" x2="26" y2="-20" />
-                              <line x1="-26" y1="-20" x2="26" y2="20" />
-                              <circle cx="-28" cy="22" r="6" strokeWidth="2" fill="none" />
-                              <circle cx="-28" cy="-22" r="6" strokeWidth="2" fill="none" />
-                            </g>
-
-                            {vis.shopName && (
-                              <>
-                                <rect x="20" y="85" width="160" height="30" rx="3" fill="#ffffff" stroke="#000" strokeWidth="2" />
-                                <text
-                                  x="100"
-                                  y="106"
-                                  textAnchor="middle"
-                                  fill="#000"
-                                  stroke="none"
-                                  className="text-[14px] font-black"
-                                  style={{ fontFamily: 'Tahoma, Arial, sans-serif', fontWeight: 900 }}
-                                >
-                                  {shopName}
-                                </text>
-                              </>
-                            )}
-
-                            <path id="curveBottom" d="M 34 112 A 66 66 0 0 0 166 112" fill="none" />
-                            <text className="text-[13px] font-black tracking-[2px]" fill="#000" stroke="none" style={{ fontFamily: 'Tahoma, Arial, sans-serif' }}>
-                              <textPath href="#curveBottom" startOffset="50%" textAnchor="middle">
-                                EBRAHEM NAWAR
-                              </textPath>
+                            {/* دائرة مظللة بها كلمة اللوجو هنا */}
+                            <circle cx="70" cy="70" r="65" fill="#f1f3f5" stroke="#000000" strokeWidth="2.5" />
+                            <circle cx="70" cy="70" r="58" stroke="#000000" strokeWidth="1" strokeDasharray="4 2" />
+                            <text
+                              x="70"
+                              y="76"
+                              textAnchor="middle"
+                              fill="#000000"
+                              style={{
+                                fontFamily: 'Tahoma, Arial, sans-serif',
+                                fontSize: '15px',
+                                fontWeight: 900,
+                              }}
+                            >
+                              {rtl ? 'اللوجو هنا' : 'LOGO HERE'}
                             </text>
                           </svg>
                         </div>

@@ -7,7 +7,7 @@ import {
     Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, 
     ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, 
     ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw,
-    Building, Bell, Lock, Save, Key, Shield, Download, Edit
+    Building, Bell, Lock, Save, Key, Shield, Download, Edit, MessageSquare
 } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier, AppState, CustomReceiptTemplate } from '../types';
 import { Card, Button, Input, ToastContainer, ModalShell } from '../components/ui';
@@ -16,8 +16,9 @@ import { AuditLogs } from './AuditLogsPage';
 import { AdminUsers } from './AdminUsersPage';
 import { testConnection, flushQueue, getSyncStatus, pushBackup, fetchBackup } from '../lib/serverSync';
 import { InvoiceReceipt } from '../components/InvoiceReceipt';
+import { openInvoiceWhatsApp } from '../components/PrintActions';
 import { fileToLogoDataUrl, saveLogoAsset, removeLogoAsset } from '../lib/assets';
-import { listPrinters, type PrinterInfoLite } from '../lib/printBridge';
+import { listPrinters, printReceipt, saveReceiptPdf, type PrinterInfoLite } from '../lib/printBridge';
 import { PAGE_SIZES, ELEMENT_ORDER, TEMPLATE_PRESETS, applyTemplatePreset, normalizeTemplate, DEFAULT_ELEMENTS, normalizePrintDesign, type PrintDesign, type TemplateId } from '../lib/printDesign';
 
 type SettingsTab = 'general' | 'email' | 'print' | 'security' | 'users' | 'logs' | 'updates';
@@ -2526,18 +2527,66 @@ export const SettingsPage = () => {
 
                 {/* المعاينة الحية للإيصال */}
                 <Card>
-                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
                         <div className="flex items-center gap-2">
-                            <span className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"><Eye size={20} /></span>
-                            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                                {language === 'ar' ? 'المعاينة الحية المباشرة لشكل الإيصال' : 'Live Receipt Preview'}
-                            </h3>
+                            <span className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400">
+                                <Eye size={20} />
+                            </span>
+                            <div>
+                                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                                    {language === 'ar' ? 'المعاينة الحية المباشرة لشكل الإيصال' : 'Live Receipt Preview'}
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    {language === 'ar' ? 'معاينة مباشرة لشكل الإيصال على الورق الحراري مع خيارات التجربة والحفظ' : 'Live preview on thermal roll with test actions'}
+                                </p>
+                            </div>
                         </div>
-                        <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono">
-                            {d.pageSize} • {normalizeTemplate(d.template)}
-                        </span>
+
+                        {/* شريط الإجراءات: طباعة تجريبية، إرسال واتساب، حفظ PDF، وحفظ التعديلات */}
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={handleDemoPrint}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold shadow-2xs cursor-pointer transition-all hover:scale-[1.02]"
+                                title={language === 'ar' ? 'طباعة إيصال تجريبي' : 'Test Print'}
+                            >
+                                <Printer size={15} className="text-purple-600 dark:text-purple-400" />
+                                <span>{language === 'ar' ? 'طباعة تجريبية' : 'Test Print'}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleDemoWhatsApp}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-300 dark:border-emerald-700/60 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 text-xs font-bold shadow-2xs cursor-pointer transition-all hover:scale-[1.02]"
+                                title={language === 'ar' ? 'مشاركة الإيصال عبر واتساب' : 'Share via WhatsApp'}
+                            >
+                                <MessageSquare size={15} className="text-emerald-600 dark:text-emerald-400" />
+                                <span>{language === 'ar' ? 'إرسال واتساب' : 'WhatsApp'}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleDemoPdf}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold shadow-2xs cursor-pointer transition-all hover:scale-[1.02]"
+                                title={language === 'ar' ? 'تصدير وحفظ كملف PDF' : 'Save PDF'}
+                            >
+                                <FileText size={15} className="text-blue-600 dark:text-blue-400" />
+                                <span>{language === 'ar' ? 'حفظ PDF' : 'Save PDF'}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleSaveAll}
+                                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                title={language === 'ar' ? 'حفظ كافة تعديلات وتنسيقات الإيصال' : 'Save All Changes'}
+                            >
+                                <Save size={15} />
+                                <span>{language === 'ar' ? 'حفظ التعديلات' : 'Save Changes'}</span>
+                            </button>
+                        </div>
                     </div>
-                    <div className="bg-slate-100 dark:bg-slate-900/80 p-6 rounded-2xl flex justify-center overflow-x-auto border border-slate-200 dark:border-slate-800">
+
+                    <div className="bg-slate-100 dark:bg-slate-900/80 p-6 rounded-2xl flex flex-col items-center justify-center overflow-x-auto border border-slate-200 dark:border-slate-800">
                         <div 
                             className="bg-white text-black shadow-2xl rounded-xl overflow-hidden border border-slate-300 transition-all duration-200" 
                             style={{ width: d.pageSize === '58mm' ? '280px' : d.pageSize === '80mm' ? '360px' : '520px' }}
@@ -2546,8 +2595,24 @@ export const SettingsPage = () => {
                                 demo={true}
                                 invoice={demoInvoice}
                                 designOverride={d}
-                                identityOverride={{ shopName: form.shopName, phone: form.phone, address: form.address }}
+                                identityOverride={{ 
+                                    shopName: form.shopName || (language === 'ar' ? 'اسم المتجر هنا' : 'Shop Name Here'), 
+                                    phone: form.phone || '01000000000-01000000001', 
+                                    address: form.address || (language === 'ar' ? 'العنوان هنا' : 'Address Here') 
+                                }}
                             />
+                        </div>
+
+                        {/* زر الحفظ السفلي المباشر */}
+                        <div className="mt-5 flex items-center justify-center w-full max-w-sm">
+                            <button
+                                type="button"
+                                onClick={handleSaveAll}
+                                className="w-full flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99]"
+                            >
+                                <Save size={16} />
+                                <span>{language === 'ar' ? 'حفظ كافة إجراءات وتعديلات الفاتورة' : 'Save All Invoice Customizations'}</span>
+                            </button>
                         </div>
                     </div>
                 </Card>
