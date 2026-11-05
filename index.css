@@ -344,6 +344,32 @@ th.invoice-header-shaded {
   animation: spinReverseSlow 6s linear infinite;
 }
 
+@keyframes spinReverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-spin-reverse {
+  animation: spinReverse 2.6s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
 /* ==============================================================
    تحسين وضوح وتباين النصوص في الوضع النهاري (Light Mode High Contrast)
    ============================================================== */
