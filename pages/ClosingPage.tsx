@@ -501,7 +501,7 @@ export const ClosingPage = () => {
                         <button
                             type="button"
                             onClick={() => { setMovementType('deposit'); setShowMovementForm(true); }}
-                            className="px-3.5 py-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
                         >
                             <Plus size={14} />
                             <span>{language === 'ar' ? 'إيداع / تزويد فكة للدرج' : 'Cash Deposit (Float)'}</span>
@@ -510,7 +510,7 @@ export const ClosingPage = () => {
                         <button
                             type="button"
                             onClick={() => { setMovementType('withdrawal'); setShowMovementForm(true); }}
-                            className="px-3.5 py-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-500/40 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                            className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
                         >
                             <ArrowDown size={14} />
                             <span>{language === 'ar' ? 'سحب مبلغ من الدرج' : 'Cash Withdrawal'}</span>
@@ -520,7 +520,7 @@ export const ClosingPage = () => {
                     <div className="flex items-center gap-3 text-xs">
                         <span className="text-slate-400">
                             {language === 'ar' ? 'إيداعات اليوم: ' : 'Deposits: '}
-                            <strong className="text-emerald-400 font-mono">+{deposits.toLocaleString('en-US')}</strong>
+                            <strong className="text-emerald-500 font-mono">+{deposits.toLocaleString('en-US')}</strong>
                         </span>
                         <span className="text-slate-600 dark:text-slate-700">|</span>
                         <span className="text-slate-400">
@@ -630,7 +630,7 @@ export const ClosingPage = () => {
                     <span className="text-xs font-bold text-slate-400 block mb-1">
                         {language === 'ar' ? 'الرصيد الافتتاحي المعتمد' : 'Opening Drawer Balance'}
                     </span>
-                    <p className="text-xl font-bold text-slate-800 dark:text-slate-100 font-mono">
+                    <p className="text-xl font-bold text-primary-600 dark:text-primary-400 font-mono">
                         {baseOpeningBalance.toLocaleString('en-US')}
                     </p>
                     <p className="text-[11px] text-slate-500 mt-1">
@@ -644,7 +644,7 @@ export const ClosingPage = () => {
                     <span className="text-xs font-bold text-emerald-400 block mb-1">
                         {language === 'ar' ? 'المبيعات النقدية (كاش)' : 'Cash Sales'}
                     </span>
-                    <p className="text-xl font-bold text-emerald-400 font-mono">
+                    <p className="text-xl font-bold text-emerald-500 font-mono">
                         +{cashSales.toLocaleString('en-US')}
                     </p>
                     <p className="text-[11px] text-slate-500 mt-1">
@@ -664,11 +664,11 @@ export const ClosingPage = () => {
                     </p>
                 </Card>
 
-                <Card className="bg-slate-900/60 border border-amber-500/30 p-4">
-                    <span className="text-xs font-bold text-amber-400 block mb-1">
+                <Card className="bg-slate-900/60 border border-rose-500/30 p-4">
+                    <span className="text-xs font-bold text-rose-500 block mb-1">
                         {language === 'ar' ? 'المسحوبات من الدرج' : 'Draws'}
                     </span>
-                    <p className="text-xl font-bold text-amber-400 font-mono">
+                    <p className="text-xl font-bold text-rose-500 font-mono">
                         -{withdrawals.toLocaleString('en-US')}
                     </p>
                     <p className="text-[11px] text-slate-500 mt-1">
@@ -689,16 +689,16 @@ export const ClosingPage = () => {
                             <span className="text-xs font-bold text-slate-400 block mb-1">
                                 {language === 'ar' ? 'المبلغ المتوقع في الدرج حالياً:' : 'Expected in Drawer:'}
                             </span>
-                            <div className="text-3xl font-bold text-emerald-400 font-mono tracking-tight">
+                            <div className="text-3xl font-bold text-emerald-500 font-mono tracking-tight">
                                 {expectedCash.toLocaleString('en-US')} <span className="text-sm font-normal text-slate-400">{t('egp')}</span>
                             </div>
                         </div>
                         <div className="text-right text-[11px] text-slate-400 space-y-0.5 font-mono">
                             <div>الافتتاحي: {baseOpeningBalance.toLocaleString('en-US')}</div>
-                            {deposits > 0 && <div className="text-sky-400">+ إيداعات إضافية: {deposits.toLocaleString('en-US')}</div>}
-                            <div className="text-emerald-400">+ كاش مبيعات: {cashSales.toLocaleString('en-US')}</div>
-                            <div className="text-rose-400">- خصومات: {totalCashDeductions.toLocaleString('en-US')}</div>
-                            {withdrawals > 0 && <div className="text-amber-400">- مسحوبات: {withdrawals.toLocaleString('en-US')}</div>}
+                            {deposits > 0 && <div className="text-emerald-500 font-bold">+ إيداعات إضافية: {deposits.toLocaleString('en-US')}</div>}
+                            <div className="text-emerald-500 font-bold">+ كاش مبيعات: {cashSales.toLocaleString('en-US')}</div>
+                            <div className="text-rose-500 font-bold">- خصومات: {totalCashDeductions.toLocaleString('en-US')}</div>
+                            {withdrawals > 0 && <div className="text-rose-500 font-bold">- مسحوبات: {withdrawals.toLocaleString('en-US')}</div>}
                         </div>
                     </div>
 
@@ -766,7 +766,7 @@ export const ClosingPage = () => {
                                 ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
                                 : status === 'shortage'
                                 ? 'bg-rose-950/60 border-rose-500/40 text-rose-300'
-                                : 'bg-blue-950/60 border-blue-500/40 text-blue-300'
+                                : 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
                         } flex items-center justify-between`}>
                             <div className="space-y-0.5">
                                 <span className="text-xs font-bold block">
@@ -873,7 +873,7 @@ export const ClosingPage = () => {
                     <button
                         type="button"
                         onClick={handleClose}
-                        className="w-full py-4 rounded-xl bg-gradient-to-r from-primary-600 via-primary-700 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-bold text-sm shadow-lg shadow-primary-600/30 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                        className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
                     >
                         
                         <span>{language === 'ar' ? 'تأكيد إغلاق الدرج وحفظ الوردية' : 'Save Shift Closing'}</span>

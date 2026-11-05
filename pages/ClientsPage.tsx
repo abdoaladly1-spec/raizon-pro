@@ -456,7 +456,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                         <span>{language === 'ar' ? 'إجمالي العملاء' : 'Total Clients'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800/40">قاعدة البيانات</span>
                     </div>
-                    <div className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight">
+                    <div className="text-2xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">
                         {clientStats.total} <span className="text-xs font-bold text-slate-400">عميل</span>
                     </div>
                 </div>
@@ -466,7 +466,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                         <span>{language === 'ar' ? 'عملاء VIP' : 'VIP Clients'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/40">مميز</span>
                     </div>
-                    <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 font-mono tracking-tight">
+                    <div className="text-2xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">
                         {clientStats.vipCount} <span className="text-xs font-bold text-slate-400">عميل</span>
                     </div>
                 </div>
@@ -476,7 +476,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                         <span>{language === 'ar' ? 'عليهم مديونيات' : 'Debtors'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-bold border border-rose-200 dark:border-rose-800/40">آجل</span>
                     </div>
-                    <div className="text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono tracking-tight">
+                    <div className="text-2xl font-extrabold text-rose-500 font-mono tracking-tight">
                         {clientStats.debtCount} <span className="text-xs font-bold text-slate-400">عميل</span>
                     </div>
                 </div>
@@ -486,7 +486,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                         <span>{language === 'ar' ? 'إجمالي المديونية' : 'Total Debt'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 font-bold border border-red-200 dark:border-red-800/40">مستحق</span>
                     </div>
-                    <div className="text-2xl font-bold text-red-600 dark:text-red-400 font-mono tracking-tight">
+                    <div className="text-2xl font-extrabold text-rose-500 font-mono tracking-tight">
                         {formatNumber(clientStats.totalDebt)} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                     </div>
                 </div>

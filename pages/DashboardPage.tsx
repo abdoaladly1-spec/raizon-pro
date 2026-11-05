@@ -671,31 +671,31 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => onNavigate('debts')}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-amber-300/80 dark:border-amber-800/80 bg-amber-50 hover:bg-amber-100 dark:bg-slate-800/95 dark:hover:bg-slate-700/90 text-amber-900 dark:text-amber-300 text-xs font-black transition-all shadow-xs cursor-pointer active:scale-95"
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white border border-slate-300 dark:border-slate-700 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
                         title="ديون وحسابات العملاء"
                     >
-                        <CreditCard size={16} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                        <CreditCard size={16} className="shrink-0 text-primary-500" />
                         <span>ديون العملاء</span>
                     </button>
                     <button
                         onClick={() => onNavigate('expenses')}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-emerald-300/80 dark:border-emerald-800/80 bg-emerald-50 hover:bg-emerald-100 dark:bg-slate-800/95 dark:hover:bg-slate-700/90 text-emerald-900 dark:text-emerald-300 text-xs font-black transition-all shadow-xs cursor-pointer active:scale-95"
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
                         title={t('expenses')}
                     >
-                        <Banknote size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <Banknote size={16} className="shrink-0" />
                         <span>{t('expenses')}</span>
                     </button>
                     <button
                         onClick={() => onNavigate('closing')}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-300/80 dark:border-indigo-800/80 bg-indigo-50 hover:bg-indigo-100 dark:bg-slate-800/95 dark:hover:bg-slate-700/90 text-indigo-900 dark:text-indigo-300 text-xs font-black transition-all shadow-xs cursor-pointer active:scale-95"
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
                         title={t('closing')}
                     >
-                        <Award size={16} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <Award size={16} className="shrink-0" />
                         <span>{t('closing')}</span>
                     </button>
                     <button
                         onClick={() => onNavigate('create_invoice')}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-black shadow-sm transition-all cursor-pointer active:scale-95"
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
                     >
                         <Plus size={16} className="stroke-[2.5]" />
                         <span>{t('new_invoice')}</span>
@@ -779,11 +779,11 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     <DollarSign size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white font-mono tracking-tight">
+                                    <h3 className="text-2xl font-extrabold text-emerald-500 font-mono tracking-tight">
                                         {totalRevenue.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                                     </h3>
                                     <p className="text-[10px] text-slate-400 mt-0.5">
-                                        محصل كاش: {paymentBreakdown.cash.toLocaleString('en-US')} ج.م
+                                        محصل كاش: <span className="text-emerald-500 font-bold">{paymentBreakdown.cash.toLocaleString('en-US')} ج.م</span>
                                     </p>
                                 </div>
                             </div>
@@ -809,7 +809,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     <Banknote size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className={`text-2xl font-bold font-mono tracking-tight ${accrualNetProfit >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-600'}`}>
+                                    <h3 className={`text-2xl font-extrabold font-mono tracking-tight ${accrualNetProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                                         {accrualNetProfit.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                                     </h3>
                                     <p className="text-[10px] text-slate-400 mt-0.5">
@@ -839,11 +839,11 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     <PieChart size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white font-mono tracking-tight">
+                                    <h3 className="text-2xl font-extrabold text-rose-500 font-mono tracking-tight">
                                         {totalExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                                     </h3>
                                     <p className="text-[10px] text-slate-400 mt-0.5">
-                                        المتوقع بالدرج: {expectedDrawerCash.toLocaleString('en-US')} ج.م
+                                        المتوقع بالدرج: <span className="text-emerald-500 font-bold">{expectedDrawerCash.toLocaleString('en-US')} ج.م</span>
                                     </p>
                                 </div>
                             </div>
@@ -869,7 +869,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     <Wallet size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">
+                                    <h3 className="text-2xl font-extrabold font-mono tracking-tight text-emerald-500">
                                         {expectedDrawerCash.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                                     </h3>
                                     <p className="text-[10px] text-slate-400 mt-0.5">
@@ -899,7 +899,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     <Banknote size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white font-mono tracking-tight">
+                                    <h3 className="text-2xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">
                                         {drawerOpeningBalance.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                                     </h3>
                                     <p className="text-[10px] text-slate-400 mt-0.5">
@@ -929,7 +929,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     <CreditCard size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white font-mono tracking-tight">
+                                    <h3 className="text-2xl font-extrabold text-rose-500 font-mono tracking-tight">
                                         {totalCurrentDebts.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                                     </h3>
                                     <p className="text-[10px] text-slate-400 mt-0.5">
@@ -962,7 +962,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     <FileText size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white font-mono tracking-tight">
+                                    <h3 className="text-2xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">
                                         {totalInvoicesCount.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('invoices')}</span>
                                     </h3>
                                     <p className="text-[10px] text-slate-400 mt-0.5">
@@ -992,7 +992,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     <TrendingUp size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white font-mono tracking-tight">
+                                    <h3 className="text-2xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">
                                         {averageInvoice.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                                     </h3>
                                     <p className="text-[10px] text-slate-400 mt-0.5">
@@ -1022,7 +1022,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     <TrendingDown size={22} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white font-mono tracking-tight">
+                                    <h3 className="text-2xl font-extrabold text-rose-500 font-mono tracking-tight">
                                         {totalReturns.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                                     </h3>
                                     <p className="text-[10px] text-slate-400 mt-0.5">
@@ -1056,7 +1056,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                         {topStaff ? topStaff[0] : (language === 'ar' ? 'لا يوجد' : 'None')}
                                     </h3>
                                     {topStaff && (
-                                        <p className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-bold truncate">
+                                        <p className="text-[11px] font-mono text-emerald-500 font-extrabold truncate">
                                             {Number(topStaff[1]).toLocaleString('en-US')} {t('egp')}
                                         </p>
                                     )}

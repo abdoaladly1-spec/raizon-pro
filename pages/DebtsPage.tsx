@@ -588,7 +588,7 @@ export const DebtsPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowAddDebtModal(true)}
-            className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-900/30 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+            className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
           >
             <Plus size={16} />
             <span>تسجيل عملية آجلة</span>
@@ -628,7 +628,7 @@ export const DebtsPage: React.FC = () => {
               <DollarSign size={18} />
             </span>
           </div>
-          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">
+          <div className="text-2xl font-extrabold font-mono text-rose-500 tracking-tight">
             {formatNumber(summary.totalDue)} <span className="text-xs font-normal text-slate-400">{currencySymbol}</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
@@ -645,7 +645,7 @@ export const DebtsPage: React.FC = () => {
               <Users size={18} />
             </span>
           </div>
-          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">
+          <div className="text-2xl font-extrabold font-mono text-primary-600 dark:text-primary-400 tracking-tight">
             {summary.debtorsCount} <span className="text-xs font-normal text-slate-400">عميل مدين</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
@@ -662,7 +662,7 @@ export const DebtsPage: React.FC = () => {
               <AlertTriangle size={18} />
             </span>
           </div>
-          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">
+          <div className="text-2xl font-extrabold font-mono text-rose-500 tracking-tight">
             {formatNumber(summary.totalOverdue)} <span className="text-xs font-normal text-slate-400">{currencySymbol}</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
@@ -685,7 +685,7 @@ export const DebtsPage: React.FC = () => {
               <Check size={18} />
             </span>
           </div>
-          <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white tracking-tight">
+          <div className="text-2xl font-extrabold font-mono text-emerald-500 tracking-tight">
             {formatNumber(summary.totalCollected)} <span className="text-xs font-normal text-slate-400">{currencySymbol}</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
@@ -833,7 +833,7 @@ export const DebtsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowAddDebtModal(true)}
-                    className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-900/30 flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md flex items-center gap-1.5 transition-all cursor-pointer"
                   >
                     <Plus size={15} />
                     <span>تسجيل عملية آجلة</span>
@@ -909,7 +909,7 @@ export const DebtsPage: React.FC = () => {
 
                         {/* Balance */}
                         <td className="py-3.5 px-4 text-center">
-                          <div className={`font-bold font-mono text-base ${balance > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                          <div className={`font-mono text-base ${balance > 0 ? 'text-rose-500 font-extrabold' : 'text-emerald-500 font-extrabold'}`}>
                             {formatNumber(balance)} <span className="text-[11px] font-normal text-slate-400">{currencySymbol}</span>
                           </div>
                         </td>

@@ -307,7 +307,7 @@ export const ReturnsPage = () => {
                             <span>{t('returns_today_total')}</span>
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-black border border-rose-200 dark:border-rose-800/40">اليوم</span>
                         </div>
-                        <div className="text-xl font-black text-rose-600 dark:text-rose-400 font-mono tracking-tight">
+                        <div className="text-xl font-extrabold text-rose-500 font-mono tracking-tight">
                             {formatNumber(todayReturnsTotal)} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                         </div>
                     </div>
@@ -316,7 +316,7 @@ export const ReturnsPage = () => {
                             <span>{t('returns_today_count')}</span>
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-black border border-amber-200 dark:border-amber-800/40">عمليات</span>
                         </div>
-                        <div className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono tracking-tight">
+                        <div className="text-xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">
                             {todayReturnsAll.length} <span className="text-xs font-bold text-slate-400">مرتجع</span>
                         </div>
                     </div>
@@ -325,7 +325,7 @@ export const ReturnsPage = () => {
 
             {/* زر إضافة مرتجع (منتصف الصفحة) */}
             <div className="flex justify-center">
-                <Button variant="purple" onClick={() => { resetAll(); setAddOpen(true); }} className="px-6 py-3 text-base shadow-lg">
+                <Button variant="primary" onClick={() => { resetAll(); setAddOpen(true); }} className="px-6 py-3 text-base shadow-lg">
                     <Plus size={20} className="ml-2" /> {t('add_return')}
                 </Button>
             </div>

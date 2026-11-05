@@ -1328,7 +1328,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                          </div>
                          <Button 
                              onClick={handleSave} 
-                             className="flex-1 justify-center py-3 font-black text-sm rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md hover:shadow-emerald-500/25 active:scale-95 transition-all"
+                             className="flex-1 justify-center py-3 font-black text-sm rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md active:scale-95 transition-all"
                          >
                              {t('save')}
                          </Button>
