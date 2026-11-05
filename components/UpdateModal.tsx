@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { RAIZON_LOGO_URI } from '../lib/logoData';
 import { Download, RefreshCw, X, CheckCircle, AlertTriangle, ArrowRight, Sparkles } from './Icons';
 
 export interface UpdateInfo {
@@ -157,7 +158,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
           {/* الجانب الأيمن (بالعربية): أيقونة وعنوان النافذة */}
           <div className="flex items-center gap-2.5">
             <img 
-              src="/public/installer-logo.png" 
+              src={RAIZON_LOGO_URI} 
               onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
               alt="Logo" 
               className="w-5 h-5 object-contain" 

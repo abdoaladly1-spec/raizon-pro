@@ -19,6 +19,7 @@ import { PatcherModal } from './components/PatcherModal';
 import { UnsavedChangesModal } from './components/UnsavedChangesModal';
 import { UpdateModal, type UpdateInfo } from './components/UpdateModal';
 import { WhatsNewModal } from './components/WhatsNewModal';
+import { RAIZON_LOGO_URI } from './lib/logoData';
 // الصفحات تُحمَّل عند الطلب (code-splitting) لتقليل حجم الحزمة الأولية
 const Dashboard = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.Dashboard })));
 const CreateInvoice = lazy(() => import('./pages/CreateInvoicePage').then(m => ({ default: m.CreateInvoice })));
@@ -64,7 +65,7 @@ const ScreenSaver = ({ onActive }: { onActive: () => void }) => {
             {/* ScreenSaver Brand Center */}
             <div className="relative z-10 text-center space-y-8">
                 <div className="w-24 h-24 mx-auto bg-slate-900/80 rounded-3xl flex items-center justify-center backdrop-blur-md border border-slate-800 shadow-xl p-3">
-                    <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-full h-full object-contain" />
+                    <img src={RAIZON_LOGO_URI} alt="RaiZon Pro" className="w-full h-full object-contain" />
                 </div>
                 
                 <div>
@@ -352,7 +353,7 @@ const MainContent = () => {
         <aside className={`${sidebarCollapsed ? "w-16" : "w-20 lg:w-60"} bg-white dark:bg-[#0c0617] border-e border-slate-300 dark:border-purple-900/30 flex flex-col transition-all duration-300 z-20 flex-shrink-0`}>
             <div className="h-16 flex items-center justify-between gap-2.5 border-b border-slate-300 dark:border-purple-900/30 px-3.5 shrink-0">
                 <div className="flex items-center gap-2.5 min-w-0">
-                    <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-8 h-8 object-contain shrink-0 drop-shadow-[0_2px_10px_rgba(168,85,247,0.35)]" />
+                    <img src={RAIZON_LOGO_URI} alt="RaiZon Pro" className="w-8 h-8 object-contain shrink-0 drop-shadow-[0_2px_10px_rgba(168,85,247,0.35)]" />
                     {!sidebarCollapsed && (
                         <span className="hidden lg:block font-bold text-base font-cairo truncate animate-fade-in tracking-tight">
                             <span className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]">RaiZon</span> <span className="text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.3)]">Pro</span>
@@ -1758,7 +1759,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             {/* ── BRAND / LOGO (لوجو مدمج وتصميم متناسق بدون أي خلفيات بيضاء) ── */}
             <div className="rz-login-brand rz-no-override" style={{ textAlign:'center', marginBottom:14, background:'transparent', border:'none', boxShadow:'none' }}>
               <img
-                src="/img/logo-transparent.png"
+                src={RAIZON_LOGO_URI}
                 alt="RaiZon Pro"
                 style={{
                   width:'min(100%,145px)',

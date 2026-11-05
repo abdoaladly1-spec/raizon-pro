@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { ArrowLeft } from './Icons';
+import { RAIZON_LOGO_URI } from '../lib/logoData';
 
 export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -466,7 +467,7 @@ export const Intro: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
         {/* الشعار مع الإطار الدوار المشع */}
         <div className="intro-logo-wrap">
           <div className="intro-logo-inner">
-            <img src="/img/logo-transparent.png" alt="RaiZon Pro" />
+            <img src={RAIZON_LOGO_URI} alt="RaiZon Pro" />
           </div>
         </div>
 
