@@ -1,6 +1,6 @@
 {
   "name": "procashier-system",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "RaiZon Pro v1 — منصة إدارة متكاملة للمحترفين",
   "author": "Eng. Abdelrahman Fathy El-Adly",
   "main": "electron/main.js",
