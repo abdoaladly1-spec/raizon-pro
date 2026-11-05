@@ -247,6 +247,31 @@ const MainContent = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncStatus, setSyncStatus] = useState({ pending: 0, lastSyncAt: null as number | null, lastError: null as string | null, syncing: false } as SyncStatus);
 
+  // ساعة النظام الحية متزامنة بدقة 100% مع ساعة جهاز الكمبيوتر
+  const [systemClock, setSystemClock] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setSystemClock(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const systemClockFormatted = useMemo(() => {
+    const is24h = state?.settings?.timeFormat === '24h';
+    const hours = systemClock.getHours();
+    const minutes = systemClock.getMinutes();
+    const seconds = systemClock.getSeconds();
+    const mStr = minutes < 10 ? `0${minutes}` : `${minutes}`;
+    const sStr = seconds < 10 ? `0${seconds}` : `${seconds}`;
+
+    if (is24h) {
+      const hStr = hours < 10 ? `0${hours}` : `${hours}`;
+      return `${hStr}:${mStr}:${sStr}`;
+    }
+    const ampm = hours >= 12 ? (language === 'ar' ? 'م' : 'PM') : (language === 'ar' ? 'ص' : 'AM');
+    const h12 = hours % 12 || 12;
+    const hStr = h12 < 10 ? `0${h12}` : `${h12}`;
+    return `${hStr}:${mStr}:${sStr} ${ampm}`;
+  }, [systemClock, state?.settings?.timeFormat, language]);
+
   useEffect(() => onSyncStatus(setSyncStatus), []);
 
   // تحذير المستخدم عند امتلاء مساحة التخزين
@@ -493,6 +518,18 @@ const MainContent = () => {
                         
                         {/* Left: Quick Actions & Status Controls */}
                         <div className="flex items-center gap-2 md:gap-3 shrink-0">
+                             {/* ساعة وتوقيت جهاز الكمبيوتر الحية */}
+                             <div
+                                 title={language === 'ar' ? 'ساعة النظام متزامنة لحظياً مع جهاز الكمبيوتر' : 'Live System Clock (Synced with Computer)'}
+                                 className="flex items-center gap-2 h-9 px-3 rounded-xl bg-slate-100/90 dark:bg-purple-950/25 border border-slate-300 dark:border-purple-800/40 text-xs font-mono font-bold text-slate-800 dark:text-purple-200 shadow-xs cursor-default select-none"
+                             >
+                                 <Clock size={13} className="text-purple-600 dark:text-purple-400 shrink-0 animate-pulse" />
+                                 <span className="font-extrabold tracking-wider" dir="ltr">
+                                     {systemClockFormatted}
+                                 </span>
+                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.9)] shrink-0" title={language === 'ar' ? 'متزامن مع ساعة الكمبيوتر' : 'Synced with PC'}></span>
+                             </div>
+
                              {syncStatus.pending > 0 && (
                                 <button
                                     onClick={() => flushQueue({ url: state.settings.serverUrl || '', apiKey: state.settings.serverApiKey || '' })}

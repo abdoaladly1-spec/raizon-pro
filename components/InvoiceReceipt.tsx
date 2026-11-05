@@ -108,7 +108,7 @@ export const InvoiceReceipt = ({
   const rtl = language === 'ar';
 
   const invDate = parseInvoiceDate(invoice.date);
-  const invTimestamp = invoice.timestamp ? new Date(invoice.timestamp) : invDate;
+  const invTimestamp = invoice.timestamp ? new Date(invoice.timestamp) : (demo ? new Date() : (invoice.date ? invDate : new Date()));
   const printTimeObj = new Date();
 
   // نظام الوقت المختار من الإعدادات (12 ساعة أو 24 ساعة)

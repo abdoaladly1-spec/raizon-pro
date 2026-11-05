@@ -47,6 +47,13 @@ export const SettingsPage = () => {
     const initialFormJsonRef = useRef(JSON.stringify(state.settings));
     const initialEmailJsonRef = useRef('');
 
+    // ساعة النظام الحية متزامنة مع الكمبيوتر
+    const [systemClock, setSystemClock] = useState(() => new Date());
+    useEffect(() => {
+        const timer = setInterval(() => setSystemClock(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
     // --- GitHub Releases Cloud Updater State & Handlers ---
     const [appVersion, setAppVersion] = useState<string>('1.0.0');
     const [updateChecking, setUpdateChecking] = useState<boolean>(false);
@@ -960,24 +967,30 @@ export const SettingsPage = () => {
         return () => { alive = false; };
     }, []);
 
-    const demoInvoice = useMemo(() => ({
-        id: 1,
-        locationId: state.settings.currentLocationId,
-        customerId: 0,
-        customerName: language === 'ar' ? 'عبدالرحمن فتحي العدلي' : 'Abdelrahman Fathy El-Adly',
-        items: [
-            { itemId: 'demo-1', name: language === 'ar' ? 'قص شعر' : 'Haircut', price: 100, quantity: 1, modifiers: [] },
-        ],
-        subtotal: 100,
-        discountPercent: 10,
-        taxPercent: 20,
-        total: 108,
-        date: '2026-10-29',
-        timestamp: Date.now(),
-        status: 'paid',
-        paymentMethod: 'cash',
-        createdBy: 'Admin',
-    } as any), [language, state.settings.currentLocationId]);
+    const demoInvoice = useMemo(() => {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        return {
+            id: 1,
+            locationId: state.settings.currentLocationId,
+            customerId: 0,
+            customerName: language === 'ar' ? 'عميل نقدي تجريبي' : 'Demo Cash Client',
+            items: [
+                { itemId: 'demo-1', name: language === 'ar' ? 'قص شعر' : 'Haircut', price: 100, quantity: 1, modifiers: [] },
+            ],
+            subtotal: 100,
+            discountPercent: 10,
+            taxPercent: 20,
+            total: 108,
+            date: `${y}-${m}-${d}`,
+            timestamp: now.getTime(),
+            status: 'paid',
+            paymentMethod: 'cash',
+            createdBy: 'Admin',
+        } as any;
+    }, [language, state.settings.currentLocationId, systemClock]);
 
     // =========================================================================
     // 1. تبويب بيانات المحل والفواتير (General)
@@ -1244,6 +1257,33 @@ export const SettingsPage = () => {
                             >
                                 {language === 'ar' ? '24 ساعة' : '24 Hours'}
                             </button>
+                        </div>
+                        {/* حالة مزامنة ساعة النظام مع الكمبيوتر */}
+                        <div className="mt-2.5 p-2.5 rounded-xl bg-purple-500/5 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.9)] animate-pulse"></span>
+                                <span className="text-slate-600 dark:text-slate-300 font-medium">
+                                    {language === 'ar' ? 'ساعة النظام متزامنة مع جهاز الكمبيوتر' : 'Synced with computer system clock'}
+                                </span>
+                            </div>
+                            <span className="font-mono font-bold text-purple-700 dark:text-purple-300" dir="ltr">
+                                {(() => {
+                                    const is24h = form.timeFormat === '24h';
+                                    const h = systemClock.getHours();
+                                    const m = systemClock.getMinutes();
+                                    const s = systemClock.getSeconds();
+                                    const mStr = m < 10 ? `0${m}` : `${m}`;
+                                    const sStr = s < 10 ? `0${s}` : `${s}`;
+                                    if (is24h) {
+                                        const hStr = h < 10 ? `0${h}` : `${h}`;
+                                        return `${hStr}:${mStr}:${sStr}`;
+                                    }
+                                    const ampm = h >= 12 ? 'PM' : 'AM';
+                                    const h12 = h % 12 || 12;
+                                    const hStr = h12 < 10 ? `0${h12}` : `${h12}`;
+                                    return `${hStr}:${mStr}:${sStr} ${ampm}`;
+                                })()}
+                            </span>
                         </div>
                     </div>
 

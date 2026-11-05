@@ -2497,7 +2497,7 @@ export const AppProvider = ({ children }: any) => {
   const formatTime = (date: Date | number, options?: Intl.DateTimeFormatOptions) => {
     const d = typeof date === 'number' ? new Date(date) : date;
     const is24h = state?.settings?.timeFormat === '24h';
-    return d.toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', {
+    return d.toLocaleTimeString(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: !is24h,
@@ -2508,7 +2508,7 @@ export const AppProvider = ({ children }: any) => {
   const formatDateTime = (date: Date | number, options?: Intl.DateTimeFormatOptions) => {
     const d = typeof date === 'number' ? new Date(date) : date;
     const is24h = state?.settings?.timeFormat === '24h';
-    return d.toLocaleString(language === 'ar' ? 'ar-EG' : 'en-US', {
+    return d.toLocaleString(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

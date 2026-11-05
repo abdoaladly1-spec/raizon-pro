@@ -1196,7 +1196,10 @@ export const CreateInvoice = ({ onClose }: any) => {
                                  <span>{t('clear')}</span>
                              </button>
                          )}
-                         <span className="text-xs text-slate-400 font-mono">{formatDate(new Date())}</span>
+                         <span className="text-xs text-slate-400 font-mono flex items-center gap-1.5" title={language === 'ar' ? 'ساعة وتاريخ النظام متزامنة مع الكمبيوتر' : 'Synced with system clock'}>
+                            <Clock size={12} className="text-purple-500 animate-pulse" />
+                            <span>{formatDateTime(new Date())}</span>
+                        </span>
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-1.5 min-h-[180px]">
