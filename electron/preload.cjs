@@ -25,6 +25,8 @@ contextBridge.exposeInMainWorld('procashier', {
   // التحديثات التلقائية عبر GitHub Releases
   checkForUpdates: (opts) => ipcRenderer.invoke('updater:check', opts || {}),
   downloadUpdate: (opts) => ipcRenderer.invoke('updater:download', opts || {}),
+  cancelDownloadUpdate: () => ipcRenderer.invoke('updater:cancel-download'),
+  getReadyUpdateInfo: () => ipcRenderer.invoke('updater:get-ready-info'),
   installUpdate: () => ipcRenderer.invoke('updater:install'),
   getAppVersion: () => ipcRenderer.invoke('updater:get-app-version'),
   openExternalUrl: (url) => ipcRenderer.invoke('updater:open-url', url),

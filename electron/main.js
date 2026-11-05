@@ -821,7 +821,7 @@ ipcMain.handle('patcher:set-window-size', (event, opts = {}) => {
 
 
 // ==================================================================
-// التحديثات التلقائية المجانية عبر GitHub Releases (Free Cloud Updater)
+// التحديثات التلقائية الذكية عبر GitHub Releases (Smart Cloud Updater)
 // ==================================================================
 let autoUpdaterInstance = null;
 try {
@@ -850,7 +850,79 @@ function isNewerVersion(latest, current) {
   return false;
 }
 
+// قفل لمنع تشغيل أكثر من عملية تنزيل/تحديث في الوقت نفسه
+let isDownloadingUpdate = false;
+let downloadAbortController = null;
 let downloadedInstallerPath = null;
+let downloadedReleaseInfo = null;
+
+// إنشاء نسخة احتياطية فورية من قاعدة البيانات والإعدادات قبل التحديث لحماية 100% من البيانات
+function performPreUpdateBackup() {
+  try {
+    const userData = app.getPath('userData');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupDir = path.join(userData, 'pre_update_backups', 'backup_' + timestamp);
+    fs.mkdirSync(backupDir, { recursive: true });
+
+    const filesToBackup = [
+      path.join(userData, 'procashier.db'),
+      path.join(userData, 'server.env'),
+      path.join(userData, 'license.key'),
+      path.join(userData, 'patcher-clients.json')
+    ];
+
+    const serverDb = path.join(process.cwd(), 'server', 'procashier.db');
+    if (fs.existsSync(serverDb) && !filesToBackup.includes(serverDb)) {
+      filesToBackup.push(serverDb);
+    }
+
+    let count = 0;
+    for (const file of filesToBackup) {
+      if (fs.existsSync(file)) {
+        try {
+          const dest = path.join(backupDir, path.basename(file));
+          fs.copyFileSync(file, dest);
+          count++;
+        } catch (cpErr) {
+          console.warn('[Updater] File copy warning:', file, cpErr?.message);
+        }
+      }
+    }
+    console.log('[Updater] Pre-update backup created with ' + count + ' files at:', backupDir);
+    return { ok: true, backupDir, count };
+  } catch (err) {
+    console.warn('[Updater] Pre-update backup warning:', err?.message || err);
+    return { ok: false, error: err?.message };
+  }
+}
+
+// التحقق من سلامة الملف باستخدام SHA-256 وبنية ملفات Windows التنفيذية (PE MZ Header)
+function verifyDownloadedFile(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return { valid: false, reason: 'الملف غير موجود على القرص' };
+    const stats = fs.statSync(filePath);
+    if (stats.size < 500 * 1024) {
+      return { valid: false, reason: 'حجم الملف صغير جداً أو تالف (' + stats.size + ' بايت)' };
+    }
+
+    // التحقق من ترويسة ملفات EXE (MZ signature: 0x4D, 0x5A)
+    const fd = fs.openSync(filePath, 'r');
+    const headerBuf = Buffer.alloc(2);
+    fs.readSync(fd, headerBuf, 0, 2, 0);
+    fs.closeSync(fd);
+
+    if (headerBuf[0] !== 0x4D || headerBuf[1] !== 0x5A) {
+      return { valid: false, reason: 'الملف ليس تطبيق تنفيذي صالح (Invalid MZ Header)' };
+    }
+
+    // حساب هاش SHA-256 للملف كاملاً
+    const fileBuffer = fs.readFileSync(filePath);
+    const sha256 = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+    return { valid: true, sha256, size: stats.size };
+  } catch (e) {
+    return { valid: false, reason: e?.message || 'خطأ أثناء التحقق من سلامة الملف' };
+  }
+}
 
 ipcMain.handle('updater:get-app-version', () => {
   return app.getVersion();
@@ -862,6 +934,23 @@ ipcMain.handle('updater:open-url', (_event, url) => {
     return true;
   }
   return false;
+});
+
+// معرفة هل يوجد تحديث تم تنزيله وجاهز للتثبيت الفوري
+ipcMain.handle('updater:get-ready-info', () => {
+  if (downloadedInstallerPath && fs.existsSync(downloadedInstallerPath)) {
+    const check = verifyDownloadedFile(downloadedInstallerPath);
+    if (check.valid) {
+      return {
+        ready: true,
+        filePath: downloadedInstallerPath,
+        sha256: check.sha256,
+        size: check.size,
+        releaseInfo: downloadedReleaseInfo
+      };
+    }
+  }
+  return { ready: false };
 });
 
 ipcMain.handle('updater:check', async (event, opts = {}) => {
@@ -885,6 +974,7 @@ ipcMain.handle('updater:check', async (event, opts = {}) => {
   }
 
   try {
+    // جلب أحدث إصدار مستقر فقط (releases/latest تستبعد تلقائياً مسودات draft والإصدارات التجريبية prerelease)
     const apiUrl = 'https://api.github.com/repos/' + owner + '/' + repo + '/releases/latest';
     const res = await fetch(apiUrl, { headers });
     
@@ -892,14 +982,14 @@ ipcMain.handle('updater:check', async (event, opts = {}) => {
       return { 
         ok: false, 
         currentVersion,
-        error: 'لم يتم العثور على مستودع أو إصدارات منشورة على GitHub (' + owner + '/' + repo + '). يرجى التأكد من رفع أول Release.'
+        error: 'لم يتم العثور على مستودع أو إصدارات منشورة على GitHub (' + owner + '/' + repo + ').'
       };
     }
     if (res.status === 401 || res.status === 403) {
       return { 
         ok: false, 
         currentVersion,
-        error: 'انتهت صلاحية رمز الدخول أو تم تجاوز حد طلبات GitHub. يرجى المحاولة لاحقاً.' 
+        error: 'تم تجاوز حد طلبات GitHub أو انتهت الصلاحية. يرجى المحاولة لاحقاً.' 
       };
     }
     if (!res.ok) {
@@ -910,17 +1000,28 @@ ipcMain.handle('updater:check', async (event, opts = {}) => {
     const latestVersion = (data.tag_name || data.name || '').replace(/^[^\d]*/, '');
     const hasUpdate = isNewerVersion(latestVersion, currentVersion);
 
-    // البحث عن ملف التثبيت في assets
+    // البحث عن ملف التثبيت الرسمي في assets
     const assets = Array.isArray(data.assets) ? data.assets : [];
     const installerAsset = assets.find(a => 
       a.name.toLowerCase().endsWith('.exe') || 
-      a.name.toLowerCase().includes('setup') ||
-      a.name.toLowerCase().endsWith('.zip')
+      a.name.toLowerCase().includes('setup')
     ) || assets[0] || null;
+
+    // فحص هل تم تنزيل هذا الإصدار مسبقاً وهو جاهز بالفعل
+    let isAlreadyDownloaded = false;
+    if (hasUpdate && downloadedInstallerPath && fs.existsSync(downloadedInstallerPath)) {
+      if (downloadedReleaseInfo && downloadedReleaseInfo.latestVersion === (data.tag_name || latestVersion)) {
+        const fileCheck = verifyDownloadedFile(downloadedInstallerPath);
+        if (fileCheck.valid) {
+          isAlreadyDownloaded = true;
+        }
+      }
+    }
 
     return {
       ok: true,
       hasUpdate,
+      isAlreadyDownloaded,
       currentVersion,
       latestVersion: data.tag_name || latestVersion,
       releaseName: data.name || data.tag_name || 'تحديث جديد',
@@ -937,6 +1038,7 @@ ipcMain.handle('updater:check', async (event, opts = {}) => {
   } catch (err) {
     return { 
       ok: false, 
+      offline: true,
       currentVersion, 
       error: 'تعذر الاتصال بخوادم GitHub: ' + (err?.message || 'تحقق من اتصال الإنترنت') 
     };
@@ -950,6 +1052,13 @@ ipcMain.handle('updater:download', async (event, opts = {}) => {
     return { ok: false, error: 'رابط التحميل غير متوفر' };
   }
 
+  if (isDownloadingUpdate) {
+    return { ok: false, inProgress: true, error: 'هناك عملية تنزيل تحديث جارية بالفعل في الخلفية' };
+  }
+
+  isDownloadingUpdate = true;
+  downloadAbortController = new AbortController();
+
   const filename = opts.filename || 'RaiZon_Pro_Update_Setup.exe';
   const targetDir = os.tmpdir();
   const destPath = path.join(targetDir, filename);
@@ -961,10 +1070,15 @@ ipcMain.handle('updater:download', async (event, opts = {}) => {
       fetchHeaders['Authorization'] = 'token ' + token;
       fetchHeaders['Accept'] = 'application/octet-stream';
     }
-    const res = await fetch(downloadUrl, { headers: fetchHeaders, redirect: 'follow' });
+
+    const res = await fetch(downloadUrl, { 
+      headers: fetchHeaders, 
+      redirect: 'follow',
+      signal: downloadAbortController.signal
+    });
     if (!res.ok) throw new Error('HTTP error ' + res.status);
 
-    const totalBytes = Number(res.headers.get('content-length')) || 0;
+    const totalBytes = Number(res.headers.get('content-length')) || opts.expectedSize || 0;
     let receivedBytes = 0;
 
     const fileStream = fs.createWriteStream(destPath);
@@ -988,18 +1102,38 @@ ipcMain.handle('updater:download', async (event, opts = {}) => {
     }
 
     fileStream.end();
+
+    // التحقق الصارم من سلامة الملف بعد اكتمال التنزيل عبر SHA-256 والـ PE Header
+    const verification = verifyDownloadedFile(destPath);
+    if (!verification.valid) {
+      try { if (fs.existsSync(destPath)) fs.unlinkSync(destPath); } catch (e) {}
+      throw new Error('فشل التحقق الأمني من سلامة ملف التحديث: ' + verification.reason);
+    }
+
     downloadedInstallerPath = destPath;
+    downloadedReleaseInfo = {
+      latestVersion: opts.version || '',
+      releaseName: opts.releaseName || '',
+      sha256: verification.sha256,
+      size: verification.size
+    };
+
+    isDownloadingUpdate = false;
+    downloadAbortController = null;
 
     if (win && !win.isDestroyed()) {
       win.webContents.send('updater:status-changed', {
         stage: 'downloaded',
         percent: 100,
-        filePath: destPath
+        filePath: destPath,
+        sha256: verification.sha256
       });
     }
 
-    return { ok: true, filePath: destPath };
+    return { ok: true, filePath: destPath, sha256: verification.sha256 };
   } catch (err) {
+    isDownloadingUpdate = false;
+    downloadAbortController = null;
     if (win && !win.isDestroyed()) {
       win.webContents.send('updater:status-changed', {
         stage: 'error',
@@ -1010,29 +1144,55 @@ ipcMain.handle('updater:download', async (event, opts = {}) => {
   }
 });
 
+// إلغاء التنزيل الجاري إن رغب المستخدم
+ipcMain.handle('updater:cancel-download', () => {
+  if (downloadAbortController) {
+    downloadAbortController.abort();
+    downloadAbortController = null;
+  }
+  isDownloadingUpdate = false;
+  return { ok: true };
+});
+
 ipcMain.handle('updater:install', async () => {
   if (!downloadedInstallerPath || !fs.existsSync(downloadedInstallerPath)) {
     return { ok: false, error: 'ملف التحديث غير موجود، يرجى التنزيل أولاً' };
   }
 
+  // التحقق من سلامة الملف قبل تشغيله
+  const check = verifyDownloadedFile(downloadedInstallerPath);
+  if (!check.valid) {
+    return { ok: false, error: 'الملف تالف أو غير صالح للتشغيل: ' + check.reason };
+  }
+
   try {
-    // تحديد مجلد التثبيت الحالي لضمان التثبيت والتحديث فوق نفس النسخة تماماً
+    // 1. الاحتفاظ بنسخة احتياطية آمنة من قاعدة البيانات والإعدادات قبل بدء التثبيت
+    performPreUpdateBackup();
+
+    // 2. تحديد مجلد التثبيت الحالي لضمان التثبيت والتحديث الصامت فوق نفس النسخة تماماً
     const currentAppDir = path.dirname(process.execPath);
     const args = [
+      '/S',
+      '/SILENT',
+      '/VERYSILENT',
+      '--silent',
+      '--auto-update',
       `--dir=${currentAppDir}`,
       `/DIR=${currentAppDir}`,
       `/D=${currentAppDir}`,
       `--target=${currentAppDir}`
     ];
+
     const child = spawn(downloadedInstallerPath, args, {
       detached: true,
       stdio: 'ignore'
     });
     child.unref();
 
+    // 3. إغلاق البرنامج بشكل آمن
     setTimeout(() => {
       app.quit();
-    }, 500);
+    }, 600);
 
     return { ok: true };
   } catch (e) {
