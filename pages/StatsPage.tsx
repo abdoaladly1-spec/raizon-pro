@@ -150,17 +150,20 @@ const BarsList = ({ rows, total, color = '#8b5cf6' }: { rows: { label: string; v
     </div>
 );
 
-const StatBox = ({ label, value, sub, icon: Icon, color = 'emerald' }: any) => (
-    <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden">
-        <div className={`absolute -top-4 -left-4 w-20 h-20 rounded-full bg-${color}-500/10 blur-xl`}></div>
-        <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{label}</p>
-            {Icon && <Icon size={18} className={`text-${color}-500`} />}
+const StatBox = ({ label, value, sub, icon: Icon, color = 'emerald', valueColor }: any) => {
+    const textColor = valueColor || (color === 'emerald' || color === 'green' ? 'text-emerald-500' : color === 'rose' || color === 'red' ? 'text-rose-500' : 'text-primary-600 dark:text-primary-400');
+    return (
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+            <div className={`absolute -top-4 -left-4 w-20 h-20 rounded-full bg-${color}-500/10 blur-xl`}></div>
+            <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-bold">{label}</p>
+                {Icon && <Icon size={18} className={`text-${color}-500`} />}
+            </div>
+            <h3 className={`text-2xl font-extrabold font-mono tracking-tight ${textColor}`}>{value}</h3>
+            {sub && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{sub}</p>}
         </div>
-        <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{value}</h3>
-        {sub && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{sub}</p>}
-    </div>
-);
+    );
+};
 
 /* --------------------------------- الصفحة --------------------------------- */
 
@@ -495,7 +498,7 @@ export const StatsPage = () => {
                 return (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <StatBox label={t('invoice_count')} value={invoices.length} icon={FileText} color="blue" />
-                        <StatBox label={t('avg_invoice')} value={`${money(avgInvoiceOf(invoices))} ${t('egp')}`} icon={BarChart2} color="violet" />
+                        <StatBox label={t('avg_invoice')} value={`${money(avgInvoiceOf(invoices))} ${t('egp')}`} icon={BarChart2} color="blue" />
                         <StatBox label={t('total_revenue')} value={`${money(profit.revenue)} ${t('egp')}`} icon={DollarSign} color="emerald" />
                         <Card className="md:col-span-3">
                             <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><FileText className="text-blue-500" /> {t('status')}</h3>
@@ -514,7 +517,7 @@ export const StatsPage = () => {
                 return (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <StatBox label={t('customer_count')} value={distinctCustomers(invoices)} icon={Users} color="blue" />
-                        <StatBox label={t('visit_count')} value={visitsOf(invoices, periodResv)} icon={Calendar} color="violet" />
+                        <StatBox label={t('visit_count')} value={visitsOf(invoices, periodResv)} icon={Calendar} color="blue" />
                         <StatBox label={t('total_revenue')} value={`${money(profit.revenue)} ${t('egp')}`} icon={DollarSign} color="emerald" />
                         <Card className="md:col-span-3">
                             <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Award className="text-amber-500" /> {t('top_customers')}</h3>
@@ -526,7 +529,7 @@ export const StatsPage = () => {
                 const cancelled = periodResv.filter(r => r.status === 'cancelled').length;
                 return (
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <StatBox label={t('visit_count')} value={visitsOf(invoices, periodResv)} icon={Calendar} color="violet" />
+                        <StatBox label={t('visit_count')} value={visitsOf(invoices, periodResv)} icon={Calendar} color="blue" />
                         <StatBox label={t('invoices')} value={invoices.length} icon={FileText} color="blue" />
                         <StatBox label={t('reservations')} value={`${periodResv.length}${cancelled ? ` (${cancelled} ${t('void')})` : ''}`} icon={Users} color="emerald" />
                         <StatBox label={t('customer_count')} value={distinctCustomers(invoices)} icon={Users} color="amber" />
@@ -592,7 +595,7 @@ export const StatsPage = () => {
             case 'avg_invoice':
                 return (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <StatBox label={t('avg_invoice')} value={`${money(avgInvoiceOf(invoices))} ${t('egp')}`} icon={BarChart2} color="violet" />
+                        <StatBox label={t('avg_invoice')} value={`${money(avgInvoiceOf(invoices))} ${t('egp')}`} icon={BarChart2} color="blue" />
                         <StatBox label={t('invoice_count')} value={invoices.length} icon={FileText} color="blue" />
                         <StatBox label={t('total_revenue')} value={`${money(profit.revenue)} ${t('egp')}`} icon={DollarSign} color="emerald" />
                         <Card className="md:col-span-3">
@@ -810,8 +813,8 @@ export const StatsPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                         <StatBox label={t('total_revenue')} value={`${money(profit.revenue)} ${t('egp')}`} sub={`${t('cash')}: ${money(paySplit.cash)}`} icon={DollarSign} color="emerald" />
                         <StatBox label={t('invoice_count')} value={invoices.length} sub={`${t('avg_invoice')}: ${money(avgInvoiceOf(invoices))}`} icon={FileText} color="blue" />
-                        <StatBox label={t('customer_count')} value={distinctCustomers(invoices)} sub={`${t('visit_count')}: ${visitsOf(invoices, periodResv)}`} icon={Users} color="violet" />
-                        <StatBox label={t('net_profit')} value={`${money(profit.netProfit)} ${t('egp')}`} sub={`${t('returns_total')}: ${money(profit.returns)} · ${t('expenses')}: ${money(profit.expenses)}`} icon={TrendingUp} color="amber" />
+                        <StatBox label={t('customer_count')} value={distinctCustomers(invoices)} sub={`${t('visit_count')}: ${visitsOf(invoices, periodResv)}`} icon={Users} color="blue" />
+                        <StatBox label={t('net_profit')} value={`${money(profit.netProfit)} ${t('egp')}`} sub={`${t('returns_total')}: ${money(profit.returns)} · ${t('expenses')}: ${money(profit.expenses)}`} icon={TrendingUp} color={profit.netProfit >= 0 ? "emerald" : "rose"} valueColor={profit.netProfit >= 0 ? "text-emerald-500" : "text-rose-500"} />
                     </div>
 
                     {/* العرض المحدد */}

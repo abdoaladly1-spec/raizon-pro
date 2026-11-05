@@ -507,7 +507,7 @@ export const Inventory = () => {
                                 <span>{language === 'ar' ? 'إجمالي الأصناف' : 'Total Items'}</span>
                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 font-bold border border-purple-200 dark:border-purple-800/40">الكتالوج</span>
                             </div>
-                            <h4 className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight">{stats.total}</h4>
+                            <h4 className="text-2xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">{stats.total}</h4>
                             <p className="text-[11px] text-slate-400 mt-1 font-medium">{stats.productsCount} منتج • {stats.servicesCount} خدمة</p>
                         </div>
 
@@ -516,7 +516,7 @@ export const Inventory = () => {
                                 <span>{language === 'ar' ? 'المنتجات بالمخزن' : 'Products Stock'}</span>
                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-800/40">رصيد</span>
                             </div>
-                            <h4 className="text-2xl font-bold text-primary-600 dark:text-primary-400 font-mono tracking-tight">
+                            <h4 className="text-2xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">
                                 {stats.totalUnits} <span className="text-xs font-bold text-slate-400">قطعة</span>
                             </h4>
                             <p className="text-[11px] text-slate-400 mt-1 font-medium">{stats.productsCount} منتج مسجل</p>
@@ -527,7 +527,7 @@ export const Inventory = () => {
                                 <span>{language === 'ar' ? 'الخدمات المتاحة' : 'Salon Services'}</span>
                                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">خدمات</span>
                             </div>
-                            <h4 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">{stats.servicesCount}</h4>
+                            <h4 className="text-2xl font-extrabold text-emerald-500 font-mono tracking-tight">{stats.servicesCount}</h4>
                             <p className="text-[11px] text-slate-400 mt-1 font-medium">{language === 'ar' ? 'خدمات بدون مخزون' : 'No stock tracking'}</p>
                         </div>
 
@@ -548,7 +548,7 @@ export const Inventory = () => {
                                     {stats.lowStockCount > 0 ? 'تنبيه' : 'متوفر'}
                                 </span>
                             </div>
-                            <h4 className={`text-2xl font-bold font-mono tracking-tight ${stats.lowStockCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-800 dark:text-slate-100'}`}>
+                            <h4 className={`text-2xl font-extrabold font-mono tracking-tight ${stats.lowStockCount > 0 ? 'text-rose-500' : 'text-slate-800 dark:text-white'}`}>
                                 {stats.lowStockCount}
                             </h4>
                             <p className="text-[11px] text-slate-400 mt-1 font-medium">{stats.lowStockCount > 0 ? 'تحتاج لتوريد عاجل' : 'المخزون متوفر بالكامل'}</p>

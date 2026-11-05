@@ -71,7 +71,7 @@ export const SuppliersPage = () => {
           <button
             type="button"
             onClick={() => { setIsEditing(false); setForm({ id: '', name: '', contact: '', email: '', phone: '', address: '', category: '', paymentTerms: 'دفع فوري', isActive: true }); setShowModal(true); }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer active:scale-95"
           >
             <Plus size={16} />
             <span>{t('add_supplier')}</span>

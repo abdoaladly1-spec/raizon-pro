@@ -121,7 +121,7 @@ export const PurchaseOrdersPage = () => {
           <button
             type="button"
             onClick={openCreate}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer active:scale-95"
           >
             <Plus size={16} /> 
             <span>{t('add_order')}</span>
@@ -136,7 +136,7 @@ export const PurchaseOrdersPage = () => {
             <span>إجمالي الأوامر</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 font-bold border border-purple-200 dark:border-purple-800/40">الكل</span>
           </div>
-          <h4 className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight">{poStats.total} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
+          <h4 className="text-2xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">{poStats.total} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
         </div>
 
         <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -144,7 +144,7 @@ export const PurchaseOrdersPage = () => {
             <span>قيد الانتظار</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/40">قيد التوريد</span>
           </div>
-          <h4 className="text-2xl font-bold text-amber-600 dark:text-amber-400 font-mono tracking-tight">{poStats.pending} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
+          <h4 className="text-2xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">{poStats.pending} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
         </div>
 
         <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -152,7 +152,7 @@ export const PurchaseOrdersPage = () => {
             <span>مستلمة بالمخزن</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/40">تم الاستلام</span>
           </div>
-          <h4 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">{poStats.received} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
+          <h4 className="text-2xl font-extrabold text-emerald-500 font-mono tracking-tight">{poStats.received} <span className="text-xs font-bold text-slate-400">أمر</span></h4>
         </div>
 
         <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -160,7 +160,7 @@ export const PurchaseOrdersPage = () => {
             <span>إجمالي المشتريات</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800/40">القيمة</span>
           </div>
-          <h4 className="text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono tracking-tight">{poStats.totalSpent.toLocaleString()} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h4>
+          <h4 className="text-2xl font-extrabold text-rose-500 font-mono tracking-tight">{poStats.totalSpent.toLocaleString()} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h4>
         </div>
       </div>
 
