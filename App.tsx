@@ -1347,6 +1347,17 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const userDropdownRef = useRef<HTMLDivElement>(null);
     const passwordInputRef = useRef<HTMLInputElement>(null);
+    const usernameInputRef = useRef<HTMLInputElement>(null);
+
+    // عدم عرض البطاقة بشكل مباشر وإضافة أنيميشن 1.5 ثانية مائي قبل التمكين التام وإدخال البيانات
+    const [isCardReady, setIsCardReady] = useState(false);
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setIsCardReady(true);
+        usernameInputRef.current?.focus();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }, []);
 
     const handlePinLogin = async () => {
       const res = await loginWithPin(pin);
@@ -1468,29 +1479,99 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
   
     return (
       <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#07060c] relative overflow-hidden p-4 font-sans select-none" dir="rtl">
+        {/* CSS Keyframes for Moving Background & iPhone Liquid Glass Intro */}
+        <style>{`
+          @keyframes spotlightDrift {
+            0%, 100% {
+              transform: rotate(-28deg) translateY(0px) scale(1);
+              opacity: 0.95;
+            }
+            50% {
+              transform: rotate(-31deg) translateY(22px) scale(1.06);
+              opacity: 0.78;
+            }
+          }
+          @keyframes wingDriftLeft {
+            0%, 100% {
+              transform: rotate(-12deg) scale(1);
+              opacity: 0.42;
+            }
+            50% {
+              transform: rotate(-16deg) scale(1.18) translateY(-12px);
+              opacity: 0.60;
+            }
+          }
+          @keyframes wingDriftRight {
+            0%, 100% {
+              transform: rotate(12deg) scale(1);
+              opacity: 0.42;
+            }
+            50% {
+              transform: rotate(16deg) scale(1.18) translateY(-12px);
+              opacity: 0.60;
+            }
+          }
+          @keyframes starFloat {
+            0%, 100% {
+              transform: translateY(0px) scale(1);
+              opacity: 0.35;
+            }
+            50% {
+              transform: translateY(-8px) scale(1.25);
+              opacity: 0.85;
+            }
+          }
+          @keyframes iosWaterCardIntro {
+            0% {
+              opacity: 0;
+              transform: translateY(42px) scale(0.92);
+              filter: blur(18px);
+            }
+            60% {
+              opacity: 0.65;
+              transform: translateY(12px) scale(0.97);
+              filter: blur(6px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0px) scale(1);
+              filter: blur(0px);
+            }
+          }
+          @keyframes liquidRipple {
+            0% {
+              transform: scale(0.7);
+              opacity: 0.8;
+            }
+            100% {
+              transform: scale(1.9);
+              opacity: 0;
+            }
+          }
+        `}</style>
+
         {/* Theme Toggle Button */}
         <button 
           onClick={toggleTheme} 
-          className="absolute top-6 left-6 z-30 p-2.5 rounded-xl bg-white/[0.05] border border-white/[0.1] text-slate-300 hover:text-white hover:bg-white/[0.1] transition-all shadow-md backdrop-blur-md cursor-pointer"
+          className="absolute top-6 left-6 z-30 p-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.12] transition-all shadow-md backdrop-blur-md cursor-pointer"
           title="تبديل المظهر"
           aria-label="تبديل المظهر"
         >
           {theme === 'dark' ? <Sun size={19} className="text-amber-400" /> : <Moon size={19} className="text-purple-300" />}
         </button>
 
-        {/* 1. Dramatic Diagonal Overhead Purple Spotlight Beam (مطابق للصورة تماماً) */}
+        {/* 1. Dynamic Moving Diagonal Overhead Purple Spotlight Beam (تحريك الخلفية) */}
         <div 
           className="absolute pointer-events-none"
           style={{
             top: '-25%',
             left: '52%',
-            width: '360px',
-            height: '920px',
-            transform: 'rotate(-28deg)',
+            width: '380px',
+            height: '950px',
             transformOrigin: 'top center',
-            background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(220, 185, 255, 0.78) 20%, rgba(147, 51, 234, 0.55) 45%, rgba(109, 40, 217, 0.15) 75%, transparent 100%)',
+            background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(220, 185, 255, 0.8) 20%, rgba(147, 51, 234, 0.55) 45%, rgba(109, 40, 217, 0.15) 75%, transparent 100%)',
             filter: 'blur(45px)',
-            opacity: 0.92
+            animation: 'spotlightDrift 9s ease-in-out infinite alternate'
           }}
         />
         <div 
@@ -1500,15 +1581,14 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             left: '55%',
             width: '110px',
             height: '700px',
-            transform: 'rotate(-28deg)',
             transformOrigin: 'top center',
             background: 'linear-gradient(180deg, #ffffff 0%, rgba(240, 225, 255, 0.95) 25%, rgba(168, 85, 247, 0.4) 55%, transparent 100%)',
             filter: 'blur(20px)',
-            opacity: 0.98
+            animation: 'spotlightDrift 9s ease-in-out infinite alternate'
           }}
         />
 
-        {/* 2. Symmetrical Soft Purple Wing Flares on Lower Left & Right */}
+        {/* 2. Symmetrical Dynamic Soft Purple Wing Flares (تحريك الأجنحة الضوئية) */}
         <div 
           className="absolute pointer-events-none"
           style={{
@@ -1517,9 +1597,9 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             width: '420px',
             height: '200px',
             borderRadius: '50%',
-            background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.42) 0%, rgba(109, 40, 217, 0.18) 50%, transparent 75%)',
+            background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.45) 0%, rgba(109, 40, 217, 0.18) 50%, transparent 75%)',
             filter: 'blur(60px)',
-            transform: 'rotate(-12deg)'
+            animation: 'wingDriftLeft 11s ease-in-out infinite alternate'
           }}
         />
         <div 
@@ -1530,27 +1610,27 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             width: '420px',
             height: '200px',
             borderRadius: '50%',
-            background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.42) 0%, rgba(109, 40, 217, 0.18) 50%, transparent 75%)',
+            background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.45) 0%, rgba(109, 40, 217, 0.18) 50%, transparent 75%)',
             filter: 'blur(60px)',
-            transform: 'rotate(12deg)'
+            animation: 'wingDriftRight 11s ease-in-out infinite alternate'
           }}
         />
 
-        {/* 3. Star Dust / Twinkling Crosses & Specks (مطابق لنجوم الصورة) */}
+        {/* 3. Star Dust / Floating Crosses & Specks (تحريك النجوم المضيئة) */}
         {[
-          { top: '16%', left: '24%', char: '✦', size: '10px', opacity: 0.45 },
-          { top: '24%', left: '32%', char: '•', size: '4px', opacity: 0.6 },
-          { top: '36%', left: '18%', char: '✦', size: '8px', opacity: 0.35 },
-          { top: '18%', left: '74%', char: '✦', size: '11px', opacity: 0.5 },
-          { top: '28%', left: '80%', char: '•', size: '4px', opacity: 0.6 },
-          { top: '44%', left: '86%', char: '✦', size: '9px', opacity: 0.4 },
-          { top: '64%', left: '16%', char: '•', size: '5px', opacity: 0.5 },
-          { top: '76%', left: '22%', char: '✦', size: '10px', opacity: 0.3 },
-          { top: '66%', left: '80%', char: '✦', size: '8px', opacity: 0.35 },
-          { top: '82%', left: '74%', char: '•', size: '4px', opacity: 0.6 },
-          { top: '52%', left: '34%', char: '✦', size: '7px', opacity: 0.25 },
-          { top: '54%', left: '66%', char: '✦', size: '7px', opacity: 0.25 },
-          { top: '30%', left: '52%', char: '✦', size: '6px', opacity: 0.3 }
+          { top: '16%', left: '24%', char: '✦', size: '10px', delay: '0s' },
+          { top: '24%', left: '32%', char: '•', size: '4px', delay: '1s' },
+          { top: '36%', left: '18%', char: '✦', size: '8px', delay: '2s' },
+          { top: '18%', left: '74%', char: '✦', size: '11px', delay: '0.5s' },
+          { top: '28%', left: '80%', char: '•', size: '4px', delay: '1.5s' },
+          { top: '44%', left: '86%', char: '✦', size: '9px', delay: '2.5s' },
+          { top: '64%', left: '16%', char: '•', size: '5px', delay: '0.8s' },
+          { top: '76%', left: '22%', char: '✦', size: '10px', delay: '1.8s' },
+          { top: '66%', left: '80%', char: '✦', size: '8px', delay: '2.8s' },
+          { top: '82%', left: '74%', char: '•', size: '4px', delay: '1.2s' },
+          { top: '52%', left: '34%', char: '✦', size: '7px', delay: '0.3s' },
+          { top: '54%', left: '66%', char: '✦', size: '7px', delay: '1.7s' },
+          { top: '30%', left: '52%', char: '✦', size: '6px', delay: '2.1s' }
         ].map((star, idx) => (
           <div 
             key={idx}
@@ -1559,59 +1639,87 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
               top: star.top,
               left: star.left,
               fontSize: star.size,
-              opacity: star.opacity,
-              textShadow: '0 0 6px rgba(255, 255, 255, 0.8), 0 0 12px rgba(168, 85, 247, 0.6)'
+              textShadow: '0 0 6px rgba(255, 255, 255, 0.8), 0 0 12px rgba(168, 85, 247, 0.6)',
+              animation: 'starFloat 4s ease-in-out infinite alternate',
+              animationDelay: star.delay
             }}
           >
             {star.char}
           </div>
         ))}
 
-        {/* 4. The Glassmorphic Card (مطابق للبطاقة الزجاجية الداكنة في الصورة) */}
-        <div className="relative z-10 w-full max-w-[420px]">
-          <div className={`relative w-full rounded-[24px] bg-[#0c0a16]/60 backdrop-blur-2xl border border-white/[0.09] p-8 sm:p-9 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] transition-all ${
-            isShaking 
-              ? 'animate-shake ring-4 ring-red-500/60 border-red-500/80 shadow-[0_0_40px_rgba(239,68,68,0.5)]' 
-              : 'animate-scale-in'
-          }`}>
-            
-            {/* Header: Clean Brand & Title */}
-            <div className="mb-6 text-right">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/30 p-2 flex items-center justify-center shadow-xs">
-                    <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-white tracking-tight flex items-center gap-1">
-                      <span className="text-amber-400">RaiZon</span>
-                      <span className="text-purple-400">Pro</span>
-                    </div>
-                    <div className="text-[10px] text-slate-400 font-medium">كاشير برو المتكامل</div>
-                  </div>
-                </div>
+        {/* 4. Preliminary 1.5s Liquid Energy Ripple before Card Materializes */}
+        {!isCardReady && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+            <div 
+              className="w-48 h-48 rounded-full border-2 border-purple-400/40"
+              style={{ animation: 'liquidRipple 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
+            />
+          </div>
+        )}
 
-                {liveRemainingText && (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-xs">
-                    <Clock size={11} className="animate-pulse" />
-                    <span>{liveRemainingText}</span>
-                  </div>
-                )}
+        {/* 5. The iPhone Liquid Water Glass Card (شفافة مائية مثل الآيفون ثيم + أنيميشن 1.5 ثانية) */}
+        <div className="relative z-10 w-full max-w-[420px]">
+          <div 
+            className={`relative w-full rounded-[28px] p-8 sm:p-9 transition-all duration-300 ${
+              isShaking 
+                ? 'animate-shake ring-4 ring-red-500/60 border-red-500/80 shadow-[0_0_40px_rgba(239,68,68,0.5)]' 
+                : ''
+            }`}
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(15, 12, 28, 0.35) 100%)',
+              backdropFilter: 'blur(40px) saturate(200%)',
+              WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+              border: '1px solid rgba(255, 255, 255, 0.20)',
+              boxShadow: 'inset 0 1.5px 1px rgba(255, 255, 255, 0.45), inset 0 -1px 1px rgba(255, 255, 255, 0.08), 0 25px 65px -15px rgba(0, 0, 0, 0.75), 0 0 35px rgba(168, 85, 247, 0.15)',
+              animation: 'iosWaterCardIntro 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+            }}
+          >
+            
+            {/* Header: Centered Logo + Centered Brand Title & Subtitle (اللوجو في المنتصف) */}
+            <div className="mb-6 text-center">
+              {/* Centered Liquid Glass Logo Badge */}
+              <div className="relative w-18 h-18 mx-auto mb-3.5 flex items-center justify-center">
+                {/* Water shimmer halo */}
+                <div className="absolute -inset-1 rounded-2xl bg-gradient-to-tr from-purple-500/25 to-fuchsia-500/25 blur-md animate-pulse" />
+                
+                <div 
+                  className="relative w-full h-full rounded-2xl p-3 flex items-center justify-center"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.04) 100%)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255, 255, 255, 0.22)',
+                    boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.45), 0 10px 25px -5px rgba(0, 0, 0, 0.5)'
+                  }}
+                >
+                  <img src="/img/logo-transparent.png" alt="RaiZon Pro" className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(168,85,247,0.6)]" />
+                </div>
               </div>
 
-              <h1 className="text-2xl sm:text-[26px] font-bold text-white tracking-tight mb-1">
-                تسجيل الدخول
+              {/* Centered Brand Title */}
+              <h1 className="text-2xl sm:text-[26px] font-bold text-white tracking-tight mb-1 flex items-center justify-center gap-1.5">
+                <span className="text-amber-400 drop-shadow-[0_2px_8px_rgba(251,191,36,0.3)]">RaiZon</span>
+                <span className="text-purple-400 drop-shadow-[0_2px_8px_rgba(168,85,247,0.3)]">Pro</span>
               </h1>
-              <p className="text-xs text-slate-400 font-normal">
-                أهلاً بك، ادخل بيانات حسابك للمتابعة في النظام.
+              <p className="text-xs text-slate-300/80 font-normal tracking-wide">
+                نظام كاشير برو المتكامل لإدارة المبيعات
               </p>
 
+              {/* License or update badges centered if present */}
+              {liveRemainingText && (
+                <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-xs">
+                  <Clock size={11} className="animate-pulse" />
+                  <span>{liveRemainingText}</span>
+                </div>
+              )}
+
               {pendingUpdate && !showUpdateModal && (
-                <div className="mt-2.5">
+                <div className="mt-2 text-center">
                   <button
                     type="button"
                     onClick={() => setShowUpdateModal(true)}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30 hover:bg-purple-500/25 transition-all cursor-pointer animate-pulse"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30 hover:bg-purple-500/25 transition-all cursor-pointer animate-pulse"
                   >
                     <RefreshCw size={11} className="shrink-0" />
                     <span>يتوفر إصدار جديد ({pendingUpdate.latestVersion}) — اضغط للتحديث</span>
@@ -1641,10 +1749,19 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
 
                 <div className="relative flex items-center">
                   <input 
+                    ref={usernameInputRef}
                     type="text" 
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-[#080712]/75 border border-white/[0.08] focus:border-purple-500 focus:bg-[#0d0a1e]/90 text-white text-sm font-medium outline-none transition-all placeholder:text-slate-500"
+                    disabled={!isCardReady}
+                    className="w-full px-4 py-3 rounded-2xl text-white text-sm font-medium outline-none transition-all placeholder:text-slate-400 focus:border-purple-400 focus:bg-white/[0.12] disabled:opacity-70"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      border: '1px solid rgba(255, 255, 255, 0.16)',
+                      boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.15)'
+                    }}
                     placeholder="اكتب اسم المستخدم..."
                     aria-label="اسم المستخدم"
                     autoComplete="username"
@@ -1663,8 +1780,16 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
 
                 {/* Dropdown Menu of Remembered Users */}
                 {showUserDropdown && rememberedUsers.length > 0 && (
-                  <div className="absolute top-full start-0 end-0 mt-2 bg-[#0c0a18] border border-white/[0.1] rounded-2xl shadow-2xl z-50 overflow-hidden animate-scale-in">
-                    <div className="p-2.5 bg-white/[0.03] border-b border-white/[0.06] text-xs font-bold text-slate-400 flex items-center justify-between">
+                  <div 
+                    className="absolute top-full start-0 end-0 mt-2 rounded-2xl shadow-2xl z-50 overflow-hidden animate-scale-in"
+                    style={{
+                      background: 'rgba(15, 12, 28, 0.95)',
+                      backdropFilter: 'blur(25px)',
+                      WebkitBackdropFilter: 'blur(25px)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)'
+                    }}
+                  >
+                    <div className="p-2.5 bg-white/[0.04] border-b border-white/[0.08] text-xs font-bold text-slate-400 flex items-center justify-between">
                       <span>الحسابات المحفوظة</span>
                       <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-mono font-bold">
                         {rememberedUsers.length}
@@ -1675,7 +1800,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                         <div
                           key={u.username}
                           onClick={() => handleSelectRememberedUser(u)}
-                          className="p-2.5 rounded-xl flex items-center justify-between gap-3 cursor-pointer hover:bg-white/[0.06] text-slate-200 transition-colors"
+                          className="p-2.5 rounded-xl flex items-center justify-between gap-3 cursor-pointer hover:bg-white/[0.08] text-slate-200 transition-colors"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
@@ -1712,7 +1837,15 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 pe-11 rounded-xl bg-[#080712]/75 border border-white/[0.08] focus:border-purple-500 focus:bg-[#0d0a1e]/90 text-white text-sm font-medium outline-none transition-all placeholder:text-slate-500"
+                    disabled={!isCardReady}
+                    className="w-full px-4 py-3 pe-11 rounded-2xl text-white text-sm font-medium outline-none transition-all placeholder:text-slate-400 focus:border-purple-400 focus:bg-white/[0.12] disabled:opacity-70"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      border: '1px solid rgba(255, 255, 255, 0.16)',
+                      boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.15)'
+                    }}
                     placeholder="اكتب كلمة المرور..."
                     aria-label="كلمة المرور"
                     autoComplete="current-password"
@@ -1730,7 +1863,7 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
 
               {/* Error Message */}
               {error && (
-                <div role="alert" className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs py-2.5 px-3.5 rounded-xl flex items-center gap-2.5 animate-shake">
+                <div role="alert" className="bg-red-500/15 border border-red-500/35 text-red-300 text-xs py-2.5 px-3.5 rounded-2xl flex items-center gap-2.5 animate-shake shadow-xs">
                   <AlertCircle size={16} className="text-red-400 shrink-0" />
                   <span className="font-medium">{t('login_error')}</span>
                 </div>
@@ -1768,11 +1901,11 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                 </button>
               </div>
 
-              {/* Primary Purple Submit Button (مطابق تماماً لزر الصورة Create account) */}
+              {/* Primary Purple Submit Button */}
               <button 
-                disabled={busy} 
+                disabled={busy || !isCardReady} 
                 type="submit"
-                className="w-full bg-[#7c3aed] hover:bg-[#6d28d9] active:scale-[0.98] text-white font-semibold py-3.5 px-4 rounded-xl shadow-[0_4px_25px_rgba(124,58,237,0.45)] hover:shadow-[0_6px_30px_rgba(124,58,237,0.6)] transition-all cursor-pointer text-sm text-center flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none mt-2"
+                className="w-full bg-[#7c3aed] hover:bg-[#6d28d9] active:scale-[0.98] text-white font-semibold py-3.5 px-4 rounded-2xl shadow-[0_4px_25px_rgba(124,58,237,0.45)] hover:shadow-[0_6px_30px_rgba(124,58,237,0.6)] transition-all cursor-pointer text-sm text-center flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none mt-2"
               >
                 {busy ? (
                   <div className="flex items-center gap-2">
@@ -1784,8 +1917,8 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                 )}
               </button>
 
-              {/* Developer Attribution Text Only (نص فقط حسب طلب المستخدم) */}
-              <div className="pt-4 pb-1 text-center">
+              {/* Developer Attribution Text Only (نص فقط في المنتصف حسب طلب المستخدم) */}
+              <div className="pt-3 pb-1 text-center">
                 <p className="text-xs text-slate-400 font-medium tracking-wide">
                   <span>برمجة وتصميم: م / عبد الرحمن فتحي العادلي</span>
                   <span className="mx-2 text-slate-500">-</span>
