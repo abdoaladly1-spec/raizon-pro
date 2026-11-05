@@ -171,7 +171,11 @@ export const PrintActions = ({ invoice }: { invoice: Invoice }) => {
       phone: state.settings.phone,
       address: state.settings.address
     });
-    addAuditLog('WhatsApp', `Shared invoice #${invoice.id} via WhatsApp`);
+    addAuditLog(
+      'WhatsApp',
+      `Shared invoice #${invoice.id} via WhatsApp`,
+      `مشاركة إيصال الفاتورة رقم #${invoice.id} عبر واتساب${phone ? ` مع العميل (${phone})` : ''}`
+    );
     addToast(language === 'ar' ? 'جاري فتح واتساب لمشاركة الفاتورة...' : 'Opening WhatsApp...', 'success');
   };
 

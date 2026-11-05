@@ -1,8 +1,9 @@
 /* تم فصل هذا الملف من App.tsx (نظام ProCashier) */
 import React, { useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Search, FileText, AlertTriangle, XCircle, RefreshCw, Wallet, AlertCircle, User, Check } from '../components/Icons';
+import { Search, FileText, AlertTriangle, XCircle, RefreshCw, Wallet, AlertCircle, User, Check, Download } from '../components/Icons';
 import { Card } from '../components/ui';
+import { translateAuditLogToAr, ACTION_CATEGORIES_AR, exportAuditLogsToCsv } from '../lib/auditLogAr';
 
 export const AuditLogs = () => {
   const { state, t, language, formatDateTime, formatNumber } = useApp();
@@ -101,14 +102,15 @@ export const AuditLogs = () => {
     ).forEach(l => {
       // تجنب التكرار مع ما أضفناه أعلاه
       if (!items.some(i => i.id === `audit-${l.id}`)) {
+        const trans = translateAuditLogToAr(l.action, l.details, l.detailsAr);
         items.push({
           id: `audit-${l.id}`,
           timestamp: l.timestamp,
           type: 'system_reset',
-          titleAr: l.action === 'Reset' ? 'تصفير نظام / استعادة' : `إجراء نظام (${l.action})`,
+          titleAr: l.action === 'Reset' ? 'تصفير نظام / استعادة' : trans.actionAr,
           titleEn: `System Action (${l.action})`,
           user: l.user || 'المدير',
-          reason: l.details,
+          reason: trans.detailsAr,
           badgeColor: 'bg-slate-700 text-slate-300 border-slate-600'
         });
       }
@@ -142,13 +144,21 @@ export const AuditLogs = () => {
     };
   }, [state.invoices, state.returns, state.drawerMovements, state.closingReports]);
 
-  // فلترة السجلات العادية
+  // فلترة وتنسيق السجلات العادية باللغة العربية بدقة متناهية
   const standardLogs = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return (state.auditLogs || []).filter(log => {
+    return (state.auditLogs || []).map(log => {
+      const trans = translateAuditLogToAr(log.action, log.details, log.detailsAr);
+      return {
+        ...log,
+        actionAr: trans.actionAr,
+        detailsAr: trans.detailsAr,
+        badgeColor: trans.badgeColor,
+      };
+    }).filter(log => {
       if (action !== 'all' && log.action !== action) return false;
       if (!q) return true;
-      return [log.user, log.action, log.details].some(v => String(v || '').toLowerCase().includes(q));
+      return [log.user, log.action, log.actionAr, log.details, log.detailsAr].some(v => String(v || '').toLowerCase().includes(q));
     });
   }, [state.auditLogs, query, action]);
 
@@ -261,7 +271,7 @@ export const AuditLogs = () => {
         </div>
       )}
 
-      {/* شريط البحث والتصفية */}
+      {/* شريط البحث والتصفية والتصدير */}
       <div className="flex flex-wrap items-center gap-3 justify-between">
         <div className="relative flex-1 max-w-sm">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -273,16 +283,35 @@ export const AuditLogs = () => {
           />
         </div>
 
-        {activeTab === 'all' && (
-          <select
-            value={action}
-            onChange={(e) => setAction(e.target.value)}
-            className="px-3 py-2 text-xs rounded-xl border border-slate-700 bg-slate-800 text-slate-200 outline-none"
-          >
-            <option value="all">{t('all_actions')}</option>
-            {actions.map(a => <option key={a} value={a}>{t(a.toLowerCase()) || a}</option>)}
-          </select>
-        )}
+        <div className="flex items-center gap-2">
+          {activeTab === 'all' && (
+            <select
+              value={action}
+              onChange={(e) => setAction(e.target.value)}
+              className="px-3 py-2 text-xs rounded-xl border border-slate-700 bg-slate-800 text-slate-200 outline-none"
+            >
+              <option value="all">{language === 'ar' ? 'جميع أنواع العمليات' : t('all_actions')}</option>
+              {actions.map(a => (
+                <option key={a} value={a}>
+                  {language === 'ar' ? (ACTION_CATEGORIES_AR[a]?.label || a) : (t(a.toLowerCase()) || a)}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {activeTab === 'all' && (
+            <button
+              type="button"
+              onClick={() => exportAuditLogsToCsv(standardLogs)}
+              disabled={standardLogs.length === 0}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 hover:border-emerald-500/60 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+              title={language === 'ar' ? 'تصدير السجل إلى ملف Excel بصيغة CSV المتوافقة مع اللغة العربية' : 'Export audit logs to CSV'}
+            >
+              <Download size={14} />
+              <span>{language === 'ar' ? 'تصدير إلى Excel' : 'Export Excel'}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* محتوى جدول العمليات المشبوهة */}
@@ -348,23 +377,32 @@ export const AuditLogs = () => {
             <table className="w-full text-right text-xs">
               <thead>
                 <tr className="border-b border-slate-700 text-slate-400 font-bold">
-                  <th className="py-3 px-3">{t('time')}</th>
-                  <th className="py-3 px-3">{t('user_header')}</th>
-                  <th className="py-3 px-3">{t('action_header')}</th>
-                  <th className="py-3 px-3">{t('details_header')}</th>
+                  <th className="py-3 px-3">{language === 'ar' ? 'الوقت والتاريخ' : t('time')}</th>
+                  <th className="py-3 px-3">{language === 'ar' ? 'المستخدم / الكاشير' : t('user_header')}</th>
+                  <th className="py-3 px-3">{language === 'ar' ? 'نوع العملية' : t('action_header')}</th>
+                  <th className="py-3 px-3">{language === 'ar' ? 'تفاصيل الإجراء والمبالغ' : t('details_header')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800 font-medium">
                 {standardLogs.map(log => (
                   <tr key={log.id} className="hover:bg-slate-800/60 transition-colors">
-                    <td className="py-3 px-3 text-slate-400 font-mono text-[11px]">{formatDateTime(new Date(log.timestamp))}</td>
-                    <td className="py-3 px-3 font-bold text-slate-200">{log.user}</td>
-                    <td className="py-3 px-3">
-                      <span className="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 text-[11px]">
-                        {t(log.action.toLowerCase()) || log.action}
+                    <td className="py-3 px-3 text-slate-400 font-mono text-[11px] whitespace-nowrap">
+                      {formatDateTime(new Date(log.timestamp))}
+                    </td>
+                    <td className="py-3 px-3 font-bold text-slate-200 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <User size={13} className="text-slate-400 shrink-0" />
+                        <span>{log.user}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border ${log.badgeColor}`}>
+                        {language === 'ar' ? log.actionAr : (t(log.action.toLowerCase()) || log.action)}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-slate-300">{log.details}</td>
+                    <td className="py-3 px-3 text-slate-200 leading-relaxed font-sans">
+                      {language === 'ar' ? log.detailsAr : log.details}
+                    </td>
                   </tr>
                 ))}
                 {standardLogs.length === 0 && (

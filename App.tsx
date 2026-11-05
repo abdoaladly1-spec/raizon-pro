@@ -1365,7 +1365,11 @@ const InitialAdminSetupWizard = () => {
 
         // الرصيد الافتتاحي مسجل في الإعدادات كأساس لدرج الكاشير (بدون تسجيل حركة إيداع إضافية لتفادي ازدواج الحساب)
 
-        addAuditLog('Setup', `Completed initial admin setup: Name=${realName.trim()}, CashDrawer=${cashAmount} EGP`);
+        addAuditLog(
+          'Setup',
+          `Completed initial admin setup: Name=${realName.trim()}, CashDrawer=${cashAmount} EGP`,
+          `إكمال الإعداد الأولي للمدير: الاسم الفعلي "${realName.trim()}"، وتعيين الرصيد الافتتاحي للدرج بقيمة ${cashAmount} ج.م`
+        );
         addToast(
           language === 'ar'
             ? `مرحباً بك يا ${realName.trim()}! تم تغيير كلمة المرور وتعيين رصيد الدرج بنجاح.`
