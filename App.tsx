@@ -1590,8 +1590,8 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                 alt="RaiZon Pro"
                 style={{ width:'min(100%,240px)', height:140, objectFit:'contain', display:'block', margin:'-5px auto 0', filter:'drop-shadow(0 8px 22px rgba(187,46,255,0.26))' }}
               />
-              {/* اسم التطبيق أسفل اللوجو مباشرة */}
-              <h1 style={{ fontSize:26, fontWeight:800, margin:'8px 0 2px', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+              {/* اسم التطبيق أسفل اللوجو مباشرة - LTR ليكون ريزون برو وليس برو رايزون */}
+              <h1 dir="ltr" style={{ fontSize:26, fontWeight:800, margin:'8px 0 2px', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
                 <span style={{ color:'#ffbf24', textShadow:'0 0 16px rgba(255,191,36,0.35)' }}>RaiZon</span>
                 <span style={{ color:'#cf57ff', textShadow:'0 0 16px rgba(207,87,255,0.35)' }}>Pro</span>
               </h1>
@@ -1757,6 +1757,20 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                   <span>تسجيل الدخول &nbsp;←</span>
                 )}
               </button>
+
+              {/* بيانات المطور أسفل زر تسجيل الدخول مباشرة */}
+              <div style={{ textAlign:'center', marginTop:14 }}>
+                <p style={{ fontSize:12, color:'#b9a9c7', margin:0, fontWeight:500, lineHeight:1.7 }}>
+                  <span>برمجة وتصميم: م / عبد الرحمن فتحي العادلي</span>
+                  <span style={{ margin:'0 6px', color:'#c084fc' }}>•</span>
+                  <a href="tel:01026695879" dir="ltr" style={{ color:'#ffd15b', textDecoration:'none', fontWeight:700, display:'inline-block' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#cf57ff'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='#ffd15b'; }}
+                  >
+                    01026695879
+                  </a>
+                </p>
+              </div>
             </form>
 
             {/* Biometric */}
@@ -1780,13 +1794,19 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             </div>
           </div>
 
-          {/* Footer */}
-          <div style={{ textAlign:'center', color:'#786985', fontSize:11, marginTop:20, direction:'ltr', letterSpacing:'1.5px' }}>
-            RIZON PRO &nbsp;•&nbsp; برمجة وتصميم: م / عبد الرحمن فتحي العادلي &nbsp;•&nbsp;
-            <a href="tel:01026695879" style={{ color:'#9f90aa', textDecoration:'none' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#e4a8ff'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color='#9f90aa'; }}
-            >01026695879</a>
+          {/* رقم الإصدار بالمنتصف في الربع الأخير أسفل البطاقة */}
+          <div style={{ textAlign:'center', marginTop:18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <div style={{
+              display:'inline-flex', alignItems:'center', gap:7, padding:'5px 16px', borderRadius:99,
+              background:'rgba(35,18,49,0.75)', border:'1px solid rgba(225,185,255,0.16)',
+              backdropFilter:'blur(16px)', WebkitBackdropFilter:'blur(16px)',
+              boxShadow:'0 8px 24px rgba(0,0,0,0.35)'
+            }}>
+              <span style={{ width:7, height:7, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981' }} />
+              <span style={{ color:'#cbbbd8', fontSize:11, letterSpacing:'1.5px', fontWeight:600, fontFamily:'monospace' }} dir="ltr">
+                الإصدار v{appVersion.replace(/^v/i, '')}
+              </span>
+            </div>
           </div>
         </div>
 
