@@ -1498,21 +1498,21 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             to { transform: rotate(360deg); }
           }
           @keyframes neonPulseGlow {
-            0%, 100% { opacity: 0.45; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.015); }
+            0%, 100% { opacity: 0.15; transform: scale(1); }
+            50% { opacity: 0.28; transform: scale(1.01); }
           }
         `}</style>
 
         {/* Card Wrapper with Outer Ambient Purple Neon Aura */}
         <div className="relative z-10 w-full max-w-[440px] flex items-center justify-center">
-          {/* Animated Neon Backlight Glow (أورا نيون متوهجة حول البطاقة) */}
+          {/* Animated Soft Neon Backlight Glow (توهج نيون ناعم وهادئ حول البطاقة) */}
           <div 
-            className="absolute -inset-1.5 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 rounded-[34px] blur-xl pointer-events-none"
+            className="absolute -inset-1 bg-gradient-to-r from-purple-600/60 via-fuchsia-600/50 to-indigo-600/60 rounded-[32px] blur-lg pointer-events-none"
             style={{ animation: 'neonPulseGlow 4s ease-in-out infinite' }}
           />
 
-          {/* Card Container: شفافة بنسبة 20% (80% Opacity Glass) مع إطار وتوهج نيون بنفسجي فخم */}
-          <div className={`relative z-10 w-full bg-white/80 dark:bg-[#0f141c]/80 backdrop-blur-2xl border-2 border-purple-500/50 dark:border-purple-500/60 p-8 sm:p-9 rounded-[28px] shadow-[0_0_40px_rgba(168,85,247,0.38),0_0_80px_rgba(147,51,234,0.22),inset_0_0_20px_rgba(168,85,247,0.12)] transition-all ${
+          {/* Card Container: شفافة بنسبة 20% (80% Opacity Glass) مع إطار وتوهج نيون ناعم وأنيق */}
+          <div className={`relative z-10 w-full bg-white/80 dark:bg-[#0f141c]/80 backdrop-blur-2xl border border-purple-500/30 dark:border-purple-500/35 p-8 sm:p-9 rounded-[28px] shadow-[0_0_20px_rgba(168,85,247,0.18),0_20px_50px_-15px_rgba(0,0,0,0.5),inset_0_0_12px_rgba(168,85,247,0.06)] transition-all ${
             isShaking 
               ? 'animate-shake ring-4 ring-red-500/60 border-red-500/80 shadow-[0_0_40px_rgba(239,68,68,0.5)]' 
               : 'animate-scale-in'
