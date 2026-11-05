@@ -80,29 +80,6 @@ export const InvoiceReceipt = ({
     'شارع حديقة الطفل بجوار البنك الاهلي القديم'
   ).trim();
 
-  // حالة إدارة وتعديل ملاحظات الفاتورة من قبل الأدمن
-  const [isEditingNotes, setIsEditingNotes] = useState(false);
-  const [notesInput, setNotesInput] = useState(invoice.notes || '');
-
-  useEffect(() => {
-    setNotesInput(invoice.notes || '');
-  }, [invoice.notes]);
-
-  const handleSaveNotes = () => {
-    if (updateInvoice) {
-      updateInvoice({ ...invoice, notes: notesInput.trim() });
-    }
-    setIsEditingNotes(false);
-  };
-
-  const handleClearNotes = () => {
-    if (updateInvoice) {
-      updateInvoice({ ...invoice, notes: '' });
-    }
-    setNotesInput('');
-    setIsEditingNotes(false);
-  };
-
   // بيانات نظام الولاء المرتبطة بالعميل والفاتورة
   const customerObj = state.customers.find(
     (c) => c.id === invoice.customerId || (c.phone && invoice.customerName && c.phone === invoice.customerName)
@@ -759,8 +736,8 @@ export const InvoiceReceipt = ({
                       </div>
                     )}
 
-                    {/* ملاحظات الفاتورة: إمكانية التعديل والإضافة والحذف بواسطة الأدمن */}
-                    {(invoice.notes || isEditingNotes || currentUser?.role === 'admin') && (
+                    {/* ملاحظات الفاتورة: تظهر فقط في حال تعيين ملاحظة عند إنشاء الفاتورة */}
+                    {Boolean(invoice.notes && invoice.notes.trim()) && (
                       <div
                         style={{
                           border: '1px solid #000000',
@@ -770,82 +747,14 @@ export const InvoiceReceipt = ({
                           fontSize: '11px',
                         }}
                       >
-                        <div className="flex items-center justify-between mb-1">
+                        <div className="mb-1">
                           <span className="font-bold underline text-black">
                             {rtl ? 'ملاحظات الفاتورة:' : 'Invoice Notes:'}
                           </span>
-                          {/* أزرار الإدارة للأدمن - تظهر على الشاشة فقط وتختفي عند أمر الطباعة */}
-                          {currentUser?.role === 'admin' && !demo && (
-                            <div className="print:hidden flex items-center gap-1.5 text-[10px]">
-                              {!isEditingNotes ? (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => setIsEditingNotes(true)}
-                                    className="px-1.5 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] cursor-pointer"
-                                    title={rtl ? 'تعديل الملاحظات' : 'Edit notes'}
-                                  >
-                                    {invoice.notes ? (rtl ? 'تعديل' : 'Edit') : (rtl ? 'إضافة ملاحظة' : 'Add Note')}
-                                  </button>
-                                  {invoice.notes && (
-                                    <button
-                                      type="button"
-                                      onClick={handleClearNotes}
-                                      className="px-1.5 py-0.5 bg-red-600 hover:bg-red-700 text-white rounded text-[10px] cursor-pointer"
-                                      title={rtl ? 'إلغاء الملاحظة' : 'Delete note'}
-                                    >
-                                      {rtl ? 'إلغاء/حذف' : 'Delete'}
-                                    </button>
-                                  )}
-                                </>
-                              ) : (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={handleSaveNotes}
-                                    className="px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] cursor-pointer font-bold"
-                                  >
-                                    {rtl ? 'حفظ' : 'Save'}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setNotesInput(invoice.notes || '');
-                                      setIsEditingNotes(false);
-                                    }}
-                                    className="px-1.5 py-0.5 bg-slate-500 hover:bg-slate-600 text-white rounded text-[10px] cursor-pointer"
-                                  >
-                                    {rtl ? 'تراجع' : 'Cancel'}
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          )}
                         </div>
-
-                        {isEditingNotes && currentUser?.role === 'admin' && !demo ? (
-                          <div className="print:hidden mt-1">
-                            <textarea
-                              value={notesInput}
-                              onChange={(e) => setNotesInput(e.target.value)}
-                              rows={2}
-                              placeholder={rtl ? 'أدخل ملاحظات الفاتورة هنا...' : 'Enter invoice notes here...'}
-                              className="w-full p-1.5 text-xs border border-slate-400 rounded bg-white text-black font-normal focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                          </div>
-                        ) : (
-                          invoice.notes ? (
-                            <p className="whitespace-pre-line text-black font-semibold text-[11px] leading-tight">
-                              {invoice.notes}
-                            </p>
-                          ) : (
-                            currentUser?.role === 'admin' && (
-                              <p className="text-slate-400 italic text-[10px] print:hidden">
-                                {rtl ? 'لا توجد ملاحظات مسجلة (انقر إضافة ملاحظة)' : 'No notes (click Add Note)'}
-                              </p>
-                            )
-                          )
-                        )}
+                        <p className="whitespace-pre-line text-black font-semibold text-[11px] leading-tight">
+                          {invoice.notes}
+                        </p>
                       </div>
                     )}
                   </div>

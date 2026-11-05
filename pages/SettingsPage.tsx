@@ -407,7 +407,7 @@ export const SettingsPage = () => {
                     'X-API-Key': apiKey 
                 },
                 body: JSON.stringify({ service }),
-                signal: AbortSignal.timeout(6000)
+                signal: AbortSignal.timeout(25000)
             });
             if (res.ok) {
                 const data = await res.json();
@@ -1158,7 +1158,7 @@ export const SettingsPage = () => {
                                         : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
                                 }`}
                             >
-                                {t('time_format_12h') || '12 ساعة (02:47PM)'}
+                                {language === 'ar' ? '12 ساعة' : '12 Hours'}
                             </button>
                             <button
                                 type="button"
@@ -1171,7 +1171,7 @@ export const SettingsPage = () => {
                                         : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
                                 }`}
                             >
-                                {t('time_format_24h') || '24 ساعة (14:47)'}
+                                {language === 'ar' ? '24 ساعة' : '24 Hours'}
                             </button>
                         </div>
                     </div>

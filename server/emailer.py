@@ -459,14 +459,16 @@ def build_closing_email(rep: Dict[str, Any]) -> Dict[str, str]:
 </body>
 </html>"""
 
-    plain = f"""فاتورة مبيعات جديدة #{inv_num}
-الفرع: {branch_name or "الرئيسي"}
-العميل: {customer_name}
-الهاتف: {phone}
-التاريخ: {datetime_formatted}
-طريقة الدفع: {payment_method_arabic}
-الكاشير: {cashier}
-الإجمالي: {total:,.2f} ج.م
+    plain = f"""تقرير إقفال وردية
+التاريخ: {date_str}
+المسؤول / الكاشير: {performed_by}
+الحالة: {status_arabic}
+الرصيد الافتتاحي: {opening:,.2f} ج.م
+مبيعات الكاش: {cash_sales:,.2f} ج.م
+إجمالي المصروفات: {expenses:,.2f} ج.م
+النقدية المتوقعة: {expected:,.2f} ج.م
+النقدية الفعلية: {actual:,.2f} ج.م
+الفارق: {diff:,.2f} ج.م
 """
 
     return {"subject": subject, "html": body_html, "plain": plain}
