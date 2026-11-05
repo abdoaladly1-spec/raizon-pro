@@ -63,6 +63,12 @@ export const DebtsPage: React.FC = () => {
   const [newCustNotes, setNewCustNotes] = useState('');
   const [isSubmittingCustomer, setIsSubmittingCustomer] = useState(false);
 
+  // تحقق مباشر من شروط العميل الجديد
+  const newCustNameParts = (newCustName || '').trim().split(/\s+/).filter(Boolean);
+  const isNewCustNameValid = newCustNameParts.length >= 3 && newCustNameParts.every(p => p.length >= 2);
+  const cleanNewCustPhone = (newCustPhone || '').replace(/\D/g, '');
+  const isNewCustPhoneValid = cleanNewCustPhone.length === 11 && cleanNewCustPhone.startsWith('01');
+
   // 5. Edit Customer Modal
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [editLimit, setEditLimit] = useState('');
@@ -1516,11 +1522,22 @@ export const DebtsPage: React.FC = () => {
         >
           <form onSubmit={handleConfirmAddCustomer} className="space-y-4 text-right" dir="rtl">
             <div>
-              <div className="flex justify-between items-center mb-1">
+              <div className="flex justify-between items-center mb-1.5">
                 <label className="block text-xs font-bold text-slate-300">
                   اسم العميل (ثلاثي): <span className="text-rose-400">*</span>
                 </label>
-                <span className="text-[10px] text-purple-300">شرط 3 كلمات</span>
+                <span className={`text-[11px] font-bold flex items-center gap-1 transition-colors duration-200 ${
+                  isNewCustNameValid ? 'text-emerald-400' : 'text-rose-400'
+                }`}>
+                  {isNewCustNameValid ? (
+                    <>
+                      <Check size={14} className="stroke-[3] text-emerald-400 shrink-0" />
+                      <span>اسم ثلاثي مكتمل</span>
+                    </>
+                  ) : (
+                    <span>شرط: اسم ثلاثي ({Math.min(newCustNameParts.length, 3)}/3)</span>
+                  )}
+                </span>
               </div>
               <input
                 type="text"
@@ -1528,17 +1545,32 @@ export const DebtsPage: React.FC = () => {
                 value={newCustName}
                 onChange={(e) => setNewCustName(e.target.value)}
                 placeholder="مثال: أحمد محمد علي"
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
+                className={`w-full px-3 py-2 rounded-xl border text-white text-xs outline-none transition-all ${
+                  isNewCustNameValid
+                    ? 'border-emerald-500 bg-emerald-950/20 focus:ring-2 focus:ring-emerald-500'
+                    : newCustName
+                      ? 'border-rose-500 bg-rose-950/20 focus:ring-2 focus:ring-rose-500'
+                      : 'border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 focus:ring-2 focus:ring-purple-500'
+                }`}
               />
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-1">
+              <div className="flex justify-between items-center mb-1.5">
                 <label className="block text-xs font-bold text-slate-300">
                   رقم الهاتف (11 رقماً): <span className="text-rose-400">*</span>
                 </label>
-                <span className={`text-[10px] font-mono ${newCustPhone.replace(/\D/g, '').length === 11 ? 'text-emerald-400 font-bold' : 'text-amber-400'}`}>
-                  {newCustPhone.replace(/\D/g, '').length}/11 رقم
+                <span className={`text-[11px] font-mono font-bold flex items-center gap-1 transition-colors duration-200 ${
+                  isNewCustPhoneValid ? 'text-emerald-400' : 'text-rose-400'
+                }`}>
+                  {isNewCustPhoneValid ? (
+                    <>
+                      <Check size={14} className="stroke-[3] text-emerald-400 shrink-0" />
+                      <span>رقم صحيح (11 رقماً)</span>
+                    </>
+                  ) : (
+                    <span>شرط 11 رقماً ويبدأ بـ 01 ({cleanNewCustPhone.length}/11)</span>
+                  )}
                 </span>
               </div>
               <input
@@ -1551,7 +1583,13 @@ export const DebtsPage: React.FC = () => {
                   setNewCustPhone(val);
                 }}
                 placeholder="01xxxxxxxxx"
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+                className={`w-full px-3 py-2 rounded-xl border text-white text-xs font-mono outline-none transition-all ${
+                  isNewCustPhoneValid
+                    ? 'border-emerald-500 bg-emerald-950/20 focus:ring-2 focus:ring-emerald-500'
+                    : newCustPhone
+                      ? 'border-rose-500 bg-rose-950/20 focus:ring-2 focus:ring-rose-500'
+                      : 'border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 focus:ring-2 focus:ring-purple-500'
+                }`}
               />
             </div>
 
@@ -1603,7 +1641,8 @@ export const DebtsPage: React.FC = () => {
             <div className="flex gap-2.5 pt-3 border-t border-slate-300 dark:border-slate-600/80">
               <Button
                 variant="primary"
-                disabled={isSubmittingCustomer || !newCustName.trim() || !newCustPhone.trim()}
+                type="submit"
+                disabled={isSubmittingCustomer || !isNewCustNameValid || !isNewCustPhoneValid}
                 className="flex-1 justify-center py-2.5 text-sm font-bold shadow-sm"
               >
                 {isSubmittingCustomer ? 'جاري الحفظ...' : 'حفظ العميل'}

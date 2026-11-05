@@ -989,23 +989,94 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                     maxWidth="max-w-md"
                 >
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <Input 
-                            label={t('customer_name')} 
-                            value={form.name} 
-                            onChange={(e: any) => setForm({ ...form, name: e.target.value })} 
-                            placeholder={language === 'ar' ? 'الاسم ثنائياً...' : 'Customer Name'}
-                            validationRegex={/^(\S+)\s+(\S+).*$/}
-                            error={language === 'ar' ? 'الاسم يجب أن يحتوي على مقطعين على الأقل' : 'Enter first & last name'}
-                        />
+                        {(() => {
+                            const nameParts = (form.name || '').trim().split(/\s+/).filter(Boolean);
+                            const isNameValid = nameParts.length >= 3 && nameParts.every((p: string) => p.length >= 2);
+                            const cleanDigits = (form.phone || '').replace(/\D/g, '');
+                            const isPhoneValid = cleanDigits.length === 11 && cleanDigits.startsWith('01');
+                            return (
+                                <>
+                                    <div>
+                                        <div className="flex justify-between items-center mb-1.5">
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                                                {t('customer_name')} <span className="text-rose-500">*</span>
+                                            </label>
+                                            <span className={`text-[11px] font-bold flex items-center gap-1 transition-colors duration-200 ${
+                                                isNameValid ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
+                                            }`}>
+                                                {isNameValid ? (
+                                                    <>
+                                                        <Check size={14} className="stroke-[3] text-emerald-500 shrink-0" />
+                                                        <span>{language === 'ar' ? 'اسم ثلاثي مكتمل' : 'Tripartite Name Valid'}</span>
+                                                    </>
+                                                ) : (
+                                                    <span>{language === 'ar' ? `شرط: اسم ثلاثي (${Math.min(nameParts.length, 3)}/3)` : 'Tripartite required (3 words)'}</span>
+                                                )}
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={form.name}
+                                            onChange={(e: any) => setForm({ ...form, name: e.target.value })}
+                                            placeholder={language === 'ar' ? 'الاسم ثلاثياً (مثال: محمد أحمد علي)...' : 'Tripartite Customer Name'}
+                                            className={`w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none transition-all ${
+                                                isNameValid
+                                                    ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500'
+                                                    : form.name
+                                                        ? 'border-rose-400 dark:border-rose-600 bg-rose-50/20 dark:bg-rose-950/20 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-rose-500'
+                                                        : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500'
+                                            }`}
+                                        />
+                                    </div>
 
-                        <Input 
-                            label={t('phone')} 
-                            value={form.phone} 
-                            onChange={(e: any) => setForm({ ...form, phone: e.target.value })} 
-                            placeholder="01xxxxxxxxx"
-                            validationRegex={/^01\d{9}$/}
-                            error={t('invalid_phone_format')}
-                        />
+                                    <div>
+                                        <div className="flex justify-between items-center mb-1.5">
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                                                {t('phone')} <span className="text-rose-500">*</span>
+                                            </label>
+                                            <span className={`text-[11px] font-mono font-bold flex items-center gap-1 transition-colors duration-200 ${
+                                                isPhoneValid ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
+                                            }`}>
+                                                {isPhoneValid ? (
+                                                    <>
+                                                        <Check size={14} className="stroke-[3] text-emerald-500 shrink-0" />
+                                                        <span>{language === 'ar' ? 'رقم صحيح (11 رقماً)' : 'Valid (11 digits)'}</span>
+                                                    </>
+                                                ) : (
+                                                    <span>
+                                                        {language === 'ar'
+                                                            ? `شرط 11 رقماً ويبدأ بـ 01 (${cleanDigits.length}/11)`
+                                                            : `11 digits starting with 01 (${cleanDigits.length}/11)`}
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="tel"
+                                            required
+                                            maxLength={11}
+                                            value={form.phone}
+                                            onChange={(e: any) => {
+                                                const clean = e.target.value
+                                                    .replace(/[٠-٩]/g, (d: string) => String(d.charCodeAt(0) - 1632))
+                                                    .replace(/\D/g, '')
+                                                    .slice(0, 11);
+                                                setForm({ ...form, phone: clean });
+                                            }}
+                                            placeholder="01xxxxxxxxx"
+                                            className={`w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-mono text-center tracking-wider transition-all ${
+                                                isPhoneValid
+                                                    ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500'
+                                                    : form.phone
+                                                        ? 'border-rose-400 dark:border-rose-600 bg-rose-50/20 dark:bg-rose-950/20 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-rose-500'
+                                                        : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500'
+                                            }`}
+                                        />
+                                    </div>
+                                </>
+                            );
+                        })()}
 
                         {/* خيار عميل VIP والشراء الآجل */}
                         <div className="p-3.5 rounded-xl border border-slate-700 bg-slate-800/80 space-y-3">

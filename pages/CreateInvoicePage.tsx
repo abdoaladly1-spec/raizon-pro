@@ -1709,72 +1709,112 @@ export const CreateInvoice = ({ onClose }: any) => {
                 <X size={18} />
               </button>
             </div>
-            <form onSubmit={handleQuickAddCustomer} className="p-4 space-y-3">
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-                    {language === 'ar' ? 'اسم العميل' : 'Client Name'} *
-                  </label>
-                  <span className="text-[10px] text-amber-500 font-semibold">
-                    {language === 'ar' ? 'شرط: اسم ثلاثي' : 'Tripartite required'}
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  required
-                  placeholder={language === 'ar' ? 'اسم العميل ثلاثياً (مثال: محمد أحمد علي)' : 'Full tripartite name'}
-                  value={quickCustomerForm.name}
-                  onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-                    {language === 'ar' ? 'رقم الهاتف' : 'Phone'} *
-                  </label>
-                  <span className={`text-[10px] font-mono font-bold ${quickCustomerForm.phone.replace(/[^\d]/g, '').length === 11 ? 'text-emerald-500' : 'text-amber-500'}`}>
-                    {language === 'ar' 
-                      ? `شرط 11 رقماً (${quickCustomerForm.phone.replace(/[^\d]/g, '').length}/11)` 
-                      : `11 digits (${quickCustomerForm.phone.replace(/[^\d]/g, '').length}/11)`}
-                  </span>
-                </div>
-                <input
-                  type="tel"
-                  required
-                  maxLength={11}
-                  placeholder="01xxxxxxxxx (11 رقماً بالضبط)"
-                  value={quickCustomerForm.phone}
-                  onChange={(e) => {
-                    const clean = e.target.value
-                      .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
-                      .replace(/[^\d]/g, '')
-                      .slice(0, 11);
-                    setQuickCustomerForm(prev => ({ ...prev, phone: clean }));
-                  }}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500 font-mono text-center tracking-wider"
-                />
-              </div>
-              <div className="flex gap-2 pt-2">
-                <Button 
-                  type="submit" 
-                  onClick={handleQuickAddCustomer} 
-                  variant="primary" 
-                  className="flex-1 justify-center py-2 text-sm font-bold active:scale-95 cursor-pointer shadow-sm"
-                >
-                  {language === 'ar' ? 'حفظ واختيار' : 'Save & Select'}
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="secondary" 
-                  onClick={() => setIsQuickAddingCustomer(false)} 
-                  className="py-2 text-sm cursor-pointer"
-                >
-                  {t('cancel')}
-                </Button>
-              </div>
-            </form>
+            {(() => {
+              const nameParts = (quickCustomerForm.name || '').trim().split(/\s+/).filter(Boolean);
+              const isNameValid = nameParts.length >= 3 && nameParts.every(p => p.length >= 2);
+              const cleanPhone = (quickCustomerForm.phone || '').replace(/[^\d]/g, '');
+              const isPhoneValid = cleanPhone.length === 11 && cleanPhone.startsWith('01');
+              return (
+                <form onSubmit={handleQuickAddCustomer} className="p-4 space-y-3.5">
+                  <div>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                        {language === 'ar' ? 'اسم العميل' : 'Client Name'} <span className="text-rose-500">*</span>
+                      </label>
+                      <span className={`text-[11px] font-bold flex items-center gap-1 transition-colors duration-200 ${
+                        isNameValid ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
+                      }`}>
+                        {isNameValid ? (
+                          <>
+                            <Check size={14} className="stroke-[3] text-emerald-500 shrink-0" />
+                            <span>{language === 'ar' ? 'اسم ثلاثي مكتمل' : 'Tripartite Name Valid'}</span>
+                          </>
+                        ) : (
+                          <span>{language === 'ar' ? `شرط: اسم ثلاثي (${Math.min(nameParts.length, 3)}/3)` : 'Tripartite required (3 words)'}</span>
+                        )}
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      placeholder={language === 'ar' ? 'اسم العميل ثلاثياً (مثال: محمد أحمد علي)' : 'Full tripartite name'}
+                      value={quickCustomerForm.name}
+                      onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, name: e.target.value }))}
+                      className={`w-full px-3 py-2 text-sm rounded-xl border outline-none transition-all ${
+                        isNameValid
+                          ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500'
+                          : quickCustomerForm.name
+                            ? 'border-rose-400 dark:border-rose-600 bg-rose-50/20 dark:bg-rose-950/20 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500'
+                            : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary-500'
+                      }`}
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                        {language === 'ar' ? 'رقم الهاتف' : 'Phone'} <span className="text-rose-500">*</span>
+                      </label>
+                      <span className={`text-[11px] font-mono font-bold flex items-center gap-1 transition-colors duration-200 ${
+                        isPhoneValid ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
+                      }`}>
+                        {isPhoneValid ? (
+                          <>
+                            <Check size={14} className="stroke-[3] text-emerald-500 shrink-0" />
+                            <span>{language === 'ar' ? 'رقم صحيح (11 رقماً)' : 'Valid (11 digits)'}</span>
+                          </>
+                        ) : (
+                          <span>
+                            {language === 'ar' 
+                              ? `شرط 11 رقماً ويبدأ بـ 01 (${cleanPhone.length}/11)` 
+                              : `11 digits starting with 01 (${cleanPhone.length}/11)`}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <input
+                      type="tel"
+                      required
+                      maxLength={11}
+                      placeholder="01xxxxxxxxx"
+                      value={quickCustomerForm.phone}
+                      onChange={(e) => {
+                        const clean = e.target.value
+                          .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
+                          .replace(/[^\d]/g, '')
+                          .slice(0, 11);
+                        setQuickCustomerForm(prev => ({ ...prev, phone: clean }));
+                      }}
+                      className={`w-full px-3 py-2 text-sm rounded-xl border outline-none font-mono text-center tracking-wider transition-all ${
+                        isPhoneValid
+                          ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500'
+                          : quickCustomerForm.phone
+                            ? 'border-rose-400 dark:border-rose-600 bg-rose-50/20 dark:bg-rose-950/20 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500'
+                            : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary-500'
+                      }`}
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button 
+                      type="submit" 
+                      variant="primary" 
+                      disabled={!isNameValid || !isPhoneValid}
+                      className="flex-1 justify-center py-2 text-xs font-bold"
+                    >
+                      {language === 'ar' ? 'حفظ وإدراج' : 'Save & Select'}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="secondary" 
+                      onClick={() => setIsQuickAddingCustomer(false)}
+                      className="flex-1 justify-center py-2 text-xs"
+                    >
+                      {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                    </Button>
+                  </div>
+                </form>
+              );
+            })()}
           </div>
         </div>
       )}
