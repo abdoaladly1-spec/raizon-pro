@@ -734,7 +734,7 @@ export const InvoiceReceipt = ({
                   </div>
                 )}
 
-                {/* 8. تذييل الفاتورة: رسالة الوداع والتذييل أسفل جدول الإجمالي مباشرة وبشكل متأقلم */}
+{/* 8. تذييل الفاتورة: رسالة الوداع والتذييل أسفل جدول الإجمالي مباشرة وبشكل متأقلم */}
                 {vis.footer && isLastPage && (
                   <div style={{ marginTop: '8px', paddingTop: '4px', textAlign: 'center' }}>
                     <p
@@ -745,23 +745,8 @@ export const InvoiceReceipt = ({
                         fontWeight: 700,
                       }}
                     >
-                      {design.greetingText !== undefined && design.greetingText !== ''
-                        ? design.greetingText
-                        : 'شكراً لزيارتكم'}
+                      {design.footerText?.trim() || design.greetingText?.trim() || 'شكراً لزيارتكم'}
                     </p>
-                    {design.footerText && (
-                      <p
-                        className="text-black text-center"
-                        style={{
-                          fontSize: '9.5px',
-                          fontFamily: 'Tahoma, Arial, sans-serif',
-                          fontWeight: 700,
-                          marginTop: '2px',
-                        }}
-                      >
-                        {design.footerText}
-                      </p>
-                    )}
                   </div>
                 )}
               </div>
