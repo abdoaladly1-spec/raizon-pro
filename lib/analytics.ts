@@ -3,7 +3,8 @@
  * كل الصفحات (الداشبورد/الكاشير/التحليلات والتقارير) تستخدم هذه الدوال
  * حتى لا تظهر أرقام مختلفة لنفس المفهوم.
  */
-import { Invoice, ReturnRecord, Expense, StaffPayment, Reservation, Customer } from '../types';
+import { Invoice, ReturnRecord, Expense, StaffPayment, Reservation, Customer, ClosingReport } from '../types';
+import { toIsoDate, localIsoToday } from './dates';
 import { round2, paymentOf } from './payments';
 
 export type PeriodPreset = 'today' | 'yesterday' | 'week' | 'last_week' | 'month' | 'last_month' | 'year' | 'all' | 'custom';
@@ -417,4 +418,76 @@ export const openReportPreview = (doc: ReportDoc, opts?: { autoPrint?: boolean; 
 
     if (opts?.autoPrint) win.onload = () => { try { win.print(); } catch { /* ignore */ } };
     return win;
+};
+
+export interface DrawerOpeningInfo {
+    balance: number;
+    source: 'yesterday_closing' | 'manual_override' | 'settings_default';
+    yesterdayRemaining: number | null;
+    hasManualOverride: boolean;
+    previousReport?: ClosingReport | null;
+}
+
+/**
+ * حساب الرصيد الافتتاحي للدرج:
+ * في اليوم الجديد هو إجمالي الرصيد المتبقي من اليوم السابق تلقائياً 100%.
+ */
+export const getDrawerOpeningBalance = (
+    closingReports: ClosingReport[] = [],
+    settings: { cashDrawerOpening?: number; manualOpeningDate?: string } = {},
+    currentDate: string = localIsoToday()
+): DrawerOpeningInfo => {
+    const today = toIsoDate(currentDate);
+
+    // 1. هل قام المستخدم بتعيين رصيد افتتاحي يدوي لليوم تحديداً؟
+    const hasManualOverride = settings.manualOpeningDate === today && typeof settings.cashDrawerOpening === 'number';
+
+    // 2. ترتيب تقارير التقفيل من الأحدث للأقدم
+    const sorted = [...(closingReports || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    // 3. البحث عن أحدث تقفيل مسجل يسبق تاريخ اليوم (تقفيل الأمس أو آخر يوم مسجل)
+    const previousDayClosing = sorted.find(r => toIsoDate(r.date, r.timestamp) < today) || null;
+
+    // في حال عدم وجود تقفيل بتاريخ سابق (مثلاً وردية سابقة أغلقت في نفس اليوم)، نأخذ أحدث تقفيل مسجل
+    const fallbackClosing = sorted.length > 0 ? sorted[0] : null;
+    const previousReport = previousDayClosing || fallbackClosing;
+
+    let yesterdayRemaining: number | null = null;
+    if (previousReport) {
+        if (typeof previousReport.retainedInDrawer === 'number' && !isNaN(previousReport.retainedInDrawer)) {
+            yesterdayRemaining = previousReport.retainedInDrawer;
+        } else if (typeof previousReport.actualCash === 'number' && !isNaN(previousReport.actualCash)) {
+            yesterdayRemaining = previousReport.actualCash;
+        }
+    }
+
+    // 4. الرصيد المعتمد لبداية اليوم:
+    // في اليوم الجديد: الرصيد الافتتاحي هو إجمالي الرصيد المتبقي من اليوم السابق
+    if (hasManualOverride) {
+        return {
+            balance: Number(settings.cashDrawerOpening),
+            source: 'manual_override',
+            yesterdayRemaining,
+            hasManualOverride: true,
+            previousReport
+        };
+    }
+
+    if (yesterdayRemaining !== null) {
+        return {
+            balance: yesterdayRemaining,
+            source: 'yesterday_closing',
+            yesterdayRemaining,
+            hasManualOverride: false,
+            previousReport
+        };
+    }
+
+    return {
+        balance: Math.max(0, Number(settings.cashDrawerOpening) || 0),
+        source: 'settings_default',
+        yesterdayRemaining: null,
+        hasManualOverride: false,
+        previousReport: null
+    };
 };

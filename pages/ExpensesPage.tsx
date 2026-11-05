@@ -6,6 +6,8 @@ import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingRep
 import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, useSound, useLiveTick } from '../components/ui';
 import { FilterModal } from '../components/FilterModal';
 import { isCashExpense, round2 } from '../lib/payments';
+import { getDrawerOpeningBalance } from '../lib/analytics';
+import { localIsoToday, toIsoDate } from '../lib/dates';
 import { CreateInvoice } from './CreateInvoicePage';
 import { AuditLogs } from './AuditLogsPage';
 import { AdminUsers } from './AdminUsersPage';
@@ -75,41 +77,26 @@ export const ExpensesPage = () => {
     };
 
     const totalExpenses = state.expenses.reduce((acc, curr) => acc + curr.amount, 0);
-    const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+    const todayStr = localIsoToday();
     const todayExpenses = state.expenses
-        .filter(e => e.date === todayStr)
+        .filter(e => toIsoDate(e.date) === todayStr)
         .reduce((acc, curr) => acc + curr.amount, 0);
     // المصروفات النقدية فقط (تلك التي تُخصم من درج النقدية عند الإغلاق)
     const todayCashExpenses = state.expenses
-        .filter(e => e.date === todayStr && isCashExpense(e))
+        .filter(e => toIsoDate(e.date) === todayStr && isCashExpense(e))
         .reduce((acc, curr) => acc + curr.amount, 0);
 
     // =========================================================================
-    // حسابات حركة الدرج اليومية والمبلغ المتوقع والرصيد الافتتاحي
+    // حسابات حركة الدرج اليومية والمبلغ المتوقع والرصيد الافتتاحي بدقة 100%
+    // في اليوم الجديد: الرصيد الافتتاحي هو إجمالي الرصيد المتبقي من اليوم السابق تلقائياً
     // =========================================================================
-    const sortedClosingReports = useMemo(() => {
-        return [...(state.closingReports || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    }, [state.closingReports]);
+    const drawerOpeningInfo = useMemo(() => {
+        return getDrawerOpeningBalance(state.closingReports || [], state.settings, todayStr);
+    }, [state.closingReports, state.settings, todayStr]);
 
-    const previousClosingReport = useMemo(() => {
-        return sortedClosingReports.find(r => r.date !== todayStr) || null;
-    }, [sortedClosingReports, todayStr]);
-
-    const yesterdayRemainingInDrawer = useMemo(() => {
-        if (!previousClosingReport) return null;
-        if (typeof previousClosingReport.retainedInDrawer === 'number') {
-            return previousClosingReport.retainedInDrawer;
-        }
-        return previousClosingReport.actualCash;
-    }, [previousClosingReport]);
-
-    const hasManualOverrideToday = state.settings.manualOpeningDate === todayStr && typeof state.settings.cashDrawerOpening === 'number';
-
-    const drawerOpeningBalance = useMemo(() => {
-        return hasManualOverrideToday
-            ? Number(state.settings.cashDrawerOpening)
-            : (yesterdayRemainingInDrawer !== null ? yesterdayRemainingInDrawer : (Number(state.settings.cashDrawerOpening) || 0));
-    }, [hasManualOverrideToday, state.settings.cashDrawerOpening, yesterdayRemainingInDrawer]);
+    const drawerOpeningBalance = drawerOpeningInfo.balance;
+    const yesterdayRemainingInDrawer = drawerOpeningInfo.yesterdayRemaining;
+    const hasManualOverrideToday = drawerOpeningInfo.hasManualOverride;
 
     const isOpeningMovement = (m: any) => {
         const r = (m.reason || '').toLowerCase();

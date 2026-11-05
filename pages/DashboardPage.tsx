@@ -9,12 +9,12 @@ import {
     Phone, Building, Wallet, Info, Filter
 } from '../components/Icons';
 import { Card, SimpleBarChart, ModalShell } from '../components/ui';
-import { parseInvoiceDate } from '../lib/dates';
+import { parseInvoiceDate, localIsoToday, toIsoDate } from '../lib/dates';
 import { round2, isCashExpense } from '../lib/payments';
 import { 
     sumRevenue, sumReturns, sumExpenses, countableInvoice, calcPeriod, 
     periodInvoices, periodExpenses, periodReturns, byStaff, profitBreakdown,
-    openReportPreview, ReportDoc, Period
+    openReportPreview, ReportDoc, Period, getDrawerOpeningBalance
 } from '../lib/analytics';
 import { Customer, Invoice, Expense, ReturnRecord } from '../types';
 
@@ -224,32 +224,16 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
     // =========================================================================
     // حسابات حركة الدرج اليومية والمبلغ المتوقع والرصيد الافتتاحي بدقة 100%
     // =========================================================================
-    const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+    const todayStr = localIsoToday();
 
-    // 1. الرصيد الافتتاحي المعتمد للدرج لليوم
-    const sortedClosingReports = useMemo(() => {
-        return [...(state.closingReports || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    }, [state.closingReports]);
+    // 1. الرصيد الافتتاحي المعتمد للدرج لليوم (في اليوم الجديد هو إجمالي المتبقي من اليوم السابق تلقائياً)
+    const drawerOpeningInfo = useMemo(() => {
+        return getDrawerOpeningBalance(state.closingReports || [], state.settings, todayStr);
+    }, [state.closingReports, state.settings, todayStr]);
 
-    const previousClosingReport = useMemo(() => {
-        return sortedClosingReports.find(r => r.date !== todayStr) || null;
-    }, [sortedClosingReports, todayStr]);
-
-    const yesterdayRemainingInDrawer = useMemo(() => {
-        if (!previousClosingReport) return null;
-        if (typeof previousClosingReport.retainedInDrawer === 'number') {
-            return previousClosingReport.retainedInDrawer;
-        }
-        return previousClosingReport.actualCash;
-    }, [previousClosingReport]);
-
-    const hasManualOverrideToday = state.settings.manualOpeningDate === todayStr && typeof state.settings.cashDrawerOpening === 'number';
-
-    const drawerOpeningBalance = useMemo(() => {
-        return hasManualOverrideToday
-            ? Number(state.settings.cashDrawerOpening)
-            : (yesterdayRemainingInDrawer !== null ? yesterdayRemainingInDrawer : (Number(state.settings.cashDrawerOpening) || 0));
-    }, [hasManualOverrideToday, state.settings.cashDrawerOpening, yesterdayRemainingInDrawer]);
+    const drawerOpeningBalance = drawerOpeningInfo.balance;
+    const yesterdayRemainingInDrawer = drawerOpeningInfo.yesterdayRemaining;
+    const hasManualOverrideToday = drawerOpeningInfo.hasManualOverride;
 
     // 2. حركات الدرج لليوم (استبعاد أي رصيد افتتاحي مسجل كإيداع لتفادي الازدواجية نهائياً)
     const isOpeningMovement = (m: any) => {

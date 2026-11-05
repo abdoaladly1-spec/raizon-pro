@@ -28,31 +28,17 @@ export const ClosingPage = () => {
     // =========================================================================
     // 1. تحديد الرصيد الافتتاحي الذكي (المتبقي من إقفال الأمس تلقائياً)
     // =========================================================================
-    const sortedReports = useMemo(() => {
-        return [...(state.closingReports || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    }, [state.closingReports]);
+    // =========================================================================
+    // 1. حساب الرصيد الافتتاحي للدرج بدقة: في اليوم الجديد هو إجمالي المتبقي من اليوم السابق تلقائياً
+    // =========================================================================
+    const drawerOpeningInfo = useMemo(() => {
+        return getDrawerOpeningBalance(state.closingReports || [], state.settings, today);
+    }, [state.closingReports, state.settings, today]);
 
-    // البحث عن آخر إقفال مسجل قبل تاريخ اليوم
-    const previousClosingReport = useMemo(() => {
-        return sortedReports.find(r => r.date !== today) || null;
-    }, [sortedReports, today]);
-
-    // المبلغ المتبقي في الدرج عند إقفال الأمس
-    const yesterdayRemainingInDrawer = useMemo(() => {
-        if (!previousClosingReport) return null;
-        if (typeof previousClosingReport.retainedInDrawer === 'number') {
-            return previousClosingReport.retainedInDrawer;
-        }
-        return previousClosingReport.actualCash;
-    }, [previousClosingReport]);
-
-    // هل قام المستخدم بتعديل الرصيد الافتتاحي يدوياً لليوم؟
-    const hasManualOverrideToday = state.settings.manualOpeningDate === today && typeof state.settings.cashDrawerOpening === 'number';
-
-    // الرصيد الأساسي المعتمد لبداية اليوم
-    const baseOpeningBalance = hasManualOverrideToday
-        ? Number(state.settings.cashDrawerOpening)
-        : (yesterdayRemainingInDrawer !== null ? yesterdayRemainingInDrawer : (Number(state.settings.cashDrawerOpening) || 0));
+    const baseOpeningBalance = drawerOpeningInfo.balance;
+    const yesterdayRemainingInDrawer = drawerOpeningInfo.yesterdayRemaining;
+    const hasManualOverrideToday = drawerOpeningInfo.hasManualOverride;
+    const previousClosingReport = drawerOpeningInfo.previousReport || null;
 
     // =========================================================================
     // 2. حركات الدرج النقدية لليوم (سحب وإيداع)
@@ -263,6 +249,14 @@ export const ClosingPage = () => {
 
         addClosingReport(newReport);
         setReport(newReport);
+
+        // تحديث إعدادات النظام فوراً ليصبح رصيد عهدة البداية لليوم الجديد مساوياً تماماً للمبلغ المتبقي بالدرج
+        const finalRetained = isNaN(retainedInDrawer) ? actualCashNum : retainedInDrawer;
+        updateSettings({
+            ...state.settings,
+            cashDrawerOpening: finalRetained,
+            manualOpeningDate: undefined // مسح التعديل اليدوي القديم حتى يستلم اليوم الجديد رصيد التقفيل هذا تلقائياً
+        });
 
         // إرسال إشعار فوري للمدير على الإيميل
         const sUrl = (state.settings.serverUrl || 'http://127.0.0.1:8087').trim().replace(/\/+$/, '');
