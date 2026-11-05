@@ -6,7 +6,8 @@ import {
     Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, 
     Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, 
     ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, 
-    ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw 
+    ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw,
+    Building, Bell, Lock, Save, Key, Shield, Download
 } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier, AppState } from '../types';
 import { Card, Button, Input, ToastContainer } from '../components/ui';

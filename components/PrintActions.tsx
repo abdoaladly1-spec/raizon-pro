@@ -1,7 +1,7 @@
 // أزرار الطباعة الموحدة (طباعة + حفظ PDF + مشاركة واتساب)
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Printer, FileText } from '../components/Icons';
+import { Printer, FileText, MessageSquare } from '../components/Icons';
 import { Button } from '../components/ui';
 import type { Invoice } from '../types';
 import { normalizePrintDesign, resolvePrintDesign, printAuditInfo } from '../lib/printDesign';
