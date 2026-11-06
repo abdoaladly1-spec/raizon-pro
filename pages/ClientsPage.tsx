@@ -254,14 +254,12 @@ export const Clients = () => {
     const handleWhatsAppStatement = (customer: Customer) => {
         const shop = state.settings.shopName || 'RaiZon Pro';
         const debt = Number(customer.balance || 0);
-        const limit = customer.creditLimit ? Number(customer.creditLimit).toLocaleString('en-US') + ' ج.م' : 'غير محدد';
-        const purchases = Number(customer.totalSpent || 0).toLocaleString('en-US') + ' ج.م';
+                const purchases = Number(customer.totalSpent || 0).toLocaleString('en-US') + ' ج.م';
 
         const text = `*كشف حساب العميل - ${shop}*
 ━━━━━━━━━━━━━━━━━━
 *العميل:* ${customer.name}
 *الهاتف:* ${customer.phone || '-'}
-*الحد الائتماني المعتمد:* ${limit}
 ━━━━━━━━━━━━━━━━━━
 ${debt > 0 ? `*الرصيد المستحق (المديونية):* ${debt.toLocaleString('en-US')} ج.م` : '*حالة الحساب:* خالص ولا توجد أي مديونية مستحقة'}
 *إجمالي المشتريات:* ${purchases}
@@ -352,10 +350,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                         <div class="label">الرصيد المستحق (المديونية)</div>
                         <div class="val" style="color: ${(customer.balance || 0) > 0 ? '#dc2626' : '#059669'};">${Number(customer.balance || 0).toLocaleString('en-US')} ج.م</div>
                     </div>
-                    <div class="info-item">
-                        <div class="label">الحد الائتماني المعتمد</div>
-                        <div class="val" style="color: #0284c7;">${customer.creditLimit ? Number(customer.creditLimit).toLocaleString('en-US') + ' ج.م' : 'غير محدد'}</div>
-                    </div>
+                    
                 </div>
                 <table>
                     <thead>
@@ -503,7 +498,6 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                 <th className="py-3 px-3">{t('phone')}</th>
                                 <th className="py-3 px-3">{language === 'ar' ? 'التصنيف' : 'Classification'}</th>
                                 <th className="py-3 px-3">{language === 'ar' ? 'الرصيد المستحق (المديونية)' : 'Debt Balance'}</th>
-                                <th className="py-3 px-3">{language === 'ar' ? 'الحد الائتماني' : 'Credit Limit'}</th>
                                 <th className="py-3 px-3">{language === 'ar' ? 'إجمالي المشتريات' : 'Total Spent'}</th>
                                 <th className="py-3 px-3 text-left">{t('actions')}</th>
                             </tr>
@@ -543,13 +537,6 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                                 <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                                                     <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mx-1"></span>خالص (0)
                                                 </span>
-                                            )}
-                                        </td>
-                                        <td className="py-3 px-3 font-mono text-slate-600 dark:text-slate-300">
-                                            {c.creditLimit ? (
-                                                <span className="font-bold text-sky-400">{formatNumber(c.creditLimit)} {t('egp')}</span>
-                                            ) : (
-                                                <span className="text-slate-500">—</span>
                                             )}
                                         </td>
                                         <td className="py-3 px-3 font-mono font-bold text-slate-800 dark:text-slate-200">
@@ -676,22 +663,6 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                 <p className="text-[11px] font-bold text-rose-400">{language === 'ar' ? 'الرصيد المستحق (المديونية)' : 'Current Debt'}</p>
                                 <p className="text-xl font-black text-rose-400 font-mono mt-1">
                                     {formatNumber(selectedCustomer.balance || 0)} <span className="text-xs">{t('egp')}</span>
-                                </p>
-                            </div>
-
-                            {/* 2. الحد الائتماني */}
-                            <div className="p-3.5 rounded-xl bg-slate-800/80 border border-sky-500/40">
-                                <p className="text-[11px] font-bold text-sky-400">{language === 'ar' ? 'الحد الائتماني المعتمد' : 'Credit Limit'}</p>
-                                <p className="text-xl font-black text-sky-400 font-mono mt-1">
-                                    {selectedCustomer.creditLimit ? formatNumber(selectedCustomer.creditLimit) : '∞'} <span className="text-xs">{t('egp')}</span>
-                                </p>
-                            </div>
-
-                            {/* 3. المتبقي المتاح للشراء */}
-                            <div className="p-3.5 rounded-xl bg-slate-800/80 border border-emerald-500/40">
-                                <p className="text-[11px] font-bold text-emerald-400">{language === 'ar' ? 'المتاح للشراء الآجل' : 'Available Credit'}</p>
-                                <p className="text-xl font-black text-emerald-400 font-mono mt-1">
-                                    {selectedCustomer.creditLimit ? formatNumber(Math.max(0, selectedCustomer.creditLimit - (selectedCustomer.balance || 0))) : '∞'} <span className="text-xs">{t('egp')}</span>
                                 </p>
                             </div>
 
@@ -1098,7 +1069,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                 </div>
                             </label>
 
-                            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-700/80">
+                            <div className="pt-2 border-t border-slate-700/80">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-300 mb-1">
                                         {language === 'ar' ? 'الحد الائتماني (ج.م)' : 'Credit Limit (EGP)'}

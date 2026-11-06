@@ -486,12 +486,11 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
             const doc: ReportDoc = {
                 title: `كشف مديونيات وحسابات العملاء - ${periodTitle}`,
                 subtitle: `تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')}`,
-                headers: ['#', 'اسم العميل', 'رقم الهاتف', 'الحد الائتماني', 'آخر زيارة', 'المديونية المستحقة (ج.م)'],
+                headers: ['#', 'اسم العميل', 'رقم الهاتف', 'آخر زيارة', 'المديونية المستحقة (ج.م)'],
                 rows: debtors.map((c, idx) => [
                     idx + 1,
                     c.name,
                     c.phone || '-',
-                    (c.creditLimit || 0).toLocaleString('en-US'),
                     c.lastVisit ? new Date(c.lastVisit).toLocaleDateString('ar-EG') : '-',
                     Number(c.balance || 0).toLocaleString('en-US')
                 ]),
@@ -1382,21 +1381,19 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     <tr>
                                         <th className="p-2.5">العميل</th>
                                         <th className="p-2.5">الهاتف</th>
-                                        <th className="p-2.5">الحد الائتماني</th>
                                         <th className="p-2.5 text-left">المديونية</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                     {debtors.length === 0 ? (
                                         <tr>
-                                            <td colSpan={4} className="p-4 text-center text-slate-400">لا توجد مديونيات قائمة على أي عميل</td>
+                                            <td colSpan={3} className="p-4 text-center text-slate-400">لا توجد مديونيات قائمة على أي عميل</td>
                                         </tr>
                                     ) : (
                                         debtors.map(c => (
                                             <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                                 <td className="p-2.5 font-bold text-slate-800 dark:text-slate-200">{c.name}</td>
                                                 <td className="p-2.5 font-mono text-slate-500">{c.phone || '-'}</td>
-                                                <td className="p-2.5 font-mono text-slate-500">{(c.creditLimit || 0).toLocaleString('en-US')} ج.م</td>
                                                 <td className="p-2.5 font-bold font-mono text-rose-600 text-left">
                                                     {(c.balance || 0).toLocaleString('en-US')} ج.م
                                                 </td>

@@ -192,7 +192,7 @@ export const CreateInvoice = ({ onClose }: any) => {
       const generatedId = addCustomer({
         name: nameTrimmed,
         phone: cleanPhone,
-        creditLimit: 2000,
+        creditLimit: 0,
         balance: 0,
         notes: ''
       });
@@ -287,13 +287,14 @@ export const CreateInvoice = ({ onClose }: any) => {
     }
   }, [phone, customerName, customerIdInput, notes, selectedStaffId, selectedItems, discountPercent, taxPercent]);
   
-  // Payment Modal State (دفع مختلط: كاش / بطاقة / محفظة)
+  // Payment Modal State (دفع مختلط: كاش / بطاقة / محفظة / على الحساب)
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentMode, setPaymentMode] = useState<'normal' | 'credit'>('normal');
   const [partCash, setPartCash] = useState('');
   const [partCard, setPartCard] = useState('');
   const [partWallet, setPartWallet] = useState('');
   const [partInstapay, setPartInstapay] = useState('');
+  const [partCredit, setPartCredit] = useState('');
   const [cashReceived, setCashReceived] = useState('');
 
   // Effects
@@ -372,7 +373,8 @@ export const CreateInvoice = ({ onClose }: any) => {
   const partsRaw: PaymentPart[] = [
       { method: 'cash', amount: num(partCash) },
       { method: 'card', amount: num(partCard) },
-      { method: 'wallet', amount: num(partWallet) }
+      { method: 'wallet', amount: num(partWallet) },
+      { method: 'credit', amount: num(partCredit) }
   ];
   const draftParts: PaymentPart[] = partsRaw.filter(p => p.amount > 0);
   const draftCashPart = round2(draftParts.filter(p => p.method === 'cash').reduce((a, p) => a + p.amount, 0));
@@ -430,22 +432,33 @@ export const CreateInvoice = ({ onClose }: any) => {
       setPartCash(String(round2(total)));
       setPartCard('0');
       setPartWallet('0');
+      setPartCredit('0');
       setCashReceived(String(round2(total)));
       setShowPaymentModal(true);
   };
 
-  const setPart = (kind: 'cash' | 'card' | 'wallet', value: string) => {
+  const setPart = (kind: 'cash' | 'card' | 'wallet' | 'credit', value: string) => {
       if (kind === 'cash') setPartCash(value);
       else if (kind === 'card') setPartCard(value);
-      else setPartWallet(value);
+      else if (kind === 'wallet') setPartWallet(value);
+      else if (kind === 'credit') setPartCredit(value);
   };
 
-  /** يوزّع أي مبلغ متبقي على طريقة واحدة (زر "الباقي كاش" مثلاً) */
-  const fillRest = (kind: 'cash' | 'card' | 'wallet') => {
+  /** يوزّع أي مبلغ متبقي على طريقة واحدة (مثال: دفع جزء كاش والباقي على الحساب) */
+  const fillRest = (kind: 'cash' | 'card' | 'wallet' | 'credit') => {
       const others = round2(draftParts.filter(p => p.method !== kind).reduce((a, p) => a + p.amount, 0));
       const rest = Math.max(0, round2(total - others));
       setPart(kind, String(rest));
       if (kind === 'cash') setCashReceived(String(rest));
+  };
+
+  /** سداد المبلغ بالكامل بطريقة واحدة بنقرة واحدة */
+  const payAllWith = (kind: 'cash' | 'card' | 'wallet' | 'credit') => {
+      setPartCash(kind === 'cash' ? String(round2(total)) : '0');
+      setPartCard(kind === 'card' ? String(round2(total)) : '0');
+      setPartWallet(kind === 'wallet' ? String(round2(total)) : '0');
+      setPartCredit(kind === 'credit' ? String(round2(total)) : '0');
+      setCashReceived(kind === 'cash' ? String(round2(total)) : '0');
   };
 
   // Loyalty Redemption Logic
@@ -615,19 +628,21 @@ export const CreateInvoice = ({ onClose }: any) => {
           addToast(t('select_barber_alert'), 'error');
           return;
       }
-      const isCreditSale = paymentMode === 'credit';
-      if (isCreditSale) {
-          if (!existingCustomer) {
-              addToast(language === 'ar' ? 'البيع الآجل يتطلب تحديد عميل مسجل في النظام أولاً' : 'Credit sales require selecting a registered customer', 'error');
-              return;
-          }
-      } else {
-          // منع إتمام البيع: مجموع الأجزاء = الإجمالي والمستلم يغطي الجزء الكاش
-          if (!paymentCheck.ok) {
-              addToast(t(paymentCheck.error || 'payment_sum_mismatch'), 'error');
+      const creditPartAmount = num(partCredit);
+      if (creditPartAmount > 0) {
+          const trimmedName = customerName.trim();
+          if (!trimmedName || trimmedName === 'عميل نقدي' || trimmedName.toLowerCase() === 'cash customer') {
+              addToast(language === 'ar' ? 'لتسجيل مبلغ على الحساب، يرجى كتابة أو اختيار اسم العميل أولاً' : 'Please provide or select a customer name for on-account balance', 'error');
               return;
           }
       }
+
+      // منع إتمام البيع إلا إذا كان مجموع الأجزاء = الإجمالي والمستلم يغطي الجزء الكاش
+      if (!paymentCheck.ok) {
+          addToast(t(paymentCheck.error || 'payment_sum_mismatch'), 'error');
+          return;
+      }
+
       setShowPaymentModal(false);
       const existing = state.customers.find(c => c.phone === phone);
       const customerId = existing ? existing.id : addCustomer({ 
@@ -635,12 +650,15 @@ export const CreateInvoice = ({ onClose }: any) => {
         phone 
       } as any);
 
-      if (!existing) {
+      if (!existing && customerName.trim() !== 'عميل نقدي') {
         addToast(`${t('customer_added')}: ${customerName}`, 'success');
       }
       
       const selectedStaff = state.staff.find(s => s.id === selectedStaffId);
       const activeBranch = state.locations.find(l => l.id === state.settings.currentLocationId) || state.locations[0];
+
+      const isAllCredit = paymentCheck.info.creditPaid >= total && total > 0;
+      const hasCredit = paymentCheck.info.creditPaid > 0;
 
       const invoiceData = {
           customerId,
@@ -660,13 +678,13 @@ export const CreateInvoice = ({ onClose }: any) => {
           total,
           date: localIsoToday(),
           timestamp: Date.now(),
-          status: isCreditSale ? 'pending' : 'paid',
-          paymentMethod: isCreditSale ? 'credit' : paymentCheck.info.method,
-          paymentParts: isCreditSale ? [] : paymentCheck.info.parts,
-          cashPaid: isCreditSale ? 0 : paymentCheck.info.cashPaid,
-          received: isCreditSale ? 0 : paymentCheck.info.received,
-          change: isCreditSale ? 0 : paymentCheck.info.change,
-          notes: isCreditSale ? (notes ? `${notes} (آجل / على الحساب)` : 'فاتورة آجلة على الحساب') : notes,
+          status: isAllCredit ? 'pending' : (hasCredit ? 'partial' : 'paid'),
+          paymentMethod: paymentCheck.info.method,
+          paymentParts: paymentCheck.info.parts,
+          cashPaid: paymentCheck.info.cashPaid,
+          received: paymentCheck.info.received,
+          change: paymentCheck.info.change,
+          notes: hasCredit ? (notes ? `${notes} (متبقي ${paymentCheck.info.creditPaid} على الحساب)` : `متبقي ${paymentCheck.info.creditPaid} ج.م على الحساب`) : notes,
           staffId: selectedStaffId,
           staffName: selectedStaff?.name
       };
@@ -869,9 +887,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                      <span className={`font-black ${((existingCustomer.balance || 0) > 0) ? 'text-rose-500' : 'text-emerald-500'}`}>
                                          {Number(existingCustomer.balance || 0).toLocaleString('en-US')} {t('egp')}
                                      </span>
-                                     {existingCustomer.creditLimit ? (
-                                         <span className="text-xs text-slate-400">({language === 'ar' ? 'الحد:' : 'Limit:'} {Number(existingCustomer.creditLimit).toLocaleString('en-US')})</span>
-                                     ) : null}
+
                                  </p>
                                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('last_visit')}: {formatDate(new Date(existingCustomer.lastVisit))}</p>
                              </div>
@@ -1345,186 +1361,287 @@ export const CreateInvoice = ({ onClose }: any) => {
             </Card>
         </div>
 
-        {/* Payment Modal — تقسيم الدفع (كاش / بطاقة / محفظة) */}
+        {/* Payment Modal — سداد الفاتورة (نقدي / بطاقة (انستا) / محفظة / على الحساب) */}
         {showPaymentModal && (
             <ModalShell
-                title={t('payment_details')}
+                title={language === 'ar' ? 'سداد وقيد الفاتورة' : t('payment_details')}
                 onClose={() => setShowPaymentModal(false)}
-                maxWidth="max-w-lg"
+                maxWidth="max-w-xl"
             >
-                {/* مفتاح التبديل بين الدفع الفوري والبيع الآجل */}
-                <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 mb-4">
-                    <button
-                        type="button"
-                        onClick={() => setPaymentMode('normal')}
-                        className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-                            paymentMode === 'normal'
-                                ? 'bg-primary-600 text-white shadow-sm'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                        }`}
-                    >
-                        {language === 'ar' ? 'سداد فوري (نقدي / إلكتروني)' : 'Instant Payment'}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setPaymentMode('credit')}
-                        className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-                            paymentMode === 'credit'
-                                ? 'bg-purple-600 text-white shadow-sm'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                        }`}
-                    >
-                        {language === 'ar' ? 'على الحساب (آجل معتمد)' : 'Credit Ledger'}
-                    </button>
+                {/* إجمالي الفاتورة المطلوب */}
+                <div className="bg-primary-50 dark:bg-primary-950/40 border border-primary-200 dark:border-primary-800 rounded-2xl p-4 mb-4 text-center">
+                    <span className="text-xs font-bold text-primary-600 dark:text-primary-400 block mb-1">
+                        {language === 'ar' ? 'إجمالي المبلغ المطلوب سداده' : t('total')}
+                    </span>
+                    <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">
+                        {round2(total).toLocaleString('en-US')} <span className="text-lg font-bold">{t('egp')}</span>
+                    </span>
                 </div>
 
-                <p className="text-center text-sm text-slate-400 mb-4">
-                    {t('total')}: <span className="font-bold text-slate-700 dark:text-slate-200">{round2(total).toLocaleString('en-US')} {t('egp')}</span>
-                </p>
-
-                {paymentMode === 'credit' ? (
-                    <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 mb-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-bold text-purple-900 dark:text-purple-200">{language === 'ar' ? 'العميل المفوتر:' : 'Customer:'}</span>
-                            <span className="font-bold text-slate-900 dark:text-white">{existingCustomer ? existingCustomer.name : (customerName || (language === 'ar' ? 'عميل غير محدد' : 'Unspecified'))}</span>
-                        </div>
-                        {!existingCustomer ? (
-                            <div className="p-3 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-bold">
-                                {language === 'ar' ? 'البيع الآجل يتطلب تحديد عميل مسجل في النظام أولاً' : 'Credit sales require selecting a registered customer first'}
-                            </div>
-                        ) : (
-                            <>
-                                <div className="flex items-center justify-between text-xs">
-                                    <span className="text-slate-500">{language === 'ar' ? 'المديونية الحالية:' : 'Current Debt:'}</span>
-                                    <span className="font-bold font-mono text-red-600">{(existingCustomer.balance || 0).toLocaleString('en-US')} {t('egp')}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-xs">
-                                    <span className="text-slate-500">{language === 'ar' ? 'الحد الائتماني المسموح:' : 'Credit Limit:'}</span>
-                                    <span className="font-bold font-mono text-slate-700 dark:text-slate-300">{(existingCustomer.creditLimit || 0).toLocaleString('en-US')} {t('egp')}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-xs border-t pt-2 border-purple-200 dark:border-purple-800">
-                                    <span className="font-bold text-purple-800 dark:text-purple-300">{language === 'ar' ? 'المديونية بعد هذه الفاتورة:' : 'New Debt:'}</span>
-                                    <span className="font-bold font-mono text-base text-purple-600 dark:text-purple-400">{((existingCustomer.balance || 0) + total).toLocaleString('en-US')} {t('egp')}</span>
-                                </div>
-                                {(existingCustomer.creditLimit || 0) > 0 && ((existingCustomer.balance || 0) + total) > (existingCustomer.creditLimit || 0) && (
-                                    <div className="p-2 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-xs font-bold">
-                                        {language === 'ar' ? 'تنبيه: هذه الفاتورة ستتجاوز الحد الائتماني للعميل' : 'Warning: This invoice exceeds customer credit limit!'}
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </div>
-                ) : (
-                    <>
-
-                    {/* أجزاء السداد */}
-                    <div className="grid grid-cols-3 gap-2 mb-3">
-                        {([['cash', partCash, setPartCash], ['card', partCard, setPartCard], ['wallet', partWallet, setPartWallet]] as const).map(([kind, value, setValue]) => (
-                            <div key={kind} className="border border-slate-200 dark:border-slate-700 rounded-xl p-2">
-                                <label className="block text-xs font-bold text-slate-500 mb-1 text-center">{t(kind)}</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={value}
-                                    onChange={(e) => setValue(e.target.value)}
-                                    className="w-full px-2 py-2 text-center font-bold rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
-                                    placeholder="0.00"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => { fillRest(kind); }}
-                                    className="w-full mt-1 text-[10px] font-bold py-1 rounded-md bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600"
-                                >
-                                    {t('all_on_method')}
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* النقد المستلم مقابل الكاش المخصص */}
-                    {draftCashPart > 0 && (
-                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-3 mb-3">
-                            <div className="flex items-center justify-between gap-2 mb-2">
-                                <span className="text-sm font-bold text-green-700 dark:text-green-300">{t('cash_for_invoice')}:</span>
-                                <span className="font-bold text-green-800 dark:text-green-200">{draftCashPart.toLocaleString('en-US')}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <label className="text-sm font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('cash_received')}:</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={cashReceived}
-                                    onChange={(e) => setCashReceived(e.target.value)}
-                                    className="flex-1 px-3 py-2 text-center font-bold rounded-lg border-2 border-green-300 dark:border-green-700 bg-white dark:bg-slate-900"
-                                    placeholder="0.00"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setCashReceived(String(draftCashPart))}
-                                    className="px-2 py-2 text-xs font-bold rounded-lg bg-green-600 text-white hover:bg-green-700 whitespace-nowrap"
-                                >
-                                    {t('exact_amount')}
-                                </button>
-                            </div>
-                            {/* أزرار سريعة لفئات النقد الشائعة */}
-                            <div className="flex items-center gap-1.5 mt-2">
-                                <span className="text-[11px] text-slate-400 font-medium">سريع:</span>
-                                {[50, 100, 200, 500].map(val => (
-                                    <button
-                                        key={val}
-                                        type="button"
-                                        onClick={() => setCashReceived(String(val))}
-                                        className="px-2 py-1 text-xs font-bold rounded-md bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 transition-colors"
-                                    >
-                                        {val} {t('egp')}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* الملخص */}
-                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700 text-sm mb-3">
-                        <div className="flex justify-between px-3 py-2">
-                            <span className="text-slate-500">{t('paid_total')}</span>
-                            <span className="font-bold">{round2(paymentCheck.info.total).toLocaleString('en-US')} {t('egp')}</span>
-                        </div>
-                        <div className={`flex justify-between px-3 py-2 ${paymentRemaining !== 0 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 font-bold' : ''}`}>
-                            <span>{t('payment_remaining')}</span>
-                            <span>{paymentRemaining.toLocaleString('en-US')} {t('egp')}</span>
-                        </div>
-                        {draftCashPart > 0 && (
-                            <div className="flex justify-between px-3 py-2">
-                                <span className="text-slate-500">{t('change_due')}</span>
-                                <span className="font-bold text-blue-600 dark:text-blue-400">{paymentChange.toLocaleString('en-US')} {t('egp')}</span>
-                            </div>
-                        )}
-                        <div className="flex justify-between px-3 py-2">
-                            <span className="text-slate-500">{t('drawer_increase')}</span>
-                            <span className="font-bold text-green-600 dark:text-green-400">+{paymentCheck.info.cashPaid.toLocaleString('en-US')} {t('egp')}</span>
-                        </div>
-                    </div>
-
-                    {!paymentCheck.ok && (
-                        <p className="text-xs font-bold text-red-500 text-center mb-2">{t(paymentCheck.error!)}</p>
-                    )}
-
-                        </>
-                    )}
-
-                    <div className="flex gap-3">
-                        <Button 
-                            variant="success" 
-                            onClick={confirmSave} 
-                            disabled={paymentMode === 'credit' ? !existingCustomer : !paymentCheck.ok} 
-                            className="flex-1 justify-center py-3 text-base font-bold"
+                {/* أزرار السداد السريع بالكامل بنقرة واحدة */}
+                <div className="mb-4">
+                    <label className="block text-xs font-bold text-slate-500 mb-2">
+                        {language === 'ar' ? '⚡ سداد فوري بالكامل بنقرة واحدة:' : 'Quick Full Payment:'}
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button
+                            type="button"
+                            onClick={() => payAllWith('cash')}
+                            className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-black transition-all bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm active:scale-95"
                         >
-                            {paymentMode === 'credit' ? (language === 'ar' ? 'تأكيد القيد على الحساب' : 'Confirm Credit Sale') : t('confirm')}
-                        </Button>
-                        <Button variant="secondary" onClick={() => setShowPaymentModal(false)} className="flex-1 justify-center py-3 text-base">{t('cancel')}</Button>
+                            <Banknote size={15} />
+                            <span>{language === 'ar' ? 'كاش بالكامل' : 'Full Cash'}</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => payAllWith('card')}
+                            className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-black transition-all bg-sky-600 hover:bg-sky-700 text-white shadow-sm active:scale-95"
+                        >
+                            <CreditCard size={15} />
+                            <span>{language === 'ar' ? 'بطاقة (انستا)' : 'Full Card'}</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => payAllWith('wallet')}
+                            className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-black transition-all bg-amber-600 hover:bg-amber-700 text-white shadow-sm active:scale-95"
+                        >
+                            <Smartphone size={15} />
+                            <span>{language === 'ar' ? 'محفظة' : 'Full Wallet'}</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => payAllWith('credit')}
+                            className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-black transition-all bg-purple-600 hover:bg-purple-700 text-white shadow-sm active:scale-95"
+                        >
+                            <FileText size={15} />
+                            <span>{language === 'ar' ? 'على الحساب' : 'On Account'}</span>
+                        </button>
                     </div>
+                </div>
+
+                {/* تقسيم الدفع (كاش، بطاقة (انستا)، محفظة، على الحساب) */}
+                <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                            {language === 'ar' ? 'تقسيم الدفع أو سداد جزء نقدي والباقي على الحساب:' : 'Split / Partial Payment:'}
+                        </label>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {/* نقدي */}
+                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 bg-slate-50/50 dark:bg-slate-800/40">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                    <Banknote size={13} /> {language === 'ar' ? 'نقدي (كاش)' : 'Cash'}
+                                </span>
+                            </div>
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={partCash}
+                                onChange={(e) => {
+                                    setPartCash(e.target.value);
+                                    if (!cashReceived || parseFloat(cashReceived) < parseFloat(e.target.value || '0')) {
+                                        setCashReceived(e.target.value);
+                                    }
+                                }}
+                                className="w-full px-2 py-2 text-center font-bold text-base rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-emerald-500"
+                                placeholder="0.00"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => fillRest('cash')}
+                                className="w-full mt-1.5 text-[11px] font-bold py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 transition-colors"
+                            >
+                                {language === 'ar' ? 'الباقي كاش' : 'Rest Cash'}
+                            </button>
+                        </div>
+
+                        {/* بطاقة (انستا) */}
+                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 bg-slate-50/50 dark:bg-slate-800/40">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1">
+                                    <CreditCard size={13} /> {language === 'ar' ? 'بطاقة (انستا)' : 'Card (Insta)'}
+                                </span>
+                            </div>
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={partCard}
+                                onChange={(e) => setPartCard(e.target.value)}
+                                className="w-full px-2 py-2 text-center font-bold text-base rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-sky-500"
+                                placeholder="0.00"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => fillRest('card')}
+                                className="w-full mt-1.5 text-[11px] font-bold py-1 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 hover:bg-sky-100 border border-sky-200 dark:border-sky-800 transition-colors"
+                            >
+                                {language === 'ar' ? 'الباقي بطاقة' : 'Rest Card'}
+                            </button>
+                        </div>
+
+                        {/* محفظة */}
+                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 bg-slate-50/50 dark:bg-slate-800/40">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                                    <Smartphone size={13} /> {language === 'ar' ? 'محفظة' : 'Wallet'}
+                                </span>
+                            </div>
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={partWallet}
+                                onChange={(e) => setPartWallet(e.target.value)}
+                                className="w-full px-2 py-2 text-center font-bold text-base rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-amber-500"
+                                placeholder="0.00"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => fillRest('wallet')}
+                                className="w-full mt-1.5 text-[11px] font-bold py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 hover:bg-amber-100 border border-amber-200 dark:border-amber-800 transition-colors"
+                            >
+                                {language === 'ar' ? 'الباقي محفظة' : 'Rest Wallet'}
+                            </button>
+                        </div>
+
+                        {/* على الحساب */}
+                        <div className="border border-purple-200 dark:border-purple-800/80 rounded-xl p-2.5 bg-purple-50/50 dark:bg-purple-950/30">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1">
+                                    <FileText size={13} /> {language === 'ar' ? 'على الحساب' : 'On Account'}
+                                </span>
+                            </div>
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={partCredit}
+                                onChange={(e) => setPartCredit(e.target.value)}
+                                className="w-full px-2 py-2 text-center font-bold text-base rounded-lg border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-purple-500 text-purple-700 dark:text-purple-300"
+                                placeholder="0.00"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => fillRest('credit')}
+                                className="w-full mt-1.5 text-[11px] font-bold py-1 rounded-lg bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-200 hover:bg-purple-200 border border-purple-300 dark:border-purple-700 transition-colors"
+                            >
+                                {language === 'ar' ? 'الباقي على الحساب' : 'Rest on Account'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* تفاصيل المديونية إذا كان هناك جزء على الحساب */}
+                {num(partCredit) > 0 && (
+                    <div className="p-3.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 mb-3 space-y-2 animate-fade-in">
+                        <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-purple-900 dark:text-purple-200">{language === 'ar' ? 'حساب العميل:' : 'Customer Account:'}</span>
+                            <span className="font-bold text-slate-900 dark:text-white">{customerName || (language === 'ar' ? 'يرجى كتابة اسم العميل' : 'Unspecified')}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs pt-1 border-t border-purple-200/60 dark:border-purple-800/60">
+                            <span className="text-slate-600 dark:text-slate-400">{language === 'ar' ? 'المديونية السابقة:' : 'Prior Debt:'}</span>
+                            <span className="font-bold font-mono text-slate-800 dark:text-slate-200">
+                                {Number(existingCustomer?.balance || 0).toLocaleString('en-US')} {t('egp')}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-purple-700 dark:text-purple-300">{language === 'ar' ? 'المبلغ المضاف على الحساب:' : 'Added to Account:'}</span>
+                            <span className="font-bold font-mono text-purple-700 dark:text-purple-300">
+                                +{num(partCredit).toLocaleString('en-US')} {t('egp')}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs font-bold pt-1.5 border-t border-purple-200 dark:border-purple-800">
+                            <span className="text-purple-900 dark:text-purple-200">{language === 'ar' ? 'إجمالي المديونية الجديدة:' : 'New Balance:'}</span>
+                            <span className="font-black font-mono text-sm text-purple-600 dark:text-purple-400">
+                                {((existingCustomer?.balance || 0) + num(partCredit)).toLocaleString('en-US')} {t('egp')}
+                            </span>
+                        </div>
+                    </div>
+                )}
+
+                {/* النقد المستلم وحاسبة الباقي (إذا كان هناك جزء كاش) */}
+                {draftCashPart > 0 && (
+                    <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 mb-3 animate-fade-in">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">{language === 'ar' ? 'المبلغ المطلوب سداده نقداً (كاش):' : t('cash_for_invoice')}:</span>
+                            <span className="font-black text-emerald-800 dark:text-emerald-200 font-mono">{draftCashPart.toLocaleString('en-US')} {t('egp')}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('cash_received')}:</label>
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={cashReceived}
+                                onChange={(e) => setCashReceived(e.target.value)}
+                                className="flex-1 px-3 py-2 text-center font-bold text-base rounded-lg border-2 border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900"
+                                placeholder="0.00"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setCashReceived(String(draftCashPart))}
+                                className="px-3 py-2 text-xs font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 whitespace-nowrap active:scale-95 transition-all"
+                            >
+                                {t('exact_amount')}
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-2">
+                            <span className="text-[11px] text-slate-500 font-medium">{language === 'ar' ? 'فئات سريعة:' : 'Quick:'}</span>
+                            {[50, 100, 200, 500].map(val => (
+                                <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => setCashReceived(String(val))}
+                                    className="px-2.5 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors"
+                                >
+                                    {val} {t('egp')}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* الملخص المالي للفاتورة */}
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-800 text-xs mb-4 bg-slate-50/50 dark:bg-slate-800/30">
+                    <div className="flex justify-between px-3 py-2">
+                        <span className="text-slate-500">{t('paid_total')}</span>
+                        <span className="font-bold font-mono">{round2(paymentCheck.info.total).toLocaleString('en-US')} {t('egp')}</span>
+                    </div>
+                    <div className={`flex justify-between px-3 py-2 ${paymentRemaining !== 0 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 font-bold' : ''}`}>
+                        <span>{t('payment_remaining')}</span>
+                        <span className="font-mono">{paymentRemaining.toLocaleString('en-US')} {t('egp')}</span>
+                    </div>
+                    {draftCashPart > 0 && (
+                        <div className="flex justify-between px-3 py-2">
+                            <span className="text-slate-500">{t('change_due')}</span>
+                            <span className="font-bold text-sky-600 dark:text-sky-400 font-mono">{paymentChange.toLocaleString('en-US')} {t('egp')}</span>
+                        </div>
+                    )}
+                    <div className="flex justify-between px-3 py-2">
+                        <span className="text-slate-500">{t('drawer_increase')}</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">+{paymentCheck.info.cashPaid.toLocaleString('en-US')} {t('egp')}</span>
+                    </div>
+                </div>
+
+                {!paymentCheck.ok && (
+                    <p className="text-xs font-bold text-rose-500 text-center mb-3">{t(paymentCheck.error!)}</p>
+                )}
+
+                <div className="flex gap-3">
+                    <Button 
+                        variant="success" 
+                        onClick={confirmSave} 
+                        disabled={!paymentCheck.ok || (num(partCredit) > 0 && (!customerName.trim() || customerName.trim() === 'عميل نقدي'))} 
+                        className="flex-1 justify-center py-3 text-base font-bold shadow-md"
+                    >
+                        {language === 'ar' ? 'تأكيد وإصدار الفاتورة' : t('confirm')}
+                    </Button>
+                    <Button variant="secondary" onClick={() => setShowPaymentModal(false)} className="flex-1 justify-center py-3 text-base">{t('cancel')}</Button>
+                </div>
             </ModalShell>
         )}
 

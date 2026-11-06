@@ -2,7 +2,7 @@
 // "الكاش المخصص لسداد الفاتورة" عن "النقد المستلم" (الباقي للموظف/العميل).
 // كل الحسابات تُقرَّب لخانتين (جنيه) لتفادي أخطاء الفروق العشرية.
 
-export type PaymentKind = 'cash' | 'card' | 'wallet' | 'instapay';
+export type PaymentKind = 'cash' | 'card' | 'wallet' | 'instapay' | 'credit';
 export type PaymentMethodLabel = PaymentKind | 'mixed';
 
 export interface PaymentPart {
@@ -25,9 +25,11 @@ export interface PaymentInfo {
     method: PaymentMethodLabel;
     /** غير نقدي (بطاقة/محفظة/تحويل) — لا يدخل الدرج */
     nonCash: number;
+    /** الجزء المسجل على الحساب / آجل (مديونية على العميل) */
+    creditPaid: number;
 }
 
-export const PAYMENT_KINDS: PaymentKind[] = ['cash', 'card', 'wallet', 'instapay'];
+export const PAYMENT_KINDS: PaymentKind[] = ['cash', 'card', 'wallet', 'instapay', 'credit'];
 
 /** تقريب لخانتين مع تجنب أخطاء 0.1 + 0.2 = 0.30000000000000004 */
 export const round2 = (n: number): number => {
@@ -46,6 +48,7 @@ export const sumParts = (parts: PaymentPart[]): number =>
 export const legacyKind = (method?: string): PaymentKind => {
     const m = String(method || 'cash').toLowerCase();
     if (m === 'instapay') return 'instapay';
+    if (m === 'credit' || m === 'آجل' || m === 'on_account') return 'credit';
     if (m === 'wallet' || m === 'card' || m === 'visa' || m === 'split' || m === 'loyalty') return m === 'wallet' ? 'wallet' : 'card';
     return 'cash';
 };
@@ -72,6 +75,7 @@ export const buildPaymentInfo = (input: {
 
     if (parts.length > 0) {
         const cashPaid = round2(parts.filter(p => p.method === 'cash').reduce((a, p) => a + p.amount, 0));
+        const creditPaid = round2(parts.filter(p => p.method === 'credit').reduce((a, p) => a + p.amount, 0));
         const nonCash = round2(parts.filter(p => p.method !== 'cash').reduce((a, p) => a + p.amount, 0));
         const received = input.received == null || !isFinite(Number(input.received)) ? cashPaid : round2(Number(input.received));
         return {
@@ -81,7 +85,8 @@ export const buildPaymentInfo = (input: {
             received,
             change: round2(Math.max(0, received - cashPaid)),
             method: kindFromParts(parts),
-            nonCash
+            nonCash,
+            creditPaid
         };
     }
 
@@ -96,7 +101,8 @@ export const buildPaymentInfo = (input: {
         received,
         change: round2(Math.max(0, received - cashPaid)),
         method: kind,
-        nonCash: kind === 'cash' ? 0 : total
+        nonCash: kind === 'cash' ? 0 : total,
+        creditPaid: kind === 'credit' ? total : 0
     };
 };
 

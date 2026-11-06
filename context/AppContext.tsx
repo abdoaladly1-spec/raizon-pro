@@ -138,7 +138,8 @@ const translations = {
     invoices: 'المبيعات',
     payment_method: 'طريقة الدفع',
     cash: 'نقداً',
-    card: 'بطاقة',
+    card: 'بطاقة (انستا)',
+    credit: 'على الحساب',
     split: 'مقسم',
     loyalty: 'نقاط الولاء',
     discount: 'الخصم',
@@ -960,7 +961,8 @@ const translations = {
     invoices: 'Sales',
     payment_method: 'Payment Method',
     cash: 'Cash',
-    card: 'Card',
+    card: 'Card (Insta)',
+    credit: 'On Account / Credit',
     split: 'Split',
     loyalty: 'Loyalty Points',
     discount: 'Discount',
@@ -2749,8 +2751,12 @@ export const AppProvider = ({ children }: any) => {
         if (c.id === invoiceData.customerId) {
           const newTotalSpent = c.totalSpent + invoiceData.total;
 
-          const isCredit = invoiceData.paymentMethod === 'credit';
-          const newBalance = (c.balance || 0) + (isCredit ? invoiceData.total : 0);
+          const creditPart = round2(
+            (invoiceData.paymentParts || [])
+              .filter((p: any) => p.method === 'credit')
+              .reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0)
+          ) || (invoiceData.paymentMethod === 'credit' ? invoiceData.total : 0);
+          const newBalance = round2((c.balance || 0) + creditPart);
 
           return {
             ...c,

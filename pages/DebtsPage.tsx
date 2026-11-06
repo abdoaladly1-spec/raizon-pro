@@ -79,14 +79,14 @@ export const DebtsPage: React.FC = () => {
   // ---------------------------------------------------------------------------
   const getCustomerStatus = (customer: Customer): DebtStatus => {
     const bal = customer.balance || 0;
-    const limit = customer.creditLimit || 0;
     const payments = (state.customerPayments || []).filter(p => p.customerId === customer.id);
 
     if (bal <= 0) {
       return 'settled';
     }
-    if (limit > 0 && bal > limit) {
-      return 'overdue';
+    if (customer.lastVisit) {
+      const diff = (Date.now() - new Date(customer.lastVisit).getTime()) / (1000 * 60 * 60 * 24);
+      if (diff > 30) return 'overdue';
     }
     if (customer.lastVisit) {
       const daysSinceVisit = (Date.now() - new Date(customer.lastVisit).getTime()) / (1000 * 60 * 60 * 24);
@@ -162,16 +162,13 @@ export const DebtsPage: React.FC = () => {
     const allDebtors = state.customers.filter(c => (c.balance || 0) > 0);
     const totalDue = allDebtors.reduce((sum, c) => sum + (c.balance || 0), 0);
     
-    // Overdue debts: clients who exceeded credit limit or haven't paid in > 30 days
+    // Overdue debts: clients who haven't paid in > 30 days
     const overdueDebtors = allDebtors.filter(c => {
-      const limit = c.creditLimit || 0;
-      const isOverLimit = limit > 0 && (c.balance || 0) > limit;
-      let isOld = false;
       if (c.lastVisit) {
         const diff = (Date.now() - new Date(c.lastVisit).getTime()) / (1000 * 60 * 60 * 24);
-        if (diff > 30) isOld = true;
+        return diff > 30;
       }
-      return isOverLimit || isOld;
+      return false;
     });
     const totalOverdue = overdueDebtors.reduce((sum, c) => sum + (c.balance || 0), 0);
 
@@ -668,9 +665,9 @@ export const DebtsPage: React.FC = () => {
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
             <span className="text-[11px] text-slate-500 dark:text-slate-400">
               {summary.overdueCount > 0 ? (
-                <span className="text-amber-600 dark:text-amber-400 font-bold">{summary.overdueCount} تجاوزوا الحد الائتماني الائتماني</span>
+                <span className="text-amber-600 dark:text-amber-400 font-bold">{summary.overdueCount} متأخرين أكثر من 30 يوماً</span>
               ) : (
-                <span>ضمن الحدود الائتمانية</span>
+                <span>ديون مستقرة وحديثة</span>
               )}
             </span>
             <span className="w-2 h-2 rounded-full bg-amber-500 shadow-xs shadow-amber-500/50" />
@@ -860,7 +857,6 @@ export const DebtsPage: React.FC = () => {
                     <th className="py-3.5 px-4 font-bold">العميل</th>
                     <th className="py-3.5 px-4 font-bold">رقم الهاتف</th>
                     <th className="py-3.5 px-4 font-bold text-center">المبلغ المستحق</th>
-                    <th className="py-3.5 px-4 font-bold text-center">الحد الائتماني</th>
                     <th className="py-3.5 px-4 font-bold text-center">حالة الدين</th>
                     <th className="py-3.5 px-4 font-bold text-center">آخر حركة</th>
                     <th className="py-3.5 px-4 font-bold text-center">الإجراءات</th>
@@ -912,23 +908,6 @@ export const DebtsPage: React.FC = () => {
                           <div className={`font-mono text-base ${balance > 0 ? 'text-rose-500 font-extrabold' : 'text-emerald-500 font-extrabold'}`}>
                             {formatNumber(balance)} <span className="text-[11px] font-normal text-slate-400">{currencySymbol}</span>
                           </div>
-                        </td>
-
-                        {/* Credit Limit */}
-                        <td className="py-3.5 px-4 text-center font-mono">
-                          {limit > 0 ? (
-                            <div>
-                              <span className="text-slate-200 font-bold">{formatNumber(limit)} {currencySymbol}</span>
-                              <div className="w-20 mx-auto bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden border border-slate-200 dark:border-slate-700/80">
-                                <div 
-                                  className={`h-full rounded-full ${usagePercent >= 100 ? 'bg-rose-500' : usagePercent >= 80 ? 'bg-amber-500' : 'bg-purple-500'}`}
-                                  style={{ width: `${usagePercent}%` }}
-                                />
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-slate-500 dark:text-slate-400 italic">غير محدد</span>
-                          )}
                         </td>
 
                         {/* Debt Status Badge */}
@@ -1078,12 +1057,6 @@ export const DebtsPage: React.FC = () => {
                   {formatNumber(paymentCustomer.balance || 0)} {currencySymbol}
                 </span>
               </div>
-              <div className="text-left">
-                <span className="text-xs text-slate-500 dark:text-slate-400 block">الحد الائتماني:</span>
-                <span className="text-sm font-bold font-mono text-slate-300">
-                  {paymentCustomer.creditLimit ? `${formatNumber(paymentCustomer.creditLimit)} ${currencySymbol}` : 'غير محدد'}
-                </span>
-              </div>
             </div>
 
             {/* خيار نوع السداد (كامل / جزئي) */}
@@ -1180,7 +1153,7 @@ export const DebtsPage: React.FC = () => {
             </div>
 
             {/* تاريخ السداد ورقم السند */}
-            <div className="grid grid-cols-2 gap-3">
+            <div>
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">
                   تاريخ السداد:
@@ -1310,13 +1283,6 @@ export const DebtsPage: React.FC = () => {
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 block">إجمالي ما تم سداده:</span>
                 <span className="text-base font-bold font-mono text-emerald-400 mt-0.5 block">
                   {formatNumber(activeCustomerTotalPaid)} {currencySymbol}
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700/80">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 block">الحد الائتماني المعتمد:</span>
-                <span className="text-base font-bold font-mono text-slate-300 mt-0.5 block">
-                  {profileCustomer.creditLimit ? `${formatNumber(profileCustomer.creditLimit)} ${currencySymbol}` : 'غير محدد'}
                 </span>
               </div>
 
@@ -1593,7 +1559,7 @@ export const DebtsPage: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div>
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">
                   الحد الائتماني ({currencySymbol}):

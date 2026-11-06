@@ -3,6 +3,8 @@ import { useApp } from '../context/AppContext';
 import { LogOut, Printer, Award, Clock, Wallet, Plus, Trash2, AlertCircle, ArrowUp, ArrowDown, Check, RefreshCw } from '../components/Icons';
 import { ClosingReport } from '../types';
 import { cashOfInvoice, isCashExpense } from '../lib/payments';
+import { getDrawerOpeningBalance } from '../lib/analytics';
+import { toIsoDate, localIsoToday } from '../lib/dates';
 import { cashReturnsFor } from '../lib/returns';
 import { Card } from '../components/ui';
 
