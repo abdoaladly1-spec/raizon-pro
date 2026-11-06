@@ -5,7 +5,9 @@ import {
     Users, Plus, Trash2, Printer, DollarSign, Clock, Search, Award, X,
     User, ArrowLeft, Wallet, Banknote, Calendar, FileText, Package,
     Check, Phone, CheckCircle2, XCircle, AlertCircle, RefreshCw, Scissors,
-    CreditCard, ArrowUpRight, ChevronRight, BarChart2
+    CreditCard, ArrowUpRight, ChevronRight, BarChart2,
+    WhatsAppIcon, StatementIcon, CustomEditIcon, TimeIcon, PhotoIcon,
+    CustomTrashIcon, CustomPrinterIcon
 } from '../components/Icons';
 import { Staff, StaffPayment } from '../types';
 import { Card, Button, Input, ModalShell } from '../components/ui';
@@ -79,7 +81,20 @@ export const StaffPage = () => {
     // إدارة العهدة والأدوات
     const [showToolsModal, setShowToolsModal] = useState(false);
     const [toolForm, setToolForm] = useState({ name: '', condition: 'New', notes: '' });
-    const [staffTools, setStaffTools] = useState<Array<{ id: string; staffId: string; name: string; condition: string; assignedDate: string }>>([]);
+    const [staffTools, setStaffTools] = useState<Array<{ id: string; staffId: string; name: string; condition: string; assignedDate: string }>>(() => {
+        try {
+            const saved = localStorage.getItem('pro_staff_tools_v1');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
+
+    React.useEffect(() => {
+        try {
+            localStorage.setItem('pro_staff_tools_v1', JSON.stringify(staffTools));
+        } catch {}
+    }, [staffTools]);
 
     // تقرير مسير الرواتب والمستحقات المجمعة
     const [showPayrollReports, setShowPayrollReports] = useState(false);
@@ -275,7 +290,7 @@ export const StaffPage = () => {
     // تنفيذ سحب سلفة
     const handleConfirmAdvance = () => {
         const amt = parseFloat(advanceAmount);
-        const targetStaff = (state.staff || []).find(s => s.id === advanceStaffId);
+        const targetStaff = (state.staff || []).find(s => s.id === (advanceStaffId || (state.staff && state.staff[0]?.id))) || selectedStaff || (state.staff && state.staff[0]);
 
         if (!targetStaff) {
             addToast(isAr ? 'يرجى اختيار الموظف أولاً' : 'Select staff member', 'error');
@@ -324,7 +339,7 @@ export const StaffPage = () => {
     // تنفيذ تسجيل الدفعة
     const handleConfirmPayment = () => {
         const amt = parseFloat(paymentAmount);
-        const targetStaff = (state.staff || []).find(s => s.id === paymentStaffId) || selectedStaff;
+        const targetStaff = (state.staff || []).find(s => s.id === (paymentStaffId || (state.staff && state.staff[0]?.id))) || selectedStaff || (state.staff && state.staff[0]);
 
         if (!targetStaff) {
             addToast(isAr ? 'يرجى اختيار الموظف أولاً' : 'Select staff member', 'error');
@@ -476,9 +491,21 @@ export const StaffPage = () => {
 
                                 <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
                                     {selectedStaff.phone && (
-                                        <span className="flex items-center gap-1 font-mono">
-                                            <Phone size={12} className="text-slate-400" />
-                                            <span>{selectedStaff.phone}</span>
+                                        <span className="flex items-center gap-2 font-mono">
+                                            <span className="flex items-center gap-1">
+                                                <Phone size={12} className="text-slate-400" />
+                                                <span>{selectedStaff.phone}</span>
+                                            </span>
+                                            <a
+                                                href={`https://wa.me/20${selectedStaff.phone.replace(/\D/g, '').replace(/^0+/, '')}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all"
+                                                title={isAr ? 'مراسلة واتساب' : 'WhatsApp'}
+                                            >
+                                                <WhatsAppIcon size={14} />
+                                                <span>واتساب</span>
+                                            </a>
                                         </span>
                                     )}
                                     <span>•</span>
@@ -528,9 +555,9 @@ export const StaffPage = () => {
                             <button
                                 type="button"
                                 onClick={() => handleOpenStatement(selectedStaff.id)}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all shadow-2xs"
+                                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all shadow-2xs"
                             >
-                                <Printer size={15} />
+                                <StatementIcon size={18} />
                                 <span>{isAr ? 'كشف حساب' : 'Statement'}</span>
                             </button>
 
@@ -540,7 +567,7 @@ export const StaffPage = () => {
                                 className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer transition-all"
                                 title={isAr ? 'تعديل بيانات الموظف' : 'Edit staff'}
                             >
-                                <Scissors size={16} />
+                                <CustomEditIcon size={18} />
                             </button>
                         </div>
                     </div>

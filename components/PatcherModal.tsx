@@ -23,7 +23,9 @@ import {
   Eye, 
   EyeOff,
   Maximize2,
-  Minimize2
+  Minimize2,
+  SecurityIcon,
+  UserIcon
 } from './Icons';
 
 interface PatcherModalProps {
@@ -437,8 +439,8 @@ export const PatcherModal: React.FC<PatcherModalProps> = ({ isOpen, onClose, onA
                   dir="ltr"
                   required
                 />
-                <div className="absolute left-3.5 top-3 text-purple-400 pointer-events-none">
-                  <User size={16} />
+                <div className="absolute left-3.5 top-3 pointer-events-none flex items-center justify-center">
+                  <UserIcon size={16} />
                 </div>
               </div>
 
@@ -453,8 +455,8 @@ export const PatcherModal: React.FC<PatcherModalProps> = ({ isOpen, onClose, onA
                   dir="ltr"
                   required
                 />
-                <div className="absolute left-3.5 top-3 text-purple-400 pointer-events-none">
-                  <Lock size={16} />
+                <div className="absolute left-3.5 top-3 pointer-events-none flex items-center justify-center">
+                  <SecurityIcon size={16} />
                 </div>
                 <button
                   type="button"

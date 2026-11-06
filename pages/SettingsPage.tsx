@@ -7,7 +7,8 @@ import {
     Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, 
     ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, 
     ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw,
-    Building, Bell, Lock, Save, Key, Shield, Download, Edit, MessageSquare
+    Building, Bell, Lock, Save, Key, Shield, Download, Edit, MessageSquare,
+    WhatsAppIcon, StatementIcon, CustomEditIcon, TimeIcon, PhotoIcon, SecurityIcon, MailIcon
 } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier, AppState, CustomReceiptTemplate } from '../types';
 import { Card, Button, Input, ToastContainer, ModalShell } from '../components/ui';
@@ -25,9 +26,9 @@ type SettingsTab = 'general' | 'email' | 'print' | 'security' | 'users' | 'logs'
 
 const TABS = [
     { id: 'general', icon: Settings, labelAr: 'عام', labelEn: 'General' },
-    { id: 'email', icon: Bell, labelAr: 'إشعارات المدير', labelEn: 'Manager Alerts' },
+    { id: 'email', icon: MailIcon as any, labelAr: 'إشعارات المدير', labelEn: 'Manager Alerts' },
     { id: 'print', icon: Printer, labelAr: 'الطباعة والتصميم', labelEn: 'Print Design' },
-    { id: 'security', icon: Shield, labelAr: 'النسخ الاحتياطي والأمان', labelEn: 'Backup & Security' },
+    { id: 'security', icon: SecurityIcon as any, labelAr: 'النسخ الاحتياطي والأمان', labelEn: 'Backup & Security' },
     { id: 'users', icon: Users, labelAr: 'المستخدمين', labelEn: 'Users' },
     { id: 'logs', icon: Activity, labelAr: 'سجل التدقيق', labelEn: 'Audit Logs' },
     { id: 'updates', icon: RefreshCw, labelAr: 'التحديثات السحابية', labelEn: 'Cloud Updates' },
@@ -2661,8 +2662,9 @@ export const SettingsPage = () => {
                                     </button>
                                 </div>
                             ) : (
-                                <label className="cursor-pointer inline-block px-4 py-2.5 rounded-xl bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-xs font-bold hover:bg-slate-100 text-slate-800 dark:text-slate-200 shadow-xs">
-                                    {language === 'ar' ? 'رفع شعار من الجهاز' : 'Upload Logo'}
+                                <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-xs font-bold hover:bg-slate-100 text-slate-800 dark:text-slate-200 shadow-xs">
+                                    <PhotoIcon size={18} />
+                                    <span>{language === 'ar' ? 'رفع شعار من الجهاز' : 'Upload Logo'}</span>
                                     <input
                                         type="file"
                                         accept="image/png,image/jpeg,image/webp"
@@ -2687,8 +2689,9 @@ export const SettingsPage = () => {
                                     </button>
                                 </div>
                             ) : (
-                                <label className="cursor-pointer inline-block px-4 py-2.5 rounded-xl bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-xs font-bold hover:bg-slate-100 text-slate-800 dark:text-slate-200 shadow-xs">
-                                    {language === 'ar' ? 'رفع علامة مائية' : 'Upload Watermark'}
+                                <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-xs font-bold hover:bg-slate-100 text-slate-800 dark:text-slate-200 shadow-xs">
+                                    <PhotoIcon size={18} />
+                                    <span>{language === 'ar' ? 'رفع علامة مائية' : 'Upload Watermark'}</span>
                                     <input
                                         type="file"
                                         accept="image/png,image/jpeg,image/webp"
@@ -2737,6 +2740,7 @@ export const SettingsPage = () => {
                                 title={language === 'ar' ? 'مشاركة الإيصال عبر واتساب' : 'Share via WhatsApp'}
                             >
                                 <MessageSquare size={15} className="text-emerald-600 dark:text-emerald-400" />
+                                <WhatsAppIcon size={16} />
                                 <span>{language === 'ar' ? 'إرسال واتساب' : 'WhatsApp'}</span>
                             </button>
 

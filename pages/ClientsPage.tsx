@@ -3,7 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
     FileText, Users, Plus, Trash2, Printer, Search, X, 
-    User, DollarSign, Clock, Settings, Check, CreditCard, Wallet, Banknote
+    User, DollarSign, Clock, Settings, Check, CreditCard, Wallet, Banknote,
+    WhatsAppIcon, StatementIcon, CustomEditIcon, CustomTrashIcon, CustomPrinterIcon, TimeIcon
 } from '../components/Icons';
 import { Customer, CustomerPayment } from '../types';
 import { Card, Button, Input, ModalShell } from '../components/ui';
@@ -554,9 +555,10 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                                             const msg = encodeURIComponent(`مرحباً أستاذ ${c.name}، يسعدنا تواصلكم دائماً مع ${state.settings?.shopName || 'المتجر'}!`);
                                                             window.open(`https://wa.me/${p}?text=${msg}`, '_blank');
                                                         }}
-                                                        className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 dark:text-emerald-300 font-bold text-[11px] border border-emerald-300/40 transition-all cursor-pointer"
                                                         title="مراسلة واتساب"
+                                                        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 dark:text-emerald-300 font-bold text-[11px] border border-emerald-300/40 transition-all cursor-pointer"
                                                     >
+                                                        <WhatsAppIcon size={14} />
                                                         <span>واتساب</span>
                                                     </button>
                                                 )}
@@ -586,7 +588,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                                     className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                                                     title={t('edit')}
                                                 >
-                                                    <Settings size={14}/>
+                                                    <CustomEditIcon size={15}/>
                                                 </button>
                                                 <button
                                                     type="button"
@@ -722,8 +724,8 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                     className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
                                     title="طباعة كشف حساب رسمي"
                                 >
-                                    <Printer size={15}/>
-                                    <span>{language === 'ar' ? 'طباعة' : 'Print'}</span>
+                                    <StatementIcon size={16} />
+                                    <span>{language === 'ar' ? 'طباعة كشف الحساب' : 'Print Statement'}</span>
                                 </button>
 
                                 <button
@@ -732,7 +734,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                     className="px-3 py-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900/80 border border-emerald-500/40 text-emerald-300 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
                                     title="مشاركة كشف الحساب عبر واتساب"
                                 >
-                                    
+                                    <WhatsAppIcon size={16} />
                                     <span>واتساب</span>
                                 </button>
                             </div>

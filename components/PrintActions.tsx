@@ -1,7 +1,7 @@
 // أزرار الطباعة الموحدة (طباعة + حفظ PDF + مشاركة واتساب)
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Printer, FileText, MessageSquare } from '../components/Icons';
+import { Printer, FileText, MessageSquare, WhatsAppIcon } from '../components/Icons';
 import { Button } from '../components/ui';
 import type { Invoice } from '../types';
 import { normalizePrintDesign, resolvePrintDesign, printAuditInfo } from '../lib/printDesign';
@@ -191,7 +191,7 @@ export const PrintActions = ({ invoice }: { invoice: Invoice }) => {
         onClick={handleWhatsApp}
         className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-sm"
       >
-        <MessageSquare size={16} className="shrink-0" />
+        <WhatsAppIcon size={16} />
         <span>{language === 'ar' ? 'مشاركة واتساب' : 'WhatsApp'}</span>
       </Button>
     </div>

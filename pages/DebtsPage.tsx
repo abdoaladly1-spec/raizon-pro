@@ -5,7 +5,8 @@ import {
   Check, X, Phone, AlertTriangle, Clock, FileText, 
   Wallet, RefreshCw, ChevronRight, MessageSquare, Plus, 
   Calendar, ArrowUp, ArrowDown, User, Tag, Sparkles, 
-  ChevronDown, Filter, Trash2
+  ChevronDown, Filter, Trash2,
+  WhatsAppIcon, StatementIcon, CustomEditIcon, CustomTrashIcon, CustomPrinterIcon
 } from '../components/Icons';
 import { Customer, CustomerPayment } from '../types';
 import { Button, ModalShell } from '../components/ui';
@@ -947,8 +948,8 @@ export const DebtsPage: React.FC = () => {
                               className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-300 dark:border-slate-600/80 transition-colors flex items-center gap-1 cursor-pointer"
                               title="عرض كشف الحساب والملف الشخصي"
                             >
-                              <FileText size={13} />
-                              <span>ملف العميل</span>
+                              <StatementIcon size={14} />
+                              <span>كشف الحساب</span>
                             </button>
 
                             {/* زر واتساب */}
@@ -956,10 +957,10 @@ export const DebtsPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleWhatsAppReminder(c)}
-                                className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors cursor-pointer"
+                                className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors cursor-pointer flex items-center justify-center"
                                 title="إرسال تذكير بالمديونية عبر واتساب"
                               >
-                                <MessageSquare size={15} />
+                                <WhatsAppIcon size={16} />
                               </button>
                             )}
                           </div>
@@ -1367,9 +1368,9 @@ export const DebtsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-300 dark:border-slate-600/80 flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-300 dark:border-slate-600/80 flex items-center gap-2 cursor-pointer"
               >
-                <Printer size={15} />
+                <StatementIcon size={16} />
                 <span>طباعة كشف الحساب</span>
               </button>
 

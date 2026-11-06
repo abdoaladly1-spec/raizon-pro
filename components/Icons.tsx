@@ -300,3 +300,62 @@ export const MessageSquare = ({ className, size, strokeWidth }: IconProps) => (
 export const Building = ({ className, size, strokeWidth }: IconProps) => (
   <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><rect width="16" height="20" x="4" y="2" rx="2" ry="2" /><path d="M9 22v-4h6v4" /><path d="M8 6h.01" /><path d="M16 6h.01" /><path d="M12 6h.01" /><path d="M12 10h.01" /><path d="M12 14h.01" /><path d="M16 10h.01" /><path d="M16 14h.01" /><path d="M8 10h.01" /><path d="M8 14h.01" /></IconWrapper>
 );
+
+// ============================================================================
+// أيقونات مخصصة عالية الدقة (PNG Icons) بناءً على تفضيلات المستخدم
+// ============================================================================
+export interface AppIconProps {
+  className?: string;
+  size?: number | string;
+  alt?: string;
+  style?: React.CSSProperties;
+}
+
+const createPngIcon = (src: string, defaultAlt: string) => {
+  const IconComponent = ({ className, size, alt = defaultAlt, style }: AppIconProps) => {
+    const dim = size ? (typeof size === 'number' ? `${size}px` : size) : undefined;
+    return (
+      <img
+        src={src}
+        alt={alt}
+        style={{
+          width: dim,
+          height: dim,
+          display: 'inline-block',
+          objectFit: 'contain',
+          verticalAlign: 'middle',
+          ...style
+        }}
+        className={`shrink-0 select-none ${className || ''}`}
+        loading="lazy"
+      />
+    );
+  };
+  IconComponent.displayName = `PngIcon(${defaultAlt})`;
+  return IconComponent;
+};
+
+/** أيقونة الواتساب الرسمية */
+export const WhatsAppIcon = createPngIcon('/icons/whatsapp.png', 'WhatsApp');
+/** أيقونة كشف الحساب والتدقيق المالي */
+export const StatementIcon = createPngIcon('/icons/statement.png', 'كشف حساب');
+export const ForensicsIcon = StatementIcon;
+/** أيقونة التعديل والتحرير */
+export const CustomEditIcon = createPngIcon('/icons/edit.png', 'تعديل');
+/** أيقونة الوقت والورديات */
+export const TimeIcon = createPngIcon('/icons/time.png', 'وقت');
+/** أيقونة الصور والملفات الشخصية */
+export const PhotoIcon = createPngIcon('/icons/image.png', 'صورة');
+/** أيقونة الأمان والصلاحيات وكلمة المرور */
+export const SecurityIcon = createPngIcon('/icons/security.png', 'أمان');
+/** أيقونة البريد الإلكتروني والإشعارات */
+export const MailIcon = createPngIcon('/icons/mail.png', 'بريد');
+
+/** أيقونات إضافية مكملة متناسقة */
+export const CustomTrashIcon = createPngIcon('/icons/trash.png', 'حذف');
+export const CustomPrinterIcon = createPngIcon('/icons/printer.png', 'طباعة');
+export const PhoneIcon = createPngIcon('/icons/phone.png', 'هاتف');
+export const AddIcon = createPngIcon('/icons/add.png', 'إضافة');
+export const UserIcon = createPngIcon('/icons/user.png', 'مستخدم');
+export const CashIcon = createPngIcon('/icons/cash.png', 'كاش');
+export const SearchIcon = createPngIcon('/icons/search.png', 'بحث');
