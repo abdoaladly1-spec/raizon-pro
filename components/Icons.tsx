@@ -335,7 +335,7 @@ const createPngIcon = (src: string, defaultAlt: string, defaultClassName?: strin
 /** أيقونة الواتساب الرسمية */
 export const WhatsAppIcon = createPngIcon('/icons/whatsapp.png', 'WhatsApp');
 /** أيقونة كشف الحساب والتدقيق المالي */
-export const StatementIcon = createPngIcon('/icons/statement.png', 'كشف حساب', 'dark:brightness-0 dark:invert');
+export const StatementIcon = createPngIcon('/icons/statement.png', 'كشف حساب');
 export const ForensicsIcon = StatementIcon;
 /** أيقونة التعديل والتحرير */
 export const CustomEditIcon = createPngIcon('/icons/edit.png', 'تعديل', 'dark:brightness-0 dark:invert');
