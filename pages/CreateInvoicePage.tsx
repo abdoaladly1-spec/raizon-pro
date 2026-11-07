@@ -1387,33 +1387,33 @@ export const CreateInvoice = ({ onClose }: any) => {
                         <button
                             type="button"
                             onClick={() => payAllWith('cash')}
-                            className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-black transition-all bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm active:scale-95"
+                            className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 cursor-pointer"
                         >
-                            <Banknote size={15} />
+                            <Banknote size={15} className="text-slate-600 dark:text-slate-400" />
                             <span>{language === 'ar' ? 'كاش بالكامل' : 'Full Cash'}</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => payAllWith('card')}
-                            className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-black transition-all bg-sky-600 hover:bg-sky-700 text-white shadow-sm active:scale-95"
+                            className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 cursor-pointer"
                         >
-                            <CreditCard size={15} />
+                            <CreditCard size={15} className="text-slate-600 dark:text-slate-400" />
                             <span>{language === 'ar' ? 'بطاقة (انستا)' : 'Full Card'}</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => payAllWith('wallet')}
-                            className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-black transition-all bg-amber-600 hover:bg-amber-700 text-white shadow-sm active:scale-95"
+                            className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 cursor-pointer"
                         >
-                            <Smartphone size={15} />
+                            <Smartphone size={15} className="text-slate-600 dark:text-slate-400" />
                             <span>{language === 'ar' ? 'محفظة' : 'Full Wallet'}</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => payAllWith('credit')}
-                            className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-black transition-all bg-purple-600 hover:bg-purple-700 text-white shadow-sm active:scale-95"
+                            className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 cursor-pointer"
                         >
-                            <FileText size={15} />
+                            <FileText size={15} className="text-slate-600 dark:text-slate-400" />
                             <span>{language === 'ar' ? 'على الحساب' : 'On Account'}</span>
                         </button>
                     </div>
@@ -1429,10 +1429,10 @@ export const CreateInvoice = ({ onClose }: any) => {
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {/* نقدي */}
-                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 bg-slate-50/50 dark:bg-slate-800/40">
+                        <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 bg-slate-50/60 dark:bg-slate-900/60">
                             <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                    <Banknote size={13} /> {language === 'ar' ? 'نقدي (كاش)' : 'Cash'}
+                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                    <Banknote size={13} className="text-slate-500" /> {language === 'ar' ? 'نقدي (كاش)' : 'Cash'}
                                 </span>
                             </div>
                             <input
@@ -1446,23 +1446,23 @@ export const CreateInvoice = ({ onClose }: any) => {
                                         setCashReceived(e.target.value);
                                     }
                                 }}
-                                className="w-full px-2 py-2 text-center font-bold text-base rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-emerald-500"
+                                className="w-full px-2 py-1.5 text-center font-bold text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-slate-500"
                                 placeholder="0.00"
                             />
                             <button
                                 type="button"
                                 onClick={() => fillRest('cash')}
-                                className="w-full mt-1.5 text-[11px] font-bold py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 transition-colors"
+                                className="w-full mt-1.5 text-[11px] font-bold py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                             >
                                 {language === 'ar' ? 'الباقي كاش' : 'Rest Cash'}
                             </button>
                         </div>
 
                         {/* بطاقة (انستا) */}
-                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 bg-slate-50/50 dark:bg-slate-800/40">
+                        <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 bg-slate-50/60 dark:bg-slate-900/60">
                             <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1">
-                                    <CreditCard size={13} /> {language === 'ar' ? 'بطاقة (انستا)' : 'Card (Insta)'}
+                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                    <CreditCard size={13} className="text-slate-500" /> {language === 'ar' ? 'بطاقة (انستا)' : 'Card (Insta)'}
                                 </span>
                             </div>
                             <input
@@ -1471,23 +1471,23 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 step="0.01"
                                 value={partCard}
                                 onChange={(e) => setPartCard(e.target.value)}
-                                className="w-full px-2 py-2 text-center font-bold text-base rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-sky-500"
+                                className="w-full px-2 py-1.5 text-center font-bold text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-slate-500"
                                 placeholder="0.00"
                             />
                             <button
                                 type="button"
                                 onClick={() => fillRest('card')}
-                                className="w-full mt-1.5 text-[11px] font-bold py-1 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 hover:bg-sky-100 border border-sky-200 dark:border-sky-800 transition-colors"
+                                className="w-full mt-1.5 text-[11px] font-bold py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                             >
                                 {language === 'ar' ? 'الباقي بطاقة' : 'Rest Card'}
                             </button>
                         </div>
 
                         {/* محفظة */}
-                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 bg-slate-50/50 dark:bg-slate-800/40">
+                        <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 bg-slate-50/60 dark:bg-slate-900/60">
                             <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                                    <Smartphone size={13} /> {language === 'ar' ? 'محفظة' : 'Wallet'}
+                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                    <Smartphone size={13} className="text-slate-500" /> {language === 'ar' ? 'محفظة' : 'Wallet'}
                                 </span>
                             </div>
                             <input
@@ -1496,23 +1496,23 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 step="0.01"
                                 value={partWallet}
                                 onChange={(e) => setPartWallet(e.target.value)}
-                                className="w-full px-2 py-2 text-center font-bold text-base rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-amber-500"
+                                className="w-full px-2 py-1.5 text-center font-bold text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-slate-500"
                                 placeholder="0.00"
                             />
                             <button
                                 type="button"
                                 onClick={() => fillRest('wallet')}
-                                className="w-full mt-1.5 text-[11px] font-bold py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 hover:bg-amber-100 border border-amber-200 dark:border-amber-800 transition-colors"
+                                className="w-full mt-1.5 text-[11px] font-bold py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                             >
                                 {language === 'ar' ? 'الباقي محفظة' : 'Rest Wallet'}
                             </button>
                         </div>
 
                         {/* على الحساب */}
-                        <div className="border border-purple-200 dark:border-purple-800/80 rounded-xl p-2.5 bg-purple-50/50 dark:bg-purple-950/30">
+                        <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 bg-slate-50/60 dark:bg-slate-900/60">
                             <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1">
-                                    <FileText size={13} /> {language === 'ar' ? 'على الحساب' : 'On Account'}
+                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                    <FileText size={13} className="text-slate-500" /> {language === 'ar' ? 'على الحساب' : 'On Account'}
                                 </span>
                             </div>
                             <input
@@ -1521,13 +1521,13 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 step="0.01"
                                 value={partCredit}
                                 onChange={(e) => setPartCredit(e.target.value)}
-                                className="w-full px-2 py-2 text-center font-bold text-base rounded-lg border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-purple-500 text-purple-700 dark:text-purple-300"
+                                className="w-full px-2 py-1.5 text-center font-bold text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-slate-500 text-slate-800 dark:text-slate-100"
                                 placeholder="0.00"
                             />
                             <button
                                 type="button"
                                 onClick={() => fillRest('credit')}
-                                className="w-full mt-1.5 text-[11px] font-bold py-1 rounded-lg bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-200 hover:bg-purple-200 border border-purple-300 dark:border-purple-700 transition-colors"
+                                className="w-full mt-1.5 text-[11px] font-bold py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                             >
                                 {language === 'ar' ? 'الباقي على الحساب' : 'Rest on Account'}
                             </button>

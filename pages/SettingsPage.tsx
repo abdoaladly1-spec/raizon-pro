@@ -1812,7 +1812,7 @@ export const SettingsPage = () => {
                 </div>
 
                 {/* خيار النسخ الاحتياطي التلقائي المجدول (سحابي بالبريد 12:00 منتصف الليل + محلي كل 6 ساعات) */}
-                <div className="p-4 rounded-xl border border-purple-500/40 bg-purple-500/10 mb-3">
+                <div className="p-4 rounded-xl border border-slate-700/80 bg-slate-800/60 mb-3">
                     <label className="flex items-start gap-3 cursor-pointer">
                         <input
                             type="checkbox"
@@ -1824,9 +1824,9 @@ export const SettingsPage = () => {
                         />
                         <div className="space-y-1">
                             <div className="text-xs font-bold text-slate-100 flex flex-wrap items-center gap-2">
-                                <Clock size={15} className="text-purple-400 shrink-0" />
+                                <Clock size={15} className="text-slate-400 shrink-0" />
                                 <span>{language === 'ar' ? 'النسخ الاحتياطي التلقائي المجدول (بريد 12:00 ليلاً + محلي كل 6 ساعات)' : 'Scheduled Auto Backup (12:00 AM Email + 6h Local)'}</span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-700/50 text-slate-300 border border-slate-600/40">
                                     {language === 'ar' ? 'توفير المساحة: الاحتفاظ بآخر نسختين فقط' : 'Keep latest 2 only'}
                                 </span>
                             </div>

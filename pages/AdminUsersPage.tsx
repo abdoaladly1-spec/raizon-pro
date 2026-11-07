@@ -347,7 +347,7 @@ export const AdminUsers = () => {
             {/* بطاقة الإحصائيات ورأس الصفحة */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center shrink-0">
                         <Users size={20} />
                     </div>
                     <div>
@@ -357,7 +357,7 @@ export const AdminUsers = () => {
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center shrink-0">
                         <Shield size={20} />
                     </div>
                     <div>
@@ -367,7 +367,7 @@ export const AdminUsers = () => {
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center shrink-0">
                         <User size={20} />
                     </div>
                     <div>
@@ -377,12 +377,12 @@ export const AdminUsers = () => {
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center shrink-0">
                         <CheckCircle2 size={20} />
                     </div>
                     <div>
                         <span className="text-[11px] text-slate-400 font-medium block">{language === 'ar' ? 'الحسابات النشطة' : 'Active Accounts'}</span>
-                        <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">{activeCount}</span>
+                        <span className="text-lg font-black text-slate-900 dark:text-white">{activeCount}</span>
                     </div>
                 </div>
             </div>
@@ -397,14 +397,14 @@ export const AdminUsers = () => {
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder={language === 'ar' ? 'بحث بالاسم الفعلي أو اسم الدخول أو الرتبة...' : 'Search users...'}
-                            className="w-full pe-10 ps-3.5 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-purple-500 shadow-2xs transition-colors"
+                            className="w-full pe-10 ps-3.5 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-slate-500 shadow-2xs transition-colors"
                         />
                     </div>
 
                     <select
                         value={roleFilter}
                         onChange={(e) => setRoleFilter(e.target.value)}
-                        className="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-purple-500 cursor-pointer shadow-2xs"
+                        className="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-slate-500 cursor-pointer shadow-2xs"
                     >
                         <option value="all">{language === 'ar' ? 'كل الرتب' : 'All Roles'}</option>
                         <option value="admin">{language === 'ar' ? 'مدير فقط' : 'Admins Only'}</option>
@@ -452,11 +452,7 @@ export const AdminUsers = () => {
                                         <td className="py-3.5 px-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="relative">
-                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs ${
-                                                        u.role === 'admin'
-                                                            ? 'bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
-                                                            : 'bg-blue-100 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                                                    }`}>
+                                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
                                                         {u.name.slice(0, 2).toUpperCase()}
                                                     </div>
                                                     <span className={`absolute -bottom-0.5 -end-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 ${
@@ -470,7 +466,7 @@ export const AdminUsers = () => {
                                                             {u.name}
                                                         </span>
                                                         {isSelf && (
-                                                            <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-300 font-bold border border-purple-200 dark:border-purple-800">
+                                                            <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border border-slate-300 dark:border-slate-700">
                                                                 {language === 'ar' ? 'حسابك الحالي' : 'You'}
                                                             </span>
                                                         )}
@@ -483,13 +479,13 @@ export const AdminUsers = () => {
                                         {/* الرتبة */}
                                         <td className="py-3.5 px-4">
                                             {u.role === 'admin' ? (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 font-black text-[11px] border border-amber-500/25">
-                                                    <Shield size={13} />
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-[11px] border border-slate-300 dark:border-slate-700">
+                                                    <Shield size={13} className="text-slate-500" />
                                                     <span>{language === 'ar' ? 'مدير النظام' : 'Administrator'}</span>
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-[11px] border border-blue-500/25">
-                                                    <User size={13} />
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 font-medium text-[11px] border border-slate-200 dark:border-slate-700/60">
+                                                    <User size={13} className="text-slate-400" />
                                                     <span>{language === 'ar' ? 'كاشير' : 'Cashier'}</span>
                                                 </span>
                                             )}
@@ -557,9 +553,9 @@ export const AdminUsers = () => {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleOpenEditModal(u)}
-                                                                className="w-full flex items-center gap-2 px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-purple-50 dark:hover:bg-purple-950/40 hover:text-purple-600 dark:hover:text-purple-300 rounded-lg transition-colors cursor-pointer"
+                                                                className="w-full flex items-center gap-2 px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
                                                             >
-                                                                <Edit size={14} className="text-purple-500" />
+                                                                <Edit size={14} className="text-slate-500" />
                                                                 <span>{language === 'ar' ? 'تعديل البيانات والصلاحيات' : 'Edit User & Permissions'}</span>
                                                             </button>
 
@@ -573,9 +569,9 @@ export const AdminUsers = () => {
                                                                     setQuickMustChange(false);
                                                                     setActiveActionMenuId(null);
                                                                 }}
-                                                                className="w-full flex items-center gap-2 px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-amber-50 dark:hover:bg-amber-950/40 hover:text-amber-600 dark:hover:text-amber-300 rounded-lg transition-colors cursor-pointer"
+                                                                className="w-full flex items-center gap-2 px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
                                                             >
-                                                                <KeyRound size={14} className="text-amber-500" />
+                                                                <KeyRound size={14} className="text-slate-500" />
                                                                 <span>{language === 'ar' ? 'تعديل كلمة المرور' : 'Change Password'}</span>
                                                             </button>
 
@@ -588,8 +584,8 @@ export const AdminUsers = () => {
                                                                     !canDisable(u)
                                                                         ? 'opacity-40 cursor-not-allowed text-slate-400'
                                                                         : u.active
-                                                                            ? 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40'
-                                                                            : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                                                                            ? 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                                                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                                                                 }`}
                                                             >
                                                                 {u.active ? <XCircle size={14} /> : <CheckCircle2 size={14} />}
@@ -651,7 +647,7 @@ export const AdminUsers = () => {
                                 onClick={() => setModalTab('profile')}
                                 className={`px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
                                     modalTab === 'profile'
-                                        ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 font-bold'
                                         : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                                 }`}
                             >
@@ -664,14 +660,14 @@ export const AdminUsers = () => {
                                 onClick={() => setModalTab('permissions')}
                                 className={`px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
                                     modalTab === 'permissions'
-                                        ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 font-bold'
                                         : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                                 }`}
                             >
                                 <Shield size={14} />
                                 <span>{language === 'ar' ? 'أقسام الصلاحيات' : 'Permissions'}</span>
                                 {form.role === 'admin' && (
-                                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-500 font-bold">
+                                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-slate-500 font-bold">
                                         {language === 'ar' ? 'كاملة' : 'Full'}
                                     </span>
                                 )}
@@ -682,7 +678,7 @@ export const AdminUsers = () => {
                                 onClick={() => setModalTab('password')}
                                 className={`px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
                                     modalTab === 'password'
-                                        ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 font-bold'
                                         : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                                 }`}
                             >
@@ -696,7 +692,7 @@ export const AdminUsers = () => {
                                     onClick={() => setModalTab('activity')}
                                     className={`px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
                                         modalTab === 'activity'
-                                            ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 font-bold'
                                             : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                                     }`}
                                 >
@@ -778,7 +774,7 @@ export const AdminUsers = () => {
                                                     : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                                             }`}
                                         >
-                                            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 shrink-0">
+                                            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950 text-slate-600 dark:text-slate-300 shrink-0">
                                                 <Shield size={20} />
                                             </div>
                                             <div>
@@ -786,7 +782,7 @@ export const AdminUsers = () => {
                                                     <span className="font-extrabold text-sm text-slate-900 dark:text-white">
                                                         {language === 'ar' ? 'مدير النظام' : 'Administrator'}
                                                     </span>
-                                                    {form.role === 'admin' && <Check size={14} className="text-purple-500" />}
+                                                    {form.role === 'admin' && <Check size={14} className="text-slate-500" />}
                                                 </div>
                                                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
                                                     {language === 'ar' ? 'تحكم وإشراف كامل على كل أجزاء البرنامج والتقارير والإعدادات والنسخ الاحتياطي.' : 'Full access to all modules, reports, system settings, and audit logs.'}
@@ -805,7 +801,7 @@ export const AdminUsers = () => {
                                         <select
                                             value={form.locationId || ''}
                                             onChange={(e) => setForm({ ...form, locationId: e.target.value })}
-                                            className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-purple-500 cursor-pointer"
+                                            className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-slate-500 cursor-pointer"
                                         >
                                             <option value="">{language === 'ar' ? 'جميع الفروع والمواقع (غير مقيد)' : 'All Locations (Unrestricted)'}</option>
                                             {state.locations.map(loc => (
@@ -842,9 +838,9 @@ export const AdminUsers = () => {
                         {modalTab === 'permissions' && (
                             <div className="space-y-4 animate-fade-in">
                                 {form.role === 'admin' ? (
-                                    <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 text-purple-800 dark:text-purple-300">
+                                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <Shield size={16} className="text-purple-600 dark:text-purple-400" />
+                                            <Shield size={16} className="text-slate-600 dark:text-slate-300" />
                                             <span className="font-extrabold text-sm">{language === 'ar' ? 'صلاحيات كاملة تلقائية للمدير' : 'Full Access Granted'}</span>
                                         </div>
                                         <p className="text-xs opacity-90 leading-relaxed">
@@ -866,7 +862,7 @@ export const AdminUsers = () => {
                                                         ...form,
                                                         permissions: PERMISSION_GROUPS.flatMap(g => g.permissions.map(p => p.key))
                                                     })}
-                                                    className="text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline cursor-pointer"
+                                                    className="text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:underline cursor-pointer"
                                                 >
                                                     {language === 'ar' ? 'تحديد الكل' : 'Select All'}
                                                 </button>
@@ -904,7 +900,7 @@ export const AdminUsers = () => {
                                                                     key={perm.key}
                                                                     className={`p-2.5 rounded-lg border transition-all cursor-pointer flex items-center gap-2.5 text-xs font-bold ${
                                                                         isChecked
-                                                                            ? 'border-purple-300 dark:border-purple-700 bg-purple-50/70 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200'
+                                                                            ? 'border-slate-400 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
                                                                             : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300'
                                                                     }`}
                                                                 >
@@ -937,7 +933,7 @@ export const AdminUsers = () => {
                         {/* التبويب 3: كلمة المرور */}
                         {modalTab === 'password' && (
                             <div className="space-y-4 animate-fade-in max-w-md mx-auto py-2">
-                                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 text-xs leading-relaxed">
+                                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs leading-relaxed">
                                     {isEditing 
                                         ? (language === 'ar' ? 'اترك حقل كلمة المرور فارغاً إذا كنت لا ترغب بتغييرها للمستخدم الحالي.' : 'Leave blank to keep existing password.')
                                         : (language === 'ar' ? 'حدد كلمة مرور قوية للمستخدم الجديد للدخول للنظام.' : 'Set a strong password for this new user.')}
@@ -1051,7 +1047,7 @@ export const AdminUsers = () => {
                     maxWidth="max-w-md"
                 >
                     <form onSubmit={handleQuickPasswordSubmit} className="space-y-4 text-right" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                        <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-xs text-purple-900 dark:text-purple-200">
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300">
                             <span className="font-bold block mb-0.5">{passwordModalUser.name} (@{passwordModalUser.username})</span>
                             <span className="text-[11px] opacity-80">{language === 'ar' ? 'قم بتعيين كلمة مرور جديدة ليتمكن هذا المستخدم من الدخول للنظام بها فوراً.' : 'Set a new password for this user.'}</span>
                         </div>
