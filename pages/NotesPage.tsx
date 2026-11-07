@@ -621,12 +621,13 @@ export const NotesPage: React.FC = () => {
                                 <div 
                                     ref={editorRef}
                                     contentEditable
-                                    className="outline-none min-h-[500px] text-slate-900 dark:text-slate-100 font-medium"
+                                    className="outline-none min-h-[500px] text-slate-900 dark:text-slate-100 font-medium [&>div]:m-0 [&>p]:m-0"
                                     style={{ 
                                         fontFamily: fontFamily, 
                                         fontSize: fontSize,
                                         color: textColor !== '#000000' ? textColor : undefined,
                                         lineHeight: '32px', // تطابق تام لارتفاع السطر مع السطور المسطرة 32px
+                                        marginTop: isLinedPaper ? '-7px' : '0px',
                                     }}
                                     onInput={(e) => setEditorContent(e.currentTarget.innerHTML)}
                                     placeholder="اكتب ملاحظاتك وتفاصيلك هنا..."
