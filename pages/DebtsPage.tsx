@@ -881,11 +881,7 @@ export const DebtsPage: React.FC = () => {
                             <div>
                               <div className="font-bold text-sm text-white flex items-center gap-2">
                                 <span>{c.name}</span>
-                                {c.isVip && (
-                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                                    VIP
-                                  </span>
-                                )}
+
                               </div>
                               {c.notes && (
                                 <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 max-w-[200px] mt-0.5">
@@ -1236,11 +1232,7 @@ export const DebtsPage: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-lg font-bold text-white">{profileCustomer.name}</h3>
-                    {profileCustomer.isVip && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                        VIP
-                      </span>
-                    )}
+
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5 flex items-center gap-1.5">
                     <Phone size={13} className="text-slate-400" />

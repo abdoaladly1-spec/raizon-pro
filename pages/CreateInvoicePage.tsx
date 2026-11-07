@@ -849,14 +849,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                                         <span className="font-semibold text-slate-800 dark:text-slate-200">{c.phone}</span>
                                                         <span className="opacity-40">•</span>
                                                         <span>كود: #{c.id}</span>
-                                                        {c.isVip && (
-                                                            <>
-                                                                <span className="opacity-40">•</span>
-                                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                                                                    VIP
-                                                                </span>
-                                                            </>
-                                                        )}
+
                                                     </p>
                                                 </div>
                                             </div>
@@ -892,11 +885,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('last_visit')}: {formatDate(new Date(existingCustomer.lastVisit))}</p>
                              </div>
                         </div>
-                        {existingCustomer.isVip && (
-                            <span className="px-2.5 py-1 rounded-lg text-xs font-bold border bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800">
-                                عميل VIP
-                            </span>
-                        )}
+
                     </div>
                 )}
              </Card>

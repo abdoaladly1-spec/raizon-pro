@@ -18,7 +18,6 @@ export const Clients = () => {
 
     const [search, setSearch] = useState('');
     const [filterDebtOnly, setFilterDebtOnly] = useState(false);
-    const [filterVipOnly, setFilterVipOnly] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState({ 
         id: 0, 
@@ -48,10 +47,9 @@ export const Clients = () => {
     const clientStats = useMemo(() => {
         const list = state.customers || [];
         const total = list.length;
-        const vipCount = list.filter(c => c.isVip).length;
         const debtors = list.filter(c => (c.balance || 0) > 0);
         const totalDebt = debtors.reduce((sum, c) => sum + (c.balance || 0), 0);
-        return { total, vipCount, debtCount: debtors.length, totalDebt };
+        return { total, debtCount: debtors.length, totalDebt };
     }, [state.customers]);
 
     // فلترة قائمة العملاء
@@ -64,11 +62,9 @@ export const Clients = () => {
                 String(c.id).includes(q);
             
             const matchesDebt = filterDebtOnly ? (c.balance || 0) > 0 : true;
-            const matchesVip = filterVipOnly ? !!c.isVip : true;
-            
-            return matchesSearch && matchesDebt && matchesVip;
+return matchesSearch && matchesDebt;
         });
-    }, [state.customers, search, filterDebtOnly, filterVipOnly]);
+    }, [state.customers, search, filterDebtOnly]);
 
     // جميع فواتير العميل المختار
     const customerInvoices = useMemo(() => {
@@ -446,8 +442,8 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
             </div>
 
             {/* بطاقات المؤشرات السريعة للعملاء */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                         <span>{language === 'ar' ? 'إجمالي العملاء' : 'Total Clients'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800/40">قاعدة البيانات</span>
@@ -457,17 +453,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
-                        <span>{language === 'ar' ? 'عملاء VIP' : 'VIP Clients'}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/40">مميز</span>
-                    </div>
-                    <div className="text-2xl font-extrabold text-primary-600 dark:text-primary-400 font-mono tracking-tight">
-                        {clientStats.vipCount} <span className="text-xs font-bold text-slate-400">عميل</span>
-                    </div>
-                </div>
-
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                         <span>{language === 'ar' ? 'عليهم مديونيات' : 'Debtors'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-bold border border-rose-200 dark:border-rose-800/40">آجل</span>
@@ -477,7 +463,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-4 border border-slate-200 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">
                         <span>{language === 'ar' ? 'إجمالي المديونية' : 'Total Debt'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 font-bold border border-red-200 dark:border-red-800/40">مستحق</span>
@@ -497,7 +483,6 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                 <th className="py-3 px-3">#</th>
                                 <th className="py-3 px-3">{t('customer_name')}</th>
                                 <th className="py-3 px-3">{t('phone')}</th>
-                                <th className="py-3 px-3">{language === 'ar' ? 'التصنيف' : 'Classification'}</th>
                                 <th className="py-3 px-3">{language === 'ar' ? 'الرصيد المستحق (المديونية)' : 'Debt Balance'}</th>
                                 <th className="py-3 px-3">{language === 'ar' ? 'إجمالي المشتريات' : 'Total Spent'}</th>
                                 <th className="py-3 px-3 text-left">{t('actions')}</th>
@@ -518,17 +503,6 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                             <span>{c.name}</span>
                                         </td>
                                         <td className="py-3 px-3 font-mono text-slate-600 dark:text-slate-300" dir="ltr">{c.phone}</td>
-                                        <td className="py-3 px-3">
-                                            {c.isVip ? (
-                                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">
-                                                    عميل آجل معتمد
-                                                </span>
-                                            ) : (
-                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500">
-                                                    عادي
-                                                </span>
-                                            )}
-                                        </td>
                                         <td className="py-3 px-3 font-mono">
                                             {hasDebt ? (
                                                 <span className="text-xs font-bold text-rose-500 dark:text-rose-400">
@@ -1051,27 +1025,9 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                             );
                         })()}
 
-                        {/* خيار عميل VIP والشراء الآجل */}
+                        {/* الحساب الآجل والمديونية */}
                         <div className="p-3.5 rounded-xl border border-slate-700 bg-slate-800/80 space-y-3">
-                            <label className="flex items-center gap-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={form.isVip}
-                                    onChange={(e) => setForm({ ...form, isVip: e.target.checked })}
-                                    className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 accent-primary-600"
-                                />
-                                <div>
-                                    <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
-                                        
-                                        <span>{language === 'ar' ? 'عميل VIP (تفعيل الشراء الآجل على الحساب)' : 'VIP Client (Enable Credit Purchases)'}</span>
-                                    </span>
-                                    <p className="text-[11px] text-slate-400 mt-0.5">
-                                        {language === 'ar' ? 'يسمح للكاشير باختيار "على الحساب" لهذا العميل في الفاتورة' : 'Allows purchasing on credit'}
-                                    </p>
-                                </div>
-                            </label>
-
-                            <div className="pt-2 border-t border-slate-700/80">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-300 mb-1">
                                         {language === 'ar' ? 'الحد الائتماني (ج.م)' : 'Credit Limit (EGP)'}
