@@ -29,7 +29,7 @@ const TABS = [
     { id: 'general', icon: Settings, labelAr: 'عام', labelEn: 'General' },
     { id: 'email', icon: MailNotificationIcon, labelAr: 'إشعارات المدير', labelEn: 'Manager Alerts' },
     { id: 'print', icon: Printer, labelAr: 'الطباعة والتصميم', labelEn: 'Print Design' },
-    { id: 'security', icon: BackupIcon, labelAr: 'النسخ الاحتياطي والأمان', labelEn: 'Backup & Security' },
+    { id: 'security', icon: BackupIcon, labelAr: 'النسخ الاحتياطي', labelEn: 'Backup' },
     { id: 'users', icon: Users, labelAr: 'المستخدمين', labelEn: 'Users' },
     { id: 'logs', icon: Activity, labelAr: 'سجل التدقيق', labelEn: 'Audit Logs' },
     { id: 'updates', icon: RefreshCw, labelAr: 'التحديثات السحابية', labelEn: 'Cloud Updates' },
@@ -494,59 +494,6 @@ export const SettingsPage = () => {
         }
     };
 
-    // تغيير كلمة المرور للمستخدم الحالي
-    const [pwCurrent, setPwCurrent] = useState('');
-    const [pwNew, setPwNew] = useState('');
-    const [pinValue, setPinValue] = useState('');
-    const [secBusy, setSecBusy] = useState(false);
-
-    const handleChangePassword = async () => {
-        setSecBusy(true);
-        try {
-            const ok = await changeOwnPassword(pwCurrent, pwNew);
-            if (ok) {
-                addToast(t('password_changed'), 'success');
-                setPwCurrent('');
-                setPwNew('');
-            } else {
-                addToast(t('current_password_wrong'), 'error');
-            }
-        } finally {
-            setSecBusy(false);
-        }
-    };
-
-    const handleSavePin = async () => {
-        setSecBusy(true);
-        try {
-            const ok = await setQuickPin(pwCurrent, pinValue);
-            if (ok) {
-                addToast(t('quick_pin_saved'), 'success');
-                setPinValue('');
-                setPwCurrent('');
-            } else {
-                addToast(t('current_password_wrong'), 'error');
-            }
-        } finally {
-            setSecBusy(false);
-        }
-    };
-
-    const handleClearPin = async () => {
-        setSecBusy(true);
-        try {
-            const ok = await setQuickPin(pwCurrent, null);
-            if (ok) {
-                addToast(t('quick_pin_cleared'), 'success');
-                setPinValue('');
-                setPwCurrent('');
-            } else {
-                addToast(t('current_password_wrong'), 'error');
-            }
-        } finally {
-            setSecBusy(false);
-        }
-    };
 
     // إدارة النسخ الاحتياطي الذكي (مجلد Backup محلياً + سحابي على الجيميل)
     const [backupBusy, setBackupBusy] = useState(false);
@@ -2036,59 +1983,6 @@ export const SettingsPage = () => {
                 )}
             </Card>
 
-            {/* بطاقة أمان كلمة المرور ورمز PIN */}
-            <Card>
-                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                    <span className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"><Key size={20} /></span>
-                    <div>
-                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{t('security_section')}</h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t('change_password')} — {currentUser?.username}</p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                    <Input label={t('current_password')} type="password" value={pwCurrent} onChange={(e:any)=>setPwCurrent(e.target.value)} />
-                    <Input label={t('new_password')} type="password" value={pwNew} onChange={(e:any)=>setPwNew(e.target.value)} />
-                    <button
-                        type="button"
-                        onClick={handleChangePassword}
-                        disabled={secBusy || !pwCurrent || pwNew.length < 6}
-                        className="px-4 py-2.5 rounded-xl bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 font-bold disabled:opacity-40 transition-opacity text-xs"
-                    >
-                        {t('change_password')}
-                    </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mt-5 pt-4 border-t border-slate-700/60">
-                    <Input
-                        label={t('quick_pin_new')}
-                        type="password"
-                        inputMode="numeric"
-                        value={pinValue}
-                        placeholder={currentUser?.pinHash ? t('quick_pin_active') : t('quick_pin_none')}
-                        onChange={(e:any)=>setPinValue(String(e.target.value).replace(/\D/g, '').slice(0, 6))}
-                    />
-                    <button
-                        type="button"
-                        onClick={handleSavePin}
-                        disabled={secBusy || !pwCurrent || pinValue.length < 4}
-                        className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold disabled:opacity-40 transition-opacity text-xs"
-                    >
-                        {t('save')}
-                    </button>
-                    {currentUser?.pinHash && (
-                        <button
-                            type="button"
-                            onClick={handleClearPin}
-                            disabled={secBusy || !pwCurrent}
-                            className="px-4 py-2.5 rounded-xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 font-bold disabled:opacity-40 transition-opacity text-xs"
-                        >
-                            {t('clear_quick_pin')}
-                        </button>
-                    )}
-                </div>
-                <p className="text-[11px] text-slate-400 mt-2">{t('force_password_hint')}</p>
-            </Card>
         </div>
     );
 
