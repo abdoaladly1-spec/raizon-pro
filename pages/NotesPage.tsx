@@ -128,10 +128,17 @@ export const NotesPage = () => {
                 <head>
                     <title>${escapeHtml(selectedNote.title)}</title>
                     <style>
-                        body { font-family: Arial, sans-serif; padding: 40px; }
-                        .header { text-align: center; margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
-                        .content { line-height: 1.6; min-height: 600px; }
-                        .footer { margin-top: 50px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 12px; color: #666; display: flex; justify-content: space-between; }
+                        @media print {
+                            @page { size: 80mm auto; margin: 0; }
+                            body { margin: 0; padding: 4px; width: 76mm; }
+                        }
+                        * { box-sizing: border-box; }
+                        body { font-family: Tahoma, Arial, sans-serif; padding: 6px 4px; width: 76mm; margin: 0 auto; color: #000; font-size: 11px; }
+                        .header { text-align: center; margin-bottom: 10px; border-bottom: 1.5px dashed #000; padding-bottom: 6px; }
+                        .header h1 { font-size: 14px; margin: 0 0 4px 0; }
+                        .header p { font-size: 9.5px; margin: 0; color: #333; }
+                        .content { line-height: 1.4; min-height: 100px; font-size: 11px; }
+                        .footer { margin-top: 20px; border-top: 1px dashed #000; padding-top: 6px; font-size: 9px; color: #333; display: flex; justify-content: space-between; }
                     </style>
                 </head>
                 <body>

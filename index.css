@@ -236,7 +236,11 @@ button:hover:not(:disabled), .btn-pro:hover:not(:disabled) {
     visibility: hidden;
   }
   #printable-invoice, 
-  #printable-invoice * {
+  #printable-invoice *,
+  #printable-staff-statement,
+  #printable-staff-statement *,
+  .printable-thermal,
+  .printable-thermal * {
     visibility: visible;
   }
   #printable-invoice {

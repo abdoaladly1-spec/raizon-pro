@@ -7,6 +7,7 @@ import { getDrawerOpeningBalance, isAfterClosing, countableInvoice } from '../li
 import { toIsoDate, localIsoToday } from '../lib/dates';
 import { cashReturnsFor } from '../lib/returns';
 import { Card } from '../components/ui';
+import { printClosingReportThermal } from '../lib/thermalPrinter';
 
 export const ClosingPage = () => {
     const {
@@ -462,7 +463,35 @@ export const ClosingPage = () => {
 
                     <div className="flex gap-3">
                         <button
-                            onClick={() => window.print()}
+                            onClick={() => {
+                                printClosingReportThermal(
+                                    {
+                                        openingBalance: report.openingBalance || 0,
+                                        cashSales: report.cashSales || 0,
+                                        deposits: report.deposits || 0,
+                                        withdrawals: report.withdrawals || 0,
+                                        totalExpenses: report.totalExpenses || 0,
+                                        expectedCash: report.expectedCash || 0,
+                                        walletSales: report.walletSales || 0,
+                                        cardSales: report.cardSales || 0,
+                                        creditSales: report.creditSales || 0,
+                                        includeDebts: includeDebtsInClosing,
+                                        totalClosingAmount: report.totalClosingAmount || 0,
+                                        actualCash: report.actualCash || 0,
+                                        difference: report.difference || 0,
+                                        status: report.status || '',
+                                        retainedInDrawer: report.retainedInDrawer,
+                                        transferredToSafe: report.transferredToSafe,
+                                        cashierName: currentUser?.name,
+                                    },
+                                    {
+                                        shopName: state.settings.shopName,
+                                        phone: state.settings.phone,
+                                        address: state.settings.address,
+                                    },
+                                    currentUser?.name
+                                );
+                            }}
                             className="flex-1 py-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all"
                         >
                             <Printer size={16} />

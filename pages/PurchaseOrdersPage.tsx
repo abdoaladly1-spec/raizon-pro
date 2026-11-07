@@ -300,7 +300,34 @@ export const PurchaseOrdersPage = () => {
           </table>
           <p className="text-left font-bold text-lg mt-3">{t('total_amount')}: {showView.total.toLocaleString()} {t('egp')}</p>
           <div className="flex gap-2 pt-4">
-            <Button variant="secondary" className="flex-1 justify-center" onClick={() => window.print()}><Printer size={16} /> {t('print')}</Button>
+            <Button
+              variant="secondary"
+              className="flex-1 justify-center"
+              onClick={() => {
+                printPurchaseOrderThermal(
+                  {
+                    id: showView.id,
+                    date: showView.date,
+                    supplierName: supplierName(showView.supplierId),
+                    total: showView.total,
+                    notes: showView.notes,
+                  },
+                  showView.items.map(i => ({
+                    name: itemName(i.itemId),
+                    quantity: i.quantity,
+                    cost: i.cost,
+                    total: i.quantity * i.cost,
+                  })),
+                  {
+                    shopName: state.settings.shopName,
+                    phone: state.settings.phone,
+                    address: state.settings.address,
+                  }
+                );
+              }}
+            >
+              <Printer size={16} /> {t('print')}
+            </Button>
             <Button variant="danger" className="flex-1 justify-center" onClick={() => setShowView(null)}>{t('close')}</Button>
           </div>
         </ModalShell>

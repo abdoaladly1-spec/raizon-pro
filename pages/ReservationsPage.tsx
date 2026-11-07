@@ -660,11 +660,16 @@ export const ReservationsPage = () => {
             <head>
                 <title>${t('reservations_list')}</title>
                 <style>
-                    body { font-family: Tahoma, Arial, sans-serif; padding: 20px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                    th, td { border: 1px solid #ddd; padding: 10px; text-align: ${rtl ? 'right' : 'left'}; font-size: 13px; }
-                    th { background-color: #f2f2f2; }
-                    h2 { text-align: center; font-size: 18px; margin-bottom: 10px; }
+                    @media print {
+                        @page { size: 80mm auto; margin: 0; }
+                        body { margin: 0; padding: 4px; width: 76mm; }
+                    }
+                    * { box-sizing: border-box; }
+                    body { font-family: Tahoma, Arial, sans-serif; padding: 6px 4px; width: 76mm; margin: 0 auto; color: #000; font-size: 10px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 8px; border: 1px solid #000; font-size: 9.5px; }
+                    th, td { border: 1px solid #000; padding: 4px 2px; text-align: center; }
+                    th { background-color: #f0f0f0; font-weight: bold; }
+                    h2 { text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 6px; }
                     .status-confirmed { color: #16a34a; font-weight: bold; }
                     .status-pending { color: #ca8a04; font-weight: bold; }
                     .status-cancelled { color: #dc2626; font-weight: bold; }

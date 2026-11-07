@@ -612,10 +612,23 @@ export const DebtsPage: React.FC = () => {
             <span>إضافة عميل</span>
           </button>
 
-          {/* زر طباعة كشف الديون */}
+          {/* زر طباعة كشف الديون الحراري */}
           <button
             type="button"
-            onClick={() => window.print()}
+            onClick={() => {
+              printDebtsListThermal(
+                filteredCustomers.map(c => ({
+                  name: c.name,
+                  phone: c.phone,
+                  totalDebt: c.balance || 0,
+                })),
+                {
+                  shopName: state.settings.shopName,
+                  phone: state.settings.phone,
+                  address: state.settings.address,
+                }
+              );
+            }}
             className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-300 dark:border-slate-600/80 transition-all active:scale-95 cursor-pointer"
             title="طباعة كشف الديون"
           >
@@ -1367,7 +1380,29 @@ export const DebtsPage: React.FC = () => {
             <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-700/80">
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={() => {
+                  if (profileCustomer) {
+                    printCustomerStatementThermal(
+                      {
+                        name: profileCustomer.name,
+                        phone: profileCustomer.phone,
+                        totalDebt: profileCustomer.balance || 0,
+                      },
+                      activeCustomerLedger.map(row => ({
+                        date: formatDate(new Date(row.timestamp)),
+                        desc: row.title + (row.notes ? ` (${row.notes})` : ''),
+                        debit: row.debit,
+                        credit: row.credit,
+                        balance: row.balanceAfter,
+                      })),
+                      {
+                        shopName: state.settings.shopName,
+                        phone: state.settings.phone,
+                        address: state.settings.address,
+                      }
+                    );
+                  }
+                }}
                 className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-300 dark:border-slate-600/80 flex items-center gap-2 cursor-pointer"
               >
                 <StatementIcon size={16} />

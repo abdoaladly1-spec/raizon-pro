@@ -283,108 +283,27 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
         window.open(url, '_blank');
     };
 
-    // طباعة كشف حساب رسمي A4
+    // طباعة كشف حساب حراري احترافي 80mm
     const handlePrintCustomerStatement = (customer: Customer) => {
-        const win = window.open('', '_blank', 'width=900,height=950');
-        if (!win) { window.print(); return; }
-
-        const shopName = state.settings.shopName || 'RaiZon Pro';
-        const shopPhone = state.settings.phone || '';
-        const shopAddress = state.settings.address || '';
-        const todayStr = new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
-            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-        });
-
-        const rowsHtml = ledgerEntries.map(entry => {
-            const isDebit = entry.debit > 0;
-            return `
-                <tr>
-                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center; font-size: 11px;">${entry.date}</td>
-                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; font-weight: bold; text-align: center;">${entry.ref}</td>
-                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1;">
-                        <span style="font-weight: 700; color: ${isDebit ? '#b91c1c' : '#047857'};">${entry.typeLabelAr}</span>
-                        ${entry.notes ? `<div style="font-size: 11px; color: #64748b; margin-top: 2px;">${entry.notes}</div>` : ''}
-                    </td>
-                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #b91c1c;">
-                        ${entry.debit > 0 ? entry.debit.toLocaleString('en-US') + ' ج.م' : '—'}
-                    </td>
-                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #047857;">
-                        ${entry.credit > 0 ? entry.credit.toLocaleString('en-US') + ' ج.م' : '—'}
-                    </td>
-                    <td style="padding: 8px 10px; border: 1px solid #cbd5e1; text-align: center; font-weight: 900; color: #0f172a; font-family: monospace;">
-                        ${entry.balanceAfter.toLocaleString('en-US')} ج.م
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-        win.document.write(`
-            <!DOCTYPE html>
-            <html dir="rtl" lang="ar">
-            <head>
-                <meta charset="utf-8">
-                <title>كشف حساب العميل - ${customer.name}</title>
-                <style>
-                    body { font-family: 'Cairo', Tahoma, system-ui, sans-serif; padding: 25px; color: #0f172a; margin: 0; background: #ffffff; }
-                    .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 18px; }
-                    .header h1 { margin: 0 0 4px 0; font-size: 22px; font-weight: 900; }
-                    .header p { margin: 0; color: #475569; font-size: 12.5px; }
-                    .info-card { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 20px; }
-                    .info-item { text-align: center; }
-                    .info-item .label { font-size: 11px; color: #64748b; font-weight: bold; margin-bottom: 3px; }
-                    .info-item .val { font-size: 15px; font-weight: 900; color: #0f172a; }
-                    table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
-                    th { background: #f1f5f9; padding: 9px 10px; border: 1px solid #cbd5e1; font-weight: 800; color: #1e293b; }
-                    .footer-note { margin-top: 24px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px dashed #cbd5e1; padding-top: 10px; }
-                    @media print { body { padding: 0; } @page { margin: 10mm; size: A4 portrait; } }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h1>${shopName}</h1>
-                    <p>كشف حساب العميل والمديونيات المعتمدة ${shopPhone ? '• هاتف: ' + shopPhone : ''}</p>
-                    ${shopAddress ? '<p style="margin-top: 3px; font-size: 11.5px; color: #64748b;">' + shopAddress + '</p>' : ''}
-                </div>
-                <div class="info-card">
-                    <div class="info-item">
-                        <div class="label">اسم العميل</div>
-                        <div class="val">${customer.name}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="label">رقم الهاتف</div>
-                        <div class="val" dir="ltr">${customer.phone || '-'}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="label">الرصيد المستحق (المديونية)</div>
-                        <div class="val" style="color: ${(customer.balance || 0) > 0 ? '#dc2626' : '#059669'};">${Number(customer.balance || 0).toLocaleString('en-US')} ج.م</div>
-                    </div>
-                    
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 85px;">التاريخ</th>
-                            <th style="width: 80px;">المرجع</th>
-                            <th>بيان الحركة والمعاملة</th>
-                            <th style="width: 100px;">مدين (+) مبيعات</th>
-                            <th style="width: 100px;">دائن (-) سدادات</th>
-                            <th style="width: 110px;">الرصيد المتبقي</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rowsHtml || '<tr><td colspan="6" style="text-align: center; padding: 25px; color: #64748b;">لا توجد حركات آجلة أو سدادات مسجلة لهذا العميل حتى الآن</td></tr>'}
-                    </tbody>
-                </table>
-                <div class="footer-note">
-                    تاريخ طباعة التقرير: ${todayStr} • صادر آلياً من نظام RaiZon Pro
-                </div>
-                <script>
-                    window.onload = function() { setTimeout(function() { window.print(); }, 250); };
-                </script>
-            </body>
-            </html>
-        `);
-        win.document.close();
+        printCustomerStatementThermal(
+            {
+                name: customer.name,
+                phone: customer.phone,
+                totalDebt: customer.totalDebt || 0,
+            },
+            ledgerEntries.map(e => ({
+                date: e.date,
+                desc: e.typeLabelAr + (e.notes ? ` (${e.notes})` : ''),
+                debit: e.debit,
+                credit: e.credit,
+                balance: e.balanceAfter,
+            })),
+            {
+                shopName: state.settings.shopName,
+                phone: state.settings.phone,
+                address: state.settings.address,
+            }
+        );
     };
 
     return (

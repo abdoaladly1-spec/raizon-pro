@@ -436,166 +436,37 @@ export const StaffPage = () => {
 
     // طباعة فاتورة / إيصال مسير راتب واستحقاقات الموظف (Salary Slip)
     const handlePrintSalarySlip = (staff: Staff) => {
-        const fin = staffFinancials.get(staff.id);
+        const fin = staffFinances[staff.id];
         const payments = (state.staffPayments || []).filter(p => p.staffId === staff.id);
         const advances = payments.filter(p => p.type === 'advance');
         const deductions = payments.filter(p => p.type === 'deduction');
-        const commissions = payments.filter(p => p.type === 'commission' || p.type === 'commission_reversal');
-        const salaries = payments.filter(p => p.type === 'salary');
 
-        const totalComms = fin?.totalCommissions || 0;
-        const totalAdvs = fin?.totalAdvances || 0;
-        const totalDeds = fin?.totalDeductions || 0;
-        const totalSals = fin?.totalSalaries || 0;
-        const netDue = fin?.netDue || 0;
-        const totalGross = totalComms + totalSals;
-        const totalCuts = totalAdvs + totalDeds;
-
-        const win = window.open('', '_blank', 'width=850,height=950');
-        if (!win) {
-            window.print();
-            return;
-        }
-
-        const shopName = state.settings.shopName || 'RaiZon Pro';
-        const shopPhone = state.settings.phone || '';
-        const shopAddress = state.settings.address || '';
-        const printDate = new Date().toLocaleDateString('ar-EG', {
-            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-        });
-        const slipId = `PAY-${staff.id.slice(0, 6).toUpperCase()}-${Date.now().toString().slice(-4)}`;
-
-        const deductionsRows = deductions.length > 0 ? deductions.map(d => `
-            <tr>
-                <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px;">جزاء: ${d.notes || 'خصم إداري'} (${d.date})</td>
-                <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; font-family: monospace; font-weight: bold; color: #dc2626; font-size: 13px;">-${Number(d.amount).toLocaleString('en-US')} ج.م</td>
-            </tr>
-        `).join('') : '';
-
-        const advancesRows = advances.length > 0 ? advances.map(a => `
-            <tr>
-                <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px;">سلفة: ${a.notes || 'سلفة نقدية'} (${a.date})</td>
-                <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; font-family: monospace; font-weight: bold; color: #d97706; font-size: 13px;">-${Number(a.amount).toLocaleString('en-US')} ج.م</td>
-            </tr>
-        `).join('') : '';
-
-        const docHtml = `<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-    <meta charset="utf-8">
-    <title>فاتورة راتب ومستحقات — ${staff.name}</title>
-    <style>
-        body { font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 25px; color: #1e293b; background: #fff; }
-        .slip-container { max-width: 750px; margin: 0 auto; border: 2px solid #0f172a; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .header { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px; }
-        .header h1 { margin: 0; font-size: 22px; color: #0f172a; font-weight: 800; }
-        .header h2 { margin: 4px 0; font-size: 15px; color: #64748b; font-weight: 700; }
-        .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 20px; font-size: 12px; }
-        .meta-item { display: flex; justify-content: space-between; }
-        .meta-label { color: #64748b; font-weight: bold; }
-        .meta-val { color: #0f172a; font-weight: 800; }
-        .tables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-        .box { border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; }
-        .box-title { background: #f1f5f9; padding: 8px 12px; font-weight: 800; font-size: 13px; border-bottom: 1px solid #cbd5e1; }
-        table { width: 100%; border-collapse: collapse; }
-        .net-card { background: #0f172a; color: #fff; border-radius: 12px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .net-title { font-size: 14px; font-weight: 700; }
-        .net-amount { font-size: 24px; font-weight: 900; font-family: monospace; color: #4ade80; }
-        .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; text-align: center; font-size: 12px; font-weight: bold; color: #475569; }
-        .sign-line { border-top: 1px dashed #94a3b8; padding-top: 8px; margin-top: 50px; }
-        @media print {
-            body { padding: 0; }
-            .slip-container { border: 1px solid #000; box-shadow: none; }
-        }
-    </style>
-</head>
-<body>
-    <div class="slip-container">
-        <div class="header">
-            <h1>${shopName}</h1>
-            <h2>فاتورة مسير مفردات الراتب والمستحقات (Payslip)</h2>
-            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">رقم السند: ${slipId} | تاريخ الطباعة: ${printDate}</div>
-            ${shopPhone ? `<div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">هاتف: ${shopPhone} ${shopAddress ? '• العنوان: ' + shopAddress : ''}</div>` : ''}
-        </div>
-
-        <div class="meta-grid">
-            <div class="meta-item"><span class="meta-label">اسم الموظف:</span><span class="meta-val">${staff.name}</span></div>
-            <div class="meta-item"><span class="meta-label">الوظيفة / الدور:</span><span class="meta-val">${getRoleLabel(staff.role)}</span></div>
-            <div class="meta-item"><span class="meta-label">رقم الهاتف:</span><span class="meta-val" dir="ltr">${staff.phone || '—'}</span></div>
-            <div class="meta-item"><span class="meta-label">الرقم القومي:</span><span class="meta-val">${staff.nationalId || '—'}</span></div>
-            <div class="meta-item"><span class="meta-label">نظام العمولة:</span><span class="meta-val">${staff.commissionValue ? `${staff.commissionValue} (${staff.commissionType === 'fixed' ? 'ج.م' : '%'})` : 'راتب ثابت'}</span></div>
-            <div class="meta-item"><span class="meta-label">إجمالي فواتير العمل:</span><span class="meta-val">${fin?.invoicesCount || 0} فاتورة</span></div>
-        </div>
-
-        <div class="tables-grid">
-            <!-- الاستحقاقات -->
-            <div class="box">
-                <div class="box-title" style="color: #15803d;">(+) الاستحقاقات والمكتسبات</div>
-                <table>
-                    <tbody>
-                        ${totalSals > 0 ? `
-                        <tr>
-                            <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px;">الراتب الأساسي / المكافآت</td>
-                            <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; font-family: monospace; font-weight: bold; font-size: 13px;">${totalSals.toLocaleString('en-US')} ج.م</td>
-                        </tr>` : ''}
-                        <tr>
-                            <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px;">العمولات المكتسبة على المبيعات</td>
-                            <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; font-family: monospace; font-weight: bold; font-size: 13px; color: #16a34a;">${totalComms.toLocaleString('en-US')} ج.م</td>
-                        </tr>
-                        <tr style="background: #f8fafc; font-weight: 800;">
-                            <td style="padding: 10px 12px; font-size: 12px;">إجمالي الاستحقاقات:</td>
-                            <td style="padding: 10px 12px; text-align: left; font-family: monospace; color: #15803d; font-size: 14px;">${totalGross.toLocaleString('en-US')} ج.م</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- الاستقطاعات والجزاءات -->
-            <div class="box">
-                <div class="box-title" style="color: #b91c1c;">(-) الاستقطاعات والخصومات</div>
-                <table>
-                    <tbody>
-                        ${advancesRows || `<tr><td colspan="2" style="padding: 6px 12px; font-size: 11px; color: #94a3b8;">لا توجد سلف مسحوبة</td></tr>`}
-                        ${deductionsRows || `<tr><td colspan="2" style="padding: 6px 12px; font-size: 11px; color: #94a3b8;">لا توجد جزاءات أو خصومات مسجلة</td></tr>`}
-                        <tr style="background: #f8fafc; font-weight: 800;">
-                            <td style="padding: 10px 12px; font-size: 12px;">إجمالي الخصومات:</td>
-                            <td style="padding: 10px 12px; text-align: left; font-family: monospace; color: #b91c1c; font-size: 14px;">-${totalCuts.toLocaleString('en-US')} ج.م</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- صافي المستحق -->
-        <div class="net-card">
-            <div>
-                <div class="net-title">صافي الراتب والمستحقات واجب الصرف:</div>
-                <div style="font-size: 11px; opacity: 0.8; margin-top: 2px;">(إجمالي الاستحقاقات مطروحاً منها السلف والجزاءات)</div>
-            </div>
-            <div class="net-amount">${netDue.toLocaleString('en-US')} ج.م</div>
-        </div>
-
-        <!-- التوقيعات -->
-        <div class="signatures">
-            <div>
-                <div class="sign-line">توقيع واستلام الموظف بما يفيد المحاسبة</div>
-            </div>
-            <div>
-                <div class="sign-line">توقيع واعتماد الإدارة المالية / المدير</div>
-            </div>
-        </div>
-    </div>
-    <script>
-        window.onload = function() {
-            setTimeout(function() { window.print(); }, 300);
-        };
-    </script>
-</body>
-</html>`;
-
-        win.document.open();
-        win.document.write(docHtml);
-        win.document.close();
+        printStaffPayslipThermal(
+            {
+                staff: {
+                    id: staff.id,
+                    name: staff.name,
+                    role: getRoleLabel(staff.role),
+                    phone: staff.phone,
+                    nationalId: staff.nationalId,
+                    commissionValue: staff.commissionValue,
+                    commissionType: staff.commissionType,
+                },
+                totalSalaries: fin?.totalSalaries || 0,
+                totalCommissions: fin?.totalCommissions || 0,
+                totalAdvances: fin?.totalAdvances || 0,
+                totalDeductions: fin?.totalDeductions || 0,
+                netDue: fin?.netDue || 0,
+                invoicesCount: fin?.invoicesCount || 0,
+                advancesList: advances.map(a => ({ amount: a.amount, notes: a.notes, date: a.date })),
+                deductionsList: deductions.map(d => ({ amount: d.amount, notes: d.notes, date: d.date })),
+            },
+            {
+                shopName: state.settings.shopName,
+                phone: state.settings.phone,
+                address: state.settings.address,
+            }
+        );
     };
 
     // فتح مودال كشف الحساب
@@ -2079,7 +1950,33 @@ export const StaffPage = () => {
                                 <Button variant="secondary" onClick={() => setShowStatementModal(false)}>
                                     {isAr ? 'إغلاق' : 'Close'}
                                 </Button>
-                                <Button variant="primary" onClick={() => window.print()} className="flex items-center gap-1.5">
+                                <Button
+                                    variant="primary"
+                                    onClick={() => {
+                                        if (statementStaff) {
+                                            printStaffStatementThermal(
+                                                {
+                                                    name: statementStaff.name,
+                                                    role: getRoleLabel(statementStaff.role),
+                                                    phone: statementStaff.phone,
+                                                },
+                                                {
+                                                    invoicesTotal: statementStaffFin?.invoicesTotal || 0,
+                                                    totalCommissions: statementStaffFin?.totalCommissions || 0,
+                                                    totalAdvances: statementStaffFin?.totalAdvances || 0,
+                                                    totalDeductions: statementStaffFin?.totalDeductions || 0,
+                                                    netDue: statementStaffFin?.netDue || 0,
+                                                },
+                                                {
+                                                    shopName: state.settings.shopName,
+                                                    phone: state.settings.phone,
+                                                    address: state.settings.address,
+                                                }
+                                            );
+                                        }
+                                    }}
+                                    className="flex items-center gap-1.5"
+                                >
                                     <Printer size={15} />
                                     <span>{isAr ? 'طباعة كشف الحساب' : 'Print Statement'}</span>
                                 </Button>
