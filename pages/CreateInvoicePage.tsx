@@ -1361,7 +1361,7 @@ export const CreateInvoice = ({ onClose }: any) => {
             </Card>
         </div>
 
-        {/* Payment Modal — سداد الفاتورة (نقدي / بطاقة (انستا) / محفظة / على الحساب) */}
+        {/* Payment Modal — سداد الفاتورة (نقدي / انستا / محفظة / على الحساب) */}
         {showPaymentModal && (
             <ModalShell
                 title={language === 'ar' ? 'سداد وقيد الفاتورة' : t('payment_details')}
@@ -1398,7 +1398,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                             className="flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-95 cursor-pointer"
                         >
                             <CreditCard size={15} className="text-slate-600 dark:text-slate-400" />
-                            <span>{language === 'ar' ? 'بطاقة (انستا)' : 'Full Card'}</span>
+                            <span>{language === 'ar' ? 'انستا بالكامل' : 'Full Insta'}</span>
                         </button>
                         <button
                             type="button"
@@ -1419,7 +1419,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                     </div>
                 </div>
 
-                {/* تقسيم الدفع (كاش، بطاقة (انستا)، محفظة، على الحساب) */}
+                {/* تقسيم الدفع (كاش، انستا، محفظة، على الحساب) */}
                 <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
                         <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -1458,11 +1458,11 @@ export const CreateInvoice = ({ onClose }: any) => {
                             </button>
                         </div>
 
-                        {/* بطاقة (انستا) */}
+                        {/* انستا */}
                         <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 bg-slate-50/60 dark:bg-slate-900/60">
                             <div className="flex items-center justify-between mb-1">
                                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                                    <CreditCard size={13} className="text-slate-500" /> {language === 'ar' ? 'بطاقة (انستا)' : 'Card (Insta)'}
+                                    <CreditCard size={13} className="text-slate-500" /> {language === 'ar' ? 'انستا' : 'InstaPay'}
                                 </span>
                             </div>
                             <input
@@ -1479,7 +1479,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 onClick={() => fillRest('card')}
                                 className="w-full mt-1.5 text-[11px] font-bold py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                             >
-                                {language === 'ar' ? 'الباقي بطاقة' : 'Rest Card'}
+                                {language === 'ar' ? 'الباقي انستا' : 'Rest Insta'}
                             </button>
                         </div>
 
