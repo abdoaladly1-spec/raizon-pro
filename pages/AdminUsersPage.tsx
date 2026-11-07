@@ -9,6 +9,7 @@ import {
 import { User as UserType, AuditLog } from '../types';
 import { Card, Button, Input, ModalShell } from '../components/ui';
 import { makePasswordRecord } from '../lib/crypto';
+import { translateAuditLogToAr } from '../lib/auditLogAr';
 
 // صلاحيات النظام مصنفة ومبوبة بدقة
 const PERMISSION_GROUPS = [
@@ -76,7 +77,7 @@ const emptyUser = (): UserType => ({
 });
 
 export const AdminUsers = () => {
-    const { state, addUser, updateUser, deleteUser, currentUser, t, language, addToast } = useApp();
+    const { state, addUser, updateUser, deleteUser, currentUser, t, language, addToast, formatDateTime } = useApp();
     const [query, setQuery] = useState('');
     const [roleFilter, setRoleFilter] = useState<string>('all');
     
@@ -1025,11 +1026,7 @@ export const AdminUsers = () => {
                                 ) : (
                                     <div className="space-y-2 max-h-[50vh] overflow-y-auto custom-scrollbar pe-1">
                                         {editingUserLogs.map(log => {
-                                            const logDate = new Date(log.timestamp);
-                                            const dateFormatted = logDate.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
-                                                year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
-                                            });
-
+                                            const trans = translateAuditLogToAr(log.action, log.details, log.detailsAr);
                                             return (
                                                 <div 
                                                     key={log.id}
@@ -1037,16 +1034,16 @@ export const AdminUsers = () => {
                                                 >
                                                     <div className="space-y-1">
                                                         <div className="flex items-center gap-2">
-                                                            <span className="font-extrabold px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 text-[10px]">
-                                                                {log.action}
+                                                            <span className="font-bold px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-[10px] border border-slate-300 dark:border-slate-600">
+                                                                {trans.actionAr}
                                                             </span>
-                                                            <span className="font-bold text-slate-900 dark:text-white">
-                                                                {log.detailsAr || log.details}
+                                                            <span className="font-medium text-slate-800 dark:text-slate-200">
+                                                                {trans.detailsAr}
                                                             </span>
                                                         </div>
                                                     </div>
                                                     <span className="font-mono text-[10px] text-slate-400 shrink-0" dir="ltr">
-                                                        {dateFormatted}
+                                                        {formatDateTime(log.timestamp)}
                                                     </span>
                                                 </div>
                                             );
