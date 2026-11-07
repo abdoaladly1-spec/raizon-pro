@@ -638,10 +638,19 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
             {/* 1. ترويسة بسيطة وهادئة مع أزرار الإجراءات السريعة */}
             <div className="bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-4 shadow-xs flex flex-wrap justify-between items-center gap-3 animate-fade-in">
                 <div>
-                    <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        <span>{t('welcome_user')}</span>
-                        <span className="text-primary-600 dark:text-primary-400 font-extrabold">{currentUser?.name || state.settings.shopName}</span>
-                    </h2>
+                    {(() => {
+                        const trimmedName = currentUser?.name?.trim();
+                        const isGenericAdmin = !trimmedName || trimmedName.toLowerCase() === 'admin';
+                        const effectiveName = !isGenericAdmin 
+                            ? trimmedName 
+                            : (currentUser?.username || state.settings?.shopName || (language === 'ar' ? 'المستخدم' : 'User'));
+                        return (
+                            <h2 className="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                <span>{t('welcome_user')}</span>
+                                <span className="text-primary-600 dark:text-primary-400 font-extrabold">{effectiveName}</span>
+                            </h2>
+                        );
+                    })()}
                     <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5 flex items-center gap-2">
                         <span>{formatDate(currentTime)}</span>
                         <span>•</span>

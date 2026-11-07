@@ -1829,7 +1829,13 @@ export const AppProvider = ({ children }: any) => {
   const [settingsDirty, setSettingsDirty] = useState(false);
   const saveSettingsHandlerRef = useRef<(() => Promise<void> | void) | null>(null);
   const discardSettingsHandlerRef = useRef<(() => void) | null>(null);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('pos_current_user');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
   const [state, setState] = useState<AppState>(() => {
     try {
         const saved = localStorage.getItem('appState');
@@ -2564,6 +2570,24 @@ export const AppProvider = ({ children }: any) => {
     localStorage.setItem('experimentalMode', experimentalMode ? 'true' : 'false');
   }, [experimentalMode]);
 
+  // حفظ واسترجاع المستخدم الحالي ومزامنته دائماً مع بيانات المستخدمين في النظام
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('pos_current_user', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('pos_current_user');
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser) {
+      const matched = state.users.find(u => u.id === currentUser.id || u.username === currentUser.username);
+      if (matched && (matched.name !== currentUser.name || matched.username !== currentUser.username || matched.role !== currentUser.role || matched.locationId !== currentUser.locationId)) {
+        setCurrentUser(matched);
+      }
+    }
+  }, [state.users]);
+
   useEffect(() => {
     // Apply Theme Color
     const themeColor = state.settings.themeColor || 'blue';
@@ -3247,6 +3271,9 @@ export const AppProvider = ({ children }: any) => {
       ...prev,
       users: prev.users.map(u => u.id === user.id ? user : u)
     }));
+    if (currentUser && (currentUser.id === user.id || currentUser.username === user.username)) {
+      setCurrentUser(user);
+    }
     addAuditLog(
       'User',
       `Updated user: ${user.username}`,

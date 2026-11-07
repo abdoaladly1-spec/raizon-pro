@@ -698,11 +698,16 @@ const MainContent = () => {
                              {/* User Profile Pill & Divider (المدير ذهبي والموظفون بألوان حيوية) */}
                              {(() => {
                                  const avatarStyle = getUserAvatarStyle(currentUser);
+                                 const trimmedName = currentUser?.name?.trim();
+                                 const isGenericAdmin = !trimmedName || trimmedName.toLowerCase() === 'admin';
+                                 const effectiveUserName = !isGenericAdmin 
+                                     ? trimmedName 
+                                     : (currentUser?.username || (language === 'ar' ? 'المستخدم' : 'User'));
                                  return (
                                      <div className="flex items-center gap-2.5 ps-3 md:ps-3.5 border-s border-slate-300 dark:border-purple-900/40">
                                          <div className="text-right hidden sm:block leading-tight">
                                              <div className="flex items-center justify-end gap-1.5">
-                                                 <p className="text-xs md:text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">{currentUser?.name || 'Admin'}</p>
+                                                 <p className="text-xs md:text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">{effectiveUserName}</p>
                                                  <span className="w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse shrink-0" title={t('online')}></span>
                                              </div>
                                              <p className={`text-[11px] font-bold capitalize leading-none mt-0.5 ${avatarStyle.isAdmin ? 'text-amber-500 dark:text-amber-400' : 'text-purple-600 dark:text-purple-300'}`}>
@@ -711,7 +716,7 @@ const MainContent = () => {
                                          </div>
                                          <div 
                                              className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shadow-md relative overflow-hidden transition-transform hover:scale-105 shrink-0 ${avatarStyle.className}`}
-                                             title={`${currentUser?.name || 'User'} (${t(currentUser?.role || '')})`}
+                                             title={`${effectiveUserName} (${t(currentUser?.role || '')})`}
                                          >
                                              <User size={18} className="drop-shadow-xs" />
                                          </div>
