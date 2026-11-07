@@ -311,7 +311,7 @@ export interface AppIconProps {
   style?: React.CSSProperties;
 }
 
-const createPngIcon = (src: string, defaultAlt: string) => {
+const createPngIcon = (src: string, defaultAlt: string, defaultClassName?: string) => {
   const IconComponent = ({ className, size, alt = defaultAlt, style }: AppIconProps) => {
     const dim = size ? (typeof size === 'number' ? `${size}px` : size) : undefined;
     return (
@@ -326,7 +326,7 @@ const createPngIcon = (src: string, defaultAlt: string) => {
           verticalAlign: 'middle',
           ...style
         }}
-        className={`shrink-0 select-none ${className || ''}`}
+        className={`shrink-0 select-none ${defaultClassName ? defaultClassName + ' ' : ''}${className || ''}`}
         loading="lazy"
       />
     );
@@ -338,7 +338,7 @@ const createPngIcon = (src: string, defaultAlt: string) => {
 /** أيقونة الواتساب الرسمية */
 export const WhatsAppIcon = createPngIcon('/icons/whatsapp.png', 'WhatsApp');
 /** أيقونة كشف الحساب والتدقيق المالي */
-export const StatementIcon = createPngIcon('/icons/statement.png', 'كشف حساب');
+export const StatementIcon = createPngIcon('/icons/statement.png', 'كشف حساب', 'dark:brightness-0 dark:invert');
 export const ForensicsIcon = StatementIcon;
 /** أيقونة التعديل والتحرير */
 export const CustomEditIcon = createPngIcon('/icons/edit.png', 'تعديل');
