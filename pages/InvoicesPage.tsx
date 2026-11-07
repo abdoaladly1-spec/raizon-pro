@@ -9,6 +9,8 @@ import { paymentOf, round2 } from '../lib/payments';
 import { canReprint } from '../lib/printDesign';
 import { exportToCSV } from '../lib/exportUtils';
 import { InvoiceReceipt } from '../components/InvoiceReceipt';
+import { CustomerProfileModal } from '../components/CustomerProfileModal';
+import { Customer } from '../types';
 import { PrintActions, openInvoiceWhatsApp } from '../components/PrintActions';
 import { CreateInvoice } from './CreateInvoicePage';
 import { AuditLogs } from './AuditLogsPage';
@@ -21,6 +23,7 @@ export const InvoicesList = () => {
     const [activeFilters, setActiveFilters] = useState({ search: '', startDate: '', endDate: '', staffId: '', branchName: '' });
     // إعادة طباعة فاتورة سابقة بهويتها التاريخية (لوحة معاينة مستقلة)
     const [printInvoice, setPrintInvoice] = useState(null as Invoice | null);
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
 
     useEffect(() => {
@@ -203,16 +206,36 @@ export const InvoicesList = () => {
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
                                 {filtered.map(invoice => (
                                     <tr key={invoice.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors">
-                                        <td className="px-5 py-3.5 font-mono font-semibold text-slate-900 dark:text-slate-100">#{invoice.id}</td>
-                                        <td className="px-5 py-3.5 font-medium">
+                                        <td className="px-5 py-3.5 font-mono font-semibold text-slate-900 dark:text-slate-100">
                                             <button
                                                 type="button"
                                                 onClick={() => openReprint(invoice)}
+                                                className="hover:text-primary-600 dark:hover:text-primary-400 hover:underline cursor-pointer font-bold transition-colors"
+                                                title={language === 'ar' ? 'معاينة الفاتورة' : 'View Invoice'}
+                                            >
+                                                #{invoice.id}
+                                            </button>
+                                        </td>
+                                        <td className="px-5 py-3.5 font-medium">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const foundCustomer = (state.customers || []).find(
+                                                        c => (invoice.customerId && c.id === invoice.customerId) || (c.name && invoice.customerName && c.name.trim() === invoice.customerName.trim())
+                                                    ) || {
+                                                        id: invoice.customerId || 0,
+                                                        name: invoice.customerName,
+                                                        phone: '',
+                                                        balance: 0,
+                                                        totalSpent: invoice.total
+                                                    };
+                                                    setSelectedCustomer(foundCustomer);
+                                                }}
                                                 className="text-slate-900 dark:text-slate-100 hover:text-primary-600 dark:hover:text-primary-400 font-bold hover:underline cursor-pointer text-right flex items-center gap-1.5 transition-colors group"
-                                                title={language === 'ar' ? 'معاينة الفاتورة الكاملة' : 'Preview Invoice'}
+                                                title={language === 'ar' ? 'فتح ملف العميل وعرض كافة فواتيره' : 'Open Customer Profile & Invoices'}
                                             >
                                                 <span>{invoice.customerName}</span>
-                                                <Eye size={13} className="text-primary-400 opacity-60 group-hover:opacity-100 transition-opacity" />
+                                                <User size={13} className="text-primary-500 opacity-60 group-hover:opacity-100 transition-opacity" />
                                             </button>
                                         </td>
 
@@ -319,6 +342,19 @@ export const InvoicesList = () => {
                     </div>
                 )}
             </div>
+
+            {/* مودال ملف العميل وكافة فواتيره */}
+            {selectedCustomer && (
+                <CustomerProfileModal
+                    customer={selectedCustomer}
+                    onClose={() => setSelectedCustomer(null)}
+                    initialTab="invoices"
+                    onPreviewInvoice={(inv) => {
+                        setSelectedCustomer(null);
+                        openReprint(inv);
+                    }}
+                />
+            )}
 
             {printInvoice && (
                 <ModalShell

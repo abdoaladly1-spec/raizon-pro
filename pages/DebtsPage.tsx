@@ -78,10 +78,6 @@ export const DebtsPage: React.FC = () => {
   const cleanNewCustPhone = (newCustPhone || '').replace(/\D/g, '');
   const isNewCustPhoneValid = cleanNewCustPhone.length === 11 && cleanNewCustPhone.startsWith('01');
 
-  // 5. Edit Customer Modal
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [editLimit, setEditLimit] = useState('');
-  const [editNotes, setEditNotes] = useState('');
 
   // ---------------------------------------------------------------------------
   // Status Determination Function
@@ -487,26 +483,6 @@ export const DebtsPage: React.FC = () => {
     }
   };
 
-  // Submit edit customer
-  const handleConfirmEditCustomer = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCustomer) return;
-    try {
-      const updated: Customer = {
-        ...editingCustomer,
-        creditLimit: parseFloat(editLimit) || 0,
-        notes: editNotes.trim() || undefined
-      };
-      updateCustomer(updated);
-      if (profileCustomer && profileCustomer.id === editingCustomer.id) {
-        setProfileCustomer(updated);
-      }
-      addToast('تم تحديث بيانات العميل والحد الائتماني بنجاح', 'success');
-      setEditingCustomer(null);
-    } catch (err: any) {
-      addToast(err?.message || 'تعذر التحديث', 'error');
-    }
-  };
 
   // Send WhatsApp reminder
   const handleWhatsAppReminder = (customer: Customer) => {
@@ -1704,62 +1680,6 @@ export const DebtsPage: React.FC = () => {
         </ModalShell>
       )}
 
-      {/* ===================================================================== */}
-      {/* 9. Edit Customer Modal (تعديل الحد الائتماني والملاحظات)              */}
-      {/* ===================================================================== */}
-      {editingCustomer && (
-        <ModalShell
-          title={`تعديل بيانات العميل — ${editingCustomer.name}`}
-          onClose={() => setEditingCustomer(null)}
-          maxWidth="max-w-md"
-        >
-          <form onSubmit={handleConfirmEditCustomer} className="space-y-4 text-right" dir="rtl">
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">
-                الحد الائتماني المسموح به ({currencySymbol}):
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="100"
-                value={editLimit}
-                onChange={(e) => setEditLimit(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">
-                الملاحظات:
-              </label>
-              <textarea
-                rows={3}
-                value={editNotes}
-                onChange={(e) => setEditNotes(e.target.value)}
-                placeholder="سجل ملاحظات التسهيلات والاتفاق..."
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs outline-none focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
-
-            <div className="flex gap-2.5 pt-3 border-t border-slate-300 dark:border-slate-600/80">
-              <Button
-                variant="primary"
-                className="flex-1 justify-center py-2.5 text-sm font-bold shadow-sm"
-              >
-                حفظ التعديلات
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setEditingCustomer(null)}
-                className="flex-1 justify-center py-2.5 text-sm"
-              >
-                إلغاء
-              </Button>
-            </div>
-          </form>
-        </ModalShell>
-      )}
     </div>
   );
 };
