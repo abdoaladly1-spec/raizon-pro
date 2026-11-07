@@ -10,7 +10,7 @@ import { Intro } from './components/Intro';
 import { AnimatedBackground } from './components/AnimatedBackground';
 import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, Lock, ArrowLeft, ChevronRight, ChevronDown, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Truck, Bell, AlertTriangle, Shield, Phone, Copy, Building } from './components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from './types';
-import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, type SyncStatus } from './lib/serverSync';
+import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, clearSyncError, type SyncStatus } from './lib/serverSync';
 import { Card, Button, Input, ToastContainer, SimpleBarChart, useSound, useLiveTick } from './components/ui';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { FilterModal } from './components/FilterModal';
@@ -195,6 +195,17 @@ const MainContent = () => {
   } = useApp();
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [showBranchSwitcherModal, setShowBranchSwitcherModal] = useState(false);
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+  const [showSyncInfoModal, setShowSyncInfoModal] = useState(false);
+
+  // إخفاء ومسح أخطاء المزامنة القديمة تلقائياً إذا كان النظام يعمل بدون سيرفر أو الطابور فارغ
+  useEffect(() => {
+    if (!state.settings?.serverUrl || syncStatus.pending === 0) {
+      if (syncStatus.lastError) {
+        clearSyncError();
+      }
+    }
+  }, [state.settings?.serverUrl, syncStatus.pending, syncStatus.lastError]);
   const [isNavSaving, setIsNavSaving] = useState(false);
 
   const handleNavigate = (targetTab: string) => {
@@ -883,6 +894,72 @@ const ActivationScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => 
                         </button>
                     </div>
                 </div>
+            )}
+
+            {/* نافذة توضيح وإدارة مزامنة السيرفر */}
+            {showSyncInfoModal && (
+                <ModalShell
+                    title={language === 'ar' ? 'حالة المزامنة والربط الشبكي' : 'Server Sync Status'}
+                    onClose={() => setShowSyncInfoModal(false)}
+                    maxWidth="max-w-md"
+                >
+                    <div className="space-y-4 text-right" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                        <div className="p-3.5 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/60">
+                            <span className="text-xs font-bold text-purple-900 dark:text-purple-200 block mb-1">
+                                {language === 'ar' ? 'حفظ البيانات محلياً:' : 'Local Storage Safety:'}
+                            </span>
+                            <p className="text-xs text-purple-700 dark:text-purple-300">
+                                {language === 'ar' 
+                                    ? 'جميع الفواتير والمبيعات مسجلة ومحفوظة بنجاح 100% داخل هذا الجهاز ولن تُفقد أبداً.' 
+                                    : 'All data is safely stored locally on this machine.'}
+                            </p>
+                        </div>
+
+                        <div className="space-y-2 text-xs">
+                            <div className="flex justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800">
+                                <span className="text-slate-500">{language === 'ar' ? 'فواتير بانتظار الإرسال للسيرفر:' : 'Pending Sync Queue:'}</span>
+                                <span className="font-bold font-mono text-amber-500">{syncStatus.pending} {language === 'ar' ? 'فاتورة' : 'items'}</span>
+                            </div>
+                            <div className="flex justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800">
+                                <span className="text-slate-500">{language === 'ar' ? 'عنوان سيرفر المزامنة:' : 'Server URL:'}</span>
+                                <span className="font-bold font-mono text-slate-700 dark:text-slate-300">{state.settings?.serverUrl || (language === 'ar' ? 'غير محدد (وضع محلي مستقل)' : 'None')}</span>
+                            </div>
+                            {syncStatus.lastError && (
+                                <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300">
+                                    <span className="font-bold block mb-0.5">{language === 'ar' ? 'تنبيه الاتصال بالسيرفر:' : 'Connection Alert:'}</span>
+                                    <span className="font-mono text-[11px] block">{syncStatus.lastError}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                            {state.settings?.serverUrl && (
+                                <Button 
+                                    variant="primary" 
+                                    onClick={() => {
+                                        flushQueue({ url: state.settings.serverUrl || '', apiKey: state.settings.serverApiKey || '' });
+                                        addToast(language === 'ar' ? 'جاري محاولة الاتصال بالسيرفر...' : 'Retrying sync...', 'info');
+                                    }}
+                                    className="flex-1 justify-center"
+                                >
+                                    <RefreshCw size={14} className={syncStatus.syncing ? 'animate-spin' : ''} />
+                                    <span>{language === 'ar' ? 'إعادة المحاولة الآن' : 'Retry Now'}</span>
+                                </Button>
+                            )}
+                            <Button 
+                                variant="secondary" 
+                                onClick={() => {
+                                    clearSyncError();
+                                    setShowSyncInfoModal(false);
+                                    addToast(language === 'ar' ? 'تم مسح تنبيه المزامنة' : 'Alert dismissed', 'info');
+                                }}
+                                className="flex-1 justify-center"
+                            >
+                                {language === 'ar' ? 'مسح التنبيه وإخفاؤه' : 'Dismiss Alert'}
+                            </Button>
+                        </div>
+                    </div>
+                </ModalShell>
             )}
 
             {/* نافذة تبديل الفرع السريعة للمدير */}

@@ -52,6 +52,8 @@ const saveStatus = (patch: Partial<SyncStatus>) => {
 
 export const notifySyncStatus = () => saveStatus({});
 
+export const clearSyncError = (): SyncStatus => saveStatus({ lastError: null });
+
 export const onSyncStatus = (cb: (s: SyncStatus) => void): (() => void) => {
   const handler = (e: Event) => cb((e as CustomEvent).detail as SyncStatus);
   window.addEventListener('sync-status-changed', handler as EventListener);
@@ -177,7 +179,7 @@ export const flushQueue = async (config?: ServerConfig): Promise<{ sent: number;
   const queue = getQueue();
 
   if (!baseUrl || queue.length === 0) {
-    if (queue.length) saveStatus({ pending: queue.length });
+    saveStatus({ lastError: null, pending: queue.length, syncing: false });
     return { sent: 0, errors: 0 };
   }
 
