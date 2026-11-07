@@ -222,7 +222,7 @@ export const InvoiceReceipt = ({
                           <img
                             src={design.logoFrontDataUrl}
                             alt="Logo"
-                            className="block filter grayscale contrast-200"
+              className="block "
                             style={{
                               width: `${design.logoSizePx || 100}px`,
                               maxHeight: `${design.logoSizePx || 100}px`,
