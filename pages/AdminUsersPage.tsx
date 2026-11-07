@@ -1,5 +1,6 @@
 /* تم تطوير وتحديث صفحة المستخدمين (نظام ProCashier) */
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
 import { 
     Users, User, Shield, Search, Plus, Edit, Trash2, KeyRound, Key, 
@@ -99,12 +100,14 @@ export const AdminUsers = () => {
             setMenuAnchor(null);
         } else {
             const rect = e.currentTarget.getBoundingClientRect();
+            const menuHeight = 220;
             const spaceBelow = window.innerHeight - rect.bottom;
-            const openUpwards = spaceBelow < 230;
+            const openUpwards = spaceBelow < menuHeight && rect.top > menuHeight;
             setMenuAnchor({
                 id: userId,
-                top: openUpwards ? rect.top : rect.bottom + 4,
-                right: window.innerWidth - rect.right,
+                top: openUpwards ? undefined : Math.min(rect.bottom + 4, Math.max(10, window.innerHeight - menuHeight - 10)),
+                bottom: openUpwards ? Math.max(10, window.innerHeight - rect.top + 4) : undefined,
+                right: Math.max(10, window.innerWidth - rect.right),
                 openUpwards
             });
             setActiveActionMenuId(userId);
@@ -579,22 +582,24 @@ export const AdminUsers = () => {
                 </div>
             </div>
 
-            {/* القائمة المنبثقة (...) الثابتة فوق كافة طبقات الجدول لمنع أي اقتطاع نهائياً */}
+            {/* القائمة المنبثقة (...) الثابتة فوق كافة طبقات الصفحة بواسطة Portal لمنع أي اقتطاع نهائياً */}
             {activeActionMenuId && menuAnchor && (() => {
                 const targetUser = visibleUsers.find(u => u.id === activeActionMenuId);
                 if (!targetUser) return null;
-                return (
-                    <>
+                return createPortal(
+                    <div className="fixed inset-0 z-[9999] pointer-events-auto">
                         <div 
-                            className="fixed inset-0 z-40 cursor-default" 
+                            className="fixed inset-0 z-[9998] cursor-default bg-transparent" 
                             onClick={() => { setActiveActionMenuId(null); setMenuAnchor(null); }} 
                         />
                         <div 
-                            className="fixed w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-1.5 z-50 animate-scale-in text-right"
+                            className="fixed w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-1.5 z-[9999] animate-scale-in text-right font-sans"
                             style={{
-                                top: menuAnchor.openUpwards ? undefined : `${menuAnchor.top}px`,
-                                bottom: menuAnchor.openUpwards ? `${window.innerHeight - menuAnchor.top + 4}px` : undefined,
+                                top: menuAnchor.top !== undefined ? `${menuAnchor.top}px` : undefined,
+                                bottom: menuAnchor.bottom !== undefined ? `${menuAnchor.bottom}px` : undefined,
                                 right: `${menuAnchor.right}px`,
+                                maxHeight: 'calc(100vh - 20px)',
+                                overflowY: 'auto'
                             }}
                             dir={language === 'ar' ? 'rtl' : 'ltr'}
                         >
@@ -669,7 +674,8 @@ export const AdminUsers = () => {
                                 <span>{language === 'ar' ? 'حذف المستخدم' : 'Delete User'}</span>
                             </button>
                         </div>
-                    </>
+                    </div>,
+                    document.body
                 );
             })()}
 

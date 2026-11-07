@@ -338,7 +338,7 @@ export const AuditLogs = () => {
                       </div>
                     </td>
                     <td className="py-3 px-3 whitespace-nowrap">
-                      <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap border ${item.badgeColor}`}>
+                      <span className={`inline-flex items-center justify-center px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 leading-normal border select-none ${item.badgeColor}`}>
                         {language === 'ar' ? item.titleAr : item.titleEn}
                       </span>
                     </td>
@@ -404,7 +404,7 @@ export const AuditLogs = () => {
                       </div>
                     </td>
                     <td className="py-3 px-3 whitespace-nowrap">
-                      <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap border ${log.badgeColor}`}>
+                      <span className={`inline-flex items-center justify-center px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 leading-normal border select-none ${log.badgeColor}`}>
                         {language === 'ar' ? log.actionAr : (t(log.action.toLowerCase()) || log.action)}
                       </span>
                     </td>

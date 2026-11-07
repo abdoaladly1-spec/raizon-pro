@@ -37,11 +37,10 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
         return () => clearInterval(timer);
     }, []);
 
-    // تصفية الفروع في لوحة التحكم
-    const [dashboardBranchFilter, setDashboardBranchFilter] = useState('');
     const isNonAdmin = currentUser?.role !== 'admin';
+    const activeLocation = state.locations.find(l => String(l.id) === String(state.settings.currentLocationId)) || state.locations[0];
     const cashierBranch = currentUser?.locationId ? state.locations.find(l => l.id === currentUser.locationId)?.name : null;
-    const activeBranchName = isNonAdmin ? cashierBranch : (dashboardBranchFilter || null);
+    const activeBranchName = isNonAdmin ? cashierBranch : (activeLocation ? activeLocation.name : null);
 
     // حساب نافذة الفترة الزمنية المختارة بدقة
     const activePeriod: Period = useMemo(() => {
@@ -705,27 +704,6 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                             {rangeLabels.find(r => r.key === range)?.label}
                         </span>
                     </span>
-
-                    {/* فلتر الفروع للمسؤول */}
-                    {currentUser?.role === 'admin' && state.locations.length > 1 && (
-                        <select
-                            value={dashboardBranchFilter}
-                            onChange={(e) => setDashboardBranchFilter(e.target.value)}
-                            className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-primary-500 cursor-pointer shadow-2xs"
-                        >
-                            <option value="">{language === 'ar' ? 'كل الفروع' : 'All Branches'}</option>
-                            {state.locations.map(loc => (
-                                <option key={loc.id} value={loc.name}>فرع {loc.name}</option>
-                            ))}
-                        </select>
-                    )}
-
-                    {/* وسم الفرع للكاشير العادي */}
-                    {isNonAdmin && cashierBranch && (
-                        <span className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-xs font-bold border border-purple-200 dark:border-purple-800">
-                            فرع {cashierBranch}
-                        </span>
-                    )}
                 </div>
 
                 {/* أزرار اختيار الفترة الشاملة مع زر المدة الكاملة المطور */}

@@ -2503,6 +2503,11 @@ export const AppProvider = ({ children }: any) => {
 
   const logout = () => {
       addAuditLog('Logout', `User ${currentUser?.username} logged out`, `تسجيل خروج المستخدم "${currentUser?.username || 'غير محدد'}" من النظام`);
+      if (currentUser?.id) {
+          try {
+              sessionStorage.removeItem('admin_branch_selected_' + currentUser.id);
+          } catch (e) {}
+      }
       setCurrentUser(null);
   };
 

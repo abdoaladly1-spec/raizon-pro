@@ -1151,76 +1151,114 @@ const AdminBranchSwitcherModal = ({
     );
 };
 
-// شاشة اختيار الفرع الإداري للمدير عند تسجيل الدخول
+// شاشة اختيار الفرع الإداري للمدير عند تسجيل الدخول (تظهر فقط عند توفر فرعين فأكثر)
 const AdminBranchSelectionScreen = ({
     locations,
     onSelectBranch,
+    onAddBranch,
     userName,
     onLogout
 }: {
     locations: Location[];
     onSelectBranch: (loc: Location) => void;
+    onAddBranch: (name: string, address?: string, phone?: string) => void;
     userName: string;
     onLogout: () => void;
 }) => {
-    return (
-        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-slate-950 font-sans" dir="rtl">
-            <div className="absolute top-1/4 -right-20 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-1/4 -left-20 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [newBranchName, setNewBranchName] = useState('');
+    const [newBranchAddress, setNewBranchAddress] = useState('');
+    const [newBranchPhone, setNewBranchPhone] = useState('');
+    const [addError, setAddError] = useState('');
 
-            <div className="w-full max-w-2xl relative z-10 animate-fade-in space-y-6">
-                <div className="text-center space-y-3">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-bold tracking-wide">
-                        <Building size={14} className="text-purple-400" />
+    const handleCreateBranch = (e: React.FormEvent) => {
+        e.preventDefault();
+        const trimmed = newBranchName.trim();
+        if (!trimmed) {
+            setAddError('يرجى إدخال اسم الفرع');
+            return;
+        }
+        onAddBranch(trimmed, newBranchAddress.trim() || undefined, newBranchPhone.trim() || undefined);
+        setNewBranchName('');
+        setNewBranchAddress('');
+        setNewBranchPhone('');
+        setShowAddModal(false);
+        setAddError('');
+    };
+
+    return (
+        <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden bg-slate-950 font-sans" dir="rtl">
+            <div className="absolute inset-0 bg-radial-at-t from-slate-900 via-slate-950 to-slate-950 pointer-events-none" />
+
+            <div className="w-full max-w-4xl relative z-10 animate-fade-in space-y-6">
+                <div className="text-center space-y-2.5">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold">
+                        <Building size={14} className="text-slate-400" />
                         <span>نظام الفروع المتعددة</span>
                     </div>
 
-                    <h1 className="text-3xl md:text-4xl font-bold text-white">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                         تحديد الفرع المُراد إدارته
                     </h1>
-                    <p className="text-sm md:text-base text-slate-400 max-w-lg mx-auto">
-                        مرحباً <span className="font-bold text-amber-400">{userName}</span>، بصفتك مسؤول النظام يتوفر لديك عدة فروع مسجلة. حدد الفرع الذي ترغب في متابعة مبيعاته وإدارته الآن:
+                    <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
+                        مرحباً <span className="font-bold text-slate-200">{userName}</span>، يتوفر لديك ({locations.length}) فروع مسجلة. حدد الفرع الذي ترغب في متابعة مبيعاته وإدارته الآن:
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-center justify-between gap-3 px-1">
+                    <span className="text-xs font-bold text-slate-400">
+                        قائمة الفروع المتاحة ({locations.length})
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => { setShowAddModal(true); setAddError(''); }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                    >
+                        <Plus size={14} className="text-emerald-400" />
+                        <span>إضافة فرع جديد</span>
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {locations.map((loc) => (
                         <div
                             key={loc.id}
                             onClick={() => onSelectBranch(loc)}
-                            className="group p-5 rounded-2xl bg-slate-900/90 backdrop-blur-md border border-slate-800 hover:border-purple-500/60 hover:shadow-md hover:border-purple-500/40 transition-all cursor-pointer flex flex-col justify-between space-y-4"
+                            className="group p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-slate-600 hover:bg-slate-850 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between space-y-4"
                         >
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center font-bold text-xl group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                                        <Building size={22} />
+                            <div className="space-y-3">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center font-bold text-lg group-hover:border-slate-500 transition-colors">
+                                        <Building size={20} />
                                     </div>
-                                    <div>
-                                        <h3 className="text-base md:text-lg font-bold text-white group-hover:text-purple-300 transition-colors">
-                                            {loc.name}
-                                        </h3>
-                                        <p className="text-xs text-slate-400 mt-0.5">
-                                            {loc.address || 'العنوان المسجل للفرع'}
-                                        </p>
-                                    </div>
+                                    {loc.isDefault && (
+                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                                            الفرع الرئيسي
+                                        </span>
+                                    )}
                                 </div>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                                    الفرع المدار الحالي
-                                </span>
+
+                                <div>
+                                    <h3 className="text-base font-bold text-white group-hover:text-slate-100 transition-colors">
+                                        {loc.name}
+                                    </h3>
+                                    <p className="text-xs text-slate-400 mt-1 line-clamp-2">
+                                        {loc.address || 'العنوان غير محدد'}
+                                    </p>
+                                </div>
                             </div>
 
-                            {loc.phone && (
-                                <div className="flex items-center gap-2 text-xs text-slate-400">
-                                    <Phone size={13} className="text-slate-500" />
-                                    <span className="font-mono">{loc.phone}</span>
-                                </div>
-                            )}
+                            <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                                {loc.phone ? (
+                                    <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px]" dir="ltr">
+                                        <Phone size={12} className="text-slate-500" />
+                                        <span>{loc.phone}</span>
+                                    </div>
+                                ) : (
+                                    <span className="text-slate-500 text-[11px]">جاهز للتشغيل</span>
+                                )}
 
-                            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                                <span className="text-xs text-slate-400 group-hover:text-slate-200">
-                                    دخول ومتابعة الفرع
-                                </span>
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 group-hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-md group-hover:shadow-purple-500/30">
+                                <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-300 group-hover:text-white group-hover:translate-x-[-2px] transition-all">
                                     <span>إدارة</span>
                                     <span>←</span>
                                 </span>
@@ -1231,6 +1269,7 @@ const AdminBranchSelectionScreen = ({
 
                 <div className="text-center pt-2">
                     <button
+                        type="button"
                         onClick={onLogout}
                         className="text-xs text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
                     >
@@ -1238,6 +1277,88 @@ const AdminBranchSelectionScreen = ({
                     </button>
                 </div>
             </div>
+
+            {showAddModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fade-in" dir="rtl">
+                    <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300">
+                                    <Building size={16} />
+                                </div>
+                                <h3 className="font-bold text-sm text-white">إضافة فرع جديد للمنظومة</h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowAddModal(false)}
+                                className="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center transition-colors cursor-pointer"
+                            >
+                                <X size={15} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleCreateBranch} className="space-y-3.5 text-xs">
+                            {addError && (
+                                <p className="text-rose-400 bg-rose-950/40 border border-rose-800/50 rounded-xl px-3 py-2">
+                                    {addError}
+                                </p>
+                            )}
+
+                            <div>
+                                <label className="block text-slate-300 font-bold mb-1">اسم الفرع *</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={newBranchName}
+                                    onChange={(e) => setNewBranchName(e.target.value)}
+                                    placeholder="مثال: فرع وسط البلد، فرع المعادي..."
+                                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 outline-none focus:border-slate-500"
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-slate-300 font-bold mb-1">العنوان (اختياري)</label>
+                                <input
+                                    type="text"
+                                    value={newBranchAddress}
+                                    onChange={(e) => setNewBranchAddress(e.target.value)}
+                                    placeholder="الشارع، المنطقة، المدينة"
+                                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 outline-none focus:border-slate-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-slate-300 font-bold mb-1">رقم الهاتف (اختياري)</label>
+                                <input
+                                    type="tel"
+                                    value={newBranchPhone}
+                                    onChange={(e) => setNewBranchPhone(e.target.value)}
+                                    placeholder="01xxxxxxxxx"
+                                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 outline-none focus:border-slate-500"
+                                    dir="ltr"
+                                />
+                            </div>
+
+                            <div className="pt-2 flex items-center justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddModal(false)}
+                                    className="px-4 py-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800 font-bold cursor-pointer transition-colors"
+                                >
+                                    إلغاء
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-600 font-bold cursor-pointer transition-colors shadow-sm"
+                                >
+                                    حفظ الفرع
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -1246,7 +1367,7 @@ const AdminBranchSelectionScreen = ({
 const AppContent = () => {
   const isPatcherMode = typeof window !== 'undefined' && window.location.search.includes('mode=patcher');
 
-  const { currentUser, state, updateSettings, addToast, language, logout } = useApp();
+  const { currentUser, state, updateSettings, addLocation, addToast, language, logout } = useApp();
   const [introFinished, setIntroFinished] = useState(false);
   const [adminBranchSelected, setAdminBranchSelected] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
@@ -1255,26 +1376,33 @@ const AppContent = () => {
     return null;
   });
 
-  // قفل الكاشير والموظفين تلقائياً على الفرع المخصص لهم دون إمكانية اختيار فروع أخرى
+  // حساب الفروع النشطة في النظام
+  const activeLocations = useMemo(() => {
+    return (state.locations || []).filter(l => l.active !== false);
+  }, [state.locations]);
+
+  // إدارة تحديد الفرع: الكاشير يحدد فرعه تلقائياً، والمدير عند توفر فرع واحد فقط يتم تحديده تلقائياً دون إظهار أي نافذة
   useEffect(() => {
-    if (currentUser && currentUser.role !== 'admin') {
-      const assignedLoc = currentUser.locationId 
-        ? state.locations.find(l => l.id === currentUser.locationId) 
-        : (state.locations[0] || null);
-      if (assignedLoc && state.settings.currentLocationId !== assignedLoc.id) {
-        updateSettings({ currentLocationId: assignedLoc.id });
+    if (currentUser) {
+      if (currentUser.role !== 'admin') {
+        const assignedLoc = currentUser.locationId 
+          ? state.locations.find(l => l.id === currentUser.locationId) 
+          : (state.locations[0] || null);
+        if (assignedLoc && state.settings.currentLocationId !== assignedLoc.id) {
+          updateSettings({ currentLocationId: assignedLoc.id });
+        }
+      } else if (activeLocations.length <= 1) {
+        const singleBranchId = activeLocations[0]?.id || state.locations[0]?.id || '1';
+        if (!sessionStorage.getItem('admin_branch_selected_' + currentUser.id)) {
+          sessionStorage.setItem('admin_branch_selected_' + currentUser.id, singleBranchId);
+          setAdminBranchSelected(singleBranchId);
+        }
+        if (state.settings.currentLocationId !== singleBranchId) {
+          updateSettings({ currentLocationId: singleBranchId });
+        }
       }
     }
-  }, [currentUser?.id, currentUser?.locationId, state.locations]);
-
-  // مزامنة وتحديد فرع الأدمن المختار دون كسر قواعد خطافات ريأكت (React Hooks Rules)
-  useEffect(() => {
-    if (currentUser?.id && !sessionStorage.getItem('admin_branch_selected_' + currentUser.id)) {
-      const activeId = state.settings.currentLocationId || (state.locations[0]?.id || '1');
-      sessionStorage.setItem('admin_branch_selected_' + currentUser.id, activeId);
-      setAdminBranchSelected(activeId);
-    }
-  }, [currentUser?.id, state.settings.currentLocationId, state.locations]);
+  }, [currentUser?.id, currentUser?.locationId, currentUser?.role, activeLocations, state.locations, state.settings.currentLocationId]);
 
   const [isIdle, setIsIdle] = useState(false);
   const [isActivated, setIsActivated] = useState(null as boolean | null);
@@ -1404,6 +1532,49 @@ const AppContent = () => {
   const isFirstAdminSetup = currentUser.role === 'admin' && (currentUser.mustChangePassword || !state.settings?.firstAdminSetupDone);
   if (currentUser.mustChangePassword || isFirstAdminSetup) {
     return <InitialAdminSetupWizard />;
+  }
+
+  // عند توفر فرعين فأكثر ولم يختر المدير الفرع بعد تسجيل الدخول، تظهر نافذة تحديد الفرع
+  if (currentUser.role === 'admin' && activeLocations.length >= 2 && !adminBranchSelected) {
+    const adminDisplayName = (currentUser.name && currentUser.name.trim()) 
+      ? currentUser.name.trim() 
+      : currentUser.username;
+
+    return (
+      <AdminBranchSelectionScreen
+        locations={activeLocations}
+        userName={adminDisplayName}
+        onSelectBranch={(loc) => {
+          updateSettings({ currentLocationId: loc.id });
+          sessionStorage.setItem('admin_branch_selected_' + currentUser.id, loc.id);
+          setAdminBranchSelected(loc.id);
+          addToast(language === 'ar' ? `تم تفعيل إدارة فرع: ${loc.name}` : `Switched to branch: ${loc.name}`, 'success');
+        }}
+        onAddBranch={(name, address, phone) => {
+          const newLoc: Location = {
+            id: String(Date.now()),
+            name,
+            address,
+            phone,
+            active: true,
+            isDefault: false,
+            createdAt: Date.now()
+          };
+          addLocation(newLoc);
+          updateSettings({ currentLocationId: newLoc.id });
+          sessionStorage.setItem('admin_branch_selected_' + currentUser.id, newLoc.id);
+          setAdminBranchSelected(newLoc.id);
+          addToast(language === 'ar' ? `تمت إضافة فرع "${name}" واختياره بنجاح` : `Branch "${name}" added and selected`, 'success');
+        }}
+        onLogout={() => {
+          try {
+            sessionStorage.removeItem('admin_branch_selected_' + currentUser.id);
+          } catch (e) {}
+          setAdminBranchSelected(null);
+          logout();
+        }}
+      />
+    );
   }
 
   return (
