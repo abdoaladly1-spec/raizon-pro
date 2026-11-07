@@ -89,6 +89,26 @@ export const AdminUsers = () => {
     
     // قائمة الإجراءات السريعة (...)
     const [activeActionMenuId, setActiveActionMenuId] = useState<string | null>(null);
+    const [menuAnchor, setMenuAnchor] = useState<{ id: string; top: number; right: number; openUpwards: boolean } | null>(null);
+
+    const handleToggleActionMenu = (e: React.MouseEvent<HTMLButtonElement>, userId: string) => {
+        e.stopPropagation();
+        if (activeActionMenuId === userId) {
+            setActiveActionMenuId(null);
+            setMenuAnchor(null);
+        } else {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const openUpwards = spaceBelow < 230;
+            setMenuAnchor({
+                id: userId,
+                top: openUpwards ? rect.top : rect.bottom + 4,
+                right: window.innerWidth - rect.right,
+                openUpwards
+            });
+            setActiveActionMenuId(userId);
+        }
+    };
 
     // نافذة إعادة تعيين كلمة المرور السريعة
     const [passwordModalUser, setPasswordModalUser] = useState<UserType | null>(null);
@@ -528,90 +548,18 @@ export const AdminUsers = () => {
 
                                         {/* زر القائمة المنسدلة (...) */}
                                         <td className="py-3.5 px-4 text-center">
-                                            <div className="relative inline-block text-right">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveActionMenuId(activeActionMenuId === u.id ? null : u.id)}
-                                                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                                                    title={language === 'ar' ? 'خيارات المستخدم' : 'Options'}
-                                                >
-                                                    <MoreVertical size={16} />
-                                                </button>
-
-                                                {/* القائمة المنبثقة (...) */}
-                                                {activeActionMenuId === u.id && (
-                                                    <>
-                                                        <div 
-                                                            className="fixed inset-0 z-30" 
-                                                            onClick={() => setActiveActionMenuId(null)} 
-                                                        />
-                                                        <div 
-                                                            className="absolute end-0 mt-1 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-1.5 z-40 animate-scale-in text-right"
-                                                            dir={language === 'ar' ? 'rtl' : 'ltr'}
-                                                        >
-                                                            {/* تعديل */}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleOpenEditModal(u)}
-                                                                className="w-full flex items-center gap-2 px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
-                                                            >
-                                                                <Edit size={14} className="text-slate-500" />
-                                                                <span>{language === 'ar' ? 'تعديل البيانات والصلاحيات' : 'Edit User & Permissions'}</span>
-                                                            </button>
-
-                                                            {/* تعديل الباسورد */}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setPasswordModalUser(u);
-                                                                    setQuickPassword('');
-                                                                    setQuickPasswordConfirm('');
-                                                                    setQuickMustChange(false);
-                                                                    setActiveActionMenuId(null);
-                                                                }}
-                                                                className="w-full flex items-center gap-2 px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
-                                                            >
-                                                                <KeyRound size={14} className="text-slate-500" />
-                                                                <span>{language === 'ar' ? 'تعديل كلمة المرور' : 'Change Password'}</span>
-                                                            </button>
-
-                                                            {/* إيقاف / تنشيط */}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleToggleActive(u)}
-                                                                disabled={!canDisable(u)}
-                                                                className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
-                                                                    !canDisable(u)
-                                                                        ? 'opacity-40 cursor-not-allowed text-slate-400'
-                                                                        : u.active
-                                                                            ? 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                                                                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                                                                }`}
-                                                            >
-                                                                {u.active ? <XCircle size={14} /> : <CheckCircle2 size={14} />}
-                                                                <span>{u.active ? (language === 'ar' ? 'إيقاف الحساب' : 'Deactivate') : (language === 'ar' ? 'تنشيط الحساب' : 'Activate')}</span>
-                                                            </button>
-
-                                                            <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
-
-                                                            {/* حذف */}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleDeleteUser(u)}
-                                                                disabled={!canDelete(u)}
-                                                                className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
-                                                                    !canDelete(u)
-                                                                        ? 'opacity-40 cursor-not-allowed text-slate-400'
-                                                                        : 'text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
-                                                                }`}
-                                                            >
-                                                                <Trash2 size={14} />
-                                                                <span>{language === 'ar' ? 'حذف المستخدم' : 'Delete User'}</span>
-                                                            </button>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleToggleActionMenu(e, u.id)}
+                                                className={`w-8 h-8 rounded-lg inline-flex items-center justify-center transition-colors cursor-pointer ${
+                                                    activeActionMenuId === u.id
+                                                        ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white'
+                                                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                                                }`}
+                                                title={language === 'ar' ? 'خيارات المستخدم' : 'Options'}
+                                            >
+                                                <MoreVertical size={16} />
+                                            </button>
                                         </td>
                                     </tr>
                                 );
@@ -629,6 +577,100 @@ export const AdminUsers = () => {
                     </table>
                 </div>
             </div>
+
+            {/* القائمة المنبثقة (...) الثابتة فوق كافة طبقات الجدول لمنع أي اقتطاع نهائياً */}
+            {activeActionMenuId && menuAnchor && (() => {
+                const targetUser = visibleUsers.find(u => u.id === activeActionMenuId);
+                if (!targetUser) return null;
+                return (
+                    <>
+                        <div 
+                            className="fixed inset-0 z-40 cursor-default" 
+                            onClick={() => { setActiveActionMenuId(null); setMenuAnchor(null); }} 
+                        />
+                        <div 
+                            className="fixed w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-1.5 z-50 animate-scale-in text-right"
+                            style={{
+                                top: menuAnchor.openUpwards ? undefined : `${menuAnchor.top}px`,
+                                bottom: menuAnchor.openUpwards ? `${window.innerHeight - menuAnchor.top + 4}px` : undefined,
+                                right: `${menuAnchor.right}px`,
+                            }}
+                            dir={language === 'ar' ? 'rtl' : 'ltr'}
+                        >
+                            {/* تعديل */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    handleOpenEditModal(targetUser);
+                                    setActiveActionMenuId(null);
+                                    setMenuAnchor(null);
+                                }}
+                                className="w-full flex items-center gap-2 px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
+                            >
+                                <Edit size={14} className="text-slate-500" />
+                                <span>{language === 'ar' ? 'تعديل البيانات والصلاحيات' : 'Edit User & Permissions'}</span>
+                            </button>
+
+                            {/* تعديل الباسورد */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPasswordModalUser(targetUser);
+                                    setQuickPassword('');
+                                    setQuickPasswordConfirm('');
+                                    setQuickMustChange(false);
+                                    setActiveActionMenuId(null);
+                                    setMenuAnchor(null);
+                                }}
+                                className="w-full flex items-center gap-2 px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
+                            >
+                                <KeyRound size={14} className="text-slate-500" />
+                                <span>{language === 'ar' ? 'تعديل كلمة المرور' : 'Change Password'}</span>
+                            </button>
+
+                            {/* إيقاف / تنشيط */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    handleToggleActive(targetUser);
+                                    setActiveActionMenuId(null);
+                                    setMenuAnchor(null);
+                                }}
+                                disabled={!canDisable(targetUser)}
+                                className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                                    !canDisable(targetUser)
+                                        ? 'opacity-40 cursor-not-allowed text-slate-400'
+                                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                }`}
+                            >
+                                {targetUser.active ? <XCircle size={14} /> : <CheckCircle2 size={14} />}
+                                <span>{targetUser.active ? (language === 'ar' ? 'إيقاف الحساب' : 'Deactivate') : (language === 'ar' ? 'تنشيط الحساب' : 'Activate')}</span>
+                            </button>
+
+                            <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+
+                            {/* حذف */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    handleDeleteUser(targetUser);
+                                    setActiveActionMenuId(null);
+                                    setMenuAnchor(null);
+                                }}
+                                disabled={!canDelete(targetUser)}
+                                className={`w-full flex items-center gap-2 px-2.5 py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                                    !canDelete(targetUser)
+                                        ? 'opacity-40 cursor-not-allowed text-slate-400'
+                                        : 'text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                                }`}
+                            >
+                                <Trash2 size={14} />
+                                <span>{language === 'ar' ? 'حذف المستخدم' : 'Delete User'}</span>
+                            </button>
+                        </div>
+                    </>
+                );
+            })()}
 
             {/* =========================================================================
                 نافذة التعديل والإضافة الشاملة (المقسمة إلى أقسام منظمة)
