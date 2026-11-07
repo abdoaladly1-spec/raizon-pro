@@ -189,6 +189,44 @@ export const getUserAvatarStyle = (user?: { role?: string; username?: string; na
   };
 };
 
+
+/**
+ * تنسيق مدة آخر مزامنة بصيغة نسبية مختصرة وواضحة:
+ * 30د: دقائق | 1س: ساعات | 5 اسبوع: أسابيع | 1ش: شهور | 1ع: أعوام
+ */
+export const formatSyncRelativeTime = (timestamp?: number | null, nowMs: number = Date.now(), lang: string = 'ar'): string => {
+  if (!timestamp || timestamp <= 0) return '';
+  const diffSec = Math.max(0, Math.floor((nowMs - timestamp) / 1000));
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHours = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffWeeks = Math.floor(diffDays / 7);
+  const diffMonths = Math.floor(diffDays / 30);
+  const diffYears = Math.floor(diffDays / 365);
+
+  const isAr = lang === 'ar';
+
+  if (diffSec < 60) {
+    return isAr ? 'الآن' : 'Just now';
+  }
+  if (diffHours < 1) {
+    return isAr ? `${diffMin}د` : `${diffMin}m`;
+  }
+  if (diffHours < 24) {
+    return isAr ? `${diffHours}س` : `${diffHours}h`;
+  }
+  if (diffDays < 7) {
+    return isAr ? `${diffDays}ي` : `${diffDays}d`;
+  }
+  if (diffDays < 30) {
+    return isAr ? `${diffWeeks} اسبوع` : `${diffWeeks}w`;
+  }
+  if (diffMonths < 12) {
+    return isAr ? `${diffMonths}ش` : `${diffMonths}mo`;
+  }
+  return isAr ? `${diffYears}ع` : `${diffYears}y`;
+};
+
 const MainContent = () => {
   const { 
     logout, t, toggleLanguage, language, currentUser, theme, toggleTheme, updateSettings, triggerOpenCashDrawer, 
@@ -579,13 +617,18 @@ const MainContent = () => {
                                      <span>{t('sync_retry')}</span>
                                  </button>
                              )}
-                             {!syncStatus.lastError && syncStatus.lastSyncAt > 0 && (
+                             {!syncStatus.lastError && syncStatus.lastSyncAt && syncStatus.lastSyncAt > 0 && (
                                  <span
-                                     title={t('last_sync_at')}
-                                     className="hidden lg:flex items-center gap-1.5 px-2.5 h-9 rounded-xl bg-slate-100/80 dark:bg-purple-950/20 border border-slate-300 dark:border-purple-900/30 text-xs font-mono text-slate-700 dark:text-slate-300 font-semibold"
+                                     title={language === 'ar' ? `آخر مزامنة ناجحة: ${new Date(syncStatus.lastSyncAt).toLocaleString('ar-EG')}` : `${t('last_sync_at')}: ${new Date(syncStatus.lastSyncAt).toLocaleString()}`}
+                                     className="hidden lg:flex items-center gap-1.5 px-2.5 h-9 rounded-xl bg-slate-100/80 dark:bg-purple-950/20 border border-slate-300 dark:border-purple-900/30 text-xs text-slate-700 dark:text-slate-300 font-semibold select-none shadow-2xs"
                                  >
                                      <Clock size={12} className="text-purple-500 dark:text-purple-400 shrink-0" />
-                                     <span dir="ltr">{new Date(syncStatus.lastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                     <span className="text-[11px] font-sans text-slate-500 dark:text-purple-300/80">
+                                         {language === 'ar' ? 'آخر مزامنة' : 'Synced'}
+                                     </span>
+                                     <span className="font-bold text-slate-900 dark:text-purple-200">
+                                         {formatSyncRelativeTime(syncStatus.lastSyncAt, systemClock.getTime(), language)}
+                                     </span>
                                      <Check size={13} className="text-emerald-500 shrink-0" />
                                  </span>
                              )}
