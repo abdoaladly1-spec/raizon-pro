@@ -529,14 +529,14 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="py-3 px-3 font-mono font-bold">
+                                        <td className="py-3 px-3 font-mono">
                                             {hasDebt ? (
-                                                <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-rose-500/20 text-rose-400 border border-rose-500/40">
-                                                    <span className="inline-block w-2 h-2 rounded-full bg-rose-500 mx-1"></span>{formatNumber(c.balance || 0)} {t('egp')}
+                                                <span className="text-xs font-bold text-rose-500 dark:text-rose-400">
+                                                    {formatNumber(c.balance || 0)} {t('egp')}
                                                 </span>
                                             ) : (
-                                                <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                                                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mx-1"></span>خالص (0)
+                                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                                    {language === 'ar' ? 'خالص (0)' : 'Cleared (0)'}
                                                 </span>
                                             )}
                                         </td>
