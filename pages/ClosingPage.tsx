@@ -137,8 +137,18 @@ export const ClosingPage = () => {
     // رصيد البطاقات البنكية لليوم (مبيعات + تحصيلات فيزا)
     const cardTotal = paymentBreakdown.card + customerPaymentsCard;
 
-    // رصيد المديونيات لليوم (المبيعات المسجلة على الحساب / آجل)
-    const creditTotal = paymentBreakdown.credit;
+    // إجمالي مديونيات العملاء للمدة الكاملة (جميع الأرصدة المدينة المستحقة على العملاء)
+    const totalAllCustomersDebt = useMemo(() => {
+        return (state.customers || [])
+            .filter(c => (c.balance || 0) > 0)
+            .reduce((sum, c) => sum + (Number(c.balance) || 0), 0);
+    }, [state.customers]);
+
+    // المديونيات الجديدة المسجلة في فواتير اليوم
+    const todayCreditSales = paymentBreakdown.credit;
+
+    // رصيد المديونيات المعتمد في التقفيل: المدة الكاملة
+    const creditTotal = totalAllCustomersDebt;
 
     const totalSales = useMemo(() => {
         return todayInvoices.reduce((acc, inv) => acc + (Number(inv.total) || 0), 0);
@@ -397,7 +407,7 @@ export const ClosingPage = () => {
                         <div className="text-slate-400">{language === 'ar' ? 'رصيد البطاقات (فيزا):' : 'Cards:'}</div>
                         <div className="text-left font-bold text-blue-400">+{report.cardSales?.toLocaleString('en-US') || 0} {t('egp')}</div>
 
-                        <div className="text-slate-400">{language === 'ar' ? 'المديونيات (آجل):' : 'Debts/Credit:'}</div>
+                        <div className="text-slate-400">{language === 'ar' ? 'المديونيات (المدة كاملة):' : 'Debts (All-Time):'}</div>
                         <div className="text-left font-bold text-amber-400">+{report.creditSales?.toLocaleString('en-US') || 0} {t('egp')}</div>
 
                         <div className="text-amber-300 pt-2 border-t border-slate-700 font-extrabold text-sm">{language === 'ar' ? 'المبلغ النهائي للتقفيل الشامل:' : 'Final Closing Total:'}</div>
@@ -757,13 +767,15 @@ export const ClosingPage = () => {
 
                 <Card className="bg-slate-900/60 border border-amber-500/30 p-3.5">
                     <span className="text-xs font-bold text-amber-400 block mb-1">
-                        {language === 'ar' ? 'المديونيات (آجل)' : 'Debts (Credit)'}
+                        {language === 'ar' ? 'المديونيات (المدة كاملة)' : 'Total Debts (All-Time)'}
                     </span>
                     <p className="text-lg font-bold text-amber-400 font-mono">
                         +{creditTotal.toLocaleString('en-US')}
                     </p>
                     <p className="text-[10px] text-slate-500 mt-0.5 truncate">
-                        {language === 'ar' ? 'مبيعات على الحساب' : 'On account sales'}
+                        {todayCreditSales > 0 
+                            ? (language === 'ar' ? `مديونية اليوم: +${todayCreditSales.toLocaleString('en-US')}` : `Today: +${todayCreditSales.toLocaleString('en-US')}`)
+                            : (language === 'ar' ? 'إجمالي مديونيات العملاء' : 'Total clients debt')}
                     </p>
                 </Card>
 
@@ -847,7 +859,7 @@ export const ClosingPage = () => {
                                 </span>
                             </div>
                             <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
-                                <span className="text-[10px] text-slate-400 block font-sans font-bold mb-0.5">{language === 'ar' ? 'المديونيات (آجل):' : 'Debts:'}</span>
+                                <span className="text-[10px] text-slate-400 block font-sans font-bold mb-0.5">{language === 'ar' ? 'المديونيات (المدة كاملة):' : 'Debts (All-Time):'}</span>
                                 <span className="font-bold text-amber-400 text-sm">
                                     {creditTotal.toLocaleString('en-US')}
                                 </span>
