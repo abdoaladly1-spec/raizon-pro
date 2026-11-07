@@ -127,16 +127,22 @@ export const StaffPage = () => {
                 .filter(p => p.type === 'advance')
                 .reduce((acc, p) => acc + p.amount, 0);
 
+            const totalDeductions = payments
+                .filter(p => p.type === 'deduction')
+                .reduce((acc, p) => acc + p.amount, 0);
+
             const totalSalaries = payments
                 .filter(p => p.type === 'salary' || p.type === 'bonus')
                 .reduce((acc, p) => acc + p.amount, 0);
 
-            const netDue = Math.max(0, totalCommissions - totalAdvances);
+            // صافي المستحق = (العمولات + الرواتب/المكافآت) - (السلف + الجزاءات)
+            const netDue = Math.max(0, (totalCommissions + totalSalaries) - (totalAdvances + totalDeductions));
             const invoicesTotal = invoices.reduce((acc, inv) => acc + (inv.total || 0), 0);
 
             map.set(st.id, {
                 totalCommissions,
                 totalAdvances,
+                totalDeductions,
                 totalSalaries,
                 netDue,
                 invoicesCount: invoices.length,
@@ -154,11 +160,13 @@ export const StaffPage = () => {
 
         let totalCommissions = 0;
         let totalAdvances = 0;
+        let totalDeductions = 0;
         let totalNetDue = 0;
 
         staffFinancials.forEach(val => {
             totalCommissions += val.totalCommissions;
             totalAdvances += val.totalAdvances;
+            totalDeductions += (val.totalDeductions || 0);
             totalNetDue += val.netDue;
         });
 
@@ -168,6 +176,7 @@ export const StaffPage = () => {
             inactive: total - active,
             totalCommissions,
             totalAdvances,
+            totalDeductions,
             totalNetDue
         };
     }, [state.staff, staffFinancials]);
@@ -375,6 +384,220 @@ export const StaffPage = () => {
         );
     };
 
+    // فتح مودال تسجيل جزاء / خصم
+    const handleOpenDeductionModal = (staffId?: string) => {
+        const defaultId = staffId || selectedStaffId || (filteredStaff[0]?.id || (state.staff && state.staff[0]?.id) || '');
+        setDeductionStaffId(defaultId);
+        setDeductionAmount('');
+        setDeductionReason('');
+        setDeductionDate(new Date().toISOString().split('T')[0]);
+        setShowDeductionModal(true);
+    };
+
+    // تنفيذ تسجيل الجزاء / الخصم
+    const handleConfirmDeduction = () => {
+        const amt = parseFloat(deductionAmount);
+        const targetStaff = (state.staff || []).find(s => s.id === (deductionStaffId || (state.staff && state.staff[0]?.id))) || selectedStaff || (state.staff && state.staff[0]);
+
+        if (!targetStaff) {
+            addToast(isAr ? 'يرجى اختيار الموظف أولاً' : 'Select staff member', 'error');
+            return;
+        }
+        if (!amt || amt <= 0) {
+            addToast(isAr ? 'يرجى إدخال مبلغ الجزاء بشكل صحيح' : 'Enter valid deduction amount', 'error');
+            return;
+        }
+
+        const dateObj = deductionDate ? new Date(deductionDate) : new Date();
+
+        addStaffPayment({
+            id: crypto.randomUUID(),
+            staffId: targetStaff.id,
+            staffName: targetStaff.name,
+            amount: amt,
+            type: 'deduction',
+            method: 'cash',
+            notes: deductionReason.trim() || (isAr ? 'جزاء / خصم إداري' : 'Administrative penalty/deduction'),
+            date: deductionDate || new Date().toISOString().split('T')[0],
+            timestamp: dateObj.getTime() || Date.now(),
+            createdBy: currentUser?.username || 'Admin'
+        });
+
+        setShowDeductionModal(false);
+        setDeductionAmount('');
+        setDeductionReason('');
+        addToast(
+            isAr
+                ? `تم تسجيل جزاء بمبلغ ${formatNumber(amt)} ج.م على الموظف "${targetStaff.name}" بنجاح`
+                : `Deduction of ${amt} EGP recorded for ${targetStaff.name}`,
+            'success'
+        );
+    };
+
+    // طباعة فاتورة / إيصال مسير راتب واستحقاقات الموظف (Salary Slip)
+    const handlePrintSalarySlip = (staff: Staff) => {
+        const fin = staffFinancials.get(staff.id);
+        const payments = (state.staffPayments || []).filter(p => p.staffId === staff.id);
+        const advances = payments.filter(p => p.type === 'advance');
+        const deductions = payments.filter(p => p.type === 'deduction');
+        const commissions = payments.filter(p => p.type === 'commission' || p.type === 'commission_reversal');
+        const salaries = payments.filter(p => p.type === 'salary');
+
+        const totalComms = fin?.totalCommissions || 0;
+        const totalAdvs = fin?.totalAdvances || 0;
+        const totalDeds = fin?.totalDeductions || 0;
+        const totalSals = fin?.totalSalaries || 0;
+        const netDue = fin?.netDue || 0;
+        const totalGross = totalComms + totalSals;
+        const totalCuts = totalAdvs + totalDeds;
+
+        const win = window.open('', '_blank', 'width=850,height=950');
+        if (!win) {
+            window.print();
+            return;
+        }
+
+        const shopName = state.settings.shopName || 'RaiZon Pro';
+        const shopPhone = state.settings.phone || '';
+        const shopAddress = state.settings.address || '';
+        const printDate = new Date().toLocaleDateString('ar-EG', {
+            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        const slipId = `PAY-${staff.id.slice(0, 6).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+
+        const deductionsRows = deductions.length > 0 ? deductions.map(d => `
+            <tr>
+                <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px;">جزاء: ${d.notes || 'خصم إداري'} (${d.date})</td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; font-family: monospace; font-weight: bold; color: #dc2626; font-size: 13px;">-${Number(d.amount).toLocaleString('en-US')} ج.م</td>
+            </tr>
+        `).join('') : '';
+
+        const advancesRows = advances.length > 0 ? advances.map(a => `
+            <tr>
+                <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px;">سلفة: ${a.notes || 'سلفة نقدية'} (${a.date})</td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; font-family: monospace; font-weight: bold; color: #d97706; font-size: 13px;">-${Number(a.amount).toLocaleString('en-US')} ج.م</td>
+            </tr>
+        `).join('') : '';
+
+        const docHtml = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8">
+    <title>فاتورة راتب ومستحقات — ${staff.name}</title>
+    <style>
+        body { font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 25px; color: #1e293b; background: #fff; }
+        .slip-container { max-width: 750px; margin: 0 auto; border: 2px solid #0f172a; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .header { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 22px; color: #0f172a; font-weight: 800; }
+        .header h2 { margin: 4px 0; font-size: 15px; color: #64748b; font-weight: 700; }
+        .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 20px; font-size: 12px; }
+        .meta-item { display: flex; justify-content: space-between; }
+        .meta-label { color: #64748b; font-weight: bold; }
+        .meta-val { color: #0f172a; font-weight: 800; }
+        .tables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+        .box { border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; }
+        .box-title { background: #f1f5f9; padding: 8px 12px; font-weight: 800; font-size: 13px; border-bottom: 1px solid #cbd5e1; }
+        table { width: 100%; border-collapse: collapse; }
+        .net-card { background: #0f172a; color: #fff; border-radius: 12px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .net-title { font-size: 14px; font-weight: 700; }
+        .net-amount { font-size: 24px; font-weight: 900; font-family: monospace; color: #4ade80; }
+        .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; text-align: center; font-size: 12px; font-weight: bold; color: #475569; }
+        .sign-line { border-top: 1px dashed #94a3b8; padding-top: 8px; margin-top: 50px; }
+        @media print {
+            body { padding: 0; }
+            .slip-container { border: 1px solid #000; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="slip-container">
+        <div class="header">
+            <h1>${shopName}</h1>
+            <h2>فاتورة مسير مفردات الراتب والمستحقات (Payslip)</h2>
+            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">رقم السند: ${slipId} | تاريخ الطباعة: ${printDate}</div>
+            ${shopPhone ? `<div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">هاتف: ${shopPhone} ${shopAddress ? '• العنوان: ' + shopAddress : ''}</div>` : ''}
+        </div>
+
+        <div class="meta-grid">
+            <div class="meta-item"><span class="meta-label">اسم الموظف:</span><span class="meta-val">${staff.name}</span></div>
+            <div class="meta-item"><span class="meta-label">الوظيفة / الدور:</span><span class="meta-val">${getRoleLabel(staff.role)}</span></div>
+            <div class="meta-item"><span class="meta-label">رقم الهاتف:</span><span class="meta-val" dir="ltr">${staff.phone || '—'}</span></div>
+            <div class="meta-item"><span class="meta-label">الرقم القومي:</span><span class="meta-val">${staff.nationalId || '—'}</span></div>
+            <div class="meta-item"><span class="meta-label">نظام العمولة:</span><span class="meta-val">${staff.commissionValue ? `${staff.commissionValue} (${staff.commissionType === 'fixed' ? 'ج.م' : '%'})` : 'راتب ثابت'}</span></div>
+            <div class="meta-item"><span class="meta-label">إجمالي فواتير العمل:</span><span class="meta-val">${fin?.invoicesCount || 0} فاتورة</span></div>
+        </div>
+
+        <div class="tables-grid">
+            <!-- الاستحقاقات -->
+            <div class="box">
+                <div class="box-title" style="color: #15803d;">(+) الاستحقاقات والمكتسبات</div>
+                <table>
+                    <tbody>
+                        ${totalSals > 0 ? `
+                        <tr>
+                            <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px;">الراتب الأساسي / المكافآت</td>
+                            <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; font-family: monospace; font-weight: bold; font-size: 13px;">${totalSals.toLocaleString('en-US')} ج.م</td>
+                        </tr>` : ''}
+                        <tr>
+                            <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 12px;">العمولات المكتسبة على المبيعات</td>
+                            <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; font-family: monospace; font-weight: bold; font-size: 13px; color: #16a34a;">${totalComms.toLocaleString('en-US')} ج.م</td>
+                        </tr>
+                        <tr style="background: #f8fafc; font-weight: 800;">
+                            <td style="padding: 10px 12px; font-size: 12px;">إجمالي الاستحقاقات:</td>
+                            <td style="padding: 10px 12px; text-align: left; font-family: monospace; color: #15803d; font-size: 14px;">${totalGross.toLocaleString('en-US')} ج.م</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- الاستقطاعات والجزاءات -->
+            <div class="box">
+                <div class="box-title" style="color: #b91c1c;">(-) الاستقطاعات والخصومات</div>
+                <table>
+                    <tbody>
+                        ${advancesRows || `<tr><td colspan="2" style="padding: 6px 12px; font-size: 11px; color: #94a3b8;">لا توجد سلف مسحوبة</td></tr>`}
+                        ${deductionsRows || `<tr><td colspan="2" style="padding: 6px 12px; font-size: 11px; color: #94a3b8;">لا توجد جزاءات أو خصومات مسجلة</td></tr>`}
+                        <tr style="background: #f8fafc; font-weight: 800;">
+                            <td style="padding: 10px 12px; font-size: 12px;">إجمالي الخصومات:</td>
+                            <td style="padding: 10px 12px; text-align: left; font-family: monospace; color: #b91c1c; font-size: 14px;">-${totalCuts.toLocaleString('en-US')} ج.م</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- صافي المستحق -->
+        <div class="net-card">
+            <div>
+                <div class="net-title">صافي الراتب والمستحقات واجب الصرف:</div>
+                <div style="font-size: 11px; opacity: 0.8; margin-top: 2px;">(إجمالي الاستحقاقات مطروحاً منها السلف والجزاءات)</div>
+            </div>
+            <div class="net-amount">${netDue.toLocaleString('en-US')} ج.م</div>
+        </div>
+
+        <!-- التوقيعات -->
+        <div class="signatures">
+            <div>
+                <div class="sign-line">توقيع واستلام الموظف بما يفيد المحاسبة</div>
+            </div>
+            <div>
+                <div class="sign-line">توقيع واعتماد الإدارة المالية / المدير</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        window.onload = function() {
+            setTimeout(function() { window.print(); }, 300);
+        };
+    </script>
+</body>
+</html>`;
+
+        win.document.open();
+        win.document.write(docHtml);
+        win.document.close();
+    };
+
     // فتح مودال كشف الحساب
     const handleOpenStatement = (staffId?: string) => {
         const targetId = staffId || selectedStaffId || (filteredStaff[0]?.id || (state.staff && state.staff[0]?.id) || '');
@@ -572,8 +795,8 @@ export const StaffPage = () => {
                         </div>
                     </div>
 
-                    {/* البطاقات المالية الأربعة لحساب الموظف */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* البطاقات المالية لحساب الموظف */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                         <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
                             <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
                                 <span>{isAr ? 'مبيعات الموظف' : 'Sales Revenue'}</span>
@@ -608,17 +831,33 @@ export const StaffPage = () => {
 
                         <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
                             <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
-                                <span>{isAr ? 'إجمالي السلف المسحوبة' : 'Total Advances'}</span>
+                                <span>{isAr ? 'إجمالي السلف' : 'Total Advances'}</span>
                                 <Banknote size={16} className="text-amber-500" />
                             </div>
                             <div className="mt-2 flex items-baseline gap-1">
-                                <span className="text-2xl font-bold font-mono text-rose-500">
+                                <span className="text-2xl font-bold font-mono text-amber-500">
                                     {formatNumber(currentStaffFin?.totalAdvances || 0)}
                                 </span>
                                 <span className="text-xs text-slate-400">ج.م</span>
                             </div>
                             <p className="text-[11px] text-slate-400 mt-1">
-                                {isAr ? 'تُخصم تلقائياً من رصيد المستحقات' : 'Deducted from due balance'}
+                                {isAr ? 'سلف نقدية مسحوبة' : 'Deducted from balance'}
+                            </p>
+                        </Card>
+
+                        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+                            <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
+                                <span>{isAr ? 'إجمالي الجزاءات' : 'Penalties'}</span>
+                                <AlertTriangle size={16} className="text-rose-500" />
+                            </div>
+                            <div className="mt-2 flex items-baseline gap-1">
+                                <span className="text-2xl font-bold font-mono text-rose-500">
+                                    {formatNumber(currentStaffFin?.totalDeductions || 0)}
+                                </span>
+                                <span className="text-xs text-slate-400">ج.م</span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 mt-1">
+                                {isAr ? 'خصومات وجزاءات إدارية' : 'Administrative deductions'}
                             </p>
                         </Card>
 
@@ -1608,6 +1847,7 @@ export const StaffPage = () => {
                                 <option value="commission">{isAr ? 'صرف عمولات مبيعات / تصفية مستحق' : 'Commission'}</option>
                                 <option value="bonus">{isAr ? 'مكافأة تشجيعية / حافز' : 'Bonus'}</option>
                                 <option value="advance">{isAr ? 'سلفة على الراتب' : 'Advance'}</option>
+                                <option value="deduction">{isAr ? 'خصم / جزاء إداري' : 'Deduction / Penalty'}</option>
                             </select>
                         </div>
 
@@ -1678,6 +1918,92 @@ export const StaffPage = () => {
                 </ModalShell>
             )}
 
+            {/* مودال تسجيل جزاء / خصم على الموظف */}
+            {showDeductionModal && (
+                <ModalShell
+                    title={isAr ? 'تسجيل جزاء / خصم إداري على موظف' : 'Record Staff Penalty / Deduction'}
+                    onClose={() => setShowDeductionModal(false)}
+                    maxWidth="max-w-sm"
+                >
+                    <div className="space-y-3.5 text-right" dir={isAr ? 'rtl' : 'ltr'}>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {isAr ? 'الموظف *' : 'Staff Member *'}
+                            </label>
+                            <select
+                                value={deductionStaffId}
+                                onChange={(e) => setDeductionStaffId(e.target.value)}
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-bold outline-none focus:border-rose-500"
+                            >
+                                {(state.staff || []).map(st => (
+                                    <option key={st.id} value={st.id}>
+                                        {st.name} ({getRoleLabel(st.role)})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {isAr ? 'مبلغ الجزاء / الخصم (ج.م) *' : 'Deduction Amount (EGP) *'}
+                            </label>
+                            <input
+                                type="number"
+                                min="1"
+                                step="any"
+                                value={deductionAmount}
+                                onChange={(e) => setDeductionAmount(e.target.value)}
+                                placeholder="0.00"
+                                autoFocus
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-base font-bold font-mono outline-none focus:border-rose-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {isAr ? 'تاريخ تسجيل الجزاء' : 'Date'}
+                            </label>
+                            <input
+                                type="date"
+                                value={deductionDate}
+                                onChange={(e) => setDeductionDate(e.target.value)}
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-mono outline-none focus:border-rose-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {isAr ? 'سبب / بيان الجزاء *' : 'Reason / Notes *'}
+                            </label>
+                            <textarea
+                                rows={2}
+                                value={deductionReason}
+                                onChange={(e) => setDeductionReason(e.target.value)}
+                                placeholder={isAr ? 'مثال: تأخير عن موعد العمل، إهمال في عهدة، مخالفة التعليمات...' : 'e.g. Late arrival, negligence...'}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs outline-none focus:border-rose-500"
+                            />
+                        </div>
+
+                        <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                            <Button
+                                variant="danger"
+                                onClick={handleConfirmDeduction}
+                                className="flex-1 justify-center py-2.5 font-bold"
+                            >
+                                {isAr ? 'تأكيد تسجيل الجزاء' : 'Confirm Deduction'}
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                onClick={() => setShowDeductionModal(false)}
+                                className="flex-1 justify-center"
+                            >
+                                {isAr ? 'إلغاء' : 'Cancel'}
+                            </Button>
+                        </div>
+                    </div>
+                </ModalShell>
+            )}
+
             {/* مودال كشف حساب الموظف للطباعة */}
             {showStatementModal && statementStaff && (
                 <ModalShell
@@ -1718,6 +2044,10 @@ export const StaffPage = () => {
                                     <span>{isAr ? '(-) إجمالي السلف والمسحوبات:' : '(-) Drawn Advances:'}</span>
                                     <span className="font-mono">-{formatNumber(statementStaffFin?.totalAdvances || 0)} ج.م</span>
                                 </div>
+                                <div className="flex justify-between font-bold text-rose-700">
+                                    <span>{isAr ? '(-) إجمالي الجزاءات والخصومات:' : '(-) Penalties & Deductions:'}</span>
+                                    <span className="font-mono">-{formatNumber(statementStaffFin?.totalDeductions || 0)} ج.م</span>
+                                </div>
                                 <div className="flex justify-between font-extrabold text-sm border-t border-slate-300 pt-2 text-emerald-700">
                                     <span>{isAr ? '(=) صافي المستحق للصرف الآن:' : '(=) Net Outstanding Due:'}</span>
                                     <span className="font-mono">{formatNumber(statementStaffFin?.netDue || 0)} ج.م</span>
@@ -1735,14 +2065,25 @@ export const StaffPage = () => {
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-2 pt-2">
-                            <Button variant="secondary" onClick={() => setShowStatementModal(false)}>
-                                {isAr ? 'إغلاق' : 'Close'}
+                        <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                            <Button
+                                variant="secondary"
+                                onClick={() => handlePrintSalarySlip(statementStaff)}
+                                className="flex items-center gap-1.5 text-xs font-bold"
+                            >
+                                <Printer size={15} className="text-emerald-500" />
+                                <span>{isAr ? 'طباعة فاتورة الراتب (Payslip)' : 'Print Salary Slip'}</span>
                             </Button>
-                            <Button variant="primary" onClick={() => window.print()} className="flex items-center gap-1.5">
-                                <Printer size={15} />
-                                <span>{isAr ? 'طباعة كشف الحساب' : 'Print Statement'}</span>
-                            </Button>
+
+                            <div className="flex items-center gap-2">
+                                <Button variant="secondary" onClick={() => setShowStatementModal(false)}>
+                                    {isAr ? 'إغلاق' : 'Close'}
+                                </Button>
+                                <Button variant="primary" onClick={() => window.print()} className="flex items-center gap-1.5">
+                                    <Printer size={15} />
+                                    <span>{isAr ? 'طباعة كشف الحساب' : 'Print Statement'}</span>
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </ModalShell>

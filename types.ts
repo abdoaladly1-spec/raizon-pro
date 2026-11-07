@@ -397,6 +397,7 @@ export interface Staff {
   commissionValue?: number;
   nationalId?: string;
   address?: string;
+  baseSalary?: number;
 }
 
 export interface Expense {
@@ -427,7 +428,7 @@ export interface StaffPayment {
   staffId: string;
   staffName: string;
   amount: number;
-  type: 'salary' | 'commission' | 'commission_reversal' | 'bonus' | 'advance';
+  type: 'salary' | 'commission' | 'commission_reversal' | 'bonus' | 'advance' | 'deduction';
   method: 'cash' | 'transfer' | 'card';
   notes?: string;
   date: string;
