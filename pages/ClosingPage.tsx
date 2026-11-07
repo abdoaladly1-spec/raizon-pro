@@ -234,19 +234,26 @@ export const ClosingPage = () => {
     const updateBillCount = (denom: number, count: number) => {
         const next = { ...billCounts, [denom]: Math.max(0, count) };
         setBillCounts(next);
-        const sum = Object.entries(next).reduce((acc, [d, c]) => acc + (Number(d) * Number(c)), 0);
-        setActualCash(String(sum));
+        const cashSum = Object.entries(next).reduce((acc, [d, c]) => acc + (Number(d) * Number(c)), 0);
+        // عند استخدام عداد فئات النقدية للدرج، يتم جمع نقدية الدرج مع المحافظ والبطاقات والمديونيات ليكون الناتج هو الإجمالي
+        const totalCalculated = cashSum + walletTotal + cardTotal + effectiveCreditForClosing;
+        setActualCash(String(totalCalculated));
     };
 
-    const actualCashNum = parseFloat(actualCash || '0');
-    const diff = (actualCash === '' ? 0 : actualCashNum) - expectedCash;
-    // المبلغ النهائي الفعلي للتقفيل الشامل
-    const actualTotalClosing = actualCashNum + walletTotal + cardTotal + effectiveCreditForClosing;
-    // المبلغ النهائي للتقفيل المعتمد للعرض
-    const finalClosingAmount = actualCash !== '' ? actualTotalClosing : expectedTotalClosing;
+    // إجمالي وسائل الدفع الإلكترونية والمديونيات المحتسبة (بدون نقدية الدرج)
+    const nonCashTotal = walletTotal + cardTotal + effectiveCreditForClosing;
+
+    const actualInputVal = parseFloat(actualCash || '0');
+    // المستخدم يقوم بإدخال المبلغ الإجمالي الفعلي للتقفيل الشامل
+    const actualTotalClosing = actualCash !== '' ? actualInputVal : expectedTotalClosing;
+    const diff = (actualCash === '' ? 0 : actualTotalClosing) - expectedTotalClosing;
+    const finalClosingAmount = actualTotalClosing;
     const status: ClosingReport['status'] = actualCash === ''
         ? 'matched'
         : (diff === 0 ? 'matched' : diff < 0 ? 'shortage' : 'surplus');
+
+    // رصيد النقدية الفعلي المحسوب في الدرج = الإجمالي الفعلي المكتوب ناقص المبالغ غير النقدية (محافظ + بطاقات + مديونيات)
+    const actualCashNum = Math.max(0, actualTotalClosing - nonCashTotal);
 
     // يظل رصيد الدرج كما هو ثابتاً للوردية القادمة طالما لم يتم إيداع أو سحب عليه
     const retainedInDrawer = actualCashNum;
@@ -731,7 +738,7 @@ export const ClosingPage = () => {
                                 </p>
                             </div>
                             <div className="text-2xl sm:text-3xl font-black text-amber-300 font-mono">
-                                {finalClosingAmount.toLocaleString('en-US')} <span className="text-xs font-bold text-amber-400/80">{t('egp')}</span>
+                                {expectedTotalClosing.toLocaleString('en-US')} <span className="text-xs font-bold text-amber-400/80">{t('egp')}</span>
                             </div>
                         </div>
 
@@ -805,14 +812,9 @@ export const ClosingPage = () => {
                                 type="number"
                                 step="any"
                                 value={actualCash}
-                                onChange={(e) => {
-                                    setActualCash(e.target.value);
-                                    if (!retainedInDrawerInput) {
-                                        setRetainedInDrawerInput(e.target.value);
-                                    }
-                                }}
+                                onChange={(e) => setActualCash(e.target.value)}
                                 className="w-full px-5 py-4 text-3xl font-bold rounded-2xl border-2 border-primary-500/40 bg-slate-800 text-slate-100 focus:border-primary-500 outline-none transition-all font-mono"
-                                placeholder="0.00"
+                                placeholder={expectedTotalClosing > 0 ? expectedTotalClosing.toFixed(2) : "0.00"}
                                 autoFocus
                             />
                             <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
@@ -832,12 +834,12 @@ export const ClosingPage = () => {
                         } flex items-center justify-between`}>
                             <div className="space-y-0.5">
                                 <span className="text-xs font-bold block">
-                                    {status === 'matched' && (language === 'ar' ? 'الدرج مطابق تماماً' : 'Perfect Match')}
-                                    {status === 'shortage' && (language === 'ar' ? 'عجز في الدرج' : 'Cash Shortage')}
-                                    {status === 'surplus' && (language === 'ar' ? 'فائض في الدرج' : 'Cash Surplus')}
+                                    {status === 'matched' && (language === 'ar' ? 'إجمالي التقفيل مطابق تماماً' : 'Perfect Match')}
+                                    {status === 'shortage' && (language === 'ar' ? 'عجز في إجمالي التقفيل' : 'Shortage')}
+                                    {status === 'surplus' && (language === 'ar' ? 'فائض في إجمالي التقفيل' : 'Surplus')}
                                 </span>
                                 <span className="text-[11px] opacity-80">
-                                    {language === 'ar' ? `المتوقع: ${expectedCash.toLocaleString('en-US')} ج.م` : `Expected: ${expectedCash}`}
+                                    {language === 'ar' ? `إجمالي التقفيل المطلوب: ${expectedTotalClosing.toLocaleString('en-US')} ج.م` : `Expected Total: ${expectedTotalClosing}`}
                                 </span>
                             </div>
 
