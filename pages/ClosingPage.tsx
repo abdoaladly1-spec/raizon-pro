@@ -652,15 +652,16 @@ export const ClosingPage = () => {
                     </p>
                 </Card>
 
-                <Card className="bg-slate-900/60 border border-blue-500/30 p-3.5">
-                    <span className="text-xs font-bold text-blue-400 block mb-1">
-                        {language === 'ar' ? 'رصيد البطاقات' : 'Cards'}
+                {/* المصروفات (بدلاً من رصيد البطاقات) */}
+                <Card className="bg-slate-900/60 border border-rose-500/30 p-3.5">
+                    <span className="text-xs font-bold text-rose-400 block mb-1">
+                        {language === 'ar' ? 'المصروفات' : 'Expenses'}
                     </span>
-                    <p className="text-lg font-bold text-blue-400 font-mono">
-                        +{cardTotal.toLocaleString('en-US')}
+                    <p className="text-lg font-bold text-rose-400 font-mono">
+                        -{totalCashDeductions.toLocaleString('en-US')}
                     </p>
                     <p className="text-[10px] text-slate-500 mt-0.5 truncate">
-                        {language === 'ar' ? 'فيزا وبطاقات بنكية' : 'Visa & Cards'}
+                        {todayExpenses.length} {language === 'ar' ? 'مصروفات مسجلة' : 'expenses recorded'}
                     </p>
                 </Card>
 
@@ -683,16 +684,22 @@ export const ClosingPage = () => {
                     </p>
                 </Card>
 
-                <Card className="bg-slate-900/60 border border-rose-500/30 p-3.5">
-                    <span className="text-xs font-bold text-rose-400 block mb-1">
-                        {language === 'ar' ? 'المصروفات والمسحوبات' : 'Deductions'}
+                {/* الإيداعات والمسحوبات (الإيداع فوق والمسحوبات أسفل وبينهما خط فاصل) */}
+                <Card className="bg-slate-900/60 border border-slate-700/80 p-3">
+                    <span className="text-xs font-bold text-slate-300 block mb-1">
+                        {language === 'ar' ? 'الإيداعات والمسحوبات' : 'Deposits & Withdrawals'}
                     </span>
-                    <p className="text-lg font-bold text-rose-400 font-mono">
-                        -{(totalCashDeductions + withdrawals).toLocaleString('en-US')}
-                    </p>
-                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">
-                        {todayExpenses.length} {language === 'ar' ? 'مصاريف وسحوبات' : 'expenses'}
-                    </p>
+                    <div className="space-y-1 text-xs font-mono">
+                        <div className="flex items-center justify-between text-emerald-400">
+                            <span className="text-[10px] font-sans font-semibold text-slate-400">{language === 'ar' ? 'الإيداعات:' : 'Deposits:'}</span>
+                            <span className="font-bold">+{deposits.toLocaleString('en-US')}</span>
+                        </div>
+                        <div className="border-t border-slate-700/80 my-1"></div>
+                        <div className="flex items-center justify-between text-rose-400">
+                            <span className="text-[10px] font-sans font-semibold text-slate-400">{language === 'ar' ? 'المسحوبات:' : 'Withdrawals:'}</span>
+                            <span className="font-bold">-{withdrawals.toLocaleString('en-US')}</span>
+                        </div>
+                    </div>
                 </Card>
             </div>
 
@@ -743,7 +750,7 @@ export const ClosingPage = () => {
                         </div>
 
                         {/* تفاصيل المبالغ المكونة لإجمالي التقفيل */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-mono">
                             <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
                                 <span className="text-[10px] text-slate-400 block font-sans font-bold mb-0.5">{language === 'ar' ? 'رصيد الدرج:' : 'Drawer:'}</span>
                                 <span className="font-bold text-emerald-400 text-sm">
@@ -757,15 +764,9 @@ export const ClosingPage = () => {
                                 </span>
                             </div>
                             <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
-                                <span className="text-[10px] text-slate-400 block font-sans font-bold mb-0.5">{language === 'ar' ? 'رصيد البطاقات:' : 'Cards:'}</span>
-                                <span className="font-bold text-blue-400 text-sm">
-                                    {cardTotal.toLocaleString('en-US')}
-                                </span>
-                            </div>
-                            <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
                                 <span className="text-[10px] text-slate-400 block font-sans font-bold mb-0.5">{language === 'ar' ? 'المديونيات (المدة كاملة):' : 'Debts (All-Time):'}</span>
-                                <span className="font-bold text-amber-400 text-sm">
-                                    {creditTotal.toLocaleString('en-US')}
+                                <span className={`font-bold text-sm ${includeDebtsInClosing ? 'text-amber-400' : 'text-slate-500 line-through'}`}>
+                                    {includeDebtsInClosing ? creditTotal.toLocaleString('en-US') : '0 (مستبعد)'}
                                 </span>
                             </div>
                         </div>
@@ -1039,10 +1040,12 @@ export const ClosingPage = () => {
                                 <span>رصيد المحافظ:</span>
                                 <span className="font-bold text-purple-400">+{walletTotal.toLocaleString('en-US')} ج.م</span>
                             </div>
-                            <div className="flex justify-between text-slate-300">
-                                <span>رصيد البطاقات:</span>
-                                <span className="font-bold text-blue-400">+{cardTotal.toLocaleString('en-US')} ج.م</span>
-                            </div>
+                            {cardTotal > 0 && (
+                                <div className="flex justify-between text-slate-300">
+                                    <span>رصيد البطاقات:</span>
+                                    <span className="font-bold text-blue-400">+{cardTotal.toLocaleString('en-US')} ج.م</span>
+                                </div>
+                            )}
                             <div className={`flex justify-between ${includeDebtsInClosing ? 'text-amber-300 font-bold' : 'text-slate-500 line-through'}`}>
                                 <span>المديونيات:</span>
                                 <span>{includeDebtsInClosing ? `+${creditTotal.toLocaleString('en-US')} ج.م` : 'مستبعدة (0 ج.م)'}</span>
