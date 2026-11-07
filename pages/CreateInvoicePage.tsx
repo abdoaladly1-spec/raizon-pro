@@ -1369,8 +1369,8 @@ export const CreateInvoice = ({ onClose }: any) => {
                 maxWidth="max-w-xl"
             >
                 {/* إجمالي الفاتورة المطلوب */}
-                <div className="bg-primary-50 dark:bg-primary-950/40 border border-primary-200 dark:border-primary-800 rounded-2xl p-4 mb-4 text-center">
-                    <span className="text-xs font-bold text-primary-600 dark:text-primary-400 block mb-1">
+                <div className="bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 mb-4 text-center">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-1">
                         {language === 'ar' ? 'إجمالي المبلغ المطلوب سداده' : t('total')}
                     </span>
                     <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">
@@ -1537,26 +1537,26 @@ export const CreateInvoice = ({ onClose }: any) => {
 
                 {/* تفاصيل المديونية إذا كان هناك جزء على الحساب */}
                 {num(partCredit) > 0 && (
-                    <div className="p-3.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 mb-3 space-y-2 animate-fade-in">
+                    <div className="p-3.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 mb-3 space-y-2 animate-fade-in">
                         <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-purple-900 dark:text-purple-200">{language === 'ar' ? 'حساب العميل:' : 'Customer Account:'}</span>
+                            <span className="font-bold text-slate-700 dark:text-slate-300">{language === 'ar' ? 'حساب العميل:' : 'Customer Account:'}</span>
                             <span className="font-bold text-slate-900 dark:text-white">{customerName || (language === 'ar' ? 'يرجى كتابة اسم العميل' : 'Unspecified')}</span>
                         </div>
-                        <div className="flex items-center justify-between text-xs pt-1 border-t border-purple-200/60 dark:border-purple-800/60">
-                            <span className="text-slate-600 dark:text-slate-400">{language === 'ar' ? 'المديونية السابقة:' : 'Prior Debt:'}</span>
+                        <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/80 dark:border-slate-700/80">
+                            <span className="text-slate-500 dark:text-slate-400">{language === 'ar' ? 'المديونية السابقة:' : 'Prior Debt:'}</span>
                             <span className="font-bold font-mono text-slate-800 dark:text-slate-200">
                                 {Number(existingCustomer?.balance || 0).toLocaleString('en-US')} {t('egp')}
                             </span>
                         </div>
                         <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-purple-700 dark:text-purple-300">{language === 'ar' ? 'المبلغ المضاف على الحساب:' : 'Added to Account:'}</span>
-                            <span className="font-bold font-mono text-purple-700 dark:text-purple-300">
+                            <span className="font-bold text-slate-700 dark:text-slate-300">{language === 'ar' ? 'المبلغ المضاف على الحساب:' : 'Added to Account:'}</span>
+                            <span className="font-bold font-mono text-slate-900 dark:text-slate-100">
                                 +{num(partCredit).toLocaleString('en-US')} {t('egp')}
                             </span>
                         </div>
-                        <div className="flex items-center justify-between text-xs font-bold pt-1.5 border-t border-purple-200 dark:border-purple-800">
-                            <span className="text-purple-900 dark:text-purple-200">{language === 'ar' ? 'إجمالي المديونية الجديدة:' : 'New Balance:'}</span>
-                            <span className="font-black font-mono text-sm text-purple-600 dark:text-purple-400">
+                        <div className="flex items-center justify-between text-xs font-bold pt-1.5 border-t border-slate-200 dark:border-slate-700">
+                            <span className="text-slate-800 dark:text-slate-200">{language === 'ar' ? 'إجمالي المديونية الجديدة:' : 'New Balance:'}</span>
+                            <span className="font-black font-mono text-sm text-slate-900 dark:text-slate-100">
                                 {((existingCustomer?.balance || 0) + num(partCredit)).toLocaleString('en-US')} {t('egp')}
                             </span>
                         </div>
@@ -1565,10 +1565,10 @@ export const CreateInvoice = ({ onClose }: any) => {
 
                 {/* النقد المستلم وحاسبة الباقي (إذا كان هناك جزء كاش) */}
                 {draftCashPart > 0 && (
-                    <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 mb-3 animate-fade-in">
+                    <div className="bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl p-3 mb-3 animate-fade-in">
                         <div className="flex items-center justify-between gap-2 mb-2">
-                            <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">{language === 'ar' ? 'المبلغ المطلوب سداده نقداً (كاش):' : t('cash_for_invoice')}:</span>
-                            <span className="font-black text-emerald-800 dark:text-emerald-200 font-mono">{draftCashPart.toLocaleString('en-US')} {t('egp')}</span>
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{language === 'ar' ? 'المبلغ المطلوب سداده نقداً (كاش):' : t('cash_for_invoice')}:</span>
+                            <span className="font-black text-slate-900 dark:text-white font-mono">{draftCashPart.toLocaleString('en-US')} {t('egp')}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <label className="text-xs font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('cash_received')}:</label>
@@ -1578,13 +1578,13 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 step="0.01"
                                 value={cashReceived}
                                 onChange={(e) => setCashReceived(e.target.value)}
-                                className="flex-1 px-3 py-2 text-center font-bold text-base rounded-lg border-2 border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900"
+                                className="flex-1 px-3 py-2 text-center font-bold text-base rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-slate-500"
                                 placeholder="0.00"
                             />
                             <button
                                 type="button"
                                 onClick={() => setCashReceived(String(draftCashPart))}
-                                className="px-3 py-2 text-xs font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 whitespace-nowrap active:scale-95 transition-all"
+                                className="px-3 py-2 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white whitespace-nowrap active:scale-95 transition-all cursor-pointer"
                             >
                                 {t('exact_amount')}
                             </button>
@@ -1596,7 +1596,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                     key={val}
                                     type="button"
                                     onClick={() => setCashReceived(String(val))}
-                                    className="px-2.5 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors"
+                                    className="px-2.5 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                                 >
                                     {val} {t('egp')}
                                 </button>
@@ -1609,21 +1609,21 @@ export const CreateInvoice = ({ onClose }: any) => {
                 <div className="rounded-xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-800 text-xs mb-4 bg-slate-50/50 dark:bg-slate-800/30">
                     <div className="flex justify-between px-3 py-2">
                         <span className="text-slate-500">{t('paid_total')}</span>
-                        <span className="font-bold font-mono">{round2(paymentCheck.info.total).toLocaleString('en-US')} {t('egp')}</span>
+                        <span className="font-bold font-mono text-slate-900 dark:text-slate-100">{round2(paymentCheck.info.total).toLocaleString('en-US')} {t('egp')}</span>
                     </div>
-                    <div className={`flex justify-between px-3 py-2 ${paymentRemaining !== 0 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 font-bold' : ''}`}>
+                    <div className={`flex justify-between px-3 py-2 ${paymentRemaining !== 0 ? 'bg-amber-500/10 text-amber-400 font-bold' : ''}`}>
                         <span>{t('payment_remaining')}</span>
                         <span className="font-mono">{paymentRemaining.toLocaleString('en-US')} {t('egp')}</span>
                     </div>
                     {draftCashPart > 0 && (
                         <div className="flex justify-between px-3 py-2">
                             <span className="text-slate-500">{t('change_due')}</span>
-                            <span className="font-bold text-sky-600 dark:text-sky-400 font-mono">{paymentChange.toLocaleString('en-US')} {t('egp')}</span>
+                            <span className="font-bold text-slate-900 dark:text-slate-100 font-mono">{paymentChange.toLocaleString('en-US')} {t('egp')}</span>
                         </div>
                     )}
                     <div className="flex justify-between px-3 py-2">
                         <span className="text-slate-500">{t('drawer_increase')}</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">+{paymentCheck.info.cashPaid.toLocaleString('en-US')} {t('egp')}</span>
+                        <span className="font-bold text-slate-900 dark:text-slate-100 font-mono">+{paymentCheck.info.cashPaid.toLocaleString('en-US')} {t('egp')}</span>
                     </div>
                 </div>
 
