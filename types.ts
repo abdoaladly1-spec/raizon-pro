@@ -201,7 +201,7 @@ export interface ReturnItem {
 }
 
 /** حالة سجل المرتجع */
-export type ReturnStatus = 'pending' | 'approved' | 'rejected';
+export type ReturnStatus = 'approved' | 'cancelled' | 'rejected' | 'pending';
 
 /**
  * سجل مرتجع مستقل (جزئي أو كامل) مرتبط بالفاتورة الأصلية.

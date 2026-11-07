@@ -45,6 +45,7 @@ interface AppContextType {
     reason: string;
     notes?: string;
   }) => { ok: boolean; error?: string; record?: ReturnRecord };
+  cancelReturn: (returnUid: string) => { ok: boolean; error?: string };
   // Items & Categories
   addItem: (item: Item) => void;
   updateItem: (item: Item) => void;
@@ -165,6 +166,8 @@ const translations = {
     return_full: 'كامل',
     return_status_pending: 'معلّق',
     return_status_approved: 'معتمد',
+    return_status_cancelled: 'ملغي',
+    return_cancelled: 'تم إلغاء المرتجع وإعادة الأصناف للفاتورة بنجاح',
     return_status_rejected: 'مرفوض',
     return_rejected: 'رفض السيرفر المرتجع',
     return_wait_confirm: 'الاعتماد وصرف المبلغ يتطلبان تأكيد السيرفر',
@@ -988,6 +991,8 @@ const translations = {
     return_full: 'Full',
     return_status_pending: 'Pending',
     return_status_approved: 'Approved',
+    return_status_cancelled: 'Cancelled',
+    return_cancelled: 'Return cancelled successfully',
     return_status_rejected: 'Rejected',
     return_rejected: 'Server rejected the return',
     return_wait_confirm: 'Approval and payout require server confirmation',
@@ -3076,7 +3081,7 @@ export const AppProvider = ({ children }: any) => {
       cashRefund: validation.cashRefund,
       type: validation.type,
       // مع سيرفر مُهيّأ: معلّق حتى يرد السيرفر 200؛ بدونه: تأكيد محلي فوري
-      status: state.settings.serverUrl ? 'pending' : 'approved',
+      status: 'approved', // اعتماد فوري لكافة المرتجعات دون تعليق
       reason: input.reason || '',
       notes: input.notes,
       staffId: currentUser?.username || '',
@@ -3099,11 +3104,8 @@ export const AppProvider = ({ children }: any) => {
       deleted: 0,
     };
 
-    if (record.status === 'approved') {
-      setState(prev => applyReturnToState(prev, record, -1));
-    } else {
-      setState(prev => ({ ...prev, returns: [record, ...prev.returns] }));
-    }
+    // تطبيق آثار المرتجع المعتمد فورياً في حالة النظام
+    setState(prev => applyReturnToState(prev, record, -1));
 
     if (state.settings.serverUrl) {
       try {
@@ -3124,6 +3126,118 @@ export const AppProvider = ({ children }: any) => {
     );
     return { ok: true, record };
   };
+  /**
+   * إلغاء مرتجع معتمد وإعادة الأصناف إلى فاتورة العميل:
+   * - يتم رفع الإيرادات مجدداً تلقائياً (لأن المرتجع لم يعد معتمداً)
+   * - إعادة المنتجات المسترجعة إلى العميل وخصمها من المخزون
+   * - استعادة نقاط الولاء والإنفاق للعميل
+   * - استعادة عمولات الموظف
+   * - تسجيل العمليتين في سجل النظام (Audit Log)
+   */
+  const cancelReturn = (returnUid: string): { ok: boolean; error?: string } => {
+    const returnIndex = state.returns.findIndex(r => r.uid === returnUid || String(r.id) === String(returnUid));
+    if (returnIndex < 0) return { ok: false, error: 'return_not_found' };
+    const rec = state.returns[returnIndex];
+    if (rec.status === 'cancelled') return { ok: false, error: 'return_already_cancelled' };
+
+    setState(prev => {
+      const idx = prev.returns.findIndex(r => r.uid === rec.uid);
+      if (idx < 0) return prev;
+      const target = prev.returns[idx];
+
+      // 1) إعادة المنتجات المرتجعة للعميل (خصمها من المخزون بعد أن كانت قد أُعيدت إليه)
+      const restockToRevert = new Map<string, number>();
+      for (const it of target.items || []) {
+        if (it.restocked && it.itemId && it.returnable && it.trackStock && it.type !== 'service') {
+          restockToRevert.set(it.itemId, (restockToRevert.get(it.itemId) || 0) + (Number(it.quantity) || 0));
+        }
+      }
+
+      const items = prev.items.map(i =>
+        restockToRevert.has(i.id)
+          ? { ...i, quantity: Math.max(0, (Number(i.quantity) || 0) - (restockToRevert.get(i.id) || 0)) }
+          : i
+      );
+
+      const history = [...prev.inventoryHistory];
+      for (const [itemId, qty] of restockToRevert) {
+        history.push({
+          id: `unret:${target.uid}:${itemId}:${Date.now()}`,
+          itemId,
+          type: 'adjustment',
+          quantityChange: -qty,
+          reason: `إلغاء مرتجع وإعادة الصنف لفاتورة العميل #${target.invoiceId}`,
+          timestamp: Date.now(),
+          userId: currentUser?.name || currentUser?.username || 'system',
+          locationId: target.locationId || prev.settings.currentLocationId || '1',
+        });
+      }
+
+      // 2) استعادة نقاط الولاء والإنفاق للعميل
+      let customers = prev.customers;
+      if (target.customerId && Number(target.refundAmount) > 0) {
+        const reversed = Number(target.pointsReversed) || 0;
+        customers = prev.customers.map(c => {
+          if (c.id !== target.customerId) return c;
+          return {
+            ...c,
+            totalSpent: (Number(c.totalSpent) || 0) + (Number(target.refundAmount) || 0),
+            loyaltyPoints: (Number(c.loyaltyPoints) || 0) + reversed,
+          };
+        });
+      }
+
+      // 3) استعادة العمولات للموظف (حذف عكس العمولة)
+      let staffPayments = prev.staffPayments.filter(p => p.reversedBy !== target.uid && !p.id.startsWith(`${target.uid}:`));
+      staffPayments = staffPayments.map(p => {
+        if (p.reversedBy === target.uid || (p.reversedAmount && p.reversedAmount > 0)) {
+          return {
+            ...p,
+            reversedAmount: 0,
+            reversedBy: undefined,
+          };
+        }
+        return p;
+      });
+
+      // 4) تحديث حالة المرتجع إلى 'cancelled'
+      const updatedReturn: ReturnRecord = {
+        ...target,
+        status: 'cancelled',
+        updatedAt: Date.now(),
+      };
+
+      const returns = prev.returns.map((r, i) => (i === idx ? updatedReturn : r));
+
+      return {
+        ...prev,
+        items,
+        inventoryHistory: history,
+        customers,
+        staffPayments,
+        returns,
+      };
+    });
+
+    // 5) تسجيل العمليتين في سجل النظام
+    // العملية الأولى: إلغاء المرتجع المالي ورفع الإيرادات مجدداً بقيمة المرتجع
+    addAuditLog(
+      'Return',
+      `Cancel Return #${rec.id} for invoice #${rec.invoiceId}: +${rec.refundAmount} EGP restored to revenue`,
+      `إلغاء المرتجع المالي رقم #${rec.id} ورفع الإيرادات مجدداً بمقدار ${rec.refundAmount} ج.م للفاتورة #${rec.invoiceId}`
+    );
+
+    // العملية الثانية: إعادة إضافة المنتج أو الخدمة مجدداً لفاتورة العميل
+    const itemsList = (rec.items || []).map(it => `${it.name} (${it.quantity})`).join('، ');
+    addAuditLog(
+      'Invoice',
+      `Restored returned items to customer invoice #${rec.invoiceId}`,
+      `إعادة الأصناف والخدمات (${itemsList || 'بنود الفاتورة'}) مجدداً إلى فاتورة العميل #${rec.invoiceId} (${rec.customerName || 'عميل'})`
+    );
+
+    return { ok: true };
+  };
+
 
   const holdInvoice = (invoice: Omit<Invoice, 'id'>) => {
     const newId = state.heldInvoices.length + 1;
@@ -3512,7 +3626,7 @@ export const AppProvider = ({ children }: any) => {
   return (
     <AppContext.Provider value={{
       language, toggleLanguage, currentUser, login, loginWithPin, logout, changeOwnPassword, setQuickPin, state,
-      addInvoice, updateInvoice, createReturn, addCustomer, updateCustomer, deleteCustomer,
+      addInvoice, updateInvoice, createReturn, cancelReturn, addCustomer, updateCustomer, deleteCustomer,
       holdInvoice, restoreInvoice, deleteHeldInvoice,
       addItem, updateItem, deleteItem,
       addCategory, updateCategory, deleteCategory,

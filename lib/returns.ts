@@ -48,13 +48,13 @@ export const saleLineAmounts = (invoice: Invoice, line: InvoiceItem, quantity: n
     return { gross, discountAmount, taxAmount, refundAmount: round2(taxable + taxAmount) };
 };
 
-/** المرتجعات المعتمدة/المعلّقة لفاتورة (المرفوضة والممحوّة لا تُحتسب) */
+/** المرتجعات المعتمدة والفعّالة لفاتورة (الملغاة والمرفوضة والممحوّة لا تُحتسب) */
 export const returnsOfInvoice = (invoice: Invoice | undefined | null, returns: ReturnRecord[]): ReturnRecord[] => {
     if (!invoice) return [];
     const key = invoice.uid || String(invoice.id);
     return (returns || []).filter(r =>
         !r.deleted &&
-        r.status !== 'rejected' &&
+        r.status === 'approved' &&
         (r.invoiceUid === key || String(r.invoiceId) === String(invoice.id))
     );
 };

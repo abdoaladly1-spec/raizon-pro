@@ -12,9 +12,11 @@ const METHODS: PaymentPart['method'][] = ['cash', 'card', 'wallet', 'instapay'];
 const statusTone = (status: ReturnRecord['status']) =>
     status === 'approved'
         ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-        : status === 'pending'
-            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-            : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
+        : status === 'cancelled'
+            ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+            : status === 'pending'
+                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
 
 type SortMode = 'newest' | 'oldest' | 'lowest_count' | 'highest_count' | 'lowest_price' | 'highest_price';
 const SORT_KEYS: SortMode[] = ['newest', 'oldest', 'lowest_count', 'highest_count', 'lowest_price', 'highest_price'];
@@ -28,7 +30,8 @@ const saveReasons = (list: { reason: string; count: number }[]) => {
 };
 
 export const ReturnsPage = () => {
-    const { state, t, language, createReturn, addToast, formatNumber } = useApp();
+    const { state, t, language, createReturn, cancelReturn, addToast, formatNumber } = useApp();
+    const [cancelTarget, setCancelTarget] = useState<ReturnRecord | null>(null);
 
     // --- نافذة إضافة مرتجع ---
     const [addOpen, setAddOpen] = useState(false);
@@ -222,11 +225,22 @@ export const ReturnsPage = () => {
         saveReasons(next);
         setSuggestions(next);
         addToast(`${t('return_created')} — ${round2(res.record!.refundAmount)} ${t('egp')} (${t(`return_status_${res.record!.status}`)})`, 'success');
-        if (res.record!.status === 'pending') addToast(t('return_wait_confirm'), 'info');
         const rec = res.record!;
         const target = invoice;
         closeModal();
         printReceipt(rec, target);
+    };
+
+    // تأكيد إلغاء المرتجع وإعادة الأصناف لفاتورة العميل
+    const handleConfirmCancelReturn = () => {
+        if (!cancelTarget) return;
+        const res = cancelReturn(cancelTarget.uid);
+        if (!res.ok) {
+            addToast(t(res.error || 'return_error') || 'فشل إلغاء المرتجع', 'error');
+            return;
+        }
+        addToast(language === 'ar' ? 'تم إلغاء المرتجع ورفع الإيرادات مجدداً وإعادة الأصناف لفاتورة العميل' : 'Return cancelled and items restored to invoice', 'success');
+        setCancelTarget(null);
     };
 
     // حذف اقتراح سبب
@@ -640,7 +654,7 @@ export const ReturnsPage = () => {
                         </button>
                     </div>
                     <div className="flex gap-1 flex-wrap">
-                        {(['all', 'pending', 'approved', 'rejected'] as const).map(f => (
+                        {(['all', 'approved', 'cancelled'] as const).map(f => (
                             <button
                                 key={f}
                                 onClick={() => setStatusFilter(f)}
@@ -724,12 +738,24 @@ export const ReturnsPage = () => {
                                             </td>
                                             <td className="px-3.5 py-3 text-center text-slate-600 dark:text-slate-300 font-semibold">{rec.staffName || rec.createdBy}</td>
                                             <td className="px-3.5 py-3 text-center">
-                                                <button
-                                                    onClick={e => { e.stopPropagation(); printReceipt(rec, state.invoices.find(i => i.uid === rec.invoiceUid)); }}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-xs font-bold transition cursor-pointer"
-                                                >
-                                                    <Printer size={14} /> <span>{t('return_receipt')}</span>
-                                                </button>
+                                                <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                                                    <button
+                                                        onClick={e => { e.stopPropagation(); printReceipt(rec, state.invoices.find(i => i.uid === rec.invoiceUid)); }}
+                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-xs font-bold transition cursor-pointer"
+                                                        title={t('return_receipt')}
+                                                    >
+                                                        <Printer size={13} /> <span>{t('return_receipt')}</span>
+                                                    </button>
+                                                    {rec.status === 'approved' && (
+                                                        <button
+                                                            onClick={e => { e.stopPropagation(); setCancelTarget(rec); }}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-xs font-bold transition cursor-pointer"
+                                                            title={language === 'ar' ? 'إلغاء المرتجع وإعادة الأصناف للفاتورة' : 'Cancel Return'}
+                                                        >
+                                                            <X size={13} /> <span>{language === 'ar' ? 'إلغاء المرتجع' : 'Cancel'}</span>
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                         {expanded === rec.uid && (
@@ -812,6 +838,89 @@ export const ReturnsPage = () => {
                         </table>
                     </div>
                 )}
+
+            {/* نافذة تأكيد احترافية لإلغاء المرتجع وإعادة الأصناف لفاتورة العميل */}
+            {cancelTarget && (
+                <ModalShell
+                    title={language === 'ar' ? 'تأكيد إلغاء المرتجع' : 'Confirm Return Cancellation'}
+                    onClose={() => setCancelTarget(null)}
+                    maxWidth="max-w-md"
+                >
+                    <div className="space-y-4 text-right" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                        {/* رسالة التأكيد الاحترافية البارزة */}
+                        <div className="flex items-start gap-3 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-rose-900 dark:text-rose-200">
+                            <AlertCircle size={26} className="text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                            <div>
+                                <h3 className="text-sm font-black leading-snug">
+                                    {language === 'ar'
+                                        ? 'هل أنت متأكد من إلغاء المرتجع وإعادته إلى فاتورة العميل؟'
+                                        : 'Are you sure you want to cancel this return and restore it to the customer invoice?'}
+                                </h3>
+                                <p className="text-xs text-rose-700 dark:text-rose-300 mt-1.5 leading-relaxed">
+                                    {language === 'ar'
+                                        ? 'عند التأكيد: سيتم رفع الإيرادات مجدداً بالقيمة المستردة، إعادة المنتجات والخدمات لحساب فاتورة العميل، وتسجيل العمليتين في سجل النظام.'
+                                        : 'Upon confirmation: Revenue will be restored, products/services will be re-added to the invoice, and both actions will be logged.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* ملخص بيانات المرتجع */}
+                        <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/80 space-y-2.5 text-xs">
+                            <div className="flex justify-between items-center text-slate-700 dark:text-slate-200">
+                                <span className="text-slate-500 dark:text-slate-400 font-bold">{language === 'ar' ? 'رقم المرتجع:' : 'Return #:'}</span>
+                                <span className="font-mono font-bold">#{cancelTarget.id}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-700 dark:text-slate-200">
+                                <span className="text-slate-500 dark:text-slate-400 font-bold">{language === 'ar' ? 'الفاتورة الأصلية:' : 'Original Invoice:'}</span>
+                                <span className="font-bold">فاتورة #{cancelTarget.invoiceId}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-700 dark:text-slate-200">
+                                <span className="text-slate-500 dark:text-slate-400 font-bold">{language === 'ar' ? 'اسم العميل:' : 'Customer Name:'}</span>
+                                <span className="font-bold">{cancelTarget.customerName || (language === 'ar' ? 'عميل نقدي' : 'Cash Customer')}</span>
+                            </div>
+                            <div className="flex justify-between items-center border-t border-slate-200 dark:border-slate-700 pt-2 font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                                <span>{language === 'ar' ? 'المبلغ المعاد للإيرادات:' : 'Restored Revenue:'}</span>
+                                <span className="font-mono font-black">+{round2(cancelTarget.refundAmount)} {t('egp')}</span>
+                            </div>
+
+                            {/* الأصناف المستعادة */}
+                            <div className="border-t border-slate-200 dark:border-slate-700 pt-2">
+                                <span className="text-slate-500 dark:text-slate-400 font-bold block mb-1.5">
+                                    {language === 'ar' ? 'الأصناف والخدمات المستعادة للفاتورة:' : 'Items restored to invoice:'}
+                                </span>
+                                <div className="space-y-1">
+                                    {(cancelTarget.items || []).map((it, idx) => (
+                                        <div key={idx} className="flex justify-between text-[11px] text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700/60 p-2 rounded-xl border border-slate-200 dark:border-slate-600">
+                                            <span>• {it.name} (×{it.quantity})</span>
+                                            <span className="font-mono font-bold">{round2(it.refundAmount)} ج.م</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* زري التأكيد والإلغاء */}
+                        <div className="flex gap-2.5 pt-2">
+                            <Button
+                                variant="danger"
+                                className="flex-1 justify-center py-2.5 font-bold text-xs gap-1.5 cursor-pointer shadow-sm active:scale-95 transition-all"
+                                onClick={handleConfirmCancelReturn}
+                            >
+                                <Check size={16} />
+                                <span>{language === 'ar' ? 'تأكيد' : 'Confirm'}</span>
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                className="flex-1 justify-center py-2.5 font-bold text-xs cursor-pointer shadow-sm active:scale-95 transition-all"
+                                onClick={() => setCancelTarget(null)}
+                            >
+                                <span>{language === 'ar' ? 'إلغاء' : 'Cancel'}</span>
+                            </Button>
+                        </div>
+                    </div>
+                </ModalShell>
+            )}
+
             </Card>
         </div>
     );
