@@ -89,8 +89,8 @@ export const SettingsPage = () => {
         });
         addToast(
             language === 'ar' 
-                ? (enabled ? 'تم تفعيل التحديث التلقائي الذكي' : 'تم إيقاف التنزيل التلقائي، ستصلك تنبيهات يدوية فقط')
-                : (enabled ? 'Smart auto-update enabled' : 'Smart auto-update disabled'),
+                ? (enabled ? 'تم تفعيل التحديث التلقائي للبرنامج' : 'تم إيقاف التحديث التلقائي، ستصلك تنبيهات يدوية فقط')
+                : (enabled ? 'Automatic updates enabled' : 'Automatic updates disabled'),
             'info'
         );
     };
@@ -1050,7 +1050,7 @@ export const SettingsPage = () => {
     
     const renderUpdates = () => (
         <div className="space-y-6 animate-fade-in text-right" dir="rtl">
-            {/* بطاقة التحكم في التحديث التلقائي الذكي */}
+            {/* بطاقة التحكم في التحديث التلقائي */}
             <Card className="border border-white/5 bg-[#161B26] p-6 rounded-2xl shadow-sm">
                 <div className="flex flex-wrap justify-between items-center gap-4">
                     <div className="flex items-center gap-3.5">
@@ -1059,29 +1059,29 @@ export const SettingsPage = () => {
                                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
                                 : 'bg-slate-800/60 border-white/10 text-slate-400'
                         }`}>
-                            <Sparkles size={22} className="text-slate-400" />
+                            <Download size={22} className={autoUpdate ? 'text-emerald-400' : 'text-slate-400'} />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
                                 <h3 className="text-base font-bold text-white">
-                                    {language === 'ar' ? 'التحديث التلقائي الذكي (Smart Auto-Update)' : 'Smart Auto-Update'}
+                                    {language === 'ar' ? 'التحديث التلقائي للبرنامج' : 'Automatic Updates'}
                                 </h3>
                                 <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
                                     autoUpdate 
                                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
                                         : 'bg-slate-700/50 text-slate-400 border-slate-600/40'
                                 }`}>
-                                    {autoUpdate ? (language === 'ar' ? 'مفعّل (افتراضي)' : 'Enabled') : (language === 'ar' ? 'متوقف' : 'Disabled')}
+                                    {autoUpdate ? (language === 'ar' ? 'مفعّل' : 'Enabled') : (language === 'ar' ? 'متوقف' : 'Disabled')}
                                 </span>
                             </div>
                             <p className="text-xs text-[#94A3B8] mt-1 max-w-xl leading-relaxed">
                                 {autoUpdate 
                                     ? (language === 'ar' 
-                                        ? 'يتم التحقق تلقائياً وتنزيل الإصدارات الرسمية في الخلفية دون مقاطعتك، مع إشعارك فور اكتمال التنزيل لتثبيتها بنقرة واحدة.' 
-                                        : 'Automatically checks GitHub and downloads official updates in background, notifying you when ready to install.')
+                                        ? 'يتم التحقق وتنزيل التحديثات الرسمية في الخلفية دون مقاطعة عملك، مع تنبيهك عند جاهزيتها للتثبيت بنقرة واحدة.' 
+                                        : 'Automatically checks and downloads official updates in background, notifying you when ready to install.')
                                     : (language === 'ar' 
-                                        ? 'لن يتم تنزيل أي تحديث تلقائياً في الخلفية. يتم فقط تنبيهك بوجود إصدار جديد مع إمكانية التنزيل والتثبيت بموافقتك اليدوية.' 
-                                        : 'No updates will be downloaded automatically. You will be notified with manual download option.')}
+                                        ? 'لن يتم تنزيل أي تحديث تلقائياً في الخلفية. ستتلقى تنبيهاً بوجود إصدار جديد لتنزيله وتثبيته يدوياً.' 
+                                        : 'Updates will not be downloaded automatically. You will be notified with manual download option.')}
                             </p>
                         </div>
                     </div>
