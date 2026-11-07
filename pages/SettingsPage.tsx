@@ -528,28 +528,40 @@ export const SettingsPage = () => {
 
     const handleCreateBackupNow = async () => {
         setBackupBusy(true);
+        const currentEmailConfig = {
+            emailTo: emailConfig.emailTo || form.managerEmail || '',
+            notifyOnInvoice: emailConfig.notifyOnInvoice,
+            notifyOnClosing: emailConfig.notifyOnClosing,
+            notifyOnReturn: emailConfig.notifyOnReturn,
+            notifyOnExpense: emailConfig.notifyOnExpense,
+            smtpUser: emailConfig.smtpUser || 'rizon.pro.app@gmail.com'
+        };
+        const backupPayload = {
+            ...state,
+            managerEmail: currentEmailConfig.emailTo,
+            emailConfig: currentEmailConfig,
+            settings: {
+                ...state.settings,
+                ...form,
+                managerEmail: currentEmailConfig.emailTo,
+                emailConfig: currentEmailConfig
+            }
+        };
+
+        const downloadJsonFallback = () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPayload, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            const nowIso = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            downloadAnchorNode.setAttribute("download", `procashier_backup_${nowIso}.json`);
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        };
+
         try {
             const serverUrl = form.serverUrl || 'http://127.0.0.1:8087';
             const apiKey = form.serverApiKey || '';
-            const currentEmailConfig = {
-                emailTo: emailConfig.emailTo || form.managerEmail || '',
-                notifyOnInvoice: emailConfig.notifyOnInvoice,
-                notifyOnClosing: emailConfig.notifyOnClosing,
-                notifyOnReturn: emailConfig.notifyOnReturn,
-                notifyOnExpense: emailConfig.notifyOnExpense,
-                smtpUser: emailConfig.smtpUser || 'rizon.pro.app@gmail.com'
-            };
-            const backupPayload = {
-                ...state,
-                managerEmail: currentEmailConfig.emailTo,
-                emailConfig: currentEmailConfig,
-                settings: {
-                    ...state.settings,
-                    ...form,
-                    managerEmail: currentEmailConfig.emailTo,
-                    emailConfig: currentEmailConfig
-                }
-            };
             const res = await fetch(`${serverUrl}/api/backup?send_email=true`, {
                 method: 'POST',
                 headers: {
@@ -567,10 +579,18 @@ export const SettingsPage = () => {
                 }
                 fetchBackupFiles();
             } else {
-                addToast(data.detail || 'فشل حفظ النسخة الاحتياطية', 'error');
+                downloadJsonFallback();
+                addToast(language === 'ar' ? `تم تحميل النسخة كملف JSON على جهازك (ملاحظة: ${data.detail || 'تعذر الحفظ في المجلد'})` : 'Backup downloaded as JSON', 'warning');
             }
         } catch (e: any) {
-            addToast(e.message || 'خطأ في النسخ الاحتياطي', 'error');
+            // عند تعذر الاتصال بالسيرفر المحلي (Failed to fetch) يتم حفظ وتنزيل النسخة محلياً فوراً
+            downloadJsonFallback();
+            addToast(
+                language === 'ar' 
+                    ? 'تم حفظ وتنزيل النسخة الاحتياطية بنجاح كملف JSON على جهازك!' 
+                    : 'Backup downloaded successfully as JSON file!', 
+                'success'
+            );
         } finally {
             setBackupBusy(false);
         }
