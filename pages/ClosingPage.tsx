@@ -35,8 +35,8 @@ export const ClosingPage = () => {
     // 1. حساب الرصيد الافتتاحي للدرج بدقة: في اليوم الجديد هو إجمالي المتبقي من اليوم السابق تلقائياً
     // =========================================================================
     const drawerOpeningInfo = useMemo(() => {
-        return getDrawerOpeningBalance(state.closingReports || [], state.settings, today);
-    }, [state.closingReports, state.settings, today]);
+        return getDrawerOpeningBalance(state.closingReports || [], state.settings, today, activeLocationId);
+    }, [state.closingReports, state.settings, today, activeLocationId]);
 
     const baseOpeningBalance = drawerOpeningInfo.balance;
     const yesterdayRemainingInDrawer = drawerOpeningInfo.yesterdayRemaining;
@@ -47,8 +47,11 @@ export const ClosingPage = () => {
     // 2. حركات الدرج النقدية للوردية الحالية (تظل مستمرة بمرور الأيام طالما لم يتم إقفال وردية أو سحب)
     // =========================================================================
     const todayMovements = useMemo(() => {
-        return (state.drawerMovements || []).filter(m => isAfterClosing(m.date, m.timestamp, previousClosingReport));
-    }, [state.drawerMovements, previousClosingReport]);
+        return (state.drawerMovements || []).filter(m => 
+            (!m.locationId || String(m.locationId) === activeLocationId) &&
+            isAfterClosing(m.date, m.timestamp, previousClosingReport)
+        );
+    }, [state.drawerMovements, previousClosingReport, activeLocationId]);
 
     const withdrawals = useMemo(() => {
         return todayMovements.filter(m => m.type === 'withdrawal').reduce((a, m) => a + (m.amount || 0), 0);
@@ -72,8 +75,12 @@ export const ClosingPage = () => {
     // 3. مبيعات ومصروفات الوردية الحالية النقدية (تستمر عبر الأيام طالما لم يتم الإقفال)
     // =========================================================================
     const todayInvoices = useMemo(() => {
-        return state.invoices.filter(i => countableInvoice(i) && isAfterClosing(i.date, i.timestamp, previousClosingReport));
-    }, [state.invoices, previousClosingReport]);
+        return state.invoices.filter(i => 
+            (String(i.locationId || '1') === activeLocationId || (i.branchName && activeBranch && i.branchName === activeBranch.name)) &&
+            countableInvoice(i) && 
+            isAfterClosing(i.date, i.timestamp, previousClosingReport)
+        );
+    }, [state.invoices, previousClosingReport, activeLocationId, activeBranch]);
 
     // تفصيل مبيعات الفواتير حسب وسيلة الدفع (كاش، بطاقات، محافظ، مديونيات/آجل)
     const paymentBreakdown = useMemo(() => {
@@ -108,8 +115,11 @@ export const ClosingPage = () => {
 
     // تحصيلات وسداد مديونيات العملاء المسجلة في الوردية الحالية
     const todayCustomerPayments = useMemo(() => {
-        return (state.customerPayments || []).filter(cp => isAfterClosing(cp.date, (cp as any).timestamp, previousClosingReport));
-    }, [state.customerPayments, previousClosingReport]);
+        return (state.customerPayments || []).filter(cp => 
+            (!cp.locationId || String(cp.locationId) === activeLocationId) &&
+            isAfterClosing(cp.date, (cp as any).timestamp, previousClosingReport)
+        );
+    }, [state.customerPayments, previousClosingReport, activeLocationId]);
 
     const customerPaymentsCash = useMemo(() => {
         return todayCustomerPayments
@@ -160,8 +170,12 @@ export const ClosingPage = () => {
     }, [todayInvoices]);
 
     const todayExpenses = useMemo(() => {
-        return state.expenses.filter(e => isCashExpense(e) && isAfterClosing(e.date, (e as any).timestamp, previousClosingReport));
-    }, [state.expenses, previousClosingReport]);
+        return state.expenses.filter(e => 
+            String(e.locationId || '1') === activeLocationId &&
+            isCashExpense(e) && 
+            isAfterClosing(e.date, (e as any).timestamp, previousClosingReport)
+        );
+    }, [state.expenses, previousClosingReport, activeLocationId]);
 
     const totalExpensesAmount = useMemo(() => {
         return todayExpenses.reduce((acc, exp) => acc + exp.amount, 0);
@@ -260,7 +274,10 @@ export const ClosingPage = () => {
     const retainedInDrawer = actualCashNum;
     const transferredToSafe = 0;
 
-    const alreadyClosedToday = (state.closingReports || []).some(r => isToday(r.date));
+    const branchClosingReports = useMemo(() => {
+        return (state.closingReports || []).filter(r => !r.locationId || String(r.locationId) === activeLocationId);
+    }, [state.closingReports, activeLocationId]);
+    const alreadyClosedToday = branchClosingReports.some(r => isToday(r.date));
     const [report, setReport] = useState<ClosingReport | null>(null);
 
     // =========================================================================
@@ -333,7 +350,7 @@ export const ClosingPage = () => {
 
         const newReport: ClosingReport = {
             id: crypto.randomUUID(),
-            locationId: state.settings.currentLocationId || '',
+            locationId: activeLocationId,
             date: today,
             timestamp: Date.now(),
             totalSales,
@@ -1137,7 +1154,7 @@ export const ClosingPage = () => {
                         <span>{language === 'ar' ? 'سجل تقارير الإقفال السابقة' : 'Closing Reports History'}</span>
                     </h3>
                     <span className="text-xs text-slate-400">
-                        {state.closingReports?.length || 0} {language === 'ar' ? 'تقرير مسجل' : 'reports'}
+                        {branchClosingReports.length} {language === 'ar' ? 'تقرير مسجل' : 'reports'}
                     </span>
                 </div>
 

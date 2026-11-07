@@ -438,17 +438,23 @@ export interface DrawerOpeningInfo {
  */
 export const getDrawerOpeningBalance = (
     closingReports: ClosingReport[] = [],
-    settings: { cashDrawerOpening?: number; manualOpeningDate?: string } = {},
-    currentDate: string = localIsoToday()
+    settings: { cashDrawerOpening?: number; manualOpeningDate?: string; branchDrawerOpenings?: Record<string, { cashDrawerOpening?: number; manualOpeningDate?: string }> } = {},
+    currentDate: string = localIsoToday(),
+    locationId?: string
 ): DrawerOpeningInfo => {
-    // 1. ترتيب تقارير التقفيل من الأحدث للأقدم بناء على الطابع الزمني والتاريخ
-    const sorted = [...(closingReports || [])].sort((a, b) => {
+    // 1. تصفية تقارير التقفيل حسب الفرع المستقل إذا تم تمرير locationId
+    const filteredReports = locationId
+        ? (closingReports || []).filter(c => !c.locationId || String(c.locationId) === String(locationId))
+        : (closingReports || []);
+
+    // ترتيب تقارير التقفيل من الأحدث للأقدم بناء على الطابع الزمني والتاريخ
+    const sorted = [...filteredReports].sort((a, b) => {
         const tb = b.timestamp || tsOf(b.date);
         const ta = a.timestamp || tsOf(a.date);
         return tb - ta;
     });
 
-    // أحدث تقفيل مسجل يمثل نهاية الوردية السابقة
+    // أحدث تقفيل مسجل يمثل نهاية الوردية السابقة للفرع
     const previousReport = sorted.length > 0 ? sorted[0] : null;
 
     let yesterdayRemaining: number | null = null;
@@ -462,13 +468,17 @@ export const getDrawerOpeningBalance = (
         }
     }
 
+    // استخراج رصيد الفرع اليدوي المستقل إن وجد
+    const branchOpening = locationId && settings?.branchDrawerOpenings?.[locationId];
+    const openingCash = branchOpening?.cashDrawerOpening ?? settings?.cashDrawerOpening;
+    const manualDate = branchOpening?.manualOpeningDate ?? settings?.manualOpeningDate;
+
     // 2. هل قام المستخدم بتعيين رصيد افتتاحي يدوي؟
-    // رصيد الدرج يظل كما هو بمرور الأيام طالما تم تحديده ولم يتم تقفيل وردية جديدة بعده
-    const hasManualOverride = Boolean(settings.manualOpeningDate && typeof settings.cashDrawerOpening === 'number');
+    const hasManualOverride = Boolean(manualDate && typeof openingCash === 'number');
 
     if (hasManualOverride) {
         return {
-            balance: Number(settings.cashDrawerOpening),
+            balance: Number(openingCash),
             source: 'manual_override',
             yesterdayRemaining,
             hasManualOverride: true,
@@ -477,7 +487,7 @@ export const getDrawerOpeningBalance = (
         };
     }
 
-    // 3. الرصيد المتبقي من آخر تقفيل (يظل ثابتاً بمرور الأيام ما لم يُسحب)
+    // 3. الرصيد المتبقي من آخر تقفيل للفرع
     if (yesterdayRemaining !== null) {
         return {
             balance: yesterdayRemaining,
@@ -489,9 +499,9 @@ export const getDrawerOpeningBalance = (
         };
     }
 
-    // 4. الرصيد الافتراضي في إعدادات النظام: يستمر كما هو بمرور الأيام
+    // 4. الرصيد الافتراضي في إعدادات النظام للفرع
     return {
-        balance: Math.max(0, Number(settings.cashDrawerOpening) || 0),
+        balance: Math.max(0, Number(openingCash) || 0),
         source: 'settings_default',
         yesterdayRemaining: null,
         hasManualOverride: false,

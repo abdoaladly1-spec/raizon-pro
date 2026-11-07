@@ -1,3 +1,10 @@
+const getStockForBranch = (item: Item, locId?: string): number => {
+    if (!item) return 0;
+    if (locId && item.locationQuantities && typeof item.locationQuantities[locId] === 'number') {
+        return item.locationQuantities[locId];
+    }
+    return item.quantity;
+};
 import { normalizeBarcode, useBarcodeScanner } from '../lib/barcode';
 /* تم فصل هذا الملف من App.tsx (نظام ProCashier) */
 import React, { useState, useRef, useMemo, useEffect } from 'react';
@@ -103,7 +110,8 @@ export const CreateInvoice = ({ onClose }: any) => {
           const newQty = i.qty + delta;
           if (delta > 0 && i.item.type === 'product' && i.item.trackStock) {
             const stockItem = state.items.find(si => si.id === id);
-            const maxAvailable = stockItem ? stockItem.quantity : i.item.quantity;
+            const curBranchId = state.settings.currentLocationId || '1';
+            const maxAvailable = stockItem ? getStockForBranch(stockItem, curBranchId) : getStockForBranch(i.item, curBranchId);
             if (newQty > maxAvailable) {
               addToast(language === 'ar' ? `الكمية بالمخزن (${maxAvailable}) فقط` : `Stock limit reached (${maxAvailable})`, 'error');
               return i;
@@ -341,14 +349,16 @@ export const CreateInvoice = ({ onClose }: any) => {
 
   const addToInvoice = (item: Item) => {
     const isProduct = item.type === 'product';
-    if (isProduct && item.trackStock && item.quantity <= 0) {
-        addToast(language === 'ar' ? `المنتج [${item.nameAr}] نفد من المخزون تماماً (الكمية 0)` : `[${item.nameEn || item.nameAr}] is out of stock`, 'error');
+    const curBranchId = state.settings.currentLocationId || '1';
+    const branchStock = getStockForBranch(item, curBranchId);
+    if (isProduct && item.trackStock && branchStock <= 0) {
+        addToast(language === 'ar' ? `المنتج [${item.nameAr}] نفد من مخزون هذا الفرع تماماً (الكمية 0)` : `[${item.nameEn || item.nameAr}] is out of stock in this branch`, 'error');
         return;
     }
 
     const existing = selectedItems.find(i => i.item.id === item.id);
-    if (isProduct && item.trackStock && existing && (existing.qty + 1) > item.quantity) {
-        addToast(language === 'ar' ? `الكمية المتوفرة بالمخزن (${item.quantity}) فقط` : `Only ${item.quantity} available in stock`, 'error');
+    if (isProduct && item.trackStock && existing && (existing.qty + 1) > branchStock) {
+        addToast(language === 'ar' ? `الكمية المتوفرة بمخزن هذا الفرع (${branchStock}) فقط` : `Only ${branchStock} available in this branch`, 'error');
         return;
     }
 
@@ -1148,7 +1158,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                                 ) : (
                                                     <>
                                                         <span className="text-[11px] text-slate-400 font-normal">{language === 'ar' ? 'متاح:' : 'Qty:'}</span>
-                                                        <span className="font-mono font-black">{item.quantity}</span>
+                                                        <span className="font-mono font-black">{getStockForBranch(item, state.settings.currentLocationId || '1')}</span>
                                                     </>
                                                 )}
                                             </span>

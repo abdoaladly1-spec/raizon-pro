@@ -218,7 +218,8 @@ export const Clients = () => {
                 isVip: form.isVip,
                 creditLimit: creditLimitNum,
                 balance: balanceNum,
-                notes: form.notes
+                notes: form.notes,
+                locationId: activeLocationId
             } as any);
         }
         setShowModal(false);
@@ -248,7 +249,8 @@ export const Clients = () => {
             date: dateStr,
             timestamp: payTimestamp,
             paymentMethod: paymentForm.paymentMethod,
-            notes: paymentForm.notes.trim()
+            notes: paymentForm.notes.trim(),
+            locationId: activeLocationId
         } as any);
 
         // تحديث الكائن المختار لايف

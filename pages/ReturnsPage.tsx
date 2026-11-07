@@ -52,9 +52,10 @@ export const ReturnsPage = () => {
     const [showSortModal, setShowSortModal] = useState(false);
     const [logQuery, setLogQuery] = useState('');
 
+    const activeLocationId = String(state.settings.currentLocationId || state.locations[0]?.id || '1');
     const invoice = useMemo(
-        () => state.invoices.find(i => i.uid === selectedUid || String(i.id) === selectedUid),
-        [state.invoices, selectedUid]
+        () => state.invoices.find(i => (i.uid === selectedUid || String(i.id) === selectedUid) && String(i.locationId || '1') === activeLocationId),
+        [state.invoices, selectedUid, activeLocationId]
     );
     const remaining = useMemo(() => remainingRefundable(invoice, state.returns), [invoice, state.returns]);
     const selections = useMemo(
@@ -130,8 +131,8 @@ export const ReturnsPage = () => {
         return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
     };
     const todayReturnsAll = useMemo(
-        () => (state.returns || []).filter(r => !r.deleted && isToday(r.timestamp)),
-        [state.returns]
+        () => (state.returns || []).filter(r => !r.deleted && isToday(r.timestamp) && String(r.locationId || '1') === activeLocationId),
+        [state.returns, activeLocationId]
     );
     const todayReturnsTotal = useMemo(
         () => round2(todayReturnsAll.filter(r => r.status === 'approved').reduce((a, r) => a + round2(r.refundAmount), 0)),
@@ -140,7 +141,10 @@ export const ReturnsPage = () => {
 
     const logRows = useMemo(() => {
         const q = logQuery.trim().toLowerCase();
-        let rows = (state.returns || []).filter(r => statusFilter === 'all' || r.status === statusFilter);
+        let rows = (state.returns || []).filter(r => 
+            String(r.locationId || '1') === activeLocationId &&
+            (statusFilter === 'all' || r.status === statusFilter)
+        );
         if (q) {
             rows = rows.filter(r =>
                 String(r.invoiceId).includes(q) ||
@@ -163,7 +167,7 @@ export const ReturnsPage = () => {
             default: sorted.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         }
         return sorted;
-    }, [state.returns, statusFilter, sortMode, logQuery]);
+    }, [state.returns, statusFilter, sortMode, logQuery, activeLocationId]);
 
     const resetAll = () => {
         setQuery('');
@@ -210,7 +214,7 @@ export const ReturnsPage = () => {
     const handleSave = () => {
         if (!invoice) { addToast(t('return_no_invoice'), 'error'); return; }
         if (!reason.trim()) { addToast(t('return_reason_required'), 'error'); return; }
-        const res = createReturn({ invoice, selections, refundParts, reason: reason.trim(), notes: undefined });
+        const res = createReturn({ invoice, selections, refundParts, reason: reason.trim(), notes: undefined, locationId: activeLocationId } as any);
         if (!res.ok) {
             addToast(t(res.error || '') || t('return_error'), 'error');
             return;

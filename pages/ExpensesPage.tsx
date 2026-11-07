@@ -76,13 +76,18 @@ export const ExpensesPage = () => {
         }
     };
 
-    const totalExpenses = state.expenses.reduce((acc, curr) => acc + curr.amount, 0);
+    const activeLocationId = String(state.settings.currentLocationId || state.locations[0]?.id || '1');
+    const branchExpenses = useMemo(() => {
+        return state.expenses.filter(e => !e.locationId || String(e.locationId) === activeLocationId);
+    }, [state.expenses, activeLocationId]);
+
+    const totalExpenses = branchExpenses.reduce((acc, curr) => acc + curr.amount, 0);
     const todayStr = localIsoToday();
-    const todayExpenses = state.expenses
+    const todayExpenses = branchExpenses
         .filter(e => toIsoDate(e.date) === todayStr)
         .reduce((acc, curr) => acc + curr.amount, 0);
-    // المصروفات النقدية فقط (تلك التي تُخصم من درج النقدية عند الإغلاق)
-    const todayCashExpenses = state.expenses
+    // المصروفات النقدية فقط للفرع (تلك التي تُخصم من درج نقدية الفرع)
+    const todayCashExpenses = branchExpenses
         .filter(e => toIsoDate(e.date) === todayStr && isCashExpense(e))
         .reduce((acc, curr) => acc + curr.amount, 0);
 
@@ -91,8 +96,8 @@ export const ExpensesPage = () => {
     // في اليوم الجديد: الرصيد الافتتاحي هو إجمالي الرصيد المتبقي من اليوم السابق تلقائياً
     // =========================================================================
     const drawerOpeningInfo = useMemo(() => {
-        return getDrawerOpeningBalance(state.closingReports || [], state.settings, todayStr);
-    }, [state.closingReports, state.settings, todayStr]);
+        return getDrawerOpeningBalance(state.closingReports || [], state.settings, todayStr, activeLocationId);
+    }, [state.closingReports, state.settings, todayStr, activeLocationId]);
 
     const drawerOpeningBalance = drawerOpeningInfo.balance;
     const yesterdayRemainingInDrawer = drawerOpeningInfo.yesterdayRemaining;
@@ -105,8 +110,11 @@ export const ExpensesPage = () => {
     };
 
     const todayDrawerMovements = useMemo(() => {
-        return (state.drawerMovements || []).filter(m => isAfterClosing(m.date, m.timestamp, previousClosingReport));
-    }, [state.drawerMovements, previousClosingReport]);
+        return (state.drawerMovements || []).filter(m => 
+            (!m.locationId || String(m.locationId) === activeLocationId) &&
+            isAfterClosing(m.date, m.timestamp, previousClosingReport)
+        );
+    }, [state.drawerMovements, previousClosingReport, activeLocationId]);
 
     const todayDrawerDeposits = useMemo(() => {
         return todayDrawerMovements
@@ -133,27 +141,40 @@ export const ExpensesPage = () => {
 
     const todayCustomerDebtCash = useMemo(() => {
         return (state.customerPayments || [])
-            .filter(cp => isAfterClosing(cp.date, (cp as any).timestamp, previousClosingReport) && (cp.paymentMethod === 'cash' || !cp.paymentMethod))
+            .filter(cp => 
+                (!cp.locationId || String(cp.locationId) === activeLocationId) &&
+                isAfterClosing(cp.date, (cp as any).timestamp, previousClosingReport) && 
+                (cp.paymentMethod === 'cash' || !cp.paymentMethod)
+            )
             .reduce((s, cp) => s + (cp.amount || 0), 0);
-    }, [state.customerPayments, previousClosingReport]);
+    }, [state.customerPayments, previousClosingReport, activeLocationId]);
 
     const todayCashExpensesDeducted = useMemo(() => {
-        return state.expenses
+        return branchExpenses
             .filter(e => isCashExpense(e) && isAfterClosing(e.date, (e as any).timestamp, previousClosingReport))
             .reduce((s, e) => s + (e.amount || 0), 0);
-    }, [state.expenses, previousClosingReport]);
+    }, [branchExpenses, previousClosingReport]);
 
     const todayCashReturnsDeducted = useMemo(() => {
         return (state.returns || [])
-            .filter(r => isAfterClosing(r.date, (r as any).timestamp, previousClosingReport) && (r.refundMethod === 'cash' || !r.refundMethod))
+            .filter(r => 
+                String(r.locationId || '1') === activeLocationId &&
+                isAfterClosing(r.date, (r as any).timestamp, previousClosingReport) && 
+                (r.refundMethod === 'cash' || !r.refundMethod)
+            )
             .reduce((s, r) => s + (r.total || 0), 0);
-    }, [state.returns, previousClosingReport]);
+    }, [state.returns, previousClosingReport, activeLocationId]);
 
     const todayStaffCashPayouts = useMemo(() => {
         return (state.staffPayments || [])
-            .filter((sp: any) => isAfterClosing(sp.date, (sp as any).timestamp, previousClosingReport) && (sp.method || 'cash') === 'cash' && ['advance', 'salary', 'bonus'].includes(sp.type))
+            .filter((sp: any) => 
+                (!sp.locationId || String(sp.locationId) === activeLocationId) &&
+                isAfterClosing(sp.date, (sp as any).timestamp, previousClosingReport) && 
+                (sp.method || 'cash') === 'cash' && 
+                ['advance', 'salary', 'bonus'].includes(sp.type)
+            )
             .reduce((s, sp) => s + (sp.amount || 0), 0);
-    }, [state.staffPayments, previousClosingReport]);
+    }, [state.staffPayments, previousClosingReport, activeLocationId]);
 
     const expectedDrawerCash = useMemo(() => {
         return round2(
@@ -310,12 +331,12 @@ export const ExpensesPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {state.expenses.length === 0 ? (
+                            {branchExpenses.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="text-center py-8 text-slate-500">{t('no_data')}</td>
                                 </tr>
                             ) : (
-                                state.expenses.slice().reverse().map((expense) => (
+                                branchExpenses.slice().reverse().map((expense) => (
                                     <tr key={expense.id} className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-100">
                                             {expense.title}

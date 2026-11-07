@@ -115,9 +115,10 @@ export const StaffPage = () => {
             invoicesTotal: number;
         }>();
 
+        const activeLocationId = String(state.settings.currentLocationId || state.locations[0]?.id || '1');
         (state.staff || []).forEach(st => {
-            const payments = (state.staffPayments || []).filter(p => p.staffId === st.id);
-            const invoices = (state.invoices || []).filter(inv => inv.staffId === st.id);
+            const payments = (state.staffPayments || []).filter(p => p.staffId === st.id && (!p.locationId || String(p.locationId) === activeLocationId));
+            const invoices = (state.invoices || []).filter(inv => inv.staffId === st.id && String(inv.locationId || '1') === activeLocationId);
 
             const totalCommissions = payments
                 .filter(p => p.type === 'commission' || p.type === 'commission_reversal')
@@ -182,9 +183,11 @@ export const StaffPage = () => {
     }, [state.staff, staffFinancials]);
 
     // فلترة الموظفين بالقائمة
+    const activeLocationId = String(state.settings.currentLocationId || state.locations[0]?.id || '1');
     const filteredStaff = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
         return (state.staff || []).filter(s => {
+            if (s.locationIds && s.locationIds.length > 0 && !s.locationIds.includes(activeLocationId)) return false;
             if (statusFilter === 'active' && !s.active) return false;
             if (statusFilter === 'inactive' && s.active) return false;
             if (roleFilter !== 'all' && s.role !== roleFilter) return false;

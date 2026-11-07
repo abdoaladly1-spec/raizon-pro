@@ -644,11 +644,7 @@ const MainContent = () => {
                                                         sessionStorage.setItem('admin_branch_selected_' + currentUser.id, String(loc.id));
                                                       }
                                                       setShowBranchDropdown(false);
-                                                      if (!isTargetMain) {
-                                                        addToast(language === 'ar' ? 'تنبيه: هذا ليس الفرع الرئيسي يرجي الحذر لعدم تداخل الفواتير' : 'Warning: This is not the main branch. Please be careful to avoid invoice conflicts.', 'warning');
-                                                      } else {
-                                                        addToast(language === 'ar' ? `تم التبديل بنجاح لإدارة فرع «${loc.name}»` : `Switched to branch: ${loc.name}`, 'success');
-                                                      }
+                                                      addToast(language === 'ar' ? `تم التبديل بنجاح لإدارة فرع «${loc.name}» (فصل كامل لكافة العمليات والبيانات)` : `Switched to branch: ${loc.name} (Fully isolated)`, 'success');
                                                     }}
                                                     className={`w-full p-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
                                                       isSelected
@@ -786,7 +782,8 @@ const MainContent = () => {
                       <div className="flex justify-between text-sm"><span className="text-slate-600 dark:text-slate-300">{t('global_search')}</span> <kbd className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">Ctrl + K</kbd></div>
                       <div className="flex justify-between text-sm"><span className="text-slate-600 dark:text-slate-300">{t('show_shortcuts')}</span> <kbd className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">?</kbd></div>
                       <div className="flex justify-between text-sm"><span className="text-slate-600 dark:text-slate-300">{t('print_invoice')}</span> <kbd className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">Ctrl + P</kbd></div>
-                      <div className="flex justify-between text-sm"><span className="text-amber-500 font-bold">{language === 'ar' ? 'فتح درج النقدية' : 'Open Cash Drawer'}</span> <kbd className="bg-amber-500/15 text-amber-500 border border-amber-500/40 px-2 py-1 rounded font-mono text-xs font-bold">F7</kbd></div>
+                      <div className="flex justify-between text-sm"><span className="text-amber-500 font-bold">{language === 'ar' ? 'فتح درج النقدية' : 'Open Cash Drawer'}</span> <kbd className="bg-amber-500/15 text-amber-500 border border-amber-500/40 px-2 py-1 rounded font-mono text-xs font-bold">F7</kbd></div>
+
                       <div className="flex justify-between text-sm"><span className="text-amber-500 font-bold">{language === 'ar' ? 'فتح درج النقدية' : 'Open Cash Drawer'}</span> <kbd className="bg-amber-500/15 text-amber-500 border border-amber-500/40 px-2 py-1 rounded font-mono text-xs font-bold">F7</kbd></div>
                     </div>
                     <div className="space-y-3">

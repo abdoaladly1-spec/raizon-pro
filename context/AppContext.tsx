@@ -2331,14 +2331,22 @@ export const AppProvider = ({ children }: any) => {
   };
 
   const addClosingReport = (report: ClosingReport) => {
+    const locId = report.locationId || state.settings.currentLocationId || '1';
     const nextOpening = typeof report.retainedInDrawer === 'number' ? report.retainedInDrawer : report.actualCash;
     setState(prev => ({
       ...prev,
-      closingReports: [report, ...prev.closingReports],
+      closingReports: [{ ...report, locationId: locId }, ...prev.closingReports],
       settings: {
         ...prev.settings,
         cashDrawerOpening: nextOpening,
-        manualOpeningDate: undefined
+        manualOpeningDate: undefined,
+        branchDrawerOpenings: {
+          ...(prev.settings.branchDrawerOpenings || {}),
+          [locId]: {
+            cashDrawerOpening: nextOpening,
+            manualOpeningDate: undefined
+          }
+        }
       }
     }));
     const stAr = report.status === 'matched' ? 'متطابق بدون عجز أو زيادة' : (report.status === 'shortage' ? `يوجد عجز بقيمة ${Math.abs(report.difference || 0)} ج.م` : `يوجد فائض بقيمة ${report.difference || 0} ج.م`);
@@ -2349,11 +2357,13 @@ export const AppProvider = ({ children }: any) => {
     );
   };
 
-  const addDrawerMovement = (movement: Omit<DrawerMovement, 'id' | 'timestamp' | 'user' | 'date'>) => {
+  const addDrawerMovement = (movement: Omit<DrawerMovement, 'id' | 'timestamp' | 'user' | 'date'> & { locationId?: string }) => {
     const now = Date.now();
     const d = new Date(now);
+    const locId = movement.locationId || state.settings.currentLocationId || '1';
     const entry: DrawerMovement = {
       ...movement,
+      locationId: locId,
       id: crypto.randomUUID(),
       timestamp: now,
       date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
@@ -3354,10 +3364,12 @@ export const AppProvider = ({ children }: any) => {
     );
   };
 
-  const addCustomerPayment = (paymentData: Omit<CustomerPayment, 'id' | 'timestamp'> & { timestamp?: number }) => {
+  const addCustomerPayment = (paymentData: Omit<CustomerPayment, 'id' | 'timestamp'> & { timestamp?: number; locationId?: string }) => {
     const payTimestamp = (paymentData as any).timestamp || (paymentData.date ? new Date(paymentData.date).getTime() : Date.now());
+    const locId = paymentData.locationId || state.settings.currentLocationId || '1';
     const newPayment: CustomerPayment = {
       ...paymentData,
+      locationId: locId,
       id: crypto.randomUUID(),
       timestamp: payTimestamp,
     };
@@ -3375,6 +3387,7 @@ export const AppProvider = ({ children }: any) => {
         ...(prev.drawerMovements || []),
         {
           id: crypto.randomUUID(),
+          locationId: locId,
           type: 'deposit',
           amount: paymentData.amount,
           reason: `سداد آجل: ${paymentData.customerName || `عميل #${paymentData.customerId}`}`,
@@ -3574,6 +3587,8 @@ export const AppProvider = ({ children }: any) => {
   };
 
   const addExpense = (expense: Expense) => {
+      const locId = expense.locationId || state.settings.currentLocationId || '1';
+      const expenseWithLoc: Expense = { ...expense, locationId: locId };
       try {
         const sUrl = (state.settings.serverUrl || 'http://127.0.0.1:8087').trim().replace(/\/+$/, '');
         if (sUrl) {
@@ -3597,7 +3612,7 @@ export const AppProvider = ({ children }: any) => {
       } catch (err) {
         console.warn('[EXPENSE] Push error:', err);
       }
-      setState(prev => ({ ...prev, expenses: [...prev.expenses, expense] }));
+      setState(prev => ({ ...prev, expenses: [...prev.expenses, expenseWithLoc] }));
       addAuditLog(
         'Expense',
         `Added expense: ${expense.title} (${expense.amount})`,

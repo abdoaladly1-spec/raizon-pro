@@ -64,41 +64,49 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
         return map;
     }, [state.items]);
 
-    // 1. الفواتير المعتمدة خلال الفترة المحددة والفرع
+    const activeLocId = String(activeLocation?.id || state.settings.currentLocationId || '1');
+
+    // 1. الفواتير المعتمدة خلال الفترة المحددة والفرع (عزل تام للفرع)
     const periodFilteredInvoices = useMemo(() => {
         return state.invoices.filter(inv => {
             if (!countableInvoice(inv)) return false;
-            if (activeBranchName && (inv.branchName || 'الرئيسي') !== activeBranchName) return false;
+            const matchesLoc = String(inv.locationId || '1') === activeLocId || 
+                (activeBranchName && (inv.branchName || 'الرئيسي') === activeBranchName);
+            if (!matchesLoc) return false;
             const t = inv.timestamp || (inv.date ? parseInvoiceDate(inv.date).getTime() : 0);
             return t >= activePeriod.from && t <= activePeriod.to;
         });
-    }, [state.invoices, activePeriod, activeBranchName]);
+    }, [state.invoices, activePeriod, activeBranchName, activeLocId]);
 
-    // 2. المصروفات خلال الفترة المحددة والفرع
+    // 2. المصروفات خلال الفترة المحددة والفرع (عزل تام للفرع)
     const periodFilteredExpenses = useMemo(() => {
         return state.expenses.filter(e => {
-            if (activeBranchName && (e.branchName || 'الرئيسي') !== activeBranchName) return false;
+            const matchesLoc = String(e.locationId || '1') === activeLocId || 
+                (activeBranchName && e.branchName === activeBranchName);
+            if (!matchesLoc) return false;
             const t = (e as any).timestamp || (e.date ? parseInvoiceDate(e.date).getTime() : 0);
             return t >= activePeriod.from && t <= activePeriod.to;
         });
-    }, [state.expenses, activePeriod, activeBranchName]);
+    }, [state.expenses, activePeriod, activeBranchName, activeLocId]);
 
-    // 3. المرتجعات المعتمدة خلال الفترة المحددة
+    // 3. المرتجعات المعتمدة خلال الفترة المحددة والفرع
     const periodFilteredReturns = useMemo(() => {
         return (state.returns || []).filter(r => {
             if (r.status !== 'approved' || r.deleted) return false;
+            if (String(r.locationId || '1') !== activeLocId) return false;
             const t = r.timestamp || (r.date ? parseInvoiceDate(r.date).getTime() : 0);
             return t >= activePeriod.from && t <= activePeriod.to;
         });
-    }, [state.returns, activePeriod]);
+    }, [state.returns, activePeriod, activeLocId]);
 
-    // 4. تحصيلات الديون خلال الفترة المحددة
+    // 4. تحصيلات الديون خلال الفترة المحددة والفرع
     const periodDebtPayments = useMemo(() => {
         return (state.customerPayments || []).filter(cp => {
+            if (cp.locationId && String(cp.locationId) !== activeLocId) return false;
             const t = cp.timestamp || (cp.date ? parseInvoiceDate(cp.date).getTime() : 0);
             return t >= activePeriod.from && t <= activePeriod.to;
         });
-    }, [state.customerPayments, activePeriod]);
+    }, [state.customerPayments, activePeriod, activeLocId]);
 
     // 5. الحسابات المالية الدقيقة 100%
     const totalRevenue = useMemo(() => sumRevenue(periodFilteredInvoices), [periodFilteredInvoices]);

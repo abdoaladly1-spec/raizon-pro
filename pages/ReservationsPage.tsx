@@ -50,8 +50,9 @@ const ArabicCalendarPicker = ({
     const today = useMemo(() => new Date(), []);
     const todayIso = useMemo(() => localIsoToday(), []);
 
+    const activeLocationId = String(state.settings.currentLocationId || state.locations[0]?.id || '1');
     const resStats = useMemo(() => {
-        const list = state.reservations || [];
+        const list = (state.reservations || []).filter(r => !r.locationId || String(r.locationId) === activeLocationId);
         const todayCount = list.filter(r => r.date === todayIso).length;
         const confirmedCount = list.filter(r => r.status === 'confirmed').length;
         const completedCount = list.filter(r => r.status === 'completed').length;
@@ -463,8 +464,9 @@ export const ReservationsPage = () => {
 
     const todayIso = useMemo(() => localIsoToday(), []);
 
+    const activeLocationId = String(state.settings.currentLocationId || state.locations[0]?.id || '1');
     const resStats = useMemo(() => {
-        const list = state.reservations || [];
+        const list = (state.reservations || []).filter(r => !r.locationId || String(r.locationId) === activeLocationId);
         const todayCount = list.filter(r => r.date === todayIso).length;
         const confirmedCount = list.filter(r => r.status === 'confirmed').length;
         const completedCount = list.filter(r => r.status === 'completed').length;
@@ -631,6 +633,7 @@ export const ReservationsPage = () => {
     };
 
     const filteredReservations = state.reservations.filter(r => {
+        if (r.locationId && String(r.locationId) !== activeLocationId) return false;
         const matchesSearch = activeFilters.search ? (r.customerName.toLowerCase().includes(activeFilters.search.toLowerCase())) : true;
         let matchesDate = true;
         if (activeFilters.startDate && r.date < activeFilters.startDate) matchesDate = false;

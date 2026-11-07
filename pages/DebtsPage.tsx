@@ -103,11 +103,19 @@ export const DebtsPage: React.FC = () => {
     return 'due';
   };
 
+  const activeLocationId = String(state.settings.currentLocationId || state.locations[0]?.id || '1');
+
   // ---------------------------------------------------------------------------
-  // Filtered & Sorted Customers
+  // Filtered & Sorted Customers (عزل تام حسب الفرع الحالي)
   // ---------------------------------------------------------------------------
   const filteredCustomers = useMemo(() => {
     return state.customers
+      .filter(c => {
+        const belongsToBranch = c.locationId === activeLocationId || 
+          state.invoices.some(inv => inv.customerId === c.id && String(inv.locationId || '1') === activeLocationId) ||
+          (state.customerPayments || []).some(cp => cp.customerId === c.id && (!cp.locationId || String(cp.locationId) === activeLocationId));
+        return belongsToBranch;
+      })
       .filter(c => {
         // Search filter (name, phone, id)
         if (!search.trim()) return true;
@@ -466,8 +474,9 @@ export const DebtsPage: React.FC = () => {
         phone: cleanPhone,
         creditLimit: limit,
         balance: initialBal,
-        notes: newCustNotes.trim() || undefined
-      });
+        notes: newCustNotes.trim() || undefined,
+        locationId: activeLocationId
+      } as any);
 
       addToast(`تمت إضافة العميل «${newCustName}» بنجاح`, 'success');
       setShowAddCustomerModal(false);

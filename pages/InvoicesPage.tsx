@@ -40,16 +40,19 @@ export const InvoicesList = () => {
         setPrintInvoice(invoice);
     };
     
+    const activeLocationId = String(state.settings.currentLocationId || state.locations[0]?.id || '1');
+    const activeBranch = state.locations.find(l => String(l.id) === activeLocationId);
     const isNonAdmin = currentUser?.role !== 'admin';
     const assignedBranch = currentUser?.locationId ? state.locations.find(l => l.id === currentUser.locationId)?.name : null;
 
     const filtered = state.invoices.filter(i => {
-        // حصر الكاشير على فرعه المخصص
-        if (isNonAdmin && assignedBranch && i.branchName && i.branchName !== assignedBranch) {
+        // عزل تام إجباري للفرع الحالي: تظهر فقط فواتير الفرع النشط
+        const belongsToActiveBranch = String(i.locationId || '1') === activeLocationId || 
+            (activeBranch && i.branchName && i.branchName === activeBranch.name);
+        if (!belongsToActiveBranch) {
             return false;
         }
-        // فلتر الفرع للمدير
-        if (activeFilters.branchName && (i.branchName || 'الرئيسي') !== activeFilters.branchName) {
+        if (isNonAdmin && assignedBranch && i.branchName && i.branchName !== assignedBranch) {
             return false;
         }
         const matchesSearch = activeFilters.search ? (i.customerName.toLowerCase().includes(activeFilters.search.toLowerCase()) || i.id.toString().includes(activeFilters.search)) : true;

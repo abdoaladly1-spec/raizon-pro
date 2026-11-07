@@ -100,6 +100,8 @@ export interface Item {
   barcode?: string;
   trackStock: boolean;
   quantity: number;
+  /** أرصدة المخزون المنفصلة لكل فرع (locationId -> quantity) */
+  locationQuantities?: Record<string, number>;
   alertThreshold: number;
   variants: ItemVariant[];
   modifiers: ItemModifier[];
@@ -141,6 +143,8 @@ export interface Customer {
   balance?: number;
   /** مؤهل للشراء الآجل (عميل VIP) */
   isVip?: boolean;
+  /** الفرع التابع له العميل */
+  locationId?: string;
 }
 
 export interface CustomerPayment {
@@ -154,6 +158,8 @@ export interface CustomerPayment {
   notes?: string;
   recordedBy?: string;
   receiptNumber?: string;
+  /** الفرع الذي تم السداد به */
+  locationId?: string;
 }
 
 export interface InvoiceItem {
@@ -378,6 +384,8 @@ export interface DrawerMovement {
   date: string;
   timestamp: number;
   user: string;
+  /** معرف الفرع الخاص بحركة الدرج */
+  locationId?: string;
 }
 
 export interface Reservation {
@@ -448,6 +456,8 @@ export interface StaffPayment {
   reversedAmount?: number;
   /** uid آخر مرتجع عكس هذه الدفعة */
   reversedBy?: string;
+  /** معرف الفرع الخاص بالدفعة */
+  locationId?: string;
 }
 
 export interface AppState {
@@ -501,6 +511,8 @@ export interface AppState {
     /** الرصيد النقدي في الدرج عند بداية اليوم (أساس حساب الخزنة المتوقعة) */
     cashDrawerOpening?: number;
     manualOpeningDate?: string;
+    /** أرصدة الدرج الافتتاحية المستقلة لكل فرع (locationId -> { cashDrawerOpening, manualOpeningDate }) */
+    branchDrawerOpenings?: Record<string, { cashDrawerOpening?: number; manualOpeningDate?: string }>;
     /** تم بذر خدمات الصالون في هذه القاعدة (مرة واحدة، إضافة فقط دون حذف) */
     salonServicesSeeded?: boolean;
     timeFormat?: '12h' | '24h';

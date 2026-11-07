@@ -1,3 +1,10 @@
+const getItemBranchStock = (item: Item, locId?: string): number => {
+    if (!item) return 0;
+    if (locId && item.locationQuantities && typeof item.locationQuantities[locId] === 'number') {
+        return item.locationQuantities[locId];
+    }
+    return item.quantity;
+};
 import { generateCode128Svg } from '../lib/barcode';
 /* تم فصل هذا الملف من App.tsx (نظام ProCashier) */
 import React, { useState, useMemo } from 'react';
@@ -147,7 +154,7 @@ export const Inventory = () => {
             ...item,
             cost: item.cost || 0,
             barcode: item.barcode || '',
-            quantity: item.quantity || 0,
+            quantity: getItemBranchStock(item, state.settings.currentLocationId || '1') || 0,
             alertThreshold: item.alertThreshold || 5,
         });
         setIsItemModalOpen(true);
@@ -229,14 +236,24 @@ export const Inventory = () => {
     // Quick inline quantity update for products
     const handleQuickQuantityDelta = (item: Item, delta: number) => {
         if (item.type !== 'product' || !item.trackStock) return;
+        const curBranchId = state.settings.currentLocationId || '1';
+        const currentLocQty = getItemBranchStock(item, curBranchId);
+        const newLocQty = Math.max(0, currentLocQty + delta);
         const newQty = Math.max(0, item.quantity + delta);
-        updateItem({ ...item, quantity: newQty });
+        updateItem({ 
+            ...item, 
+            quantity: newQty,
+            locationQuantities: {
+                ...(item.locationQuantities || {}),
+                [curBranchId]: newLocQty
+            }
+        });
         addInventoryHistory({
             itemId: item.id,
             type: 'adjustment',
             quantityChange: delta,
             reason: language === 'ar' ? (delta > 0 ? 'زيادة سريعة (+1)' : 'نقصان سريع (-1)') : 'Quick stock tweak',
-            locationId: state.settings.currentLocationId || 'default',
+            locationId: curBranchId,
             unitPrice: item.cost || item.price,
             totalValue: (item.cost || item.price) * Math.abs(delta)
         });
@@ -629,7 +646,8 @@ export const Inventory = () => {
                         ) : (
                             filtered.map(item => {
                                 const isProduct = item.type === 'product';
-                                const isLowStock = isProduct && item.trackStock && item.quantity <= item.alertThreshold;
+                                const curBranchQty = getItemBranchStock(item, state.settings.currentLocationId || '1');
+                                    const isLowStock = isProduct && item.trackStock && curBranchQty <= item.alertThreshold;
                                 const categoryName = state.categories.find(c => c.id === item.categoryId)?.nameAr || state.categories.find(c => c.id === item.categoryId)?.nameEn;
 
                                 return (
@@ -706,13 +724,13 @@ export const Inventory = () => {
                                                                         ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200 border border-amber-300' 
                                                                         : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100'
                                                                 }`}>
-                                                                    {item.quantity} {language === 'ar' ? 'قطعة' : 'pcs'}
+                                                                    {getItemBranchStock(item, state.settings.currentLocationId || '1')} {language === 'ar' ? 'قطعة' : 'pcs'}
                                                                 </span>
                                                                 {/* Quick +/- buttons */}
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => handleQuickQuantityDelta(item, -1)}
-                                                                    disabled={item.quantity <= 0}
+                                                                    disabled={getItemBranchStock(item, state.settings.currentLocationId || '1') <= 0}
                                                                     className="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center disabled:opacity-40 transition-colors"
                                                                     title={language === 'ar' ? 'خصم 1' : '-1'}
                                                                 >
