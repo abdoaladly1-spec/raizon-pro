@@ -54,9 +54,6 @@ export const LogOut = ({ className, size, strokeWidth }: IconProps) => (
 export const Plus = ({ className, size, strokeWidth }: IconProps) => (
   <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M5 12h14" /><path d="M12 5v14" /></IconWrapper>
 );
-export const Edit = ({ className, size, strokeWidth }: IconProps) => (
-  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></IconWrapper>
-);
 export const Trash2 = ({ className, size, strokeWidth }: IconProps) => (
   <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></IconWrapper>
 );
@@ -341,7 +338,8 @@ export const WhatsAppIcon = createPngIcon('/icons/whatsapp.png', 'WhatsApp');
 export const StatementIcon = createPngIcon('/icons/statement.png', 'كشف حساب', 'dark:brightness-0 dark:invert');
 export const ForensicsIcon = StatementIcon;
 /** أيقونة التعديل والتحرير */
-export const CustomEditIcon = createPngIcon('/icons/edit.png', 'تعديل');
+export const CustomEditIcon = createPngIcon('/icons/edit.png', 'تعديل', 'dark:brightness-0 dark:invert');
+export const Edit = CustomEditIcon;
 /** أيقونة الوقت والورديات */
 export const TimeIcon = createPngIcon('/icons/time.png', 'وقت');
 /** أيقونة الصور والملفات الشخصية */
