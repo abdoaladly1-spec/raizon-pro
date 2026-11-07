@@ -40,8 +40,15 @@ const writeJson = (key: string, value: unknown) => {
 export const getQueue = (): any[] => readJson<any[]>(QUEUE_KEY, []);
 export const setQueue = (q: any[]) => writeJson(QUEUE_KEY, q);
 
-export const getSyncStatus = (): SyncStatus =>
-  readJson<SyncStatus>(STATUS_KEY, { pending: 0, lastSyncAt: null, lastError: null, syncing: false });
+export const getSyncStatus = (): SyncStatus => {
+  const status = readJson<SyncStatus>(STATUS_KEY, { pending: 0, lastSyncAt: null, lastError: null, syncing: false });
+  // إذا لم يكن هناك فواتير معلقة، احذف أي خطأ قديم تلقائياً
+  if (getQueue().length === 0 && status.lastError) {
+    status.lastError = null;
+    writeJson(STATUS_KEY, status);
+  }
+  return status;
+};
 
 const saveStatus = (patch: Partial<SyncStatus>) => {
   const next = { ...getSyncStatus(), ...patch, pending: getQueue().length };

@@ -198,14 +198,6 @@ const MainContent = () => {
   const [showBranchDropdown, setShowBranchDropdown] = useState(false);
   const [showSyncInfoModal, setShowSyncInfoModal] = useState(false);
 
-  // إخفاء ومسح أخطاء المزامنة القديمة تلقائياً إذا كان النظام يعمل بدون سيرفر أو الطابور فارغ
-  useEffect(() => {
-    if (!state.settings?.serverUrl || syncStatus.pending === 0) {
-      if (syncStatus.lastError) {
-        clearSyncError();
-      }
-    }
-  }, [state.settings?.serverUrl, syncStatus.pending, syncStatus.lastError]);
   const [isNavSaving, setIsNavSaving] = useState(false);
 
   const handleNavigate = (targetTab: string) => {
@@ -257,6 +249,15 @@ const MainContent = () => {
   const { playBeep } = useSound();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncStatus, setSyncStatus] = useState({ pending: 0, lastSyncAt: null as number | null, lastError: null as string | null, syncing: false } as SyncStatus);
+
+  // إخفاء ومسح أخطاء المزامنة القديمة تلقائياً إذا كان النظام يعمل بدون سيرفر أو الطابور فارغ
+  useEffect(() => {
+    if (!state.settings?.serverUrl || syncStatus.pending === 0) {
+      if (syncStatus.lastError) {
+        clearSyncError();
+      }
+    }
+  }, [state.settings?.serverUrl, syncStatus.pending, syncStatus.lastError]);
 
   // ساعة النظام الحية متزامنة بدقة 100% مع ساعة جهاز الكمبيوتر
   const [systemClock, setSystemClock] = useState(() => new Date());
@@ -550,51 +551,127 @@ const MainContent = () => {
                                     <ArrowUp size={13} className={syncStatus.syncing ? 'animate-pulse' : ''} /> {syncStatus.pending}
                                 </button>
                              )}
-                             {syncStatus.lastError && (
-                                <button
-                                    onClick={() => flushQueue({ url: state.settings.serverUrl || '', apiKey: state.settings.serverApiKey || '' })}
-                                    title={`${t('server_failed')}: ${syncStatus.lastError}`}
-                                    className="flex items-center gap-1.5 h-9 px-2.5 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 text-xs font-bold border border-rose-500/30 hover:bg-rose-500/25 transition-all cursor-pointer"
-                                >
-                                    <RefreshCw size={13} className={syncStatus.syncing ? 'animate-spin' : ''} /> {t('sync_retry')}
-                                </button>
+                             {/* زر تنبيه مزامنة السيرفر (يظهر فقط إذا كان هناك سيرفر محدد وفواتير بانتظار الإرسال وحدث خطأ) */}
+                             {Boolean(state.settings?.serverUrl && syncStatus.pending > 0 && syncStatus.lastError) && (
+                                 <button
+                                     onClick={() => setShowSyncInfoModal(true)}
+                                     title={language === 'ar' ? `خطأ مزامنة السيرفر (${syncStatus.lastError}) - انقر للتفاصيل أو مسح التنبيه` : `${syncStatus.lastError} - Click for details`}
+                                     className="flex items-center gap-1.5 h-9 px-2.5 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 text-xs font-bold border border-rose-500/30 hover:bg-rose-500/25 transition-all cursor-pointer animate-fade-in"
+                                 >
+                                     <RefreshCw size={13} className={syncStatus.syncing ? 'animate-spin' : ''} />
+                                     <span>{t('sync_retry')}</span>
+                                 </button>
                              )}
                              {!syncStatus.lastError && syncStatus.lastSyncAt > 0 && (
-                                <span
-                                    title={t('last_sync_at')}
-                                    className="hidden lg:flex items-center gap-1.5 px-2.5 h-9 rounded-xl bg-slate-100/80 dark:bg-purple-950/20 border border-slate-300 dark:border-purple-900/30 text-xs font-mono text-slate-700 dark:text-slate-300 font-semibold"
-                                >
-                                    <Clock size={12} className="text-purple-500 dark:text-purple-400 shrink-0" />
-                                    <span dir="ltr">{new Date(syncStatus.lastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                    <Check size={13} className="text-emerald-500 shrink-0" />
-                                </span>
+                                 <span
+                                     title={t('last_sync_at')}
+                                     className="hidden lg:flex items-center gap-1.5 px-2.5 h-9 rounded-xl bg-slate-100/80 dark:bg-purple-950/20 border border-slate-300 dark:border-purple-900/30 text-xs font-mono text-slate-700 dark:text-slate-300 font-semibold"
+                                 >
+                                     <Clock size={12} className="text-purple-500 dark:text-purple-400 shrink-0" />
+                                     <span dir="ltr">{new Date(syncStatus.lastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                     <Check size={13} className="text-emerald-500 shrink-0" />
+                                 </span>
                              )}
                              {!isOnline && (
-                                <div className="bg-rose-500/90 text-white text-xs px-2.5 h-9 rounded-xl flex items-center gap-1.5 animate-pulse font-bold shadow-xs">
-                                    <WifiOff size={13} /> {t('offline_status')}
-                                </div>
+                                 <div className="bg-rose-500/90 text-white text-xs px-2.5 h-9 rounded-xl flex items-center gap-1.5 animate-pulse font-bold shadow-xs">
+                                     <WifiOff size={13} /> {t('offline_status')}
+                                 </div>
                              )}
                              
-                             {/* Branch selector */}
+                             {/* Branch selector — قائمة منسدلة سريعة ومباشرة للمدير لتبديل الفرع بنقرة واحدة */}
                              {(() => {
-                                const activeBranch = state.locations.find(l => l.id === state.settings.currentLocationId) || state.locations[0];
+                                const activeBranch = state.locations.find(l => String(l.id) === String(state.settings?.currentLocationId)) || state.locations[0];
                                 if (!activeBranch) return null;
                                 const isAdmin = currentUser?.role === 'admin';
-                                const hasMultipleBranches = state.locations.filter(l => l.active !== false).length > 1;
 
-                                if (isAdmin && hasMultipleBranches) {
+                                if (isAdmin) {
                                   return (
-                                    <button
-                                      type="button"
-                                      onClick={() => setShowBranchSwitcherModal(true)}
-                                      className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-bold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/30 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-200 border border-purple-200 dark:border-purple-500/30 transition-all shadow-xs cursor-pointer group hover:border-purple-400/50"
-                                      title={language === 'ar' ? 'تبديل الفرع المدار' : 'Switch managed branch'}
-                                    >
-                                      <Building size={14} className="text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
-                                      <span className="hidden xl:inline text-slate-500 dark:text-purple-300/70">{language === 'ar' ? 'فرع:' : 'Branch:'}</span>
-                                      <span className="font-extrabold text-slate-900 dark:text-white max-w-[110px] truncate">{activeBranch.name}</span>
-                                      <ChevronDown size={13} className="text-purple-500 opacity-70 group-hover:opacity-100 transition-opacity" />
-                                    </button>
+                                    <div className="relative">
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowBranchDropdown(prev => !prev)}
+                                        className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-bold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-200 border border-purple-200 dark:border-purple-500/40 transition-all shadow-xs cursor-pointer group active:scale-95"
+                                        title={language === 'ar' ? 'تبديل الفرع المدار' : 'Switch managed branch'}
+                                      >
+                                        <Building size={14} className="text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
+                                        <span className="hidden xl:inline text-slate-500 dark:text-purple-300/70">{language === 'ar' ? 'فرع:' : 'Branch:'}</span>
+                                        <span className="font-extrabold text-slate-900 dark:text-white max-w-[120px] truncate">{activeBranch.name}</span>
+                                        <ChevronDown size={13} className={`text-purple-500 transition-transform duration-200 ${showBranchDropdown ? 'rotate-180' : ''}`} />
+                                      </button>
+
+                                      {showBranchDropdown && (
+                                        <>
+                                          <div className="fixed inset-0 z-40" onClick={() => setShowBranchDropdown(false)} />
+                                          <div className="absolute top-full mt-2 end-0 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-2 z-50 animate-scale-in text-right" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                                            <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                                              <div>
+                                                <span className="text-xs font-extrabold text-slate-900 dark:text-white block">{language === 'ar' ? 'تبديل الفرع المدار' : 'Switch Branch'}</span>
+                                                <span className="text-[10px] text-slate-400 font-medium">{language === 'ar' ? 'اختر الفرع لمتابعة فواتيره وعملياته' : 'Select active branch'}</span>
+                                              </div>
+                                              <span className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400">
+                                                <Building size={16} />
+                                              </span>
+                                            </div>
+
+                                            <div className="py-1.5 max-h-60 overflow-y-auto custom-scrollbar space-y-1">
+                                              {state.locations.filter(l => l.active !== false).map(loc => {
+                                                const isSelected = String(loc.id) === String(state.settings?.currentLocationId || state.locations[0]?.id);
+                                                return (
+                                                  <button
+                                                    key={loc.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                      updateSettings({ currentLocationId: String(loc.id) });
+                                                      if (currentUser) {
+                                                        sessionStorage.setItem('admin_branch_selected_' + currentUser.id, String(loc.id));
+                                                      }
+                                                      setShowBranchDropdown(false);
+                                                      addToast(language === 'ar' ? `تم التبديل بنجاح لإدارة فرع «${loc.name}»` : `Switched to branch: ${loc.name}`, 'success');
+                                                    }}
+                                                    className={`w-full p-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                                                      isSelected
+                                                        ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 shadow-xs'
+                                                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                                                    }`}
+                                                  >
+                                                    <div className="flex items-center gap-2">
+                                                      <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-emerald-500' : 'bg-slate-400 opacity-40'}`} />
+                                                      <div className="text-right">
+                                                        <span className="block">{loc.name}</span>
+                                                        {loc.address && <span className="text-[10px] text-slate-400 font-normal block">{loc.address}</span>}
+                                                      </div>
+                                                    </div>
+                                                    {isSelected ? (
+                                                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 font-bold border border-emerald-500/20">
+                                                        {language === 'ar' ? 'النشط ✓' : 'Active'}
+                                                      </span>
+                                                    ) : (
+                                                      <span className="text-[10px] text-purple-500 font-medium">
+                                                        {language === 'ar' ? 'اختيار' : 'Select'}
+                                                      </span>
+                                                    )}
+                                                  </button>
+                                                );
+                                              })}
+                                            </div>
+
+                                            <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setShowBranchDropdown(false);
+                                                  handleNavigate('locations');
+                                                }}
+                                                className="w-full py-2 px-3 rounded-xl text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-center transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                                              >
+                                                <Settings size={13} className="text-purple-500" />
+                                                <span>{language === 'ar' ? 'إدارة جميع الفروع والمواقع...' : 'Manage Branches...'}</span>
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
                                   );
                                 }
 
@@ -605,7 +682,7 @@ const MainContent = () => {
                                   </div>
                                 );
                              })()}
-                             
+
                              {/* User Profile Pill & Divider (المدير ذهبي والموظفون بألوان حيوية) */}
                              {(() => {
                                  const avatarStyle = getUserAvatarStyle(currentUser);
