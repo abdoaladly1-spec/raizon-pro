@@ -375,3 +375,10 @@ export const MoreHorizontal = ({ className, size = 20, strokeWidth = 2 }: IconPr
     <circle cx="5" cy="12" r="1" fill="currentColor"/>
   </svg>
 );
+
+export const Smartphone = ({ className, size = 20, strokeWidth = 2 }: IconProps) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="14" height="20" x="5" y="2" rx="2" ry="2"/>
+    <path d="M12 18h.01"/>
+  </svg>
+);
