@@ -382,3 +382,41 @@ export const Smartphone = ({ className, size = 20, strokeWidth = 2 }: IconProps)
     <path d="M12 18h.01"/>
   </svg>
 );
+
+/** أيقونة النسخ الاحتياطي والأمان الموحدة والمتناسقة مع المظهر الداكن */
+export const BackupIcon = ({ className, size = 20, strokeWidth = 2 }: IconProps) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <ellipse cx="12" cy="5" rx="9" ry="3"/>
+    <path d="M3 5v14c0 1.66 4 3 9 3 1.3 0 2.53-.1 3.65-.28"/>
+    <path d="M3 12c0 1.66 4 3 9 3 1.1 0 2.15-.06 3.12-.17"/>
+    <path d="M21 12v-7"/>
+    <path d="m16 19 3 3 5-5"/>
+  </svg>
+);
+
+/** أيقونة تنبيهات وإشعارات البريد الإلكتروني للمدير */
+export const MailNotificationIcon = ({ className, size = 20, strokeWidth = 2 }: IconProps) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="20" height="16" x="2" y="4" rx="2"/>
+    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+    <circle cx="19" cy="5" r="2.5" fill="currentColor" stroke="none"/>
+  </svg>
+);
+
+/** لوجو جيميل الرسمي لإشعارات البريد الإلكتروني */
+export const GmailLogo = ({ className, size = 20 }: { className?: string; size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" className={`shrink-0 select-none ${className || ''}`}>
+    <path fill="#EA4335" d="M20 4H4C2.9 4 2 4.9 2 6l10 7 10-7c0-1.1-.9-2-2-2z"/>
+    <path fill="#4285F4" d="M2 6v12c0 1.1.9 2 2 2h3.5V9.5L2 6z"/>
+    <path fill="#34A853" d="M22 6l-5.5 3.5V20H20c1.1 0 2-.9 2-2V6z"/>
+    <path fill="#FBBC05" d="M7.5 20h9v-7.5l-4.5 3-4.5-3V20z"/>
+  </svg>
+);
+
+/** لوجو إشعارات البريد مع شارة التنبيه النشط */
+export const EmailAlertsLogo = ({ className, size = 24 }: { className?: string; size?: number }) => (
+  <div className={`relative inline-flex items-center justify-center shrink-0 ${className || ''}`} style={{ width: size, height: size }}>
+    <GmailLogo size={size} />
+    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-slate-900" />
+  </div>
+);

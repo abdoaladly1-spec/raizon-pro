@@ -8,7 +8,8 @@ import {
     ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, 
     ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw,
     Building, Bell, Lock, Save, Key, Shield, Download, Edit, MessageSquare,
-    WhatsAppIcon, StatementIcon, CustomEditIcon, TimeIcon, PhotoIcon, SecurityIcon, MailIcon
+    WhatsAppIcon, StatementIcon, CustomEditIcon, TimeIcon, PhotoIcon, SecurityIcon, MailIcon,
+    BackupIcon, MailNotificationIcon, GmailLogo, EmailAlertsLogo
 } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier, AppState, CustomReceiptTemplate } from '../types';
 import { Card, Button, Input, ToastContainer, ModalShell } from '../components/ui';
@@ -26,9 +27,9 @@ type SettingsTab = 'general' | 'email' | 'print' | 'security' | 'users' | 'logs'
 
 const TABS = [
     { id: 'general', icon: Settings, labelAr: 'عام', labelEn: 'General' },
-    { id: 'email', icon: MailIcon as any, labelAr: 'إشعارات المدير', labelEn: 'Manager Alerts' },
+    { id: 'email', icon: MailNotificationIcon, labelAr: 'إشعارات المدير', labelEn: 'Manager Alerts' },
     { id: 'print', icon: Printer, labelAr: 'الطباعة والتصميم', labelEn: 'Print Design' },
-    { id: 'security', icon: SecurityIcon as any, labelAr: 'النسخ الاحتياطي والأمان', labelEn: 'Backup & Security' },
+    { id: 'security', icon: BackupIcon, labelAr: 'النسخ الاحتياطي والأمان', labelEn: 'Backup & Security' },
     { id: 'users', icon: Users, labelAr: 'المستخدمين', labelEn: 'Users' },
     { id: 'logs', icon: Activity, labelAr: 'سجل التدقيق', labelEn: 'Audit Logs' },
     { id: 'updates', icon: RefreshCw, labelAr: 'التحديثات السحابية', labelEn: 'Cloud Updates' },
@@ -1380,10 +1381,12 @@ export const SettingsPage = () => {
             </Card>
 
             {/* بطاقة إشعارات المدير السريعة وتخصيص الإشعارات */}
-            <Card>
+            <Card className="border border-slate-200 dark:border-slate-700/80">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                    <div className="flex items-center gap-2">
-                        <span className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400"><Bell size={20} /></span>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+                            <EmailAlertsLogo size={22} />
+                        </div>
                         <div>
                             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                                 {language === 'ar' ? 'إشعارات جيميل وتنبيهات المدير الفورية' : 'Manager Instant Alerts'}
@@ -1396,9 +1399,9 @@ export const SettingsPage = () => {
                     <button
                         type="button"
                         onClick={() => setShowCustomizeNotificationsModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-bold border border-slate-700 hover:border-slate-600 shadow-sm transition-all cursor-pointer active:scale-95"
                     >
-                        <Bell size={15} />
+                        <Bell size={14} className="text-slate-300" />
                         <span>{language === 'ar' ? 'تخصيص الإشعارات' : 'Customize Notifications'}</span>
                     </button>
                 </div>
@@ -1448,18 +1451,22 @@ export const SettingsPage = () => {
     // =========================================================================
     const renderEmail = () => (
         <div className="space-y-5 animate-fade-in">
-            <Card>
+            <Card className="border border-slate-200 dark:border-slate-700/80">
                 <div className="flex flex-wrap justify-between items-start gap-3 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
-                    <div>
-                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                            <span className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400"><Bell size={20} /></span>
-                            <span>{language === 'ar' ? 'إشعارات البريد الإلكتروني للمدير (Gmail)' : 'Manager Gmail Notifications'}</span>
-                        </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            {language === 'ar'
-                                ? 'إرسال تفاصيل الفواتير وتقارير إقفال الوردية تلقائياً إلى جيميل المدير فور حدوثها.'
-                                : 'Automatically send new invoices and daily closing reports to the manager via Gmail.'}
-                        </p>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+                            <EmailAlertsLogo size={22} />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                <span>{language === 'ar' ? 'إشعارات البريد الإلكتروني للمدير (Gmail)' : 'Manager Gmail Notifications'}</span>
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                {language === 'ar'
+                                    ? 'إرسال تفاصيل الفواتير وتقارير إقفال الوردية تلقائياً إلى جيميل المدير فور حدوثها.'
+                                    : 'Automatically send new invoices and daily closing reports to the manager via Gmail.'}
+                            </p>
+                        </div>
                     </div>
                     <span className="text-xs font-bold px-3 py-1 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -1499,8 +1506,8 @@ export const SettingsPage = () => {
                 {/* زر تخصيص الإشعارات المطور مع تلميح أنيق */}
                 <div className="mt-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/20">
-                            <Bell size={20} />
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-300 flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700">
+                            <MailNotificationIcon size={18} className="text-slate-300" />
                         </div>
                         <div>
                             <h4 className="text-xs md:text-sm font-bold text-slate-900 dark:text-slate-100">
@@ -1516,9 +1523,9 @@ export const SettingsPage = () => {
                     <button
                         type="button"
                         onClick={() => setShowCustomizeNotificationsModal(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-600/20 transition-all cursor-pointer active:scale-95"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-bold border border-slate-700 hover:border-slate-600 shadow-sm transition-all cursor-pointer active:scale-95"
                     >
-                        <Bell size={16} />
+                        <Bell size={15} className="text-slate-300" />
                         <span>{language === 'ar' ? 'تخصيص الإشعارات' : 'Customize Notifications'}</span>
                     </button>
                 </div>
@@ -1754,11 +1761,11 @@ export const SettingsPage = () => {
     const renderSecurity = () => (
         <div className="space-y-6 animate-fade-in">
             {/* بطاقة مركز النسخ الاحتياطي الذكي (محلي + سحابي) */}
-            <Card className="border border-primary-500/30 bg-slate-900/60 dark:bg-slate-900/80 backdrop-blur-md">
+            <Card className="border border-slate-700/80 bg-slate-900/60 dark:bg-slate-900/80 backdrop-blur-md">
                 <div className="flex flex-wrap justify-between items-start gap-3 mb-5 pb-4 border-b border-slate-700/60">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center text-2xl shadow-md">
-                            
+                        <div className="w-11 h-11 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-center shadow-sm shrink-0">
+                            <BackupIcon size={22} className="text-slate-200" />
                         </div>
                         <div>
                             <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
@@ -1787,10 +1794,10 @@ export const SettingsPage = () => {
                 </div>
 
                 {/* الزر الرئيسي للنسخ الاحتياطي المزدوج */}
-                <div className="p-4 rounded-2xl bg-slate-800/90 dark:bg-slate-800/95 border border-primary-500/40 shadow-sm mb-5 flex flex-wrap items-center justify-between gap-4">
+                <div className="p-4 rounded-xl bg-slate-800/80 dark:bg-slate-800/90 border border-slate-700 shadow-sm mb-5 flex flex-wrap items-center justify-between gap-4">
                     <div className="space-y-1">
                         <div className="text-sm font-bold text-white flex items-center gap-2">
-                            
+                            <BackupIcon size={16} className="text-slate-300 shrink-0" />
                             <span className="text-slate-100">{language === 'ar' ? 'النسخ الفوري الشامل بضغطة واحدة:' : 'One-Click Full Backup:'}</span>
                         </div>
                         <p className="text-xs text-slate-300 dark:text-slate-300">
@@ -1804,9 +1811,9 @@ export const SettingsPage = () => {
                         type="button"
                         onClick={handleCreateBackupNow}
                         disabled={backupBusy}
-                        className="px-6 py-3 rounded-xl bg-gradient-to-r from-primary-600 via-primary-700 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                        className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs border border-slate-700 hover:border-slate-600 shadow-sm transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
                     >
-                        <Save size={16} className="text-slate-400 shrink-0" />
+                        <Save size={15} className="text-slate-300 shrink-0" />
                         <span>{backupBusy ? (language === 'ar' ? 'جارٍ الحفظ والإرسال...' : 'Backing up...') : (language === 'ar' ? 'إنشاء نسخة احتياطية الآن (محلي + سحابي)' : 'Backup Now (Local + Cloud)')}</span>
                     </button>
                 </div>
