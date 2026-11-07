@@ -6,7 +6,7 @@ import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingRep
 import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, useSound, useLiveTick } from '../components/ui';
 import { FilterModal } from '../components/FilterModal';
 import { isCashExpense, round2 } from '../lib/payments';
-import { getDrawerOpeningBalance } from '../lib/analytics';
+import { getDrawerOpeningBalance, isAfterClosing } from '../lib/analytics';
 import { localIsoToday, toIsoDate } from '../lib/dates';
 import { CreateInvoice } from './CreateInvoicePage';
 import { AuditLogs } from './AuditLogsPage';
@@ -97,6 +97,7 @@ export const ExpensesPage = () => {
     const drawerOpeningBalance = drawerOpeningInfo.balance;
     const yesterdayRemainingInDrawer = drawerOpeningInfo.yesterdayRemaining;
     const hasManualOverrideToday = drawerOpeningInfo.hasManualOverride;
+    const previousClosingReport = drawerOpeningInfo.previousReport || null;
 
     const isOpeningMovement = (m: any) => {
         const r = (m.reason || '').toLowerCase();
@@ -104,8 +105,8 @@ export const ExpensesPage = () => {
     };
 
     const todayDrawerMovements = useMemo(() => {
-        return (state.drawerMovements || []).filter(m => m.date === todayStr);
-    }, [state.drawerMovements, todayStr]);
+        return (state.drawerMovements || []).filter(m => isAfterClosing(m.date, m.timestamp, previousClosingReport));
+    }, [state.drawerMovements, previousClosingReport]);
 
     const todayDrawerDeposits = useMemo(() => {
         return todayDrawerMovements
@@ -121,38 +122,38 @@ export const ExpensesPage = () => {
 
     const todayCashSales = useMemo(() => {
         return state.invoices
-            .filter(inv => (inv.status !== 'cancelled' && inv.status !== 'refunded') && (inv.date === todayStr || (inv.timestamp && new Date(inv.timestamp).toISOString().split('T')[0] === todayStr)))
+            .filter(inv => (inv.status !== 'cancelled' && inv.status !== 'refunded') && isAfterClosing(inv.date, inv.timestamp, previousClosingReport))
             .reduce((s, inv) => {
                 if (inv.paymentParts && inv.paymentParts.length > 0) {
                     return s + inv.paymentParts.filter(p => p.method === 'cash').reduce((ps, p) => ps + p.amount, 0);
                 }
                 return s + (inv.paymentMethod === 'cash' ? (inv.cashPaid !== undefined ? inv.cashPaid : inv.total) : 0);
             }, 0);
-    }, [state.invoices, todayStr]);
+    }, [state.invoices, previousClosingReport]);
 
     const todayCustomerDebtCash = useMemo(() => {
         return (state.customerPayments || [])
-            .filter(cp => cp.date === todayStr && (cp.paymentMethod === 'cash' || !cp.paymentMethod))
+            .filter(cp => isAfterClosing(cp.date, (cp as any).timestamp, previousClosingReport) && (cp.paymentMethod === 'cash' || !cp.paymentMethod))
             .reduce((s, cp) => s + (cp.amount || 0), 0);
-    }, [state.customerPayments, todayStr]);
+    }, [state.customerPayments, previousClosingReport]);
 
     const todayCashExpensesDeducted = useMemo(() => {
         return state.expenses
-            .filter(e => e.date === todayStr && isCashExpense(e))
+            .filter(e => isCashExpense(e) && isAfterClosing(e.date, (e as any).timestamp, previousClosingReport))
             .reduce((s, e) => s + (e.amount || 0), 0);
-    }, [state.expenses, todayStr]);
+    }, [state.expenses, previousClosingReport]);
 
     const todayCashReturnsDeducted = useMemo(() => {
         return (state.returns || [])
-            .filter(r => r.date === todayStr && (r.refundMethod === 'cash' || !r.refundMethod))
+            .filter(r => isAfterClosing(r.date, (r as any).timestamp, previousClosingReport) && (r.refundMethod === 'cash' || !r.refundMethod))
             .reduce((s, r) => s + (r.total || 0), 0);
-    }, [state.returns, todayStr]);
+    }, [state.returns, previousClosingReport]);
 
     const todayStaffCashPayouts = useMemo(() => {
         return (state.staffPayments || [])
-            .filter((sp: any) => sp.date === todayStr && (sp.method || 'cash') === 'cash' && ['advance', 'salary', 'bonus'].includes(sp.type))
+            .filter((sp: any) => isAfterClosing(sp.date, (sp as any).timestamp, previousClosingReport) && (sp.method || 'cash') === 'cash' && ['advance', 'salary', 'bonus'].includes(sp.type))
             .reduce((s, sp) => s + (sp.amount || 0), 0);
-    }, [state.staffPayments, todayStr]);
+    }, [state.staffPayments, previousClosingReport]);
 
     const expectedDrawerCash = useMemo(() => {
         return round2(

@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { LogOut, Printer, Award, Clock, Wallet, Plus, Trash2, AlertCircle, ArrowUp, ArrowDown, Check, RefreshCw } from '../components/Icons';
 import { ClosingReport } from '../types';
 import { cashOfInvoice, isCashExpense, paymentOf } from '../lib/payments';
-import { getDrawerOpeningBalance } from '../lib/analytics';
+import { getDrawerOpeningBalance, isAfterClosing, countableInvoice } from '../lib/analytics';
 import { toIsoDate, localIsoToday } from '../lib/dates';
 import { cashReturnsFor } from '../lib/returns';
 import { Card } from '../components/ui';
@@ -43,14 +43,14 @@ export const ClosingPage = () => {
     const previousClosingReport = drawerOpeningInfo.previousReport || null;
 
     // =========================================================================
-    // 2. حركات الدرج النقدية لليوم (سحب وإيداع)
+    // 2. حركات الدرج النقدية للوردية الحالية (تظل مستمرة بمرور الأيام طالما لم يتم إقفال وردية أو سحب)
     // =========================================================================
     const todayMovements = useMemo(() => {
-        return (state.drawerMovements || []).filter(m => m.date === today);
-    }, [state.drawerMovements, today]);
+        return (state.drawerMovements || []).filter(m => isAfterClosing(m.date, m.timestamp, previousClosingReport));
+    }, [state.drawerMovements, previousClosingReport]);
 
     const withdrawals = useMemo(() => {
-        return todayMovements.filter(m => m.type === 'withdrawal').reduce((a, m) => a + m.amount, 0);
+        return todayMovements.filter(m => m.type === 'withdrawal').reduce((a, m) => a + (m.amount || 0), 0);
     }, [todayMovements]);
 
     const isOpeningMovement = (m: any) => {
@@ -61,18 +61,18 @@ export const ClosingPage = () => {
     const deposits = useMemo(() => {
         return todayMovements
             .filter(m => m.type === 'deposit' && !isOpeningMovement(m))
-            .reduce((a, m) => a + m.amount, 0);
+            .reduce((a, m) => a + (m.amount || 0), 0);
     }, [todayMovements]);
 
-    // صافي رصيد العهدة النقدية في الدرج (الأساس + إيداعات اليوم - مسحوبات اليوم)
+    // صافي رصيد العهدة النقدية في الدرج (الأساس + إيداعات الوردية - مسحوبات الوردية)
     const netStartingDrawerCash = baseOpeningBalance + deposits - withdrawals;
 
     // =========================================================================
-    // 3. مبيعات ومصروفات اليوم النقدية
+    // 3. مبيعات ومصروفات الوردية الحالية النقدية (تستمر عبر الأيام طالما لم يتم الإقفال)
     // =========================================================================
     const todayInvoices = useMemo(() => {
-        return state.invoices.filter(i => isToday(i.date) && i.status !== 'void');
-    }, [state.invoices, today]);
+        return state.invoices.filter(i => countableInvoice(i) && isAfterClosing(i.date, i.timestamp, previousClosingReport));
+    }, [state.invoices, previousClosingReport]);
 
     // تفصيل مبيعات الفواتير حسب وسيلة الدفع (كاش، بطاقات، محافظ، مديونيات/آجل)
     const paymentBreakdown = useMemo(() => {
@@ -105,10 +105,10 @@ export const ClosingPage = () => {
         return { cash, card, wallet, credit };
     }, [todayInvoices]);
 
-    // تحصيلات وسداد مديونيات العملاء المسجلة اليوم
+    // تحصيلات وسداد مديونيات العملاء المسجلة في الوردية الحالية
     const todayCustomerPayments = useMemo(() => {
-        return (state.customerPayments || []).filter(cp => isToday(cp.date));
-    }, [state.customerPayments, today]);
+        return (state.customerPayments || []).filter(cp => isAfterClosing(cp.date, (cp as any).timestamp, previousClosingReport));
+    }, [state.customerPayments, previousClosingReport]);
 
     const customerPaymentsCash = useMemo(() => {
         return todayCustomerPayments
@@ -131,10 +131,10 @@ export const ClosingPage = () => {
     // الكاش المضاف للدرج من المبيعات والتحصيلات
     const cashSales = paymentBreakdown.cash + customerPaymentsCash;
 
-    // رصيد المحافظ لليوم (مبيعات + تحصيلات إنستاباي ومحافظ إلكترونية)
+    // رصيد المحافظ للوردية (مبيعات + تحصيلات إنستاباي ومحافظ إلكترونية)
     const walletTotal = paymentBreakdown.wallet + customerPaymentsWallet;
 
-    // رصيد البطاقات البنكية لليوم (مبيعات + تحصيلات فيزا)
+    // رصيد البطاقات البنكية للوردية (مبيعات + تحصيلات فيزا)
     const cardTotal = paymentBreakdown.card + customerPaymentsCard;
 
     // إجمالي مديونيات العملاء للمدة الكاملة (جميع الأرصدة المدينة المستحقة على العملاء)
@@ -144,7 +144,7 @@ export const ClosingPage = () => {
             .reduce((sum, c) => sum + (Number(c.balance) || 0), 0);
     }, [state.customers]);
 
-    // المديونيات الجديدة المسجلة في فواتير اليوم
+    // المديونيات الجديدة المسجلة في فواتير الوردية الحالية
     const todayCreditSales = paymentBreakdown.credit;
 
     // رصيد المديونيات المعتمد في التقفيل: المدة الكاملة
@@ -159,22 +159,22 @@ export const ClosingPage = () => {
     }, [todayInvoices]);
 
     const todayExpenses = useMemo(() => {
-        return state.expenses.filter(e => e.date === today && isCashExpense(e));
-    }, [state.expenses, today]);
+        return state.expenses.filter(e => isCashExpense(e) && isAfterClosing(e.date, (e as any).timestamp, previousClosingReport));
+    }, [state.expenses, previousClosingReport]);
 
     const totalExpensesAmount = useMemo(() => {
         return todayExpenses.reduce((acc, exp) => acc + exp.amount, 0);
     }, [todayExpenses]);
 
     const cashRefunds = useMemo(() => {
-        return cashReturnsFor(state.returns || [], r => isToday(r.date));
-    }, [state.returns, today]);
+        return cashReturnsFor(state.returns || [], r => isAfterClosing(r.date, (r as any).timestamp, previousClosingReport));
+    }, [state.returns, previousClosingReport]);
 
     const staffCashPayouts = useMemo(() => {
         return (state.staffPayments || [])
-            .filter((p: any) => isToday(p.date) && ['advance', 'salary', 'bonus'].includes(p.type) && (p.method || 'cash') === 'cash')
+            .filter((p: any) => isAfterClosing(p.date, (p as any).timestamp, previousClosingReport) && ['advance', 'salary', 'bonus'].includes(p.type) && (p.method || 'cash') === 'cash')
             .reduce((a: number, p: any) => a + (p.amount || 0), 0);
-    }, [state.staffPayments, today]);
+    }, [state.staffPayments, previousClosingReport]);
 
     // إجمالي المصروفات والمرتجعات النقدية المخصومة من الدرج
     const totalCashDeductions = totalExpensesAmount + cashRefunds + staffCashPayouts;

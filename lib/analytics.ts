@@ -426,34 +426,35 @@ export interface DrawerOpeningInfo {
     yesterdayRemaining: number | null;
     hasManualOverride: boolean;
     previousReport?: ClosingReport | null;
+    lastClosingTimestamp: number;
 }
 
 /**
  * حساب الرصيد الافتتاحي للدرج:
- * في اليوم الجديد هو إجمالي الرصيد المتبقي من اليوم السابق تلقائياً 100%.
+ * رصيد الدرج يظل كما هو بمرور الأيام طالما لم يتم سحبه:
+ * 1. إذا عيّن المستخدم رصيداً يدوياً يستمر كما هو بمرور الأيام حتى يتم إقفال وردية جديدة أو استعادة الإقفال.
+ * 2. إذا وجد إقفال سابق، فإن الرصيد المتبقي بالدرج لغداً (retainedInDrawer) يستمر كما هو بمرور الأيام طالما لم يُسحب.
+ * 3. في حال عدم وجود إقفال، يستمر الرصيد الافتراضي للإعدادات بمرور الأيام.
  */
 export const getDrawerOpeningBalance = (
     closingReports: ClosingReport[] = [],
     settings: { cashDrawerOpening?: number; manualOpeningDate?: string } = {},
     currentDate: string = localIsoToday()
 ): DrawerOpeningInfo => {
-    const today = toIsoDate(currentDate);
+    // 1. ترتيب تقارير التقفيل من الأحدث للأقدم بناء على الطابع الزمني والتاريخ
+    const sorted = [...(closingReports || [])].sort((a, b) => {
+        const tb = b.timestamp || tsOf(b.date);
+        const ta = a.timestamp || tsOf(a.date);
+        return tb - ta;
+    });
 
-    // 1. هل قام المستخدم بتعيين رصيد افتتاحي يدوي لليوم تحديداً؟
-    const hasManualOverride = settings.manualOpeningDate === today && typeof settings.cashDrawerOpening === 'number';
-
-    // 2. ترتيب تقارير التقفيل من الأحدث للأقدم
-    const sorted = [...(closingReports || [])].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-    // 3. البحث عن أحدث تقفيل مسجل يسبق تاريخ اليوم (تقفيل الأمس أو آخر يوم مسجل)
-    const previousDayClosing = sorted.find(r => toIsoDate(r.date, r.timestamp) < today) || null;
-
-    // في حال عدم وجود تقفيل بتاريخ سابق (مثلاً وردية سابقة أغلقت في نفس اليوم)، نأخذ أحدث تقفيل مسجل
-    const fallbackClosing = sorted.length > 0 ? sorted[0] : null;
-    const previousReport = previousDayClosing || fallbackClosing;
+    // أحدث تقفيل مسجل يمثل نهاية الوردية السابقة
+    const previousReport = sorted.length > 0 ? sorted[0] : null;
 
     let yesterdayRemaining: number | null = null;
+    let lastClosingTimestamp = 0;
     if (previousReport) {
+        lastClosingTimestamp = previousReport.timestamp || tsOf(previousReport.date + ' 23:59:59');
         if (typeof previousReport.retainedInDrawer === 'number' && !isNaN(previousReport.retainedInDrawer)) {
             yesterdayRemaining = previousReport.retainedInDrawer;
         } else if (typeof previousReport.actualCash === 'number' && !isNaN(previousReport.actualCash)) {
@@ -461,33 +462,58 @@ export const getDrawerOpeningBalance = (
         }
     }
 
-    // 4. الرصيد المعتمد لبداية اليوم:
-    // في اليوم الجديد: الرصيد الافتتاحي هو إجمالي الرصيد المتبقي من اليوم السابق
+    // 2. هل قام المستخدم بتعيين رصيد افتتاحي يدوي؟
+    // رصيد الدرج يظل كما هو بمرور الأيام طالما تم تحديده ولم يتم تقفيل وردية جديدة بعده
+    const hasManualOverride = Boolean(settings.manualOpeningDate && typeof settings.cashDrawerOpening === 'number');
+
     if (hasManualOverride) {
         return {
             balance: Number(settings.cashDrawerOpening),
             source: 'manual_override',
             yesterdayRemaining,
             hasManualOverride: true,
-            previousReport
+            previousReport,
+            lastClosingTimestamp
         };
     }
 
+    // 3. الرصيد المتبقي من آخر تقفيل (يظل ثابتاً بمرور الأيام ما لم يُسحب)
     if (yesterdayRemaining !== null) {
         return {
             balance: yesterdayRemaining,
             source: 'yesterday_closing',
             yesterdayRemaining,
             hasManualOverride: false,
-            previousReport
+            previousReport,
+            lastClosingTimestamp
         };
     }
 
+    // 4. الرصيد الافتراضي في إعدادات النظام: يستمر كما هو بمرور الأيام
     return {
         balance: Math.max(0, Number(settings.cashDrawerOpening) || 0),
         source: 'settings_default',
         yesterdayRemaining: null,
         hasManualOverride: false,
-        previousReport: null
+        previousReport: null,
+        lastClosingTimestamp: 0
     };
+};
+
+/** هل الحركة أو الفاتورة تقع بعد آخر تقفيل مسجل (ضمن الوردية الحالية المفتوحة)؟ */
+export const isAfterClosing = (
+    itemDate?: string,
+    itemTimestamp?: number,
+    lastClosingReport?: ClosingReport | null
+): boolean => {
+    if (!lastClosingReport) return true;
+    const lastTs = lastClosingReport.timestamp || tsOf(lastClosingReport.date + ' 23:59:59');
+    const itemTs = itemTimestamp || (itemDate ? tsOf(itemDate) : 0);
+    if (itemTs > 0 && lastTs > 0) {
+        return itemTs > lastTs;
+    }
+    if (itemDate && lastClosingReport.date) {
+        return toIsoDate(itemDate) > toIsoDate(lastClosingReport.date);
+    }
+    return true;
 };

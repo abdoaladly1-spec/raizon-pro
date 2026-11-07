@@ -14,7 +14,7 @@ import { round2, isCashExpense } from '../lib/payments';
 import { 
     sumRevenue, sumReturns, sumExpenses, countableInvoice, calcPeriod, 
     periodInvoices, periodExpenses, periodReturns, byStaff, profitBreakdown,
-    openReportPreview, ReportDoc, Period, getDrawerOpeningBalance
+    openReportPreview, ReportDoc, Period, getDrawerOpeningBalance, isAfterClosing
 } from '../lib/analytics';
 import { Customer, Invoice, Expense, ReturnRecord } from '../types';
 
@@ -234,15 +234,17 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
     const yesterdayRemainingInDrawer = drawerOpeningInfo.yesterdayRemaining;
     const hasManualOverrideToday = drawerOpeningInfo.hasManualOverride;
 
-    // 2. حركات الدرج لليوم (استبعاد أي رصيد افتتاحي مسجل كإيداع لتفادي الازدواجية نهائياً)
+    const previousClosingReport = drawerOpeningInfo.previousReport || null;
+
+    // 2. حركات الدرج للوردية الحالية (تظل مستمرة بمرور الأيام طالما لم يتم إقفال وردية أو سحب)
     const isOpeningMovement = (m: any) => {
         const r = (m.reason || '').toLowerCase();
         return r.includes('افتتاحي') || r.includes('opening') || r.includes('بداية') || r.includes('رصيد الدرج');
     };
 
     const todayDrawerMovements = useMemo(() => {
-        return (state.drawerMovements || []).filter(m => m.date === todayStr);
-    }, [state.drawerMovements, todayStr]);
+        return (state.drawerMovements || []).filter(m => isAfterClosing(m.date, m.timestamp, previousClosingReport));
+    }, [state.drawerMovements, previousClosingReport]);
 
     const todayDrawerDeposits = useMemo(() => {
         return todayDrawerMovements
@@ -256,45 +258,45 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
             .reduce((s, m) => s + (m.amount || 0), 0);
     }, [todayDrawerMovements]);
 
-    // 3. المبيعات النقدية المحصلة بالدرج كاش اليوم
+    // 3. المبيعات النقدية المحصلة بالدرج كاش للوردية الحالية
     const todayCashSales = useMemo(() => {
         return state.invoices
-            .filter(inv => countableInvoice(inv) && (inv.date === todayStr || (inv.timestamp && new Date(inv.timestamp).toISOString().split('T')[0] === todayStr)))
+            .filter(inv => countableInvoice(inv) && isAfterClosing(inv.date, inv.timestamp, previousClosingReport))
             .reduce((s, inv) => {
                 if (inv.paymentParts && inv.paymentParts.length > 0) {
                     return s + inv.paymentParts.filter(p => p.method === 'cash').reduce((ps, p) => ps + p.amount, 0);
                 }
                 return s + (inv.paymentMethod === 'cash' ? (inv.cashPaid !== undefined ? inv.cashPaid : inv.total) : 0);
             }, 0);
-    }, [state.invoices, todayStr]);
+    }, [state.invoices, previousClosingReport]);
 
-    // 4. سداد ديون العملاء كاش اليوم
+    // 4. سداد ديون العملاء كاش للوردية الحالية
     const todayCustomerDebtCash = useMemo(() => {
         return (state.customerPayments || [])
-            .filter(cp => cp.date === todayStr && (cp.paymentMethod === 'cash' || !cp.paymentMethod))
+            .filter(cp => isAfterClosing(cp.date, (cp as any).timestamp, previousClosingReport) && (cp.paymentMethod === 'cash' || !cp.paymentMethod))
             .reduce((s, cp) => s + (cp.amount || 0), 0);
-    }, [state.customerPayments, todayStr]);
+    }, [state.customerPayments, previousClosingReport]);
 
-    // 5. المصروفات النقدية المسحوبة من الدرج اليوم
+    // 5. المصروفات النقدية المسحوبة من الدرج للوردية الحالية
     const todayCashExpensesDeducted = useMemo(() => {
         return state.expenses
-            .filter(e => e.date === todayStr && isCashExpense(e))
+            .filter(e => isCashExpense(e) && isAfterClosing(e.date, (e as any).timestamp, previousClosingReport))
             .reduce((s, e) => s + (e.amount || 0), 0);
-    }, [state.expenses, todayStr]);
+    }, [state.expenses, previousClosingReport]);
 
-    // 6. المرتجعات النقدية المردودة كاش اليوم
+    // 6. المرتجعات النقدية المردودة كاش للوردية الحالية
     const todayCashReturnsDeducted = useMemo(() => {
         return (state.returns || [])
-            .filter(r => r.date === todayStr && (r.refundMethod === 'cash' || !r.refundMethod))
+            .filter(r => isAfterClosing(r.date, (r as any).timestamp, previousClosingReport) && (r.refundMethod === 'cash' || !r.refundMethod))
             .reduce((s, r) => s + (r.total || 0), 0);
-    }, [state.returns, todayStr]);
+    }, [state.returns, previousClosingReport]);
 
-    // 7. سلف ومرتبات كاش مدفوعة من الدرج اليوم
+    // 7. سلف ومرتبات كاش مدفوعة من الدرج للوردية الحالية
     const todayStaffCashPayouts = useMemo(() => {
         return (state.staffPayments || [])
-            .filter((sp: any) => sp.date === todayStr && (sp.method || 'cash') === 'cash' && ['advance', 'salary', 'bonus'].includes(sp.type))
+            .filter((sp: any) => isAfterClosing(sp.date, (sp as any).timestamp, previousClosingReport) && (sp.method || 'cash') === 'cash' && ['advance', 'salary', 'bonus'].includes(sp.type))
             .reduce((s, sp) => s + (sp.amount || 0), 0);
-    }, [state.staffPayments, todayStr]);
+    }, [state.staffPayments, previousClosingReport]);
 
     // 8. المبلغ المتوقع بالدرج حالياً بدقة 100%
     const expectedDrawerCash = useMemo(() => {
