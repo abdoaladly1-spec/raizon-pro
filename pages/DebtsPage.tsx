@@ -542,7 +542,7 @@ export const DebtsPage: React.FC = () => {
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
-            <span>متأخر / تجاوز الحد</span>
+            <span>متأخر في السداد</span>
           </span>
         );
       case 'due':
@@ -1277,17 +1277,7 @@ export const DebtsPage: React.FC = () => {
                     <span>سداد دفعة</span>
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingCustomer(profileCustomer);
-                    setEditLimit(String(profileCustomer.creditLimit || ''));
-                    setEditNotes(profileCustomer.notes || '');
-                  }}
-                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-300 dark:border-slate-600/80 cursor-pointer"
-                >
-                  تعديل الحد / ملاحظات
-                </button>
+
               </div>
             </div>
 
@@ -1596,35 +1586,18 @@ export const DebtsPage: React.FC = () => {
             </div>
 
             <div>
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  الحد الائتماني ({currencySymbol}):
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="100"
-                  value={newCustLimit}
-                  onChange={(e) => setNewCustLimit(e.target.value)}
-                  placeholder="2000"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  رصيد افتتاحي (إن وُجد):
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={newCustInitialBalance}
-                  onChange={(e) => setNewCustInitialBalance(e.target.value)}
-                  placeholder="0"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
+              <label className="block text-xs font-bold text-slate-300 mb-1">
+                رصيد افتتاحي (إن وُجد):
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={newCustInitialBalance}
+                onChange={(e) => setNewCustInitialBalance(e.target.value)}
+                placeholder="0"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+              />
             </div>
 
             <div>

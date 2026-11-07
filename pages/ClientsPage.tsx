@@ -973,21 +973,8 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
 
                         {/* الحساب الآجل والمديونية */}
                         <div className="p-3.5 rounded-xl border border-slate-700 bg-slate-800/80 space-y-3">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-300 mb-1">
-                                        {language === 'ar' ? 'الحد الائتماني (ج.م)' : 'Credit Limit (EGP)'}
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="100"
-                                        value={form.creditLimit || ''}
-                                        onChange={(e) => setForm({ ...form, creditLimit: Math.max(0, parseFloat(e.target.value) || 0) })}
-                                        placeholder="مثال: 5000"
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-700 bg-slate-800 text-slate-100 outline-none focus:border-primary-500 font-mono"
-                                    />
-                                </div>
+                            <div>
+                                
                                 <div>
                                     <label className="block text-xs font-bold text-slate-300 mb-1">
                                         {language === 'ar' ? 'المديونية السابقة (ج.م)' : 'Opening Debt (EGP)'}
