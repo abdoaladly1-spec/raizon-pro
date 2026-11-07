@@ -6,7 +6,7 @@ import { Card } from '../components/ui';
 import { translateAuditLogToAr, ACTION_CATEGORIES_AR, exportAuditLogsToCsv } from '../lib/auditLogAr';
 
 export const AuditLogs = () => {
-  const { state, t, language, formatDateTime, formatNumber } = useApp();
+  const { state, t, language, formatDateTime, formatDate, formatTime, formatNumber } = useApp();
   const [activeTab, setActiveTab] = useState<'all' | 'suspicious'>('suspicious');
   const [query, setQuery] = useState('');
   const [action, setAction] = useState('all');
@@ -43,7 +43,7 @@ export const AuditLogs = () => {
         user: (inv as any).voidedBy || (inv as any).createdBy || 'كاشير',
         amount: inv.total,
         reason: (inv as any).voidReason || `إلغاء الفاتورة #${inv.id}`,
-        badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+        badgeColor: 'bg-slate-800 text-rose-300 border-slate-700'
       });
     });
 
@@ -58,7 +58,7 @@ export const AuditLogs = () => {
         user: ret.createdBy || 'كاشير',
         amount: ret.refundAmount,
         reason: ret.reason || `مرتجع للفاتورة #${ret.invoiceId}`,
-        badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+        badgeColor: 'bg-slate-800 text-slate-200 border-slate-700'
       });
     });
 
@@ -73,7 +73,7 @@ export const AuditLogs = () => {
         user: mov.user || 'كاشير',
         amount: mov.amount,
         reason: mov.reason || 'سحب يدوي من الخزينة',
-        badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+        badgeColor: 'bg-slate-800 text-slate-200 border-slate-700'
       });
     });
 
@@ -88,7 +88,7 @@ export const AuditLogs = () => {
         user: (c as any).closedBy || (c as any).cashierName || 'كاشير',
         amount: Math.abs(c.difference || 0),
         reason: `عجز مسجل عند إقفال الدرج (المتوقع: ${c.expectedCash} ج.م، الفعلي: ${c.actualCash} ج.م)`,
-        badgeColor: 'bg-red-500/20 text-red-300 border-red-500/40'
+        badgeColor: 'bg-slate-800 text-rose-300 border-slate-700'
       });
     });
 
@@ -111,7 +111,7 @@ export const AuditLogs = () => {
           titleEn: `System Action (${l.action})`,
           user: l.user || 'المدير',
           reason: trans.detailsAr,
-          badgeColor: 'bg-slate-700 text-slate-300 border-slate-600'
+          badgeColor: 'bg-slate-800 text-slate-200 border-slate-700'
         });
       }
     });
@@ -316,43 +316,48 @@ export const AuditLogs = () => {
 
       {/* محتوى جدول العمليات المشبوهة */}
       {activeTab === 'suspicious' && (
-        <Card className="border border-slate-700 bg-slate-900/80">
+        <Card className="border border-slate-700/80 bg-slate-900/90 shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
               <thead>
-                <tr className="border-b border-slate-700 text-slate-400 font-bold">
-                  <th className="py-3 px-3">{language === 'ar' ? 'الوقت والتاريخ' : 'Time'}</th>
-                  <th className="py-3 px-3">{language === 'ar' ? 'نوع العملية' : 'Activity Type'}</th>
-                  <th className="py-3 px-3">{language === 'ar' ? 'المستخدم / الكاشير' : 'Cashier / User'}</th>
-                  <th className="py-3 px-3">{language === 'ar' ? 'المبلغ المعني' : 'Amount'}</th>
+                <tr className="border-b border-slate-700/80 text-slate-400 font-bold">
+                  <th className="py-3 px-3 w-40 whitespace-nowrap">{language === 'ar' ? 'الوقت والتاريخ' : 'Time'}</th>
+                  <th className="py-3 px-3 w-44 whitespace-nowrap">{language === 'ar' ? 'نوع العملية' : 'Activity Type'}</th>
+                  <th className="py-3 px-3 w-36 whitespace-nowrap">{language === 'ar' ? 'المستخدم / الكاشير' : 'Cashier / User'}</th>
+                  <th className="py-3 px-3 w-32 whitespace-nowrap">{language === 'ar' ? 'المبلغ المعني' : 'Amount'}</th>
                   <th className="py-3 px-3">{language === 'ar' ? 'السبب والتفاصيل' : 'Reason / Details'}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 font-medium">
+              <tbody className="divide-y divide-slate-800/80 font-medium">
                 {filteredSuspiciousLogs.map(item => (
-                  <tr key={item.id} className="hover:bg-slate-800/60 transition-colors">
-                    <td className="py-3 px-3 font-mono text-[11px] text-slate-400">
-                      {formatDateTime(new Date(item.timestamp))}
+                  <tr key={item.id} className="hover:bg-slate-800/50 transition-colors">
+                    <td className="py-3 px-3 font-mono text-[11px] whitespace-nowrap">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-slate-300 font-medium">{formatDate(new Date(item.timestamp))}</span>
+                        <span className="text-[10px] text-slate-500">{formatTime(new Date(item.timestamp))}</span>
+                      </div>
                     </td>
-                    <td className="py-3 px-3">
-                      <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border ${item.badgeColor}`}>
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap border ${item.badgeColor}`}>
                         {language === 'ar' ? item.titleAr : item.titleEn}
                       </span>
                     </td>
-                    <td className="py-3 px-3 font-bold text-slate-200 flex items-center gap-1.5">
-                      <User size={14} className="text-slate-400 shrink-0" />
-                      <span>{item.user}</span>
+                    <td className="py-3 px-3 whitespace-nowrap font-bold text-slate-200">
+                      <div className="flex items-center gap-1.5">
+                        <User size={13} className="text-slate-400 shrink-0" />
+                        <span>{item.user}</span>
+                      </div>
                     </td>
-                    <td className="py-3 px-3 font-mono font-bold">
+                    <td className="py-3 px-3 font-mono font-bold whitespace-nowrap">
                       {item.amount !== undefined ? (
-                        <span className="text-amber-400">
+                        <span className="text-slate-100">
                           {formatNumber(item.amount)} {t('egp')}
                         </span>
                       ) : (
                         <span className="text-slate-500">—</span>
                       )}
                     </td>
-                    <td className="py-3 px-3 text-slate-300">
+                    <td className="py-3 px-3 text-slate-300 leading-relaxed font-sans">
                       {item.reason}
                     </td>
                   </tr>
@@ -372,22 +377,25 @@ export const AuditLogs = () => {
 
       {/* محتوى جدول السجلات العادية */}
       {activeTab === 'all' && (
-        <Card className="border border-slate-700 bg-slate-900/80">
+        <Card className="border border-slate-700/80 bg-slate-900/90 shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-right text-xs">
               <thead>
-                <tr className="border-b border-slate-700 text-slate-400 font-bold">
-                  <th className="py-3 px-3">{language === 'ar' ? 'الوقت والتاريخ' : t('time')}</th>
-                  <th className="py-3 px-3">{language === 'ar' ? 'المستخدم / الكاشير' : t('user_header')}</th>
-                  <th className="py-3 px-3">{language === 'ar' ? 'نوع العملية' : t('action_header')}</th>
+                <tr className="border-b border-slate-700/80 text-slate-400 font-bold">
+                  <th className="py-3 px-3 w-40 whitespace-nowrap">{language === 'ar' ? 'الوقت والتاريخ' : t('time')}</th>
+                  <th className="py-3 px-3 w-36 whitespace-nowrap">{language === 'ar' ? 'المستخدم / الكاشير' : t('user_header')}</th>
+                  <th className="py-3 px-3 w-44 whitespace-nowrap">{language === 'ar' ? 'نوع العملية' : t('action_header')}</th>
                   <th className="py-3 px-3">{language === 'ar' ? 'تفاصيل الإجراء والمبالغ' : t('details_header')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 font-medium">
+              <tbody className="divide-y divide-slate-800/80 font-medium">
                 {standardLogs.map(log => (
-                  <tr key={log.id} className="hover:bg-slate-800/60 transition-colors">
-                    <td className="py-3 px-3 text-slate-400 font-mono text-[11px] whitespace-nowrap">
-                      {formatDateTime(new Date(log.timestamp))}
+                  <tr key={log.id} className="hover:bg-slate-800/50 transition-colors">
+                    <td className="py-3 px-3 font-mono text-[11px] whitespace-nowrap">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-slate-300 font-medium">{formatDate(new Date(log.timestamp))}</span>
+                        <span className="text-[10px] text-slate-500">{formatTime(new Date(log.timestamp))}</span>
+                      </div>
                     </td>
                     <td className="py-3 px-3 font-bold text-slate-200 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
@@ -396,7 +404,7 @@ export const AuditLogs = () => {
                       </div>
                     </td>
                     <td className="py-3 px-3 whitespace-nowrap">
-                      <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border ${log.badgeColor}`}>
+                      <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap border ${log.badgeColor}`}>
                         {language === 'ar' ? log.actionAr : (t(log.action.toLowerCase()) || log.action)}
                       </span>
                     </td>

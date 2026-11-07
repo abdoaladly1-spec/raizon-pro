@@ -2530,15 +2530,18 @@ export const AppProvider = ({ children }: any) => {
   const formatDateTime = (date: Date | number, options?: Intl.DateTimeFormatOptions) => {
     const d = typeof date === 'number' ? new Date(date) : date;
     const is24h = state?.settings?.timeFormat === '24h';
-    return d.toLocaleString(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', {
+    const datePart = d.toLocaleDateString(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', {
       year: 'numeric',
       month: '2-digit',
-      day: '2-digit',
+      day: '2-digit'
+    });
+    const timePart = d.toLocaleTimeString(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: !is24h,
       ...options
     });
+    return `${datePart} ${timePart}`.replace(/^[,\u060C\s]+/, '').trim();
   };
 
   // Logic to simulate persistence would go here in d real app
