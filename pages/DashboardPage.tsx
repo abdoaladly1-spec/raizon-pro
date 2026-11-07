@@ -23,12 +23,12 @@ type DetailModalType = 'revenue' | 'profit' | 'expenses' | 'debts' | 'invoices' 
 
 export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) => void, showStats: boolean }) => {
     const { state, t, language, formatDate, formatTime, currentUser, formatNumber } = useApp();
-    const [range, setRange] = useState<DashboardRange>('week');
+    const [range, setRange] = useState<DashboardRange>('day');
     
     // نافذة التفاصيل المنبثقة عند الضغط على أي بطاقة
     const [activeModal, setActiveModal] = useState<DetailModalType>(null);
     // إمكانية تبديل فترة أفضل موظف من داخل النافذة
-    const [staffModalRange, setStaffModalRange] = useState<DashboardRange>('week');
+    const [staffModalRange, setStaffModalRange] = useState<DashboardRange>('day');
 
     // الساعة الحية
     const [currentTime, setCurrentTime] = useState(new Date());
