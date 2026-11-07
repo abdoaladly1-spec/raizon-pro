@@ -212,9 +212,9 @@ export const InvoiceReceipt = ({
                             display: 'flex',
                             justifyContent:
                               design.logoFrontAlign === 'left'
-                                ? 'flex-start'
+                                ? (rtl ? 'flex-end' : 'flex-start')
                                 : design.logoFrontAlign === 'right'
-                                ? 'flex-end'
+                                ? (rtl ? 'flex-start' : 'flex-end')
                                 : 'center',
                             marginBottom: '4px',
                           }}
@@ -236,9 +236,9 @@ export const InvoiceReceipt = ({
                             display: 'flex',
                             justifyContent:
                               design.logoFrontAlign === 'left'
-                                ? 'flex-start'
+                                ? (rtl ? 'flex-end' : 'flex-start')
                                 : design.logoFrontAlign === 'right'
-                                ? 'flex-end'
+                                ? (rtl ? 'flex-start' : 'flex-end')
                                 : 'center',
                             margin: '4px 0',
                           }}
