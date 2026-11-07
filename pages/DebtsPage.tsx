@@ -727,7 +727,7 @@ export const DebtsPage: React.FC = () => {
               placeholder="بحث باسم العميل، رقم الهاتف، أو كود الحساب..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pr-10 pl-8 py-2.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-600/80 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+              className="w-full pr-10 pl-8 py-2.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-600/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
             />
             {search && (
               <button
@@ -746,24 +746,24 @@ export const DebtsPage: React.FC = () => {
             <select
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e.target.value as any)}
-              className="px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-600/80 text-slate-200 outline-none focus:border-purple-500 cursor-pointer"
+              className="px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-600/80 text-slate-800 dark:text-slate-200 outline-none focus:border-purple-500 cursor-pointer"
             >
-              <option value="all">كل الفترات</option>
-              <option value="today">حركات اليوم</option>
-              <option value="week">آخر 7 أيام</option>
-              <option value="month">آخر 30 يوم</option>
+              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">كل الفترات</option>
+              <option value="today" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">حركات اليوم</option>
+              <option value="week" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">آخر 7 أيام</option>
+              <option value="month" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">آخر 30 يوم</option>
             </select>
 
             {/* خيارات الترتيب */}
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-600/80 text-slate-200 outline-none focus:border-purple-500 cursor-pointer"
+              className="px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-600/80 text-slate-800 dark:text-slate-200 outline-none focus:border-purple-500 cursor-pointer"
             >
-              <option value="amount_desc">الأعلى مديونية</option>
-              <option value="amount_asc">الأقل مديونية</option>
-              <option value="date_desc">الأحدث حركة</option>
-              <option value="name_asc">أبجدياً بالاسم</option>
+              <option value="amount_desc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">الأعلى مديونية</option>
+              <option value="amount_asc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">الأقل مديونية</option>
+              <option value="date_desc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">الأحدث حركة</option>
+              <option value="name_asc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">أبجدياً بالاسم</option>
             </select>
 
             {/* زر مسح الفلاتر */}
@@ -802,7 +802,7 @@ export const DebtsPage: React.FC = () => {
                 className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
                   active
                     ? 'bg-blue-600 text-white border border-blue-500 shadow-sm shadow-blue-500/30'
-                    : 'bg-slate-100 dark:bg-slate-900/80 text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-800 hover:text-white'
+                    : 'bg-slate-100 dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 {pill.label}
@@ -871,7 +871,7 @@ export const DebtsPage: React.FC = () => {
             {/* Desktop / Tablet Table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-right text-xs">
-                <thead className="bg-slate-100 dark:bg-slate-900/80/80 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/80">
+                <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700/80">
                   <tr>
                     <th className="py-3.5 px-4 font-bold">العميل</th>
                     <th className="py-3.5 px-4 font-bold">رقم الهاتف</th>
@@ -881,7 +881,7 @@ export const DebtsPage: React.FC = () => {
                     <th className="py-3.5 px-4 font-bold text-center">الإجراءات</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.04] text-slate-200">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-slate-800 dark:text-slate-200">
                   {filteredCustomers.map(c => {
                     const balance = c.balance || 0;
                     const limit = c.creditLimit || 0;
@@ -889,7 +889,7 @@ export const DebtsPage: React.FC = () => {
                     const usagePercent = limit > 0 ? Math.min(100, Math.round((balance / limit) * 100)) : 0;
 
                     return (
-                      <tr key={c.id} className="hover:bg-white/[0.02] transition-colors">
+                      <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                         {/* Customer Avatar & Name */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
@@ -897,7 +897,7 @@ export const DebtsPage: React.FC = () => {
                               {getInitials(c.name)}
                             </div>
                             <div>
-                              <div className="font-bold text-sm text-white flex items-center gap-2">
+                              <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
                                 <span>{c.name}</span>
 
                               </div>
@@ -993,14 +993,14 @@ export const DebtsPage: React.FC = () => {
                 const status = getCustomerStatus(c);
 
                 return (
-                  <div key={c.id} className="p-4 rounded-xl bg-slate-100 dark:bg-slate-900/80/50 border border-slate-200 dark:border-slate-700/80 space-y-3">
+                  <div key={c.id} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700/80 space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5">
                         <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-slate-300 dark:border-slate-600/80 text-white font-bold flex items-center justify-center text-xs shadow-sm">
                           {getInitials(c.name)}
                         </div>
                         <div>
-                          <h4 className="font-bold text-sm text-white">{c.name}</h4>
+                          <h4 className="font-bold text-sm text-slate-900 dark:text-white">{c.name}</h4>
                           <span className="text-slate-500 dark:text-slate-400 text-xs font-mono">{c.phone}</span>
                         </div>
                       </div>
@@ -1324,7 +1324,7 @@ export const DebtsPage: React.FC = () => {
                       <th className="py-2.5 px-3 font-bold text-center">الرصيد بعد الحركة</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/[0.04] text-slate-200">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-slate-800 dark:text-slate-200">
                     {activeCustomerLedger.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="py-8 text-center text-slate-500 dark:text-slate-400">
