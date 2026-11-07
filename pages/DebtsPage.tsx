@@ -13,6 +13,12 @@ import { Button, ModalShell } from '../components/ui';
 
 export type DebtStatus = 'due' | 'overdue' | 'partial' | 'settled';
 
+const getNowDateTimeLocal = () => {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+};
+
 export const DebtsPage: React.FC = () => {
   const { 
     state, t, language, formatNumber, formatDate, 
@@ -39,7 +45,7 @@ export const DebtsPage: React.FC = () => {
   const [paymentMode, setPaymentMode] = useState<'full' | 'partial'>('full');
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'wallet' | 'instapay'>('cash');
-  const [receiptNumber, setReceiptNumber] = useState('');
+  const [paymentDateTime, setPaymentDateTime] = useState(getNowDateTimeLocal());
   const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [paymentNotes, setPaymentNotes] = useState('');
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
@@ -282,8 +288,7 @@ export const DebtsPage: React.FC = () => {
     setPaymentMode('full');
     setPaymentAmount(String(customer.balance || ''));
     setPaymentMethod('cash');
-    setReceiptNumber(String(Math.floor(1000 + Math.random() * 9000)));
-    setPaymentDate(new Date().toISOString().split('T')[0]);
+    setPaymentDateTime(getNowDateTimeLocal());
     setPaymentNotes('');
   };
 
@@ -306,16 +311,21 @@ export const DebtsPage: React.FC = () => {
 
     setIsSubmittingPayment(true);
     try {
+      const dateObj = paymentDateTime ? new Date(paymentDateTime) : new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const dateStr = `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}`;
+      const payTimestamp = dateObj.getTime();
+
       addCustomerPayment({
         customerId: paymentCustomer.id,
         customerName: paymentCustomer.name,
         amount: amt,
         paymentMethod,
-        date: paymentDate,
-        receiptNumber: receiptNumber.trim() || undefined,
+        date: dateStr,
+        timestamp: payTimestamp,
         notes: paymentNotes.trim() || undefined,
         recordedBy: currentUser?.username || 'كاشير'
-      });
+      } as any);
 
       addToast(`تم تسجيل سداد ${formatNumber(amt)} ${currencySymbol} للعميل ${paymentCustomer.name} بنجاح`, 'success');
       
@@ -1149,32 +1159,30 @@ export const DebtsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* تاريخ السداد ورقم السند */}
+            {/* تاريخ ووقت السداد */}
             <div>
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  تاريخ السداد:
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-slate-300">
+                  تاريخ ووقت السداد:
                 </label>
-                <input
-                  type="date"
-                  value={paymentDate}
-                  onChange={(e) => setPaymentDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
-                />
+                <button
+                  type="button"
+                  onClick={() => setPaymentDateTime(getNowDateTimeLocal())}
+                  className="text-[11px] text-purple-400 hover:underline font-bold cursor-pointer"
+                >
+                  الآن (الوقت الحالي)
+                </button>
               </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  رقم الإيصال / السند:
-                </label>
-                <input
-                  type="text"
-                  value={receiptNumber}
-                  onChange={(e) => setReceiptNumber(e.target.value)}
-                  placeholder="مثال: 1042"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
+              <input
+                type="datetime-local"
+                required
+                value={paymentDateTime}
+                onChange={(e) => setPaymentDateTime(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">
+                مسجل افتراضياً باليوم والوقت الحالي، ويمكنك اختيار يوم سابق إذا تم السداد في وقت مضى.
+              </p>
             </div>
 
             {/* ملاحظات */}

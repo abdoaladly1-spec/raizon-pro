@@ -56,7 +56,7 @@ interface AppContextType {
   addCustomer: (customer: Omit<Customer, 'id' | 'totalSpent' | 'lastVisit' | 'loyaltyPoints' | 'tier'>) => number;
   updateCustomer: (customer: Customer) => void;
   deleteCustomer: (id: number) => void;
-  addCustomerPayment: (payment: Omit<CustomerPayment, 'id' | 'timestamp'>) => void;
+  addCustomerPayment: (payment: Omit<CustomerPayment, 'id' | 'timestamp'> & { timestamp?: number }) => void;
   // Staff & Users
   addStaff: (staff: Staff) => void;
   updateStaff: (staff: Staff) => void;
@@ -3222,11 +3222,12 @@ export const AppProvider = ({ children }: any) => {
     );
   };
 
-  const addCustomerPayment = (paymentData: Omit<CustomerPayment, 'id' | 'timestamp'>) => {
+  const addCustomerPayment = (paymentData: Omit<CustomerPayment, 'id' | 'timestamp'> & { timestamp?: number }) => {
+    const payTimestamp = (paymentData as any).timestamp || (paymentData.date ? new Date(paymentData.date).getTime() : Date.now());
     const newPayment: CustomerPayment = {
       ...paymentData,
       id: crypto.randomUUID(),
-      timestamp: Date.now(),
+      timestamp: payTimestamp,
     };
     setState(prev => ({
       ...prev,
@@ -3246,7 +3247,7 @@ export const AppProvider = ({ children }: any) => {
           amount: paymentData.amount,
           reason: `سداد آجل: ${paymentData.customerName || `عميل #${paymentData.customerId}`}`,
           date: paymentData.date,
-          timestamp: Date.now(),
+          timestamp: payTimestamp,
           user: currentUser?.name || 'كاشير'
         }
       ] : (prev.drawerMovements || [])

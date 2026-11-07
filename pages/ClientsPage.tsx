@@ -10,6 +10,12 @@ import { Customer, CustomerPayment } from '../types';
 import { Card, Button, Input, ModalShell } from '../components/ui';
 import { exportToCSV } from '../lib/exportUtils';
 
+const getNowDateTimeLocal = () => {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+};
+
 export const Clients = () => {
     const { 
         state, t, language, addCustomer, updateCustomer, deleteCustomer, 
@@ -39,7 +45,7 @@ export const Clients = () => {
     const [paymentForm, setPaymentForm] = useState({
         amount: '',
         paymentMethod: 'cash' as 'cash' | 'card' | 'wallet',
-        receiptNumber: '',
+        dateTime: getNowDateTimeLocal(),
         notes: ''
     });
 
@@ -228,15 +234,20 @@ return matchesSearch && matchesDebt;
             return;
         }
 
+        const dateObj = paymentForm.dateTime ? new Date(paymentForm.dateTime) : new Date();
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const dateStr = `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}`;
+        const payTimestamp = dateObj.getTime();
+
         addCustomerPayment({
             customerId: selectedCustomer.id,
             customerName: selectedCustomer.name,
             amount: amountNum,
-            date: new Date().toISOString().split('T')[0],
+            date: dateStr,
+            timestamp: payTimestamp,
             paymentMethod: paymentForm.paymentMethod,
-            receiptNumber: paymentForm.receiptNumber.trim(),
             notes: paymentForm.notes.trim()
-        });
+        } as any);
 
         // تحديث الكائن المختار لايف
         const updatedBal = Math.max(0, (selectedCustomer.balance || 0) - amountNum);
@@ -244,7 +255,7 @@ return matchesSearch && matchesDebt;
 
         addToast(language === 'ar' ? `تم تسجيل سداد مبلغ ${amountNum} ج.م بنجاح` : 'Payment recorded successfully', 'success');
         setShowPaymentModal(false);
-        setPaymentForm({ amount: '', paymentMethod: 'cash', receiptNumber: '', notes: '' });
+        setPaymentForm({ amount: '', paymentMethod: 'cash', dateTime: getNowDateTimeLocal(), notes: '' });
     };
 
     // مشاركة كشف الحساب عبر الواتساب
@@ -681,7 +692,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                         setPaymentForm({
                                             amount: selectedCustomer.balance ? String(selectedCustomer.balance) : '',
                                             paymentMethod: 'cash',
-                                            receiptNumber: '',
+                                            dateTime: getNowDateTimeLocal(),
                                             notes: ''
                                         });
                                         setShowPaymentModal(true);
@@ -891,16 +902,30 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-300 mb-1">
-                                {language === 'ar' ? 'رقم الإيصال / السند (اختياري)' : 'Receipt #'}
-                            </label>
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="block text-xs font-bold text-slate-300">
+                                    {language === 'ar' ? 'تاريخ ووقت السداد' : 'Payment Date & Time'}
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={() => setPaymentForm(prev => ({ ...prev, dateTime: getNowDateTimeLocal() }))}
+                                    className="text-[11px] text-primary-400 hover:underline font-bold cursor-pointer"
+                                >
+                                    {language === 'ar' ? 'الآن (الوقت الحالي)' : 'Now (Current Time)'}
+                                </button>
+                            </div>
                             <input
-                                type="text"
-                                value={paymentForm.receiptNumber}
-                                onChange={(e) => setPaymentForm({ ...paymentForm, receiptNumber: e.target.value })}
-                                placeholder="REC-001"
+                                type="datetime-local"
+                                required
+                                value={paymentForm.dateTime}
+                                onChange={(e) => setPaymentForm({ ...paymentForm, dateTime: e.target.value })}
                                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-700 bg-slate-800 text-slate-100 outline-none focus:border-primary-500 font-mono"
                             />
+                            <p className="text-[10px] text-slate-400 mt-1">
+                                {language === 'ar' 
+                                    ? 'مسجل تلقائياً باليوم والوقت الحالي، ويمكنك تحديد يوم سابق في حال كان السداد قد تم في وقت مضى.' 
+                                    : 'Defaults to current date/time. You can select a previous day if paid earlier.'}
+                            </p>
                         </div>
 
                         <div>
