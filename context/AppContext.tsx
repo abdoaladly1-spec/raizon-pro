@@ -2381,7 +2381,7 @@ export const AppProvider = ({ children }: any) => {
   };
 
   const deleteNote = (id: string) => {
-    setState(prev => ({ ...prev, notes: prev.notes.filter(n => n.id !== id) }));
+    setState(prev => ({ ...prev, notes: prev.notes.filter(n => String(n.id) !== String(id)) }));
     addAuditLog('Notes', `Deleted note #${id}`, `حذف الملاحظة رقم #${id} من النظام`);
   };
 

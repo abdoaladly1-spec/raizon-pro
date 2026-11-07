@@ -1,104 +1,164 @@
-/* تم فصل هذا الملف من App.tsx (نظام ProCashier) */
+/* صفحة الملاحظات (نظام ProCashier) - بتصميم مسطر مطابق لتطبيق ملاحظات الآيفون Apple Notes */
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw } from '../components/Icons';
-import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from '../types';
-import { Card, Button, Input, ToastContainer, SimpleBarChart, useSound, useLiveTick } from '../components/ui';
-import { FilterModal } from '../components/FilterModal';
-import { CreateInvoice } from './CreateInvoicePage';
-import { AuditLogs } from './AuditLogsPage';
-import { AdminUsers } from './AdminUsersPage';
-import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, type SyncStatus } from '../lib/serverSync';
+import { FileText, Plus, Trash2, Printer, Search, X, Check, Clock, User, Download, RefreshCw, Sparkles } from '../components/Icons';
+import { Note } from '../types';
 import { escapeHtml, sanitizeRichHtml } from '../lib/escapeHtml';
 
-export const NotesPage = () => {
-    const { state, t, addNote, updateNote, deleteNote, currentUser, formatDate, formatTime, formatDateTime } = useApp();
-    const [selectedNoteId, setSelectedNoteId] = useState(null as string | null);
+export const NotesPage: React.FC = () => {
+    const { state, t, language, addNote, updateNote, deleteNote, addToast, currentUser, formatDate, formatTime, formatDateTime } = useApp();
+    const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [autoNumbering, setAutoNumbering] = useState(true);
+    const [isLinedPaper, setIsLinedPaper] = useState(true); // نمط الورق المسطر مثل ملاحظات الآيفون
     
+    // تأكيد الحذف عبر نافذة احترافية
+    const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
+
+    // حالة الحفظ التلقائي
+    const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+
     // Editor State
     const [editorContent, setEditorContent] = useState('');
     const [noteTitle, setNoteTitle] = useState('');
-    const [fontSize, setFontSize] = useState('14px');
-    const [fontFamily, setFontFamily] = useState('Arial');
+    const [fontSize, setFontSize] = useState('15px');
+    const [fontFamily, setFontFamily] = useState('inherit');
     const [textColor, setTextColor] = useState('#000000');
     
-    const editorRef = useRef(null as HTMLDivElement | null);
+    const editorRef = useRef<HTMLDivElement | null>(null);
+    const autoSaveTimerRef = useRef<any>(null);
 
-    // Filter notes
-    const filteredNotes = state.notes.filter(n => 
-        !n.isDeleted && 
-        (n.title.toLowerCase().includes(search.toLowerCase()) || n.content.toLowerCase().includes(search.toLowerCase()))
-    ).sort((a, b) => b.updatedAt - a.updatedAt);
+    // تصفية وترتيب الملاحظات (الأحدث تعديلاً أولاً)
+    const filteredNotes = useMemo(() => {
+        return (state.notes || [])
+            .filter(n => !n.isDeleted && 
+                ((n.title || '').toLowerCase().includes(search.toLowerCase()) || 
+                 (n.content || '').toLowerCase().includes(search.toLowerCase()))
+            )
+            .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    }, [state.notes, search]);
 
-    const selectedNote = state.notes.find(n => n.id === selectedNoteId);
+    const selectedNote = useMemo(() => {
+        return (state.notes || []).find(n => String(n.id) === String(selectedNoteId));
+    }, [state.notes, selectedNoteId]);
 
-    // Auto-save effect
+    // تحديد أول ملاحظة تلقائياً إذا لم تكن هناك ملاحظة مختارة
     useEffect(() => {
-        if (!selectedNoteId) return;
-        
-        const timer = setTimeout(() => {
-            if (selectedNote && (selectedNote.content !== editorContent || selectedNote.title !== noteTitle)) {
-                handleSave();
-            }
-        }, 5000); // Auto save every 5 seconds of inactivity or change
+        if (!selectedNoteId && filteredNotes.length > 0) {
+            setSelectedNoteId(filteredNotes[0].id);
+        }
+    }, [filteredNotes.length]);
 
-        return () => clearTimeout(timer);
-    }, [editorContent, noteTitle, selectedNoteId]);
-
-    // Load note into editor
+    // تحميل الملاحظة المختارة في المحرر
     useEffect(() => {
         if (selectedNote) {
-            setNoteTitle(selectedNote.title);
-            setEditorContent(selectedNote.content);
+            setNoteTitle(selectedNote.title || '');
+            setEditorContent(selectedNote.content || '');
             if (editorRef.current) {
-                editorRef.current.innerHTML = selectedNote.content;
+                editorRef.current.innerHTML = selectedNote.content || '';
             }
+            setSaveStatus('saved');
         } else {
             setNoteTitle('');
             setEditorContent('');
             if (editorRef.current) {
                 editorRef.current.innerHTML = '';
             }
+            setSaveStatus('saved');
         }
     }, [selectedNoteId]);
 
-    const handleCreateNew = () => {
-        const newNote: Note = {
-            id: crypto.randomUUID(),
-            title: autoNumbering ? `${t('new_note')} ${state.notes.length + 1}` : t('new_note'),
-            content: '',
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-            createdBy: currentUser?.name || t('system')
-        };
-        addNote(newNote);
-        setSelectedNoteId(newNote.id);
-    };
-
+    // الحفظ اليدوي والتلقائي
     const handleSave = () => {
         if (!selectedNoteId) return;
         
+        // التحقق من أن الملاحظة ما زالت موجودة في النظام
+        const exists = (state.notes || []).some(n => String(n.id) === String(selectedNoteId));
+        if (!exists) return;
+
         const content = editorRef.current?.innerHTML || '';
+        const titleToSave = noteTitle.trim() || t('note_title') || 'ملاحظة بدون عنوان';
+        
         const updatedNote: Note = {
             id: selectedNoteId,
-            title: noteTitle,
+            title: titleToSave,
             content: content,
             createdAt: selectedNote?.createdAt || Date.now(),
             updatedAt: Date.now(),
-            createdBy: selectedNote?.createdBy || currentUser?.name || 'System'
+            createdBy: selectedNote?.createdBy || currentUser?.name || 'كاشير'
         };
+
+        setSaveStatus('saving');
         updateNote(updatedNote);
+        setTimeout(() => setSaveStatus('saved'), 400);
     };
 
-    const handleDelete = (id: string) => {
-        if (confirm(t('confirm_delete_note'))) {
-            deleteNote(id);
-            if (selectedNoteId === id) setSelectedNoteId(null);
+    // مراقبة التغييرات للحفظ التلقائي مع تفادي التضارب
+    useEffect(() => {
+        if (!selectedNoteId) return;
+        
+        if (selectedNote && (selectedNote.content !== editorContent || selectedNote.title !== noteTitle)) {
+            setSaveStatus('unsaved');
+            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+            autoSaveTimerRef.current = setTimeout(() => {
+                handleSave();
+            }, 1500); // حفظ تلقائي ذكي بعد 1.5 ثانية من توقف الكتابة
         }
+
+        return () => {
+            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+        };
+    }, [editorContent, noteTitle, selectedNoteId]);
+
+    // إنشاء ملاحظة جديدة
+    const handleCreateNew = () => {
+        const count = (state.notes || []).filter(n => !n.isDeleted).length + 1;
+        const newNote: Note = {
+            id: crypto.randomUUID(),
+            title: autoNumbering ? `ملاحظة رقم ${count}` : 'ملاحظة جديدة',
+            content: '',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            createdBy: currentUser?.name || 'كاشير'
+        };
+        addNote(newNote);
+        setSelectedNoteId(newNote.id);
+        addToast('تم إنشاء ملاحظة جديدة بنجاح', 'success');
     };
 
+    // فتح نافذة تأكيد الحذف
+    const handleOpenDeleteModal = (note: Note) => {
+        setNoteToDelete(note);
+    };
+
+    // تنفيذ الحذف الفعلي بعد ضغط المستخدم على تأكيد
+    const handleConfirmDelete = () => {
+        if (!noteToDelete) return;
+        const targetId = noteToDelete.id;
+
+        // 1. إلغاء أي مؤقت حفظ تلقائي نشط
+        if (autoSaveTimerRef.current) {
+            clearTimeout(autoSaveTimerRef.current);
+            autoSaveTimerRef.current = null;
+        }
+
+        // 2. إذا كانت الملاحظة المحذوفة هي المفتوحة حالياً، تصفير المحرر فوراً
+        if (String(selectedNoteId) === String(targetId)) {
+            setSelectedNoteId(null);
+            setNoteTitle('');
+            setEditorContent('');
+            if (editorRef.current) {
+                editorRef.current.innerHTML = '';
+            }
+        }
+
+        // 3. حذف الملاحظة من الحالة وتحديث النظام
+        deleteNote(targetId);
+        setNoteToDelete(null);
+        addToast('تم حذف الملاحظة بنجاح', 'success');
+    };
+
+    // أوامر تنسيق النص
     const execCmd = (command: string, value: string = '') => {
         document.execCommand(command, false, value);
         if (editorRef.current) {
@@ -107,25 +167,29 @@ export const NotesPage = () => {
         }
     };
 
-    const handleImageUpload = (e: any) => {
+    // إدراج صورة في الملاحظة
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = `<img src="${e.target?.result}" style="max-width: 100%; height: auto; margin: 10px 0;" />`;
+            reader.onload = (uploadEvent) => {
+                const img = `<img src="${uploadEvent.target?.result}" style="max-width: 100%; height: auto; border-radius: 12px; margin: 12px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />`;
                 execCmd('insertHTML', img);
             };
             reader.readAsDataURL(file);
         }
     };
 
+    // طباعة حرارية احترافية 80mm
     const handlePrint = () => {
         if (!selectedNote) return;
         const printWindow = window.open('', '_blank');
         if (printWindow) {
             printWindow.document.write(`
-                <html>
+                <!DOCTYPE html>
+                <html dir="rtl" lang="ar">
                 <head>
+                    <meta charset="utf-8">
                     <title>${escapeHtml(selectedNote.title)}</title>
                     <style>
                         @media print {
@@ -133,12 +197,38 @@ export const NotesPage = () => {
                             body { margin: 0; padding: 4px; width: 76mm; }
                         }
                         * { box-sizing: border-box; }
-                        body { font-family: Tahoma, Arial, sans-serif; padding: 6px 4px; width: 76mm; margin: 0 auto; color: #000; font-size: 11px; }
-                        .header { text-align: center; margin-bottom: 10px; border-bottom: 1.5px dashed #000; padding-bottom: 6px; }
-                        .header h1 { font-size: 14px; margin: 0 0 4px 0; }
-                        .header p { font-size: 9.5px; margin: 0; color: #333; }
-                        .content { line-height: 1.4; min-height: 100px; font-size: 11px; }
-                        .footer { margin-top: 20px; border-top: 1px dashed #000; padding-top: 6px; font-size: 9px; color: #333; display: flex; justify-content: space-between; }
+                        body { 
+                            font-family: 'Tahoma', 'Segoe UI', Arial, sans-serif; 
+                            padding: 8px 4px; 
+                            width: 76mm; 
+                            margin: 0 auto; 
+                            color: #000; 
+                            font-size: 11px; 
+                            line-height: 1.45;
+                        }
+                        .header { 
+                            text-align: center; 
+                            margin-bottom: 8px; 
+                            border-bottom: 1.5px dashed #000; 
+                            padding-bottom: 6px; 
+                        }
+                        .header h1 { font-size: 14px; margin: 0 0 4px 0; font-weight: 800; }
+                        .header p { font-size: 9.5px; margin: 0; color: #444; font-family: monospace; }
+                        .content { 
+                            min-height: 120px; 
+                            font-size: 11.5px; 
+                            word-break: break-word;
+                            padding: 6px 0;
+                        }
+                        .footer { 
+                            margin-top: 16px; 
+                            border-top: 1px dashed #000; 
+                            padding-top: 6px; 
+                            font-size: 9px; 
+                            color: #444; 
+                            display: flex; 
+                            justify-content: space-between; 
+                        }
                     </style>
                 </head>
                 <body>
@@ -150,211 +240,478 @@ export const NotesPage = () => {
                         ${sanitizeRichHtml(selectedNote.content || '')}
                     </div>
                     <div class="footer">
-                        <span>${escapeHtml(t('created_by'))}: ${escapeHtml(selectedNote.createdBy)}</span>
-                        <span>${escapeHtml(t('page'))} 1 ${escapeHtml(t('of'))} 1</span>
-                        <span>© ${escapeHtml(t('copyright_footer'))}</span>
+                        <span>المسؤول: ${escapeHtml(selectedNote.createdBy)}</span>
+                        <span>${escapeHtml(state.settings?.shopName || 'RaiZon Pro')}</span>
                     </div>
                 </body>
                 </html>
             `);
             printWindow.document.close();
-            printWindow.print();
+            setTimeout(() => {
+                printWindow.focus();
+                printWindow.print();
+            }, 250);
         }
     };
 
+    // تصدير كملف نصي أو وورد
     const handleExport = (format: 'txt' | 'doc') => {
         if (!selectedNote) return;
-        let content = selectedNote.content;
-        let mimeType = 'text/plain';
+        let content = selectedNote.content || '';
+        let mimeType = 'text/plain;charset=utf-8';
         let extension = 'txt';
 
         if (format === 'doc') {
             content = `
                 <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-                <head><meta charset='utf-8'><title>${selectedNote.title}</title></head><body>${selectedNote.content}</body></html>
+                <head><meta charset='utf-8'><title>${escapeHtml(selectedNote.title)}</title></head>
+                <body dir='rtl' style='font-family: Arial; padding: 20px;'>
+                    <h2 style='color: #d97706;'>${escapeHtml(selectedNote.title)}</h2>
+                    <p style='color: #666; font-size: 11px;'>${escapeHtml(formatDateTime(selectedNote.updatedAt))} - ${escapeHtml(selectedNote.createdBy)}</p>
+                    <hr />
+                    <div style='line-height: 1.6; font-size: 14px;'>${selectedNote.content}</div>
+                </body></html>
             `;
-            mimeType = 'application/msword';
+            mimeType = 'application/msword;charset=utf-8';
             extension = 'doc';
         } else {
-            // Strip HTML for TXT
             const tmp = document.createElement("DIV");
             tmp.innerHTML = content;
-            content = tmp.textContent || tmp.innerText || "";
+            content = `${selectedNote.title}\n${formatDateTime(selectedNote.updatedAt)}\n${'='.repeat(30)}\n\n` + (tmp.textContent || tmp.innerText || "");
         }
 
         const blob = new Blob([content], { type: mimeType });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${selectedNote.title}.${extension}`;
+        link.download = `${selectedNote.title || 'ملاحظة'}.${extension}`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    // استخراج نص ملخص للمعاينة في القائمة الجانبية
+    const getSnippet = (html: string) => {
+        const tmp = document.createElement('DIV');
+        tmp.innerHTML = html;
+        const text = tmp.textContent || tmp.innerText || '';
+        return text.trim() || 'ملاحظة فارغة...';
     };
 
     return (
-        <div className="flex h-[calc(100vh-140px)] gap-6 animate-fade-in">
-            {/* Sidebar List */}
-            <div className="w-80 flex flex-col gap-4">
-                <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-bold flex items-center gap-2">
-                        <FileText className="text-primary-600" /> {t('notes')}
-                    </h2>
-                    <button onClick={handleCreateNew} className="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/20">
-                        <Plus size={20} />
+        <div className="flex h-[calc(100vh-140px)] gap-5 animate-fade-in text-right font-sans" dir="rtl">
+            {/* =========================================================================
+                1. القائمة الجانبية للملاحظات (Apple Notes Sidebar Style)
+               ========================================================================= */}
+            <div className="w-80 md:w-88 flex flex-col gap-3 shrink-0">
+                {/* رأس الشريط الجانبي */}
+                <div className="flex justify-between items-center bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 p-3.5 rounded-2xl shadow-xs">
+                    <div className="flex items-center gap-2">
+                        <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-500 shadow-xs">
+                            <FileText size={18} />
+                        </div>
+                        <div>
+                            <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">الملاحظات</h2>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                                {filteredNotes.length} ملاحظة مسجلة
+                            </span>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={handleCreateNew} 
+                        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95"
+                        title="إنشاء ملاحظة جديدة"
+                    >
+                        <Plus size={16} />
+                        <span>جديدة</span>
                     </button>
                 </div>
-                
-                <div className="flex items-center gap-2 px-1">
-                     <input type="checkbox" id="autoNum" checked={autoNumbering} onChange={(e) => setAutoNumbering(e.target.checked)} className="rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
-                     <label htmlFor="autoNum" className="text-xs text-slate-500 cursor-pointer">{t('auto_numbering')}</label>
-                </div>
-                
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input 
-                        type="text" 
-                        placeholder={t('search_notes')} 
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-primary-500 outline-none"
-                    />
+
+                {/* حقل البحث والترقيم التلقائي */}
+                <div className="space-y-2">
+                    <div className="relative">
+                        <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+                            <Search size={16} />
+                        </div>
+                        <input 
+                            type="text" 
+                            placeholder="بحث في الملاحظات والمحتوى..." 
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full pr-9 pl-8 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all shadow-xs"
+                        />
+                        {search && (
+                            <button
+                                type="button"
+                                onClick={() => setSearch('')}
+                                className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="flex items-center justify-between px-1 text-[11px] text-slate-500 dark:text-slate-400">
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={autoNumbering} 
+                                onChange={(e) => setAutoNumbering(e.target.checked)} 
+                                className="w-3.5 h-3.5 rounded text-amber-500 focus:ring-amber-500" 
+                            />
+                            <span>ترقيم تلقائي للملاحظات الجديدة</span>
+                        </label>
+                        <span className="font-mono text-[10px]">Apple Ruled 📝</span>
+                    </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
-                    {filteredNotes.map(note => (
-                        <div 
-                            key={note.id} 
-                            onClick={() => setSelectedNoteId(note.id)}
-                            className={`p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md group relative
-                                ${selectedNoteId === note.id 
-                                    ? 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800' 
-                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-primary-300'}`}
-                        >
-                            <h3 className="font-bold text-slate-800 dark:text-slate-100 truncate pr-6">{note.title}</h3>
-                            <p className="text-xs text-slate-500 mt-1 flex justify-between">
-                                <span>{formatDate(note.updatedAt)}</span>
-                                <span>{formatTime(note.updatedAt, {hour: '2-digit', minute:'2-digit'})}</span>
-                            </p>
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); handleDelete(note.id); }}
-                                className="absolute top-4 right-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                {/* قائمة كروت الملاحظات */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pl-1">
+                    {filteredNotes.map(note => {
+                        const isSelected = selectedNoteId === note.id;
+                        return (
+                            <div 
+                                key={note.id} 
+                                onClick={() => setSelectedNoteId(note.id)}
+                                className={`p-3.5 rounded-2xl border cursor-pointer transition-all group relative text-right
+                                    ${isSelected 
+                                        ? 'bg-amber-50/70 border-amber-300 dark:bg-amber-950/30 dark:border-amber-700/60 shadow-xs' 
+                                        : 'bg-white dark:bg-slate-900/80 border-slate-200/90 dark:border-slate-800 hover:border-amber-400/50 hover:bg-slate-50 dark:hover:bg-slate-800/60'}`}
                             >
-                                <Trash2 size={16} />
-                            </button>
-                        </div>
-                    ))}
+                                <div className="flex items-start justify-between gap-2">
+                                    <h3 className={`font-bold text-xs truncate flex-1 ${isSelected ? 'text-amber-800 dark:text-amber-300' : 'text-slate-900 dark:text-white'}`}>
+                                        {note.title || 'ملاحظة بدون عنوان'}
+                                    </h3>
+                                    
+                                    {/* زر الحذف على الكارت مع فتح نافذة التأكيد */}
+                                    <button 
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenDeleteModal(note);
+                                        }}
+                                        className="p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer opacity-80 group-hover:opacity-100"
+                                        title="حذف الملاحظة"
+                                    >
+                                        <Trash2 size={15} />
+                                    </button>
+                                </div>
+
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-1 leading-relaxed">
+                                    {getSnippet(note.content)}
+                                </p>
+
+                                <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 font-mono">
+                                    <span>{formatDate(new Date(note.updatedAt))}</span>
+                                    <span>{formatTime(new Date(note.updatedAt), { hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+                            </div>
+                        );
+                    })}
+
                     {filteredNotes.length === 0 && (
-                        <div className="text-center py-10 text-slate-400">
-                            <FileText size={48} className="mx-auto mb-2 opacity-20" />
-                            <p>{t('no_data')}</p>
+                        <div className="text-center py-12 px-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 text-slate-400">
+                            <FileText size={40} className="mx-auto mb-2 opacity-30 text-amber-500" />
+                            <p className="text-xs font-semibold">لا توجد ملاحظات مطابقة</p>
+                            <button
+                                type="button"
+                                onClick={handleCreateNew}
+                                className="mt-3 text-xs text-amber-600 dark:text-amber-400 font-bold hover:underline"
+                            >
+                                + إنشاء ملاحظة جديدة الآن
+                            </button>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Editor Area */}
-            <div className="flex-1 flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-                {selectedNoteId ? (
+            {/* =========================================================================
+                2. مساحة المحرر المسطر كدفتر الآيفون (Apple Notes Ruled View)
+               ========================================================================= */}
+            <div className="flex-1 flex flex-col rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm bg-white dark:bg-slate-900">
+                {selectedNote ? (
                     <>
-                        {/* Toolbar */}
-                        <div className="p-2 border-b border-slate-200 dark:border-slate-700 flex flex-wrap gap-2 items-center bg-slate-50 dark:bg-slate-900/50">
-                            <input 
-                                type="text" 
-                                value={noteTitle} 
-                                onChange={(e) => setNoteTitle(e.target.value)}
-                                className="bg-transparent font-bold text-lg px-2 py-1 outline-none border-b border-transparent focus:border-primary-500 w-full md:w-64 mr-4"
-                                placeholder={t('note_title')}
-                            />
-                            
-                            <div className="h-6 w-px bg-slate-300 dark:bg-slate-600 mx-2"></div>
+                        {/* شريط أدوات التنسيق (Apple Toolbar) */}
+                        <div className="p-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap gap-2 items-center justify-between bg-slate-50 dark:bg-slate-900/90 text-xs">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                {/* تنسيقات الخطوط */}
+                                <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-0.5 rounded-xl shadow-2xs">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => execCmd('bold')} 
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-serif font-black" 
+                                        title="عريض (Bold)"
+                                    >
+                                        B
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => execCmd('italic')} 
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-serif italic font-bold" 
+                                        title="مائل (Italic)"
+                                    >
+                                        I
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => execCmd('underline')} 
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 underline font-bold" 
+                                        title="تحته خط (Underline)"
+                                    >
+                                        U
+                                    </button>
+                                </div>
 
-                            <select onChange={(e) => { setFontFamily(e.target.value); execCmd('fontName', e.target.value); }} className="p-1 rounded border border-slate-300 text-sm w-32">
-                                <option value="Arial">Arial</option>
-                                <option value="Times New Roman">Times New Roman</option>
-                                <option value="Tahoma">Tahoma</option>
-                                <option value="Verdana">Verdana</option>
-                                <option value="Courier New">Courier New</option>
-                            </select>
+                                {/* المحاذاة */}
+                                <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-0.5 rounded-xl shadow-2xs">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => execCmd('justifyRight')} 
+                                        className="px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold" 
+                                        title="محاذاة لليمين"
+                                    >
+                                        يمين
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => execCmd('justifyCenter')} 
+                                        className="px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold" 
+                                        title="توسيط"
+                                    >
+                                        وسط
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => execCmd('justifyLeft')} 
+                                        className="px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold" 
+                                        title="محاذاة لليسار"
+                                    >
+                                        يسار
+                                    </button>
+                                </div>
 
-                            <select onChange={(e) => { setFontSize(e.target.value); execCmd('fontSize', '3'); /* execCmd fontSize is 1-7, mapping is tricky, simpler to use styleWithCSS or just standard sizes */ }} className="p-1 rounded border border-slate-300 text-sm w-20">
-                                <option value="10pt">10pt</option>
-                                <option value="12pt">12pt</option>
-                                <option value="14pt">14pt</option>
-                                <option value="18pt">18pt</option>
-                                <option value="24pt">24pt</option>
-                            </select>
+                                {/* القوائم النقطية */}
+                                <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-0.5 rounded-xl shadow-2xs">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => execCmd('insertUnorderedList')} 
+                                        className="px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold" 
+                                        title="قائمة نقطية"
+                                    >
+                                        • قائمة
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => execCmd('insertOrderedList')} 
+                                        className="px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold" 
+                                        title="قائمة رقمية"
+                                    >
+                                        1. أرقام
+                                    </button>
+                                </div>
 
-                            <div className="flex gap-1 border border-slate-300 rounded p-1 bg-white">
-                                <button onClick={() => execCmd('bold')} className="p-1 hover:bg-slate-100 rounded" title={t('bold')}><b className="font-serif">B</b></button>
-                                <button onClick={() => execCmd('italic')} className="p-1 hover:bg-slate-100 rounded" title={t('italic')}><i className="font-serif">I</i></button>
-                                <button onClick={() => execCmd('underline')} className="p-1 hover:bg-slate-100 rounded" title={t('underline')}><u className="font-serif">U</u></button>
+                                {/* لون النص وإدراج صورة */}
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-xl shadow-2xs">
+                                    <input 
+                                        type="color" 
+                                        value={textColor} 
+                                        onChange={(e) => { setTextColor(e.target.value); execCmd('foreColor', e.target.value); }} 
+                                        className="w-5 h-5 p-0 border-0 rounded-full cursor-pointer overflow-hidden" 
+                                        title="لون الخط" 
+                                    />
+                                    <label className="cursor-pointer text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-amber-500" title="إدراج صورة في الملاحظة">
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                                        <span>+ صورة</span>
+                                    </label>
+                                </div>
+
+                                {/* زر تبديل التسطير المسطر / عادي */}
+                                <button
+                                    type="button"
+                                    onClick={() => setIsLinedPaper(!isLinedPaper)}
+                                    className={`px-3 py-1 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-1
+                                        ${isLinedPaper 
+                                            ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-2xs' 
+                                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700'}`}
+                                    title="تشغيل أو إيقاف السطور المسطرة لورقة الملاحظة"
+                                >
+                                    <span>{isLinedPaper ? '📝 مسطر (الآيفون)' : '📄 عادي'}</span>
+                                </button>
                             </div>
 
-                            <div className="flex gap-1 border border-slate-300 rounded p-1 bg-white">
-                                <button onClick={() => execCmd('justifyLeft')} className="p-1 hover:bg-slate-100 rounded" title={t('align_left')}>L</button>
-                                <button onClick={() => execCmd('justifyCenter')} className="p-1 hover:bg-slate-100 rounded" title={t('align_center')}>C</button>
-                                <button onClick={() => execCmd('justifyRight')} className="p-1 hover:bg-slate-100 rounded" title={t('align_right')}>R</button>
-                            </div>
+                            {/* أزرار الإجراءات في الجانب الآخر (طباعة، تصدير، حذف، حفظ) */}
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-mono text-slate-400 ml-2 hidden sm:inline">
+                                    {saveStatus === 'saving' ? 'جاري الحفظ...' : saveStatus === 'unsaved' ? 'تعديلات غير محفوظة' : 'تم الحفظ تلقائياً ✓'}
+                                </span>
 
-                            <input type="color" value={textColor} onChange={(e) => { setTextColor(e.target.value); execCmd('foreColor', e.target.value); }} className="w-8 h-8 p-0 border-0 rounded cursor-pointer" title={t('text_color')} />
+                                <button 
+                                    onClick={handlePrint} 
+                                    className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-2xs" 
+                                    title="طباعة حرارية 80mm أو A4"
+                                >
+                                    <Printer size={15} />
+                                </button>
 
-                            <label className="cursor-pointer p-1 hover:bg-slate-200 rounded border border-slate-300 bg-white" title={t('insert_image')}>
-                                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                                <span className="text-xs">IMG</span>
-                            </label>
+                                <button 
+                                    onClick={() => handleExport('doc')} 
+                                    className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-blue-500 font-bold text-xs transition-all cursor-pointer shadow-2xs" 
+                                    title="تصدير كملف Word DOC"
+                                >
+                                    Word
+                                </button>
 
-                            <div className="flex-1"></div>
+                                <button 
+                                    onClick={() => handleExport('txt')} 
+                                    className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs transition-all cursor-pointer shadow-2xs" 
+                                    title="تصدير كملف نصي TXT"
+                                >
+                                    TXT
+                                </button>
 
-                            <div className="flex gap-2">
-                                <button onClick={handlePrint} className="p-2 hover:bg-slate-200 rounded text-slate-600" title={t('print_note')}><Printer size={18}/></button>
-                                <button onClick={() => handleExport('doc')} className="p-2 hover:bg-slate-200 rounded text-blue-600" title={t('export_doc')}>DOC</button>
-                                <button onClick={() => handleExport('txt')} className="p-2 hover:bg-slate-200 rounded text-slate-600" title={t('export_txt')}>TXT</button>
-                                <button onClick={handlePrint} className="p-2 hover:bg-slate-200 rounded text-red-600 font-bold text-xs" title={t('export_pdf')}>PDF</button>
+                                {/* زر الحذف من داخل المحرر */}
+                                <button 
+                                    type="button"
+                                    onClick={() => handleOpenDeleteModal(selectedNote)} 
+                                    className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-500 font-bold transition-all cursor-pointer shadow-2xs" 
+                                    title="حذف هذه الملاحظة"
+                                >
+                                    <Trash2 size={15} />
+                                </button>
                             </div>
                         </div>
 
-                        {/* Content */}
-                        <div className="flex-1 relative overflow-hidden flex flex-col">
-                            <div 
-                                ref={editorRef}
-                                contentEditable
-                                className="flex-1 p-8 outline-none overflow-y-auto custom-scrollbar focus:bg-slate-50/50 transition-colors"
-                                style={{ 
-                                    fontFamily: fontFamily, 
-                                    fontSize: fontSize,
-                                    color: textColor,
-                                    minHeight: '600px'
-                                }}
-                                onInput={(e) => setEditorContent(e.currentTarget.innerHTML)}
-                            ></div>
-                            
-                            {/* Footer */}
-                            <div className="p-4 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-500 flex justify-between bg-slate-50 dark:bg-slate-900/50 select-none">
-                                <div>
-                                    <span className="font-bold">{t('created_by')}:</span> {selectedNote.createdBy}
-                                </div>
-                                <div className="flex gap-4">
-                                    <span>{t('page')} 1 {t('of')} 1</span>
+                        {/* =================================================================
+                            جسم ورقة الملاحظة المسطرة بتصميم دفاتر الآيفون Apple Notes
+                           ================================================================= */}
+                        <div className={`flex-1 relative overflow-hidden flex flex-col transition-colors
+                            ${isLinedPaper 
+                                ? 'bg-[#FCF9F2] dark:bg-[#1C1C1E]' 
+                                : 'bg-white dark:bg-slate-900'}`}
+                        >
+                            {/* ترويسة الملاحظة (العنوان والتاريخ) */}
+                            <div className="pt-6 pb-2 px-8 border-b border-amber-200/60 dark:border-amber-900/30">
+                                <input 
+                                    type="text" 
+                                    value={noteTitle} 
+                                    onChange={(e) => setNoteTitle(e.target.value)}
+                                    className="bg-transparent font-black text-xl md:text-2xl text-slate-900 dark:text-amber-100 outline-none w-full placeholder-slate-400/80 mb-1"
+                                    placeholder="عنوان الملاحظة..."
+                                />
+                                
+                                <div className="flex items-center gap-3 text-xs text-amber-700 dark:text-amber-400/80 font-medium font-mono">
                                     <span>{formatDateTime(selectedNote.updatedAt)}</span>
+                                    <span>•</span>
+                                    <span>المسؤول: {selectedNote.createdBy}</span>
                                 </div>
+                            </div>
+
+                            {/* مساحة الكتابة المسطرة المتطابقة مع سطور تطبيق الآيفون */}
+                            <div 
+                                className="flex-1 px-8 py-4 overflow-y-auto custom-scrollbar relative"
+                                style={{
+                                    ...(isLinedPaper ? {
+                                        backgroundImage: 'repeating-linear-gradient(to bottom, transparent, transparent 31px, rgba(190, 170, 140, 0.32) 31px, rgba(190, 170, 140, 0.32) 32px)',
+                                        backgroundSize: '100% 32px',
+                                        backgroundAttachment: 'local',
+                                    } : {})
+                                }}
+                            >
+                                <div 
+                                    ref={editorRef}
+                                    contentEditable
+                                    className="outline-none min-h-[500px] text-slate-900 dark:text-slate-100 font-medium"
+                                    style={{ 
+                                        fontFamily: fontFamily, 
+                                        fontSize: fontSize,
+                                        color: textColor !== '#000000' ? textColor : undefined,
+                                        lineHeight: '32px', // تطابق تام لارتفاع السطر مع السطور المسطرة 32px
+                                    }}
+                                    onInput={(e) => setEditorContent(e.currentTarget.innerHTML)}
+                                    placeholder="اكتب ملاحظاتك وتفاصيلك هنا..."
+                                ></div>
+                            </div>
+
+                            {/* تذييل الملاحظة */}
+                            <div className="py-2.5 px-8 border-t border-amber-200/50 dark:border-slate-800 text-[11px] text-slate-400 flex justify-between items-center bg-[#F9F5EC] dark:bg-[#18181A] select-none font-mono">
                                 <div>
-                                    © {t('copyright_footer')}
+                                    <span>آخر تعديل: {formatTime(new Date(selectedNote.updatedAt))}</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span>{selectedNote.title}</span>
+                                    <span>•</span>
+                                    <span>{state.settings?.shopName || 'RaiZon Pro'}</span>
                                 </div>
                             </div>
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-                        <FileText size={64} className="mb-4 opacity-20" />
-                        <p className="text-lg font-medium">{t('select_note_start')}</p>
-                        <button onClick={handleCreateNew} className="mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-                            {t('new_note')}
+                    /* شاشة البدء عند عدم اختيار أي ملاحظة */
+                    <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8 text-center bg-slate-50/50 dark:bg-slate-900/50">
+                        <div className="w-20 h-20 rounded-3xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-4 shadow-sm">
+                            <FileText size={36} />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1">اختر ملاحظة أو أنشئ ملاحظة جديدة</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mb-6 leading-relaxed">
+                            مساحة ملاحظات مسطرة احترافية لتدوين الاتفاقات والمذكرات الداخلية والتقارير الفورية.
+                        </p>
+                        <button 
+                            onClick={handleCreateNew} 
+                            className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 active:scale-95"
+                        >
+                            <Plus size={16} />
+                            <span>إنشاء ملاحظة جديدة الآن</span>
                         </button>
                     </div>
                 )}
             </div>
+
+            {/* =========================================================================
+                3. نافذة تأكيد حذف الملاحظة (Confirmation Modal)
+               ========================================================================= */}
+            {noteToDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+                    <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 text-right" dir="rtl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center justify-center shrink-0">
+                                <Trash2 size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-slate-900 dark:text-white">تأكيد حذف الملاحظة</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">سيتم حذف الملاحظة نهائياً من السجلات</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 mb-6">
+                            <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">الملاحظة المراد حذفها:</span>
+                            <h4 className="font-bold text-sm text-rose-500 truncate">{noteToDelete.title || 'ملاحظة بدون عنوان'}</h4>
+                            <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                                {getSnippet(noteToDelete.content)}
+                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={handleConfirmDelete}
+                                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+                            >
+                                <Trash2 size={16} />
+                                <span>تأكيد الحذف</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setNoteToDelete(null)}
+                                className="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
-
+export default NotesPage;
