@@ -91,7 +91,7 @@ export const AdminUsers = () => {
     
     // قائمة الإجراءات السريعة (...)
     const [activeActionMenuId, setActiveActionMenuId] = useState<string | null>(null);
-    const [menuAnchor, setMenuAnchor] = useState<{ id: string; top: number; right: number; openUpwards: boolean } | null>(null);
+    const [menuAnchor, setMenuAnchor] = useState<{ id: string; top?: number; bottom?: number; left: number; openUpwards: boolean } | null>(null);
 
     const handleToggleActionMenu = (e: React.MouseEvent<HTMLButtonElement>, userId: string) => {
         e.stopPropagation();
@@ -100,14 +100,23 @@ export const AdminUsers = () => {
             setMenuAnchor(null);
         } else {
             const rect = e.currentTarget.getBoundingClientRect();
+            const menuWidth = 215;
             const menuHeight = 220;
             const spaceBelow = window.innerHeight - rect.bottom;
             const openUpwards = spaceBelow < menuHeight && rect.top > menuHeight;
+
+            // حساب الموضع الأفقي الذكي لضمان بقاء القائمة كاملة داخل الشاشة دون أي اقتطاع:
+            let computedLeft = rect.right - menuWidth;
+            if (computedLeft < 12) {
+                computedLeft = rect.left;
+            }
+            computedLeft = Math.max(12, Math.min(computedLeft, window.innerWidth - menuWidth - 12));
+
             setMenuAnchor({
                 id: userId,
                 top: openUpwards ? undefined : Math.min(rect.bottom + 4, Math.max(10, window.innerHeight - menuHeight - 10)),
                 bottom: openUpwards ? Math.max(10, window.innerHeight - rect.top + 4) : undefined,
-                right: Math.max(10, window.innerWidth - rect.right),
+                left: computedLeft,
                 openUpwards
             });
             setActiveActionMenuId(userId);
@@ -597,7 +606,7 @@ export const AdminUsers = () => {
                             style={{
                                 top: menuAnchor.top !== undefined ? `${menuAnchor.top}px` : undefined,
                                 bottom: menuAnchor.bottom !== undefined ? `${menuAnchor.bottom}px` : undefined,
-                                right: `${menuAnchor.right}px`,
+                                left: `${menuAnchor.left}px`,
                                 maxHeight: 'calc(100vh - 20px)',
                                 overflowY: 'auto'
                             }}
