@@ -2396,13 +2396,17 @@ export const AppProvider = ({ children }: any) => {
 
     if (!ok) return false;
 
+    const now = Date.now();
+    const userWithLogin: User = { ...(migrated || user), lastLogin: now };
+
+    setState(prev => ({ 
+        ...prev, 
+        users: prev.users.map(u => u.id === userWithLogin.id ? userWithLogin : u) 
+    }));
+    setCurrentUser(userWithLogin);
+
     if (migrated) {
-        const next = migrated;
-        setState(prev => ({ ...prev, users: prev.users.map(u => u.id === next.id ? next : u) }));
-        setCurrentUser(next);
         addAuditLog('Security', `Migrated password storage for ${user.username}`, `ترحيل وتأمين تشفير كلمة مرور المستخدم "${user.username}" عبر PBKDF2`);
-    } else {
-        setCurrentUser(user);
     }
     addAuditLog('Login', `User ${username} logged in`, `تسجيل دخول ناجح للمستخدم "${username}" (${user.role === 'admin' ? 'مدير النظام' : 'كاشير'})`);
     return true;
@@ -2422,7 +2426,13 @@ export const AppProvider = ({ children }: any) => {
       if (await verifySecret(pin, u.pinHash as string, u.pinSalt as string)) {
         localStorage.removeItem(FAIL_KEY);
         localStorage.removeItem(LOCK_KEY);
-        setCurrentUser(u);
+        const now = Date.now();
+        const userWithLogin: User = { ...u, lastLogin: now };
+        setState(prev => ({
+            ...prev,
+            users: prev.users.map(usr => usr.id === userWithLogin.id ? userWithLogin : usr)
+        }));
+        setCurrentUser(userWithLogin);
         addAuditLog('Login', `User ${u.username} logged in (PIN)`, `تسجيل دخول سريع بالرمز (PIN) للمستخدم "${u.username}"`);
         return { ok: true };
       }

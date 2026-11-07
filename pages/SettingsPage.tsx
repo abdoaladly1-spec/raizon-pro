@@ -1811,6 +1811,42 @@ export const SettingsPage = () => {
                     </button>
                 </div>
 
+                {/* خيار النسخ الاحتياطي التلقائي المجدول (سحابي بالبريد 12:00 منتصف الليل + محلي كل 6 ساعات) */}
+                <div className="p-4 rounded-xl border border-purple-500/40 bg-purple-500/10 mb-3">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={form.autoBackupEnabled ?? true}
+                            onChange={(e) => {
+                                setForm(prev => ({ ...prev, autoBackupEnabled: e.target.checked }));
+                            }}
+                            className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer accent-purple-600 mt-0.5"
+                        />
+                        <div className="space-y-1">
+                            <div className="text-xs font-bold text-slate-100 flex flex-wrap items-center gap-2">
+                                <Clock size={15} className="text-purple-400 shrink-0" />
+                                <span>{language === 'ar' ? 'النسخ الاحتياطي التلقائي المجدول (بريد 12:00 ليلاً + محلي كل 6 ساعات)' : 'Scheduled Auto Backup (12:00 AM Email + 6h Local)'}</span>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                    {language === 'ar' ? 'توفير المساحة: الاحتفاظ بآخر نسختين فقط' : 'Keep latest 2 only'}
+                                </span>
+                            </div>
+                            <p className="text-[11px] text-slate-300 leading-relaxed">
+                                {language === 'ar'
+                                    ? 'يتم إرسال نسخة احتياطية كاملة إلى بريد المدير يومياً الساعة 12 منتصف الليل، وتخزين نسخة محلياً في مجلد Backup كل 6 ساعات مع الاحتفاظ بآخر نسختين فقط وحذف ما قبلهما تلقائياً لمنع زيادة حجم الذاكرة وتوفير مساحة الجهاز.'
+                                    : 'Sends backup to manager email daily at midnight (12:00 AM), and saves local backup every 6 hours keeping only latest 2 files to save disk space.'}
+                            </p>
+                            {state.settings?.lastLocalBackupTime && (
+                                <div className="text-[10px] text-slate-400 pt-0.5 flex flex-wrap items-center gap-2">
+                                    <span>{language === 'ar' ? 'آخر نسخة محلية:' : 'Last local:'} {new Date(state.settings.lastLocalBackupTime).toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                                    {state.settings?.lastEmailBackupDate && (
+                                        <span>• {language === 'ar' ? 'آخر إرسال بالبريد:' : 'Last email:'} {state.settings.lastEmailBackupDate}</span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </label>
+                </div>
+
                 {/* خيار النسخ التلقائي عند التقفيل */}
                 <div className="p-3.5 rounded-xl border border-slate-700/80 bg-slate-800/60 dark:bg-slate-800/70 mb-5">
                     <label className="flex items-center gap-3 cursor-pointer">

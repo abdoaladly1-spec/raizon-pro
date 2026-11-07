@@ -45,7 +45,7 @@ import database
 import emailer
 from config import API_KEY, BACKUP_DIR, HOST, NOTIFY_ON_INVOICE, PORT, email_mode
 
-BACKUP_KEEP = 10
+BACKUP_KEEP = 2
 
 app = FastAPI(title="ProCashier Server", version="1.0.0")
 
@@ -727,6 +727,22 @@ def save_backup(payload: Dict[str, Any] = Body(...), send_email: bool = True):
         # حفظ دائم في مجلد Backup
         (BACKUP_DIR / "appstate-latest.json").write_text(data, encoding="utf-8")
         (BACKUP_DIR / filename).write_text(data, encoding="utf-8")
+
+        # الاحتفاظ بآخر نسختين فقط وحذف ما قبلهما لتوفير المساحة وعدم تراكم الملفات مع الوقت
+        try:
+            all_backups = sorted(
+                [p for p in BACKUP_DIR.glob("rizon_backup_*.json") if p.is_file()],
+                key=lambda p: p.stat().st_mtime,
+                reverse=True
+            )
+            for old_file in all_backups[BACKUP_KEEP:]:
+                try:
+                    old_file.unlink()
+                    print(f"[BACKUP] Pruned older backup: {old_file.name} to keep only latest {BACKUP_KEEP}")
+                except Exception as del_err:
+                    print(f"[BACKUP] Error pruning {old_file}: {del_err}")
+        except Exception as prune_err:
+            print(f"[BACKUP] Pruning scan failed: {prune_err}")
 
         invoices_count = len(payload.get("invoices", []))
         items_count = len(payload.get("items", []))

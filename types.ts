@@ -62,6 +62,8 @@ export interface User {
   active: boolean;
   locationId?: string; // If restricted to one location
   hidden?: boolean;
+  /** توقيت آخر تسجيل دخول ناجح على السيستم (timestamp) */
+  lastLogin?: number;
 }
 
 export interface AuditLog {
@@ -494,6 +496,12 @@ export interface AppState {
     salonServicesSeeded?: boolean;
     timeFormat?: '12h' | '24h';
     autoBackupOnClosing?: boolean;
+    /** تفعيل النسخ الاحتياطي التلقائي (محلي كل 6 ساعات + سحابي بالبريد 12:00 منتصف الليل) */
+    autoBackupEnabled?: boolean;
+    /** توقيت آخر نسخة محلية تمت */
+    lastLocalBackupTime?: number;
+    /** تاريخ آخر نسخة أرسلت على البريد (YYYY-MM-DD) */
+    lastEmailBackupDate?: string;
     managerEmail?: string;
     emailConfig?: {
       emailTo: string;

@@ -11,6 +11,7 @@ import { AnimatedBackground } from './components/AnimatedBackground';
 import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, Lock, ArrowLeft, ChevronRight, ChevronDown, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Truck, Bell, AlertTriangle, Shield, Phone, Copy, Building } from './components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from './types';
 import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, clearSyncError, type SyncStatus } from './lib/serverSync';
+import { startAutoBackupScheduler } from './lib/autoBackupScheduler';
 import { Card, Button, Input, ToastContainer, SimpleBarChart, useSound, useLiveTick } from './components/ui';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { FilterModal } from './components/FilterModal';
@@ -190,7 +191,7 @@ export const getUserAvatarStyle = (user?: { role?: string; username?: string; na
 const MainContent = () => {
   const { 
     logout, t, toggleLanguage, language, currentUser, theme, toggleTheme, updateSettings, 
-    glassNeon, toggleGlassNeon, state, addToast,
+    glassNeon, toggleGlassNeon, state, addToast, addAuditLog,
     settingsDirty, saveSettingsHandlerRef, discardSettingsHandlerRef 
   } = useApp();
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
@@ -285,6 +286,17 @@ const MainContent = () => {
   }, [systemClock, state?.settings?.timeFormat, language]);
 
   useEffect(() => onSyncStatus(setSyncStatus), []);
+
+  // تشغيل مجدول النسخ الاحتياطي التلقائي (سحابي بالبريد 12:00 منتصف الليل + محلي كل 6 ساعات مع الاحتفاظ بآخر نسختين فقط)
+  useEffect(() => {
+    const unsub = startAutoBackupScheduler({
+      getState: () => state,
+      updateSettings,
+      addAuditLog,
+      addToast
+    });
+    return unsub;
+  }, [state, updateSettings, addAuditLog, addToast]);
 
   // تحذير المستخدم عند امتلاء مساحة التخزين
   useEffect(() => {
