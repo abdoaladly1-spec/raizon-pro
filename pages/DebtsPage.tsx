@@ -23,7 +23,8 @@ export const DebtsPage: React.FC = () => {
   const { 
     state, t, language, formatNumber, formatDate, 
     formatDateTime, addCustomerPayment, addCustomer, 
-    updateCustomer, addInvoice, addToast, currentUser 
+    updateCustomer, addInvoice, addToast, currentUser,
+    addDrawerMovement
   } = useApp();
 
   // Currency helper
@@ -55,6 +56,7 @@ export const DebtsPage: React.FC = () => {
 
   // 3. Add Debt Modal (تسجيل بيع آجل / مديونية)
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
+  const [debtType, setDebtType] = useState<'invoice' | 'drawer_cash'>('invoice');
   const [newDebtCustomerId, setNewDebtCustomerId] = useState<number | ''>('');
   const [newDebtAmount, setNewDebtAmount] = useState('');
   const [newDebtDescription, setNewDebtDescription] = useState('');
@@ -344,11 +346,11 @@ export const DebtsPage: React.FC = () => {
     }
   };
 
-  // Submit manual debt
+  // Submit manual debt (فاتورة لظرف طارئ تسدد لاحقاً أو سحب نقدية من الدرج)
   const handleConfirmAddDebt = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDebtCustomerId) {
-      addToast('يرجى اختيار العميل أولاً', 'error');
+      addToast('يرجى اختيار الشخص / العميل أولاً', 'error');
       return;
     }
     const amt = parseFloat(newDebtAmount);
@@ -365,15 +367,27 @@ export const DebtsPage: React.FC = () => {
 
     setIsSubmittingDebt(true);
     try {
-      // 1. Add credit invoice entry
+      const isDrawerCash = debtType === 'drawer_cash';
+      const debtDesc = newDebtDescription.trim() || (isDrawerCash ? 'سحب نقدية من الدرج لظرف طارئ' : 'متبقي فاتورة لظرف طارئ');
+
+      // 1. في حالة سحب نقدية من الدرج: خصم فوري من الدرج
+      if (isDrawerCash) {
+        addDrawerMovement({
+          type: 'withdrawal',
+          amount: amt,
+          reason: `سحب نقدية من الدرج (دين/سلفة): ${customer.name} - ${debtDesc}`
+        });
+      }
+
+      // 2. تسجيل الفاتورة الآجلة في الحساب
       addInvoice({
         locationId: state.locations?.[0]?.id || 'loc-default',
         customerId: customer.id,
         customerName: customer.name,
         paymentMethod: 'credit',
         items: [{
-          itemId: 'manual-credit-entry',
-          name: newDebtDescription.trim() || 'تسجيل مديونية / بيع آجل',
+          itemId: isDrawerCash ? 'manual-drawer-cash-debt' : 'manual-credit-entry',
+          name: isDrawerCash ? `سحب نقدية من الدرج: ${debtDesc}` : `متبقي فاتورة لظرف طارئ: ${debtDesc}`,
           price: amt,
           quantity: 1,
           modifiers: []
@@ -385,23 +399,29 @@ export const DebtsPage: React.FC = () => {
         timestamp: Date.now(),
         date: newDebtDate,
         status: 'pending',
-        notes: `آجل: ${newDebtDescription.trim() || 'تسجيل عملية على الحساب'}`
+        notes: isDrawerCash ? `سحب نقدية من الدرج لظرف طارئ يسدد لاحقاً: ${debtDesc}` : `متبقي فاتورة لظرف طارئ يسدد لاحقاً: ${debtDesc}`
       } as any);
 
-      // 2. Update customer balance
+      // 3. تحديث رصيد دين العميل
       updateCustomer({
         ...customer,
         balance: (customer.balance || 0) + amt,
         lastVisit: new Date().toISOString()
       });
 
-      addToast(`تمت إضافة مديونية بمبلغ ${formatNumber(amt)} ${currencySymbol} للعميل ${customer.name} بنجاح`, 'success');
+      addToast(
+        isDrawerCash
+          ? `تم خصم ${formatNumber(amt)} ${currencySymbol} من نقدية الدرج وقيدها كدين على ${customer.name} بنجاح`
+          : `تم تسجيل متبقي الفاتورة بمبلغ ${formatNumber(amt)} ${currencySymbol} كدين على ${customer.name} بنجاح`,
+        'success'
+      );
       setShowAddDebtModal(false);
       setNewDebtCustomerId('');
       setNewDebtAmount('');
       setNewDebtDescription('');
+      setDebtType('invoice');
     } catch (err: any) {
-      addToast(err?.message || 'تعذر تسجيل المديونية', 'error');
+      addToast(err?.message || 'تعذر تسجيل العملية', 'error');
     } finally {
       setIsSubmittingDebt(false);
     }
@@ -501,8 +521,8 @@ export const DebtsPage: React.FC = () => {
   // Generate realistic sample data if needed
   const handleSeedSampleData = () => {
     const samples = [
-      { name: 'أحمد إبراهيم الشناوي', phone: '01012345678', balance: 1250, creditLimit: 2000, notes: 'عميل منتظم - تسوية أسبوعية' },
-      { name: 'محمود عبد الرازق حسن', phone: '01198765432', balance: 3400, creditLimit: 2500, notes: 'تجاوز الحد الائتماني المعتمد' },
+      { name: 'أحمد إبراهيم الشناوي', phone: '01012345678', balance: 1250, creditLimit: 2000, notes: 'متبقي فاتورة خدمات يسدد لاحقاً' },
+      { name: 'محمود عبد الرازق حسن', phone: '01198765432', balance: 3400, creditLimit: 2500, notes: 'سحب نقدية من الدرج لظرف طارئ' },
       { name: 'د. طارق السعيد العوضي', phone: '01234567890', balance: 850, creditLimit: 1500, notes: 'سدد دفعة ومتبقي جزء' },
       { name: 'م. خالد عبد الفتاح', phone: '01555544433', balance: 0, creditLimit: 1000, notes: 'حساب مسدد بالكامل' },
       { name: 'كابتن عمر يوسف كمال', phone: '01099887766', balance: 600, creditLimit: 1000, notes: 'فاتورة خدمات استشوار ومعالجة' }
@@ -586,7 +606,7 @@ export const DebtsPage: React.FC = () => {
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">سجل الديون</h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              متابعة وإدارة أرصدة العملاء الآجلة، التحصيلات وسندات القبض وكشوف الحساب.
+              نظام الديون للحالات الطارئة: متبقي فواتير لسدادها لاحقاً، أو سحب نقدية طارئ من الدرج لسداده لاحقاً.
             </p>
           </div>
         </div>
@@ -599,7 +619,7 @@ export const DebtsPage: React.FC = () => {
             className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
           >
             <Plus size={16} />
-            <span>تسجيل عملية آجلة</span>
+            <span>تسجيل دين / سحب طارئ</span>
           </button>
 
           {/* زر إضافة عميل جديد */}
@@ -793,8 +813,7 @@ export const DebtsPage: React.FC = () => {
 
           {[
             { id: 'all', label: 'الكل' },
-            { id: 'due', label: 'مستحق' },
-            { id: 'overdue', label: 'متأخرات السداد' },
+            { id: 'due', label: 'مستحق (غير مسدد)' },
             { id: 'partial', label: 'مسدد جزئياً' },
             { id: 'settled', label: 'مسدد بالكامل' }
           ].map(pill => {
@@ -1416,14 +1435,64 @@ export const DebtsPage: React.FC = () => {
       {/* ===================================================================== */}
       {showAddDebtModal && (
         <ModalShell
-          title="تسجيل عملية بيع آجلة / إضافة دين"
+          title="تسجيل مديونية جديدة / سحب طارئ"
           onClose={() => setShowAddDebtModal(false)}
           maxWidth="max-w-md"
         >
           <form onSubmit={handleConfirmAddDebt} className="space-y-4 text-right" dir="rtl">
+            {/* اختيار نوع المديونية: متبقي فاتورة أو سحب نقدية من الدرج لظرف طارئ */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-2">
+                نوع المديونية والسبب:
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDebtType('invoice')}
+                  className={`p-3 rounded-xl border text-right transition-all cursor-pointer ${
+                    debtType === 'invoice'
+                      ? 'border-primary-500 bg-primary-950/40 text-white font-bold ring-1 ring-primary-500'
+                      : 'border-slate-700 bg-slate-800/60 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    <FileText size={14} className="text-primary-400" />
+                    <span>متبقي فاتورة</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-1 leading-snug">ظرف طارئ للعميل وسداد لاحقاً</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDebtType('drawer_cash')}
+                  className={`p-3 rounded-xl border text-right transition-all cursor-pointer ${
+                    debtType === 'drawer_cash'
+                      ? 'border-amber-500 bg-amber-950/40 text-white font-bold ring-1 ring-amber-500'
+                      : 'border-slate-700 bg-slate-800/60 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                    <Wallet size={14} className="text-amber-400" />
+                    <span>سحب نقدية من الدرج</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-1 leading-snug">يُخصم من كاش الدرج ويُسدد لاحقاً</div>
+                </button>
+              </div>
+
+              {debtType === 'drawer_cash' ? (
+                <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
+                  <span>💡 سيتم تسجيل سحب المبلغ من درج النقدية الآن كحركة مسحوبات وقيده كدين لمتابعته وسداده لاحقاً.</span>
+                </div>
+              ) : (
+                <div className="mt-2 p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs flex items-center gap-2">
+                  <span>💡 قيد متبقي الفاتورة كدين على العميل بسبب ظرف طارئ ليسدد لاحقاً دون التأثير على كاش الدرج.</span>
+                </div>
+              )}
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-1">
-                اختر العميل:
+                اختر العميل / الشخص المستلم:
               </label>
               <select
                 required
