@@ -182,14 +182,34 @@ export const ClosingPage = () => {
     // رصيد الدرج المتوقع = (الرصيد الأساسي + الإيداعات - المسحوبات) + مبيعات الكاش - المصروفات النقدية والمسحوبات
     const expectedCash = baseOpeningBalance + deposits - withdrawals + cashSales - totalCashDeductions;
 
-    // المبلغ النهائي المتوقع للتقفيل الشامل = رصيد الدرج المتوقع + رصيد المحافظ + رصيد البطاقات + المديونيات
-    const expectedTotalClosing = expectedCash + walletTotal + cardTotal + creditTotal;
+    // حالة طريقة التقفيل: تفعيل أو تعطيل حساب المديونيات مع التقفيل
+    const [includeDebtsInClosing, setIncludeDebtsInClosing] = useState<boolean>(() => {
+        try {
+            const saved = localStorage.getItem('closing_include_debts');
+            return saved !== null ? saved === 'true' : true;
+        } catch {
+            return true;
+        }
+    });
+
+    const toggleIncludeDebts = () => {
+        setIncludeDebtsInClosing(prev => {
+            const next = !prev;
+            try { localStorage.setItem('closing_include_debts', String(next)); } catch {}
+            return next;
+        });
+    };
+
+    // المديونيات المحتسبة في التقفيل حسب زر طريقة التقفيل
+    const effectiveCreditForClosing = includeDebtsInClosing ? creditTotal : 0;
+
+    // المبلغ النهائي المتوقع للتقفيل الشامل
+    const expectedTotalClosing = expectedCash + walletTotal + cardTotal + effectiveCreditForClosing;
 
     // =========================================================================
     // 4. حالة الإدخال والجرد الفعلي
     // =========================================================================
     const [actualCash, setActualCash] = useState('');
-    const [retainedInDrawerInput, setRetainedInDrawerInput] = useState('');
     const [notes, setNotes] = useState('');
     const [showCashCounter, setShowCashCounter] = useState(false);
     const [showMovementForm, setShowMovementForm] = useState(false);
@@ -216,24 +236,21 @@ export const ClosingPage = () => {
         setBillCounts(next);
         const sum = Object.entries(next).reduce((acc, [d, c]) => acc + (Number(d) * Number(c)), 0);
         setActualCash(String(sum));
-        if (!retainedInDrawerInput) {
-            setRetainedInDrawerInput(String(sum));
-        }
     };
 
     const actualCashNum = parseFloat(actualCash || '0');
     const diff = (actualCash === '' ? 0 : actualCashNum) - expectedCash;
-    // المبلغ النهائي الفعلي للتقفيل الشامل = رصيد الدرج الفعلي (المعدود) + رصيد المحافظ + رصيد البطاقات + المديونيات
-    const actualTotalClosing = actualCashNum + walletTotal + cardTotal + creditTotal;
+    // المبلغ النهائي الفعلي للتقفيل الشامل
+    const actualTotalClosing = actualCashNum + walletTotal + cardTotal + effectiveCreditForClosing;
     // المبلغ النهائي للتقفيل المعتمد للعرض
     const finalClosingAmount = actualCash !== '' ? actualTotalClosing : expectedTotalClosing;
     const status: ClosingReport['status'] = actualCash === ''
         ? 'matched'
         : (diff === 0 ? 'matched' : diff < 0 ? 'shortage' : 'surplus');
 
-    // توزيع النقدية (المتبقي لغداً والمورّد للخزينة)
-    const retainedInDrawer = retainedInDrawerInput !== '' ? parseFloat(retainedInDrawerInput || '0') : actualCashNum;
-    const transferredToSafe = Math.max(0, actualCashNum - (isNaN(retainedInDrawer) ? 0 : retainedInDrawer));
+    // يظل رصيد الدرج كما هو ثابتاً للوردية القادمة طالما لم يتم إيداع أو سحب عليه
+    const retainedInDrawer = actualCashNum;
+    const transferredToSafe = 0;
 
     const alreadyClosedToday = (state.closingReports || []).some(r => isToday(r.date));
     const [report, setReport] = useState<ClosingReport | null>(null);
@@ -324,23 +341,22 @@ export const ClosingPage = () => {
             withdrawals,
             deposits,
             staffCashPayouts,
-            retainedInDrawer: isNaN(retainedInDrawer) ? actualCashNum : retainedInDrawer,
-            transferredToSafe,
+            retainedInDrawer: actualCashNum,
+            transferredToSafe: 0,
             walletSales: walletTotal,
             cardSales: cardTotal,
-            creditSales: creditTotal,
+            creditSales: effectiveCreditForClosing,
             totalClosingAmount: actualTotalClosing
         };
 
         addClosingReport(newReport);
         setReport(newReport);
 
-        // تحديث إعدادات النظام فوراً ليصبح رصيد عهدة البداية لليوم الجديد مساوياً تماماً للمبلغ المتبقي بالدرج
-        const finalRetained = isNaN(retainedInDrawer) ? actualCashNum : retainedInDrawer;
+        // تحديث إعدادات النظام ليظل رصيد الدرج ثابتاً كما هو للوردية القادمة طالما لم يتم سحبه
         updateSettings({
             ...state.settings,
-            cashDrawerOpening: finalRetained,
-            manualOpeningDate: undefined // مسح التعديل اليدوي القديم حتى يستلم اليوم الجديد رصيد التقفيل هذا تلقائياً
+            cashDrawerOpening: actualCashNum,
+            manualOpeningDate: undefined
         });
 
         // إرسال إشعار فوري للمدير على الإيميل
@@ -586,131 +602,7 @@ export const ClosingPage = () => {
                     </div>
                 </div>
 
-                {/* أزرار السحب والإيداع السريع لتعديل رصيد الدرج في أي وقت */}
-                <div className="mt-4 pt-4 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => { setMovementType('deposit'); setShowMovementForm(true); }}
-                            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
-                        >
-                            <Plus size={14} />
-                            <span>{language === 'ar' ? 'إيداع / تزويد فكة للدرج' : 'Cash Deposit (Float)'}</span>
-                        </button>
 
-                        <button
-                            type="button"
-                            onClick={() => { setMovementType('withdrawal'); setShowMovementForm(true); }}
-                            className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
-                        >
-                            <ArrowDown size={14} />
-                            <span>{language === 'ar' ? 'سحب مبلغ من الدرج' : 'Cash Withdrawal'}</span>
-                        </button>
-                    </div>
-
-                    <div className="flex items-center gap-3 text-xs">
-                        <span className="text-slate-400">
-                            {language === 'ar' ? 'إيداعات اليوم: ' : 'Deposits: '}
-                            <strong className="text-emerald-500 font-mono">+{deposits.toLocaleString('en-US')}</strong>
-                        </span>
-                        <span className="text-slate-600 dark:text-slate-700">|</span>
-                        <span className="text-slate-400">
-                            {language === 'ar' ? 'مسحوبات اليوم: ' : 'Withdrawals: '}
-                            <strong className="text-rose-400 font-mono">-{withdrawals.toLocaleString('en-US')}</strong>
-                        </span>
-                    </div>
-                </div>
-
-                {/* استمارة السحب أو الإيداع المنبثقة عند الضغط */}
-                {showMovementForm && (
-                    <form onSubmit={handleAddMovement} className="mt-4 p-4 rounded-2xl bg-slate-800/90 border border-slate-700 space-y-3 animate-fade-in">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
-                                {movementType === 'deposit' ? 'إيداع نقدية في الدرج' : 'سحب نقدية من الدرج'}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => setShowMovementForm(false)}
-                                className="text-xs text-slate-400 hover:text-slate-200 cursor-pointer"
-                            >
-                                {language === 'ar' ? 'إغلاق' : 'Close'}
-                            </button>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div>
-                                <label className="block text-[11px] font-bold text-slate-400 mb-1">{language === 'ar' ? 'المبلغ (ج.م):' : 'Amount:'}</label>
-                                <input
-                                    type="number"
-                                    min="0.1"
-                                    step="any"
-                                    value={movementAmount}
-                                    onChange={e => setMovementAmount(e.target.value)}
-                                    placeholder="0.00"
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-900 text-slate-100 font-bold text-xs outline-none focus:border-primary-500"
-                                    autoFocus
-                                />
-                            </div>
-
-                            <div className="sm:col-span-2">
-                                <label className="block text-[11px] font-bold text-slate-400 mb-1">{language === 'ar' ? 'السبب أو البيان:' : 'Reason:'}</label>
-                                <input
-                                    value={movementReason}
-                                    onChange={e => setMovementReason(e.target.value)}
-                                    placeholder={movementType === 'deposit' ? 'مثال: تزويد فكة من الخزينة' : 'مثال: سحب نقدي للمدير أو مصروف طارئ'}
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-900 text-slate-100 font-bold text-xs outline-none focus:border-primary-500"
-                                />
-                            </div>
-                        </div>
-
-                        {formError && <p className="text-xs text-rose-400 font-bold">{formError}</p>}
-
-                        <div className="flex justify-end gap-2 pt-1">
-                            <button
-                                type="button"
-                                onClick={() => setShowMovementForm(false)}
-                                className="px-4 py-1.5 rounded-xl border border-slate-700 text-slate-300 text-xs font-bold cursor-pointer hover:bg-slate-700"
-                            >
-                                {language === 'ar' ? 'إلغاء' : 'Cancel'}
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-5 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold shadow-sm cursor-pointer"
-                            >
-                                {language === 'ar' ? 'تأكيد التسجيل' : 'Confirm'}
-                            </button>
-                        </div>
-                    </form>
-                )}
-
-                {/* قائمة حركات الدرج المسجلة لليوم إن وجدت */}
-                {todayMovements.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-slate-700/60 divide-y divide-slate-800">
-                        {todayMovements.map(m => (
-                            <div key={m.id} className="flex items-center justify-between py-2 text-xs">
-                                <div className="flex items-center gap-2">
-                                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${m.type === 'deposit' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' : 'bg-rose-950 text-rose-300 border border-rose-500/30'}`}>
-                                        {m.type === 'deposit' ? '+ إيداع' : '- سحب'}
-                                    </span>
-                                    <span className="font-mono font-bold text-slate-200">
-                                        {m.amount.toLocaleString('en-US')} {t('egp')}
-                                    </span>
-                                    <span className="text-slate-400 truncate max-w-xs">{m.reason}</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-[11px] text-slate-500 font-mono">{formatTime(m.timestamp)}</span>
-                                    <button
-                                        onClick={() => { if (confirm(t('confirm_delete'))) deleteDrawerMovement(m.id); }}
-                                        className="text-slate-500 hover:text-rose-400 cursor-pointer"
-                                        title={t('delete')}
-                                    >
-                                        <Trash2 size={13} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
             </Card>
 
             {/* =========================================================================
@@ -765,17 +657,22 @@ export const ClosingPage = () => {
                     </p>
                 </Card>
 
-                <Card className="bg-slate-900/60 border border-amber-500/30 p-3.5">
-                    <span className="text-xs font-bold text-amber-400 block mb-1">
-                        {language === 'ar' ? 'المديونيات (المدة كاملة)' : 'Total Debts (All-Time)'}
-                    </span>
-                    <p className="text-lg font-bold text-amber-400 font-mono">
+                <Card className={`p-3.5 transition-all ${includeDebtsInClosing ? 'bg-slate-900/60 border border-amber-500/30' : 'bg-slate-900/30 border border-slate-800 opacity-60'}`}>
+                    <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-amber-400 block">
+                            {language === 'ar' ? 'المديونيات (المدة كاملة)' : 'Total Debts (All-Time)'}
+                        </span>
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${includeDebtsInClosing ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-slate-800 text-slate-400'}`}>
+                            {includeDebtsInClosing ? (language === 'ar' ? 'محتسب' : 'Active') : (language === 'ar' ? 'مستبعد' : 'Off')}
+                        </span>
+                    </div>
+                    <p className={`text-lg font-bold font-mono ${includeDebtsInClosing ? 'text-amber-400' : 'text-slate-500 line-through'}`}>
                         +{creditTotal.toLocaleString('en-US')}
                     </p>
                     <p className="text-[10px] text-slate-500 mt-0.5 truncate">
-                        {todayCreditSales > 0 
-                            ? (language === 'ar' ? `مديونية اليوم: +${todayCreditSales.toLocaleString('en-US')}` : `Today: +${todayCreditSales.toLocaleString('en-US')}`)
-                            : (language === 'ar' ? 'إجمالي مديونيات العملاء' : 'Total clients debt')}
+                        {includeDebtsInClosing 
+                            ? (language === 'ar' ? 'مُضاف للتقفيل الشامل' : 'Included in closing') 
+                            : (language === 'ar' ? 'مستبعد من إجمالي التقفيل' : 'Excluded from closing')}
                     </p>
                 </Card>
 
@@ -872,7 +769,7 @@ export const ClosingPage = () => {
                         <div className="flex items-center justify-between">
                             <label className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                                 
-                                <span>{language === 'ar' ? 'المبلغ الفعلي الموجود بالدرج الآن:' : 'Actual Cash Counted:'}</span>
+                                <span>{language === 'ar' ? 'المبلغ الفعلي الذي حسبته:' : 'Actual Cash Counted:'}</span>
                             </label>
 
                             <button
@@ -951,108 +848,240 @@ export const ClosingPage = () => {
                     )}
                 </Card>
 
-                {/* العمود الأيسر: توزيع النقدية (المتبقي لغداً + المورّد للخزينة) وزر الإقفال */}
-                <Card className="lg:col-span-5 border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/90 p-6 space-y-5 shadow-sm">
-                    <div>
-                        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-1 flex items-center gap-2">
-                            
-                            <span>{language === 'ar' ? 'توزيع النقدية للوردية القادمة' : 'Next Shift Cash Allocation'}</span>
-                        </h3>
-                        <p className="text-[11px] text-slate-400">
-                            {language === 'ar'
-                                ? 'حدد ما سيبقى بالدرج لوردية الغد، وسيتم احتساب الباقي كمبلغ مورّد للخزينة تلقائياً.'
-                                : 'Specify float to leave in drawer for next shift.'}
-                        </p>
-                    </div>
+                {/* العمود الأيسر: بطاقتان (إجراءات السحب والإيداع + طريقة التقفيل وحساب المديونيات) */}
+                <div className="lg:col-span-5 space-y-5">
+                    {/* بطاقة 1: إجراءات السحب والإيداع */}
+                    <Card className="border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/90 p-5 space-y-4 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center font-bold">
+                                    <Wallet size={16} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                                        {language === 'ar' ? 'إجراءات السحب والإيداع' : 'Drawer Actions'}
+                                    </h3>
+                                    <p className="text-[10px] text-slate-400">
+                                        {language === 'ar' ? 'تسجيل إيداع فكة أو سحب نقدي من الدرج' : 'Cash deposit or withdrawal'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => { setMovementType('deposit'); setShowMovementForm(true); }}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all ${showMovementForm && movementType === 'deposit' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white'}`}
+                                >
+                                    <ArrowUp size={13} />
+                                    <span>+ إيداع</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setMovementType('withdrawal'); setShowMovementForm(true); }}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all ${showMovementForm && movementType === 'withdrawal' ? 'bg-rose-600 text-white shadow-sm' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 hover:bg-rose-600 hover:text-white'}`}
+                                >
+                                    <ArrowDown size={13} />
+                                    <span>- سحب</span>
+                                </button>
+                            </div>
+                        </div>
 
-                    <div className="space-y-3">
+                        {/* نموذج السحب أو الإيداع السريع */}
+                        {showMovementForm ? (
+                            <form onSubmit={handleAddMovement} className="p-4 rounded-2xl bg-slate-900 border border-slate-700 space-y-3 animate-fade-in text-xs">
+                                <div className="flex items-center justify-between">
+                                    <span className={`font-bold flex items-center gap-1.5 ${movementType === 'deposit' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                        {movementType === 'deposit' ? '+ تسجيل حركة إيداع نقدية بالدرج' : '- تسجيل حركة سحب نقدية من الدرج'}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowMovementForm(false)}
+                                        className="text-[11px] text-slate-400 hover:text-slate-200 cursor-pointer"
+                                    >
+                                        {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                                    </button>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-400 mb-1">{language === 'ar' ? 'المبلغ (ج.م):' : 'Amount:'}</label>
+                                    <input
+                                        type="number"
+                                        min="0.1"
+                                        step="any"
+                                        value={movementAmount}
+                                        onChange={e => setMovementAmount(e.target.value)}
+                                        placeholder="0.00"
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-800 text-slate-100 font-bold text-xs outline-none focus:border-primary-500 font-mono"
+                                        autoFocus
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-400 mb-1">{language === 'ar' ? 'السبب أو البيان:' : 'Reason:'}</label>
+                                    <input
+                                        value={movementReason}
+                                        onChange={e => setMovementReason(e.target.value)}
+                                        placeholder={movementType === 'deposit' ? 'مثال: فكة إضافية للدرج' : 'مثال: سحب نقدي للمصاريف أو للإدارة'}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-600 bg-slate-800 text-slate-100 font-bold text-xs outline-none focus:border-primary-500"
+                                    />
+                                </div>
+
+                                {formError && <p className="text-xs text-rose-400 font-bold">{formError}</p>}
+
+                                <div className="flex justify-end gap-2 pt-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowMovementForm(false)}
+                                        className="px-3.5 py-1.5 rounded-xl border border-slate-700 text-slate-300 text-xs font-bold hover:bg-slate-800 cursor-pointer"
+                                    >
+                                        {language === 'ar' ? 'إغلاق' : 'Close'}
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold cursor-pointer shadow-sm"
+                                    >
+                                        {language === 'ar' ? 'تأكيد التسجيل' : 'Confirm'}
+                                    </button>
+                                </div>
+                            </form>
+                        ) : (
+                            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-mono">
+                                <span className="text-slate-400 flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    إيداعات: <strong className="text-emerald-400 font-bold">+{deposits.toLocaleString('en-US')}</strong>
+                                </span>
+                                <span className="text-slate-700">|</span>
+                                <span className="text-slate-400 flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                                    مسحوبات: <strong className="text-rose-400 font-bold">-{withdrawals.toLocaleString('en-US')}</strong>
+                                </span>
+                            </div>
+                        )}
+
+                        {/* قائمة الحركات المسجلة */}
+                        {todayMovements.length > 0 && !showMovementForm && (
+                            <div className="pt-2 border-t border-slate-800 space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                                {todayMovements.map(m => (
+                                    <div key={m.id} className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-slate-900/50 text-[11px]">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${m.type === 'deposit' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' : 'bg-rose-950 text-rose-300 border border-rose-500/30'}`}>
+                                                {m.type === 'deposit' ? '+إيداع' : '-سحب'}
+                                            </span>
+                                            <span className="font-mono font-bold text-slate-200">
+                                                {m.amount.toLocaleString('en-US')} {t('egp')}
+                                            </span>
+                                            <span className="text-slate-400 truncate max-w-[140px]">{m.reason}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-slate-500 font-mono">{formatTime(m.timestamp)}</span>
+                                            <button
+                                                onClick={() => { if (confirm(t('confirm_delete'))) deleteDrawerMovement(m.id); }}
+                                                className="text-slate-500 hover:text-rose-400 cursor-pointer"
+                                                title={t('delete')}
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </Card>
+
+                    {/* بطاقة 2: طريقة التقفيل وبها زر حساب المديونيات */}
+                    <Card className="border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/90 p-5 space-y-4 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                <Check size={16} className="text-amber-400" />
+                                <span>{language === 'ar' ? 'طريقة التقفيل' : 'Closing Method'}</span>
+                            </h3>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${includeDebtsInClosing ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : 'bg-slate-700 text-slate-300 border-slate-600'}`}>
+                                {includeDebtsInClosing ? (language === 'ar' ? 'شامل المديونيات' : 'Debts Included') : (language === 'ar' ? 'بدون مديونيات' : 'No Debts')}
+                            </span>
+                        </div>
+
+                        {/* زر تفعيل أو تعطيل حساب المديونيات مع التقفيل */}
+                        <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-700 flex items-center justify-between gap-3">
+                            <div>
+                                <span className="text-xs font-bold text-slate-100 block mb-0.5">
+                                    {language === 'ar' ? 'حساب المديونيات مع التقفيل' : 'Include Debts in Closing'}
+                                </span>
+                                <p className="text-[10px] text-slate-400">
+                                    {includeDebtsInClosing
+                                        ? (language === 'ar' ? 'مفعل: يتم جمع المديونيات مع رصيد الدرج والمحافظ والبطاقات' : 'Active: Debts are added to final closing total')
+                                        : (language === 'ar' ? 'معطل: يتم التقفيل برصيد الدرج والمحافظ والبطاقات فقط دون المديونيات' : 'Disabled: Debts are omitted from closing total')}
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={toggleIncludeDebts}
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${includeDebtsInClosing ? 'bg-amber-500' : 'bg-slate-700'}`}
+                                role="switch"
+                                aria-checked={includeDebtsInClosing}
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${includeDebtsInClosing ? (language === 'ar' ? '-translate-x-5' : 'translate-x-5') : 'translate-x-0'}`}
+                                />
+                            </button>
+                        </div>
+
+                        {/* ملخص الحسبة لطريقة التقفيل */}
+                        <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-800 space-y-1.5 text-xs font-mono">
+                            <div className="flex justify-between text-slate-300">
+                                <span>رصيد الدرج {actualCash !== '' ? '(الفعلي المحسوب)' : '(المتوقع)'}:</span>
+                                <span className="font-bold text-emerald-400">{actualCash !== '' ? actualCashNum.toLocaleString('en-US') : expectedCash.toLocaleString('en-US')} ج.م</span>
+                            </div>
+                            <div className="flex justify-between text-slate-300">
+                                <span>رصيد المحافظ:</span>
+                                <span className="font-bold text-purple-400">+{walletTotal.toLocaleString('en-US')} ج.م</span>
+                            </div>
+                            <div className="flex justify-between text-slate-300">
+                                <span>رصيد البطاقات:</span>
+                                <span className="font-bold text-blue-400">+{cardTotal.toLocaleString('en-US')} ج.م</span>
+                            </div>
+                            <div className={`flex justify-between ${includeDebtsInClosing ? 'text-amber-300 font-bold' : 'text-slate-500 line-through'}`}>
+                                <span>المديونيات:</span>
+                                <span>{includeDebtsInClosing ? `+${creditTotal.toLocaleString('en-US')} ج.م` : 'مستبعدة (0 ج.م)'}</span>
+                            </div>
+                            <div className="flex justify-between pt-2 border-t border-slate-700 font-bold text-sm text-amber-300">
+                                <span>إجمالي التقفيل النهائي:</span>
+                                <span>{finalClosingAmount.toLocaleString('en-US')} {t('egp')}</span>
+                            </div>
+                        </div>
+
                         <div>
-                            <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                                {language === 'ar' ? 'المبلغ المتبقي في الدرج لغداً (عهدة البداية):' : 'Retained in Drawer for Tomorrow:'}
+                            <label className="block text-xs font-bold text-slate-400 mb-1.5">
+                                {language === 'ar' ? 'ملاحظات الإقفال (اختياري):' : 'Closing Notes:'}
                             </label>
-                            <input
-                                type="number"
-                                step="any"
-                                value={retainedInDrawerInput}
-                                onChange={e => setRetainedInDrawerInput(e.target.value)}
-                                placeholder={actualCash || '0.00'}
-                                className="w-full px-4 py-2.5 rounded-xl border border-slate-600 bg-slate-800 text-emerald-300 font-bold text-base outline-none focus:border-primary-500 font-mono"
+                            <textarea
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-700 bg-slate-800 text-slate-200 outline-none focus:border-primary-500 resize-none h-16"
+                                placeholder={language === 'ar' ? 'أضف أي ملاحظات خاصة بوردية اليوم...' : 'Notes...'}
                             />
                         </div>
 
-                        {/* أزرار سريعة لتحديد عهدة الغد */}
-                        <div className="flex flex-wrap gap-1.5 text-[11px]">
-                            <button
-                                type="button"
-                                onClick={() => setRetainedInDrawerInput(String(actualCashNum))}
-                                className="px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold cursor-pointer"
-                            >
-                                {language === 'ar' ? 'ترك كامل المبلغ' : 'All'}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setRetainedInDrawerInput('500')}
-                                className="px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold cursor-pointer"
-                            >
-                                500 ج.م
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setRetainedInDrawerInput('1000')}
-                                className="px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold cursor-pointer"
-                            >
-                                1,000 ج.م
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setRetainedInDrawerInput('0')}
-                                className="px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold cursor-pointer"
-                            >
-                                {language === 'ar' ? 'تصفير (0)' : 'Zero'}
-                            </button>
-                        </div>
+                        <button
+                            type="button"
+                            onClick={handleClose}
+                            className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                        >
+                            <Check size={16} />
+                            <span>{language === 'ar' ? 'تأكيد إغلاق الدرج وحفظ الوردية' : 'Save Shift Closing'}</span>
+                        </button>
 
-                        {/* بطاقة المبلغ المورد للخزينة */}
-                        <div className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-between text-xs">
-                            <span className="font-bold text-slate-400">
-                                {language === 'ar' ? 'المبلغ المورّد للخزينة / للإدارة:' : 'Amount to Safe:'}
-                            </span>
-                            <span className="font-mono font-bold text-indigo-400 text-sm">
-                                {transferredToSafe.toLocaleString('en-US')} {t('egp')}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-bold text-slate-400 mb-1.5">
-                            {language === 'ar' ? 'ملاحظات الإقفال (اختياري):' : 'Closing Notes:'}
-                        </label>
-                        <textarea
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            className="w-full px-3 py-2 text-xs rounded-xl border border-slate-700 bg-slate-800 text-slate-200 outline-none focus:border-primary-500 resize-none h-20"
-                            placeholder={language === 'ar' ? 'أضف أي ملاحظات خاصة بوردية اليوم...' : 'Notes...'}
-                        />
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={handleClose}
-                        className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
-                    >
-                        
-                        <span>{language === 'ar' ? 'تأكيد إغلاق الدرج وحفظ الوردية' : 'Save Shift Closing'}</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={logout}
-                        className="w-full py-2.5 rounded-xl border border-rose-900/60 hover:bg-rose-950/30 text-rose-400 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                        <LogOut size={14} />
-                        <span>{t('logout_system')}</span>
-                    </button>
-                </Card>
+                        <button
+                            type="button"
+                            onClick={logout}
+                            className="w-full py-2 rounded-xl border border-rose-900/60 hover:bg-rose-950/30 text-rose-400 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                            <LogOut size={14} />
+                            <span>{t('logout_system')}</span>
+                        </button>
+                    </Card>
+                </div>
             </div>
 
             {/* =========================================================================
