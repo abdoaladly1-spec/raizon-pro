@@ -2745,6 +2745,70 @@ export const SettingsPage = () => {
                             )}
                         </div>
                     </div>
+
+                    {/* خيارات حجم وموقع الشعار في الفاتورة */}
+                    <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-700/60 grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        {/* 1. موقع ومحاذاة الشعار */}
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+                                {language === 'ar' ? 'موقع ومحاذاة الشعار (اللوجو):' : 'Logo Position / Alignment:'}
+                            </label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { id: 'right', label: language === 'ar' ? 'يمين' : 'Right' },
+                                    { id: 'center', label: language === 'ar' ? 'وسط' : 'Center' },
+                                    { id: 'left', label: language === 'ar' ? 'يسار' : 'Left' },
+                                ].map((pos) => {
+                                    const active = (d.logoFrontAlign || 'center') === pos.id;
+                                    return (
+                                        <button
+                                            key={pos.id}
+                                            type="button"
+                                            onClick={() => setDesign({ logoFrontAlign: pos.id as any })}
+                                            className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                                                active
+                                                    ? 'bg-purple-600 text-white border-purple-500 shadow-xs'
+                                                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-purple-300'
+                                            }`}
+                                        >
+                                            {pos.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <span className="block text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
+                                {language === 'ar' ? 'يحدد تموضع الشعار في رأس الفاتورة المطبوعة' : 'Sets header logo alignment'}
+                            </span>
+                        </div>
+
+                        {/* 2. حجم الشعار */}
+                        <div>
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                    {language === 'ar' ? 'حجم الشعار في الفاتورة:' : 'Logo Size:'}
+                                </label>
+                                <span className="text-xs font-bold font-mono text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800/40">
+                                    {d.logoSizePx || 100} px
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="text-[11px] text-slate-400 font-mono">40px</span>
+                                <input
+                                    type="range"
+                                    min="40"
+                                    max="200"
+                                    step="5"
+                                    value={d.logoSizePx || 100}
+                                    onChange={(e) => setDesign({ logoSizePx: Number(e.target.value) })}
+                                    className="flex-1 accent-purple-600 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                                />
+                                <span className="text-[11px] text-slate-400 font-mono">200px</span>
+                            </div>
+                            <span className="block text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
+                                {language === 'ar' ? 'تحكم في أبعاد الشعار لتناسب حجم الورق 80mm أو 58mm' : 'Adjust size for 80mm or 58mm receipts'}
+                            </span>
+                        </div>
+                    </div>
                 </Card>
 
                 {/* المعاينة الحية للإيصال */}

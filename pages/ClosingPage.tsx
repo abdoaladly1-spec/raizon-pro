@@ -12,7 +12,7 @@ import { printClosingReportThermal } from '../lib/thermalPrinter';
 export const ClosingPage = () => {
     const {
         state, t, addClosingReport, addDrawerMovement, deleteDrawerMovement,
-        currentUser, logout, updateSettings, formatTime, formatDateTime, addToast, language
+        currentUser, logout, updateSettings, formatTime, formatDateTime, addToast, language, triggerOpenCashDrawer
     } = useApp();
 
     const localDate = (d: Date = new Date()) =>
@@ -531,6 +531,15 @@ export const ClosingPage = () => {
                 </div>
 
                 <div className="flex items-center gap-2.5">
+                    <button
+                        type="button"
+                        onClick={() => triggerOpenCashDrawer()}
+                        className="px-3.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 hover:border-amber-400 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95"
+                        title="فتح درج النقدية مباشرة لجرد الأموال (F7)"
+                    >
+                        <Wallet size={15} className="text-amber-400" />
+                        <span>فتح الدرج (F7)</span>
+                    </button>
                     <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-800 text-slate-200 border border-slate-700/80 flex items-center gap-1.5">
                         <Clock size={14} className="text-primary-400" />
                         <span>{today}</span>

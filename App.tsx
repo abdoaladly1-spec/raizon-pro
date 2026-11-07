@@ -191,7 +191,7 @@ export const getUserAvatarStyle = (user?: { role?: string; username?: string; na
 
 const MainContent = () => {
   const { 
-    logout, t, toggleLanguage, language, currentUser, theme, toggleTheme, updateSettings, 
+    logout, t, toggleLanguage, language, currentUser, theme, toggleTheme, updateSettings, triggerOpenCashDrawer, 
     glassNeon, toggleGlassNeon, state, addToast, addAuditLog,
     settingsDirty, saveSettingsHandlerRef, discardSettingsHandlerRef 
   } = useApp();
@@ -324,6 +324,10 @@ const MainContent = () => {
   // Shortcuts
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'F7') {
+        e.preventDefault();
+        triggerOpenCashDrawer();
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         setShowSearch(prev => !prev);
@@ -782,6 +786,8 @@ const MainContent = () => {
                       <div className="flex justify-between text-sm"><span className="text-slate-600 dark:text-slate-300">{t('global_search')}</span> <kbd className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">Ctrl + K</kbd></div>
                       <div className="flex justify-between text-sm"><span className="text-slate-600 dark:text-slate-300">{t('show_shortcuts')}</span> <kbd className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">?</kbd></div>
                       <div className="flex justify-between text-sm"><span className="text-slate-600 dark:text-slate-300">{t('print_invoice')}</span> <kbd className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">Ctrl + P</kbd></div>
+                      <div className="flex justify-between text-sm"><span className="text-amber-500 font-bold">{language === 'ar' ? 'فتح درج النقدية' : 'Open Cash Drawer'}</span> <kbd className="bg-amber-500/15 text-amber-500 border border-amber-500/40 px-2 py-1 rounded font-mono text-xs font-bold">F7</kbd></div>
+                      <div className="flex justify-between text-sm"><span className="text-amber-500 font-bold">{language === 'ar' ? 'فتح درج النقدية' : 'Open Cash Drawer'}</span> <kbd className="bg-amber-500/15 text-amber-500 border border-amber-500/40 px-2 py-1 rounded font-mono text-xs font-bold">F7</kbd></div>
                     </div>
                     <div className="space-y-3">
                       <h3 className="font-bold text-slate-500 uppercase text-xs tracking-wider border-b pb-1 mb-2">{t('invoice_shortcuts')}</h3>

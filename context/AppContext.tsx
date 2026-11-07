@@ -17,6 +17,7 @@ import { buildPrintIdentity } from '../lib/printDesign';
 import { idbGet, idbSet, idbRemove } from '../lib/idb';
 import { makePasswordRecord, makePinRecord, verifySecret } from '../lib/crypto';
 import { translateAuditLogToAr } from '../lib/auditLogAr';
+import { openCashDrawerDevice } from '../lib/cashDrawer';
 
 interface AppContextType {
   language: Language;
@@ -114,6 +115,7 @@ interface AppContextType {
   setSettingsDirty: (dirty: boolean) => void;
   saveSettingsHandlerRef: React.MutableRefObject<(() => Promise<void> | void) | null>;
   discardSettingsHandlerRef: React.MutableRefObject<(() => void) | null>;
+  triggerOpenCashDrawer: (silent?: boolean) => void;
 }
 
 const translations = {
@@ -3612,6 +3614,14 @@ export const AppProvider = ({ children }: any) => {
       );
   };
 
+  const triggerOpenCashDrawer = (silent: boolean = false) => {
+    openCashDrawerDevice();
+    addAuditLog('Drawer', 'Cash drawer opened (F7 / Direct Button)', `فتح درج النقدية بواسطة: ${currentUser?.name || 'كاشير'}`);
+    if (!silent) {
+      addToast('تم إرسال أمر فتح درج النقدية (F7) 💰', 'success');
+    }
+  };
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
@@ -3644,7 +3654,8 @@ export const AppProvider = ({ children }: any) => {
       t, formatNumber, formatDate, formatTime, formatDateTime,
       theme, toggleTheme, glassNeon, toggleGlassNeon, experimentalMode, toggleExperimentalMode,
       updateSettings, toasts, addToast, removeToast,
-      settingsDirty, setSettingsDirty, saveSettingsHandlerRef, discardSettingsHandlerRef
+      settingsDirty, setSettingsDirty, saveSettingsHandlerRef, discardSettingsHandlerRef,
+      triggerOpenCashDrawer
     }}>
       {children}
     </AppContext.Provider>

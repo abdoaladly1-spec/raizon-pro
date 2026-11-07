@@ -29,7 +29,7 @@ const getInitialInvoiceDraft = () => {
 };
 
 export const CreateInvoice = ({ onClose }: any) => {
-  const { state, addInvoice, holdInvoice, restoreInvoice, deleteHeldInvoice, t, addToast, addCustomer, updateSettings, language, addItem, formatNumber, formatDate, formatTime, formatDateTime } = useApp();
+  const { state, addInvoice, holdInvoice, restoreInvoice, deleteHeldInvoice, t, addToast, addCustomer, updateSettings, language, addItem, formatNumber, formatDate, formatTime, formatDateTime, triggerOpenCashDrawer } = useApp();
   const isMain = isMainBranch(state.settings.currentLocationId, state.locations);
   const activeBranch = getActiveBranch(state.settings.currentLocationId, state.locations);
   const { playBeep } = useSound();
@@ -795,6 +795,15 @@ export const CreateInvoice = ({ onClose }: any) => {
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-bold flex items-center gap-2"><Users size={20} /> {t('customer_name')}</h3>
                     <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => triggerOpenCashDrawer()}
+                            className="flex items-center gap-1 text-xs bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 px-3 py-1.5 rounded-lg border border-amber-500/30 hover:border-amber-400 font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
+                            title="فتح درج النقدية يدوياً (F7)"
+                        >
+                            <Wallet size={14} className="text-amber-500" />
+                            <span>{language === 'ar' ? 'فتح الدرج (F7)' : 'Open Drawer (F7)'}</span>
+                        </button>
                         <button
                             type="button"
                             onClick={() => {

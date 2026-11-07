@@ -207,25 +207,51 @@ export const InvoiceReceipt = ({
                   <div className="text-center mb-1">
                     {vis.logo && (
                       design.logoFrontDataUrl ? (
-                        <img
-                          src={design.logoFrontDataUrl}
-                          alt="Logo"
-                          className="mx-auto block filter grayscale contrast-200"
+                        <div
                           style={{
-                            width: '120px',
-                            maxHeight: '120px',
-                            objectFit: 'contain',
+                            display: 'flex',
+                            justifyContent:
+                              design.logoFrontAlign === 'left'
+                                ? 'flex-start'
+                                : design.logoFrontAlign === 'right'
+                                ? 'flex-end'
+                                : 'center',
                             marginBottom: '4px',
                           }}
-                        />
+                        >
+                          <img
+                            src={design.logoFrontDataUrl}
+                            alt="Logo"
+                            className="block filter grayscale contrast-200"
+                            style={{
+                              width: `${design.logoSizePx || 100}px`,
+                              maxHeight: `${design.logoSizePx || 100}px`,
+                              objectFit: 'contain',
+                            }}
+                          />
+                        </div>
                       ) : (
-                        <div className="mx-auto my-1 flex flex-col items-center justify-center">
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent:
+                              design.logoFrontAlign === 'left'
+                                ? 'flex-start'
+                                : design.logoFrontAlign === 'right'
+                                ? 'flex-end'
+                                : 'center',
+                            margin: '4px 0',
+                          }}
+                        >
                           <svg
                             viewBox="0 0 140 140"
-                            className="w-[105px] h-[105px] text-black"
+                            style={{
+                              width: `${Math.min(140, Math.max(50, design.logoSizePx || 90))}px`,
+                              height: `${Math.min(140, Math.max(50, design.logoSizePx || 90))}px`,
+                            }}
+                            className="text-black"
                             fill="none"
                           >
-                            {/* دائرة مظللة بها كلمة اللوجو هنا */}
                             <circle cx="70" cy="70" r="65" fill="#f1f3f5" stroke="#000000" strokeWidth="2.5" />
                             <circle cx="70" cy="70" r="58" stroke="#000000" strokeWidth="1" strokeDasharray="4 2" />
                             <text
