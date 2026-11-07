@@ -534,9 +534,9 @@ export const NotesPage: React.FC = () => {
                                         ${isLinedPaper 
                                             ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-2xs' 
                                             : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700'}`}
-                                    title="تشغيل أو إيقاف السطور المسطرة لورقة الملاحظة"
+                                    title="تبديل نمط الورق (مسطر / عادي)"
                                 >
-                                    <span>{isLinedPaper ? '📝 مسطر (الآيفون)' : '📄 عادي'}</span>
+                                    <span>{isLinedPaper ? '📝 مسطر' : '📄 عادي'}</span>
                                 </button>
                             </div>
 
