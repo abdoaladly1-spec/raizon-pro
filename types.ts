@@ -359,6 +359,11 @@ export interface ClosingReport {
   staffCashPayouts?: number;
   retainedInDrawer?: number;
   transferredToSafe?: number;
+  /** مبالغ وسائل الدفع الأخرى والتقفيل الشامل */
+  walletSales?: number;
+  cardSales?: number;
+  creditSales?: number;
+  totalClosingAmount?: number;
 }
 
 /** حركة يدوية على درج النقدية (سحب/إيداع) مع سبب مسجَّل */

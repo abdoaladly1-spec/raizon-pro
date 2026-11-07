@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { LogOut, Printer, Award, Clock, Wallet, Plus, Trash2, AlertCircle, ArrowUp, ArrowDown, Check, RefreshCw } from '../components/Icons';
 import { ClosingReport } from '../types';
-import { cashOfInvoice, isCashExpense } from '../lib/payments';
+import { cashOfInvoice, isCashExpense, paymentOf } from '../lib/payments';
 import { getDrawerOpeningBalance } from '../lib/analytics';
 import { toIsoDate, localIsoToday } from '../lib/dates';
 import { cashReturnsFor } from '../lib/returns';
@@ -74,16 +74,78 @@ export const ClosingPage = () => {
         return state.invoices.filter(i => isToday(i.date) && i.status !== 'void');
     }, [state.invoices, today]);
 
-    const cashInvoices = useMemo(() => {
-        return todayInvoices.filter(i => cashOfInvoice(i) > 0);
+    // تفصيل مبيعات الفواتير حسب وسيلة الدفع (كاش، بطاقات، محافظ، مديونيات/آجل)
+    const paymentBreakdown = useMemo(() => {
+        let cash = 0;
+        let card = 0;
+        let wallet = 0;
+        let credit = 0;
+
+        todayInvoices.forEach(inv => {
+            const p = paymentOf(inv);
+            if (p.parts && p.parts.length > 0) {
+                p.parts.forEach(part => {
+                    const amt = Number(part.amount) || 0;
+                    if (part.method === 'cash') cash += amt;
+                    else if (part.method === 'card') card += amt;
+                    else if (part.method === 'wallet' || part.method === 'instapay') wallet += amt;
+                    else if (part.method === 'credit') credit += amt;
+                });
+            } else {
+                const method = String(inv.paymentMethod || 'cash').toLowerCase();
+                const amt = Number(inv.total || 0);
+                if (method === 'cash') cash += amt;
+                else if (method === 'card' || method === 'visa') card += amt;
+                else if (method === 'wallet' || method === 'instapay') wallet += amt;
+                else if (method === 'credit' || method === 'آجل') credit += amt;
+                else cash += amt;
+            }
+        });
+
+        return { cash, card, wallet, credit };
     }, [todayInvoices]);
+
+    // تحصيلات وسداد مديونيات العملاء المسجلة اليوم
+    const todayCustomerPayments = useMemo(() => {
+        return (state.customerPayments || []).filter(cp => isToday(cp.date));
+    }, [state.customerPayments, today]);
+
+    const customerPaymentsCash = useMemo(() => {
+        return todayCustomerPayments
+            .filter(cp => !cp.paymentMethod || cp.paymentMethod === 'cash')
+            .reduce((sum, cp) => sum + (Number(cp.amount) || 0), 0);
+    }, [todayCustomerPayments]);
+
+    const customerPaymentsWallet = useMemo(() => {
+        return todayCustomerPayments
+            .filter(cp => cp.paymentMethod === 'wallet' || cp.paymentMethod === 'instapay')
+            .reduce((sum, cp) => sum + (Number(cp.amount) || 0), 0);
+    }, [todayCustomerPayments]);
+
+    const customerPaymentsCard = useMemo(() => {
+        return todayCustomerPayments
+            .filter(cp => cp.paymentMethod === 'card')
+            .reduce((sum, cp) => sum + (Number(cp.amount) || 0), 0);
+    }, [todayCustomerPayments]);
+
+    // الكاش المضاف للدرج من المبيعات والتحصيلات
+    const cashSales = paymentBreakdown.cash + customerPaymentsCash;
+
+    // رصيد المحافظ لليوم (مبيعات + تحصيلات إنستاباي ومحافظ إلكترونية)
+    const walletTotal = paymentBreakdown.wallet + customerPaymentsWallet;
+
+    // رصيد البطاقات البنكية لليوم (مبيعات + تحصيلات فيزا)
+    const cardTotal = paymentBreakdown.card + customerPaymentsCard;
+
+    // رصيد المديونيات لليوم (المبيعات المسجلة على الحساب / آجل)
+    const creditTotal = paymentBreakdown.credit;
 
     const totalSales = useMemo(() => {
-        return todayInvoices.reduce((acc, inv) => acc + inv.total, 0);
+        return todayInvoices.reduce((acc, inv) => acc + (Number(inv.total) || 0), 0);
     }, [todayInvoices]);
 
-    const cashSales = useMemo(() => {
-        return todayInvoices.reduce((acc, inv) => acc + cashOfInvoice(inv), 0);
+    const cashInvoices = useMemo(() => {
+        return todayInvoices.filter(i => cashOfInvoice(i) > 0);
     }, [todayInvoices]);
 
     const todayExpenses = useMemo(() => {
@@ -107,8 +169,11 @@ export const ClosingPage = () => {
     // إجمالي المصروفات والمرتجعات النقدية المخصومة من الدرج
     const totalCashDeductions = totalExpensesAmount + cashRefunds + staffCashPayouts;
 
-    // الخزنة المتوقعة = (الرصيد الأساسي + الإيداعات - المسحوبات) + مبيعات الكاش - المصروفات النقدية والمرتجعات
+    // رصيد الدرج المتوقع = (الرصيد الأساسي + الإيداعات - المسحوبات) + مبيعات الكاش - المصروفات النقدية والمسحوبات
     const expectedCash = baseOpeningBalance + deposits - withdrawals + cashSales - totalCashDeductions;
+
+    // المبلغ النهائي المتوقع للتقفيل الشامل = رصيد الدرج المتوقع + رصيد المحافظ + رصيد البطاقات + المديونيات
+    const expectedTotalClosing = expectedCash + walletTotal + cardTotal + creditTotal;
 
     // =========================================================================
     // 4. حالة الإدخال والجرد الفعلي
@@ -148,6 +213,10 @@ export const ClosingPage = () => {
 
     const actualCashNum = parseFloat(actualCash || '0');
     const diff = (actualCash === '' ? 0 : actualCashNum) - expectedCash;
+    // المبلغ النهائي الفعلي للتقفيل الشامل = رصيد الدرج الفعلي (المعدود) + رصيد المحافظ + رصيد البطاقات + المديونيات
+    const actualTotalClosing = actualCashNum + walletTotal + cardTotal + creditTotal;
+    // المبلغ النهائي للتقفيل المعتمد للعرض
+    const finalClosingAmount = actualCash !== '' ? actualTotalClosing : expectedTotalClosing;
     const status: ClosingReport['status'] = actualCash === ''
         ? 'matched'
         : (diff === 0 ? 'matched' : diff < 0 ? 'shortage' : 'surplus');
@@ -246,7 +315,11 @@ export const ClosingPage = () => {
             deposits,
             staffCashPayouts,
             retainedInDrawer: isNaN(retainedInDrawer) ? actualCashNum : retainedInDrawer,
-            transferredToSafe
+            transferredToSafe,
+            walletSales: walletTotal,
+            cardSales: cardTotal,
+            creditSales: creditTotal,
+            totalClosingAmount: actualTotalClosing
         };
 
         addClosingReport(newReport);
@@ -315,8 +388,20 @@ export const ClosingPage = () => {
                         <div className="text-slate-400">{language === 'ar' ? 'مصروفات ومرتجعات نقدية:' : 'Expenses & Refunds:'}</div>
                         <div className="text-left font-bold text-rose-400">-{report.totalExpenses.toLocaleString('en-US')} {t('egp')}</div>
 
-                        <div className="text-slate-200 pt-3 border-t border-slate-700 font-bold">{language === 'ar' ? 'المبلغ المتوقع في الدرج:' : 'Expected Cash:'}</div>
+                        <div className="text-slate-200 pt-3 border-t border-slate-700 font-bold">{language === 'ar' ? 'رصيد الدرج:' : 'Drawer Balance:'}</div>
                         <div className="text-left font-bold text-slate-100 pt-3 border-t border-slate-700">{report.expectedCash.toLocaleString('en-US')} {t('egp')}</div>
+
+                        <div className="text-slate-400">{language === 'ar' ? 'رصيد المحافظ الإلكترونية:' : 'Wallets:'}</div>
+                        <div className="text-left font-bold text-purple-400">+{report.walletSales?.toLocaleString('en-US') || 0} {t('egp')}</div>
+
+                        <div className="text-slate-400">{language === 'ar' ? 'رصيد البطاقات (فيزا):' : 'Cards:'}</div>
+                        <div className="text-left font-bold text-blue-400">+{report.cardSales?.toLocaleString('en-US') || 0} {t('egp')}</div>
+
+                        <div className="text-slate-400">{language === 'ar' ? 'المديونيات (آجل):' : 'Debts/Credit:'}</div>
+                        <div className="text-left font-bold text-amber-400">+{report.creditSales?.toLocaleString('en-US') || 0} {t('egp')}</div>
+
+                        <div className="text-amber-300 pt-2 border-t border-slate-700 font-extrabold text-sm">{language === 'ar' ? 'المبلغ النهائي للتقفيل الشامل:' : 'Final Closing Total:'}</div>
+                        <div className="text-left font-extrabold text-amber-300 pt-2 border-t border-slate-700 text-sm">{(report.totalClosingAmount || (report.actualCash + (report.walletSales || 0) + (report.cardSales || 0) + (report.creditSales || 0))).toLocaleString('en-US')} {t('egp')}</div>
 
                         <div className="text-slate-200 font-bold">{language === 'ar' ? 'المبلغ الفعلي المستلم:' : 'Actual Cash:'}</div>
                         <div className="text-left font-bold text-amber-300">{report.actualCash.toLocaleString('en-US')} {t('egp')}</div>
@@ -619,56 +704,78 @@ export const ClosingPage = () => {
             </Card>
 
             {/* =========================================================================
-                2. ملخص تدفقات النقدية السريعة لليوم (4 كروت واضحة ومباشرة)
+                2. ملخص تدفقات النقدية ووسائل الدفع لليوم
                ========================================================================= */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="bg-slate-900/60 border border-slate-800 p-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <Card className="bg-slate-900/60 border border-slate-800 p-3.5">
                     <span className="text-xs font-bold text-slate-400 block mb-1">
-                        {language === 'ar' ? 'الرصيد الافتتاحي المعتمد' : 'Opening Drawer Balance'}
+                        {language === 'ar' ? 'الرصيد الافتتاحي' : 'Opening'}
                     </span>
-                    <p className="text-xl font-bold text-primary-600 dark:text-primary-400 font-mono">
+                    <p className="text-lg font-bold text-primary-400 font-mono">
                         {baseOpeningBalance.toLocaleString('en-US')}
                     </p>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                        {deposits > 0 
-                            ? (language === 'ar' ? `+ إيداعات إضافية: ${deposits.toLocaleString('en-US')}` : `+ Extra Deposits: ${deposits.toLocaleString('en-US')}`)
-                            : (language === 'ar' ? 'رصيد بداية اليوم بالدرج' : 'Start of day balance')}
+                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">
+                        {language === 'ar' ? 'رصيد بداية اليوم' : 'Start balance'}
                     </p>
                 </Card>
 
-                <Card className="bg-slate-900/60 border border-emerald-500/30 p-4">
+                <Card className="bg-slate-900/60 border border-emerald-500/30 p-3.5">
                     <span className="text-xs font-bold text-emerald-400 block mb-1">
-                        {language === 'ar' ? 'المبيعات النقدية (كاش)' : 'Cash Sales'}
+                        {language === 'ar' ? 'مبيعات الكاش' : 'Cash Sales'}
                     </span>
-                    <p className="text-xl font-bold text-emerald-500 font-mono">
+                    <p className="text-lg font-bold text-emerald-500 font-mono">
                         +{cashSales.toLocaleString('en-US')}
                     </p>
-                    <p className="text-[11px] text-slate-500 mt-1">
+                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">
                         {cashInvoices.length} {language === 'ar' ? 'فواتير كاش' : 'invoices'}
                     </p>
                 </Card>
 
-                <Card className="bg-slate-900/60 border border-rose-500/30 p-4">
-                    <span className="text-xs font-bold text-rose-400 block mb-1">
-                        {language === 'ar' ? 'المصروفات والمرتجعات' : 'Cash Deductions'}
+                <Card className="bg-slate-900/60 border border-purple-500/30 p-3.5">
+                    <span className="text-xs font-bold text-purple-400 block mb-1">
+                        {language === 'ar' ? 'رصيد المحافظ' : 'Wallets'}
                     </span>
-                    <p className="text-xl font-bold text-rose-400 font-mono">
-                        -{totalCashDeductions.toLocaleString('en-US')}
+                    <p className="text-lg font-bold text-purple-400 font-mono">
+                        +{walletTotal.toLocaleString('en-US')}
                     </p>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                        {language === 'ar' ? `${todayExpenses.length} مصاريف` : 'Expenses & refunds'}
+                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">
+                        {language === 'ar' ? 'إنستاباي ومحافظ' : 'Instapay & Wallets'}
                     </p>
                 </Card>
 
-                <Card className="bg-slate-900/60 border border-rose-500/30 p-4">
-                    <span className="text-xs font-bold text-rose-500 block mb-1">
-                        {language === 'ar' ? 'المسحوبات من الدرج' : 'Draws'}
+                <Card className="bg-slate-900/60 border border-blue-500/30 p-3.5">
+                    <span className="text-xs font-bold text-blue-400 block mb-1">
+                        {language === 'ar' ? 'رصيد البطاقات' : 'Cards'}
                     </span>
-                    <p className="text-xl font-bold text-rose-500 font-mono">
-                        -{withdrawals.toLocaleString('en-US')}
+                    <p className="text-lg font-bold text-blue-400 font-mono">
+                        +{cardTotal.toLocaleString('en-US')}
                     </p>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                        {language === 'ar' ? 'سحوبات عهدة' : 'Drawer withdrawals'}
+                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">
+                        {language === 'ar' ? 'فيزا وبطاقات بنكية' : 'Visa & Cards'}
+                    </p>
+                </Card>
+
+                <Card className="bg-slate-900/60 border border-amber-500/30 p-3.5">
+                    <span className="text-xs font-bold text-amber-400 block mb-1">
+                        {language === 'ar' ? 'المديونيات (آجل)' : 'Debts (Credit)'}
+                    </span>
+                    <p className="text-lg font-bold text-amber-400 font-mono">
+                        +{creditTotal.toLocaleString('en-US')}
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">
+                        {language === 'ar' ? 'مبيعات على الحساب' : 'On account sales'}
+                    </p>
+                </Card>
+
+                <Card className="bg-slate-900/60 border border-rose-500/30 p-3.5">
+                    <span className="text-xs font-bold text-rose-400 block mb-1">
+                        {language === 'ar' ? 'المصروفات والمسحوبات' : 'Deductions'}
+                    </span>
+                    <p className="text-lg font-bold text-rose-400 font-mono">
+                        -{(totalCashDeductions + withdrawals).toLocaleString('en-US')}
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">
+                        {todayExpenses.length} {language === 'ar' ? 'مصاريف وسحوبات' : 'expenses'}
                     </p>
                 </Card>
             </div>
@@ -679,11 +786,11 @@ export const ClosingPage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 {/* العمود الأيمن: الخزنة المتوقعة والجرد الفعلي */}
                 <Card className="lg:col-span-7 border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/90 p-6 space-y-6 shadow-sm">
-                    {/* الخزنة المتوقعة */}
-                    <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800/90 to-slate-900 border border-primary-500/30 flex items-center justify-between">
+                    {/* رصيد الدرج */}
+                    <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800/90 to-slate-900 border border-emerald-500/30 flex items-center justify-between">
                         <div>
-                            <span className="text-xs font-bold text-slate-400 block mb-1">
-                                {language === 'ar' ? 'المبلغ المتوقع في الدرج حالياً:' : 'Expected in Drawer:'}
+                            <span className="text-xs font-extrabold text-emerald-400 block mb-1">
+                                {language === 'ar' ? 'رصيد الدرج:' : 'Drawer Balance:'}
                             </span>
                             <div className="text-3xl font-bold text-emerald-500 font-mono tracking-tight">
                                 {expectedCash.toLocaleString('en-US')} <span className="text-sm font-normal text-slate-400">{t('egp')}</span>
@@ -691,10 +798,60 @@ export const ClosingPage = () => {
                         </div>
                         <div className="text-right text-[11px] text-slate-400 space-y-0.5 font-mono">
                             <div>الافتتاحي: {baseOpeningBalance.toLocaleString('en-US')}</div>
-                            {deposits > 0 && <div className="text-emerald-500 font-bold">+ إيداعات إضافية: {deposits.toLocaleString('en-US')}</div>}
+                            {deposits > 0 && <div className="text-emerald-500 font-bold">+ إيداعات: {deposits.toLocaleString('en-US')}</div>}
                             <div className="text-emerald-500 font-bold">+ كاش مبيعات: {cashSales.toLocaleString('en-US')}</div>
                             <div className="text-rose-500 font-bold">- خصومات: {totalCashDeductions.toLocaleString('en-US')}</div>
                             {withdrawals > 0 && <div className="text-rose-500 font-bold">- مسحوبات: {withdrawals.toLocaleString('en-US')}</div>}
+                        </div>
+                    </div>
+
+                    {/* بطاقة المبلغ النهائي الذي يجب تسجيله (إجمالي التقفيل الشامل) */}
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-950/80 via-purple-950/60 to-slate-900 border border-indigo-500/40 shadow-lg space-y-3.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-500/20 pb-3">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-black text-amber-300">
+                                        {language === 'ar' ? 'المبلغ النهائي الذي يجب تسجيله (إجمالي التقفيل)' : 'Final Closing Total to Record'}
+                                    </span>
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
+                                        {language === 'ar' ? 'شامل كل الوسائل' : 'All Methods Included'}
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-slate-400 font-medium mt-1">
+                                    {language === 'ar' ? 'التقفيل يتم بجمع رصيد الدرج ورصيد المحافظ والمديونيات والبطاقات' : 'Closing is calculated by summing Drawer + Wallets + Debts/Credit + Cards'}
+                                </p>
+                            </div>
+                            <div className="text-2xl sm:text-3xl font-black text-amber-300 font-mono">
+                                {finalClosingAmount.toLocaleString('en-US')} <span className="text-xs font-bold text-amber-400/80">{t('egp')}</span>
+                            </div>
+                        </div>
+
+                        {/* تفاصيل المبالغ المكونة لإجمالي التقفيل */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+                            <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+                                <span className="text-[10px] text-slate-400 block font-sans font-bold mb-0.5">{language === 'ar' ? 'رصيد الدرج:' : 'Drawer:'}</span>
+                                <span className="font-bold text-emerald-400 text-sm">
+                                    {(actualCash !== '' ? actualCashNum : expectedCash).toLocaleString('en-US')}
+                                </span>
+                            </div>
+                            <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+                                <span className="text-[10px] text-slate-400 block font-sans font-bold mb-0.5">{language === 'ar' ? 'رصيد المحافظ:' : 'Wallets:'}</span>
+                                <span className="font-bold text-purple-400 text-sm">
+                                    {walletTotal.toLocaleString('en-US')}
+                                </span>
+                            </div>
+                            <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+                                <span className="text-[10px] text-slate-400 block font-sans font-bold mb-0.5">{language === 'ar' ? 'رصيد البطاقات:' : 'Cards:'}</span>
+                                <span className="font-bold text-blue-400 text-sm">
+                                    {cardTotal.toLocaleString('en-US')}
+                                </span>
+                            </div>
+                            <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+                                <span className="text-[10px] text-slate-400 block font-sans font-bold mb-0.5">{language === 'ar' ? 'المديونيات (آجل):' : 'Debts:'}</span>
+                                <span className="font-bold text-amber-400 text-sm">
+                                    {creditTotal.toLocaleString('en-US')}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
