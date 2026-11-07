@@ -125,7 +125,7 @@ export const InvoiceReceipt = ({
   const subtotalVal = Number(invoice.subtotal) || 0;
   const discountPercent = Number(invoice.discountPercent) || 0;
   const taxPercent = Number(invoice.taxPercent) || 0;
-  const discountAmount = (subtotalVal * discountPercent) / 100;
+  const discountAmount = invoice.discountAmount !== undefined ? Number(invoice.discountAmount) : ((subtotalVal * discountPercent) / 100);
   const taxableBase = Math.max(0, subtotalVal - discountAmount);
   const taxAmount = (taxableBase * taxPercent) / 100;
   const hasExtras = discountAmount > 0 || taxAmount > 0;
@@ -604,7 +604,7 @@ export const InvoiceReceipt = ({
                                     fontFamily: 'Tahoma, Arial, sans-serif',
                                   }}
                                 >
-                                  {rtl ? 'الخصم' : 'Discount'} {discountPercent > 0 ? `(${discountPercent}%)` : ''}
+                                  {rtl ? 'الخصم' : 'Discount'} {invoice.discountReason ? `(${invoice.discountReason}${discountPercent > 0 ? ` - ${discountPercent}%` : ''})` : (discountPercent > 0 ? `(${discountPercent}%)` : '')}
                                 </td>
                                 <td
                                   className="text-center align-middle text-black font-mono font-bold"

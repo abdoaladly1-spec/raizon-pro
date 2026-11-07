@@ -386,7 +386,7 @@ export const ClosingPage = () => {
                         <div className="text-slate-400">{language === 'ar' ? 'الرصيد الافتتاحي (أمس):' : 'Opening:'}</div>
                         <div className="text-left font-bold text-slate-200">{report.openingBalance?.toLocaleString('en-US') || 0} {t('egp')}</div>
 
-                        <div className="text-slate-400">{language === 'ar' ? 'إجمالي مبيعات الكاش:' : 'Cash Sales:'}</div>
+                        <div className="text-slate-400">{language === 'ar' ? 'إجمالي الإيرادات:' : 'Total Revenue:'}</div>
                         <div className="text-left font-bold text-emerald-400">+{report.cashSales?.toLocaleString('en-US') || 0} {t('egp')}</div>
 
                         <div className="text-slate-400">{language === 'ar' ? 'إيداعات نقدية للدرج:' : 'Deposits:'}</div>
@@ -731,13 +731,13 @@ export const ClosingPage = () => {
 
                 <Card className="bg-slate-900/60 border border-emerald-500/30 p-3.5">
                     <span className="text-xs font-bold text-emerald-400 block mb-1">
-                        {language === 'ar' ? 'مبيعات الكاش' : 'Cash Sales'}
+                        {language === 'ar' ? 'إجمالي الإيرادات' : 'Total Revenue'}
                     </span>
                     <p className="text-lg font-bold text-emerald-500 font-mono">
                         +{cashSales.toLocaleString('en-US')}
                     </p>
                     <p className="text-[10px] text-slate-500 mt-0.5 truncate">
-                        {cashInvoices.length} {language === 'ar' ? 'فواتير كاش' : 'invoices'}
+                        {cashInvoices.length} {language === 'ar' ? 'فواتير محصلة' : 'paid invoices'}
                     </p>
                 </Card>
 
@@ -811,7 +811,7 @@ export const ClosingPage = () => {
                         <div className="text-right text-[11px] text-slate-400 space-y-0.5 font-mono">
                             <div>الافتتاحي: {baseOpeningBalance.toLocaleString('en-US')}</div>
                             {deposits > 0 && <div className="text-emerald-500 font-bold">+ إيداعات: {deposits.toLocaleString('en-US')}</div>}
-                            <div className="text-emerald-500 font-bold">+ كاش مبيعات: {cashSales.toLocaleString('en-US')}</div>
+                            <div className="text-emerald-500 font-bold">+ إجمالي الإيرادات: {cashSales.toLocaleString('en-US')}</div>
                             <div className="text-rose-500 font-bold">- خصومات: {totalCashDeductions.toLocaleString('en-US')}</div>
                             {withdrawals > 0 && <div className="text-rose-500 font-bold">- مسحوبات: {withdrawals.toLocaleString('en-US')}</div>}
                         </div>

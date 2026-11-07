@@ -260,6 +260,9 @@ export interface Invoice {
   items: InvoiceItem[];
   subtotal: number;
   discountPercent: number;
+  discountType?: 'percentage' | 'fixed';
+  discountAmount?: number;
+  discountReason?: string;
   taxPercent: number;
   total: number;
   date: string;

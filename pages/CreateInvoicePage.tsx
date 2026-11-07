@@ -268,6 +268,18 @@ export const CreateInvoice = ({ onClose }: any) => {
   const [discountPercent, setDiscountPercent] = useState(
     initialDraft?.discountPercent !== undefined ? initialDraft.discountPercent : (state.settings.autoApplyDiscount ? state.settings.defaultDiscountPercent : 0)
   );
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>(
+    initialDraft?.discountType || 'percentage'
+  );
+  const [discountFixedAmount, setDiscountFixedAmount] = useState<number>(
+    initialDraft?.discountFixedAmount !== undefined ? initialDraft.discountFixedAmount : 0
+  );
+  const [discountReason, setDiscountReason] = useState<string>(
+    initialDraft?.discountReason || 'خصم عام'
+  );
+  const [customDiscountReason, setCustomDiscountReason] = useState<string>(
+    initialDraft?.customDiscountReason || ''
+  );
   const [taxPercent, setTaxPercent] = useState(
     initialDraft?.taxPercent !== undefined ? initialDraft.taxPercent : (state.settings.autoApplyTax ? state.settings.defaultTaxPercent : 0)
   );
@@ -283,12 +295,16 @@ export const CreateInvoice = ({ onClose }: any) => {
         selectedStaffId,
         selectedItems,
         discountPercent,
+        discountType,
+        discountFixedAmount,
+        discountReason,
+        customDiscountReason,
         taxPercent
       }));
     } else {
       localStorage.removeItem(DRAFT_KEY);
     }
-  }, [phone, customerName, customerIdInput, notes, selectedStaffId, selectedItems, discountPercent, taxPercent]);
+  }, [phone, customerName, customerIdInput, notes, selectedStaffId, selectedItems, discountPercent, discountType, discountFixedAmount, discountReason, customDiscountReason, taxPercent]);
   
   // Payment Modal State (دفع مختلط: كاش / بطاقة / محفظة / على الحساب)
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -373,7 +389,23 @@ export const CreateInvoice = ({ onClose }: any) => {
   }, [state.items]);
 
   const subtotal = round2(selectedItems.reduce((acc, item) => acc + (item.item.price * item.qty), 0));
-  const discountAmount = round2((Math.max(0, Math.min(100, discountPercent)) / 100) * subtotal);
+  
+  // حساب مبلغ ونسبة الخصم حسب النوع المختار (نسبة مئوية أو مبلغ ثابت)
+  const discountAmount = useMemo(() => {
+    if (discountType === 'percentage') {
+      return round2((Math.max(0, Math.min(100, discountPercent)) / 100) * subtotal);
+    } else {
+      return round2(Math.min(subtotal, Math.max(0, discountFixedAmount)));
+    }
+  }, [discountType, discountPercent, discountFixedAmount, subtotal]);
+
+  const effectiveDiscountPercent = useMemo(() => {
+    if (discountType === 'percentage') {
+      return discountPercent;
+    }
+    return subtotal > 0 ? round2((discountAmount / subtotal) * 100) : 0;
+  }, [discountType, discountPercent, discountAmount, subtotal]);
+
   const taxableBase = round2(Math.max(0, subtotal - discountAmount));
   const taxAmount = round2((Math.max(0, Math.min(100, taxPercent)) / 100) * taxableBase);
   const total = round2(Math.max(0, taxableBase + taxAmount));
@@ -587,7 +619,10 @@ export const CreateInvoice = ({ onClose }: any) => {
               modifiers: i.modifiers || []
           })),
           subtotal,
-          discountPercent,
+          discountPercent: effectiveDiscountPercent,
+          discountType,
+          discountAmount,
+          discountReason: discountAmount > 0 ? (discountReason === 'أخرى' && customDiscountReason ? customDiscountReason : discountReason) : undefined,
           taxPercent,
           total,
           date: localIsoToday(),
@@ -728,6 +763,10 @@ export const CreateInvoice = ({ onClose }: any) => {
             setNotes('');
             setSelectedStaffId('');
             setDiscountPercent(0);
+            setDiscountFixedAmount(0);
+            setDiscountReason('خصم عام');
+            setCustomDiscountReason('');
+            setDiscountType('percentage');
             setTaxPercent(0);
             localStorage.removeItem(DRAFT_KEY);
         }
@@ -1142,21 +1181,118 @@ export const CreateInvoice = ({ onClose }: any) => {
              <Card>
                 <h3 className="text-lg font-bold mb-4">{t('billing')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <Input label={t('discount_percent')} type="number" value={discountPercent} onChange={(e:any)=>setDiscountPercent(parseFloat(e.target.value || 0))} />
-                        <div className="flex items-center gap-1.5 -mt-2 mb-2">
-                            <span className="text-[10px] text-slate-400 font-semibold">خصم سريع:</span>
-                            {[0, 5, 10, 15, 20].map(p => (
+                    <div className="space-y-2.5 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                <span>{language === 'ar' ? 'نوع وقيمة الخصم' : 'Discount'}</span>
+                                {discountAmount > 0 && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-500 font-bold border border-rose-500/20">
+                                        -{discountAmount.toLocaleString('en-US')} ج.م
+                                    </span>
+                                )}
+                            </label>
+                            {/* زر التبديل بين نوع الخصم: نسبة مئوية % أو مبلغ ثابت ج.م */}
+                            <div className="flex items-center bg-slate-200 dark:bg-slate-700 p-0.5 rounded-lg text-[11px] font-bold">
                                 <button
-                                    key={p}
                                     type="button"
-                                    onClick={() => setDiscountPercent(p)}
-                                    className={`px-2 py-0.5 text-[11px] font-bold rounded-md border transition-colors ${discountPercent === p ? 'bg-primary-600 text-white border-primary-600' : 'bg-slate-50 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-100'}`}
+                                    onClick={() => setDiscountType('percentage')}
+                                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${discountType === 'percentage' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'}`}
                                 >
-                                    {p}%
+                                    % نسبة
                                 </button>
-                            ))}
+                                <button
+                                    type="button"
+                                    onClick={() => setDiscountType('fixed')}
+                                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${discountType === 'fixed' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'}`}
+                                >
+                                    ج.م مبلغ ثابت
+                                </button>
+                            </div>
                         </div>
+
+                        {/* تحديد تصنيف / نوع الخصم */}
+                        <div>
+                            <span className="text-[10px] text-slate-400 block mb-1 font-semibold">{language === 'ar' ? 'تصنيف الخصم:' : 'Discount Type:'}</span>
+                            <select
+                                value={discountReason}
+                                onChange={(e) => setDiscountReason(e.target.value)}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-xs font-medium outline-none focus:border-primary-500"
+                            >
+                                <option value="خصم عام">خصم عام</option>
+                                <option value="خصم عميل VIP">خصم عميل VIP / مميز</option>
+                                <option value="خصم عرض ترويجي">خصم عرض ترويجي / موسم</option>
+                                <option value="خصم موظفين وأقارب">خصم موظفين وأقارب</option>
+                                <option value="خصم خاص / تعويض">خصم خاص / تعويض</option>
+                                <option value="أخرى">نوع آخر (مخصص)...</option>
+                            </select>
+                        </div>
+
+                        {discountReason === 'أخرى' && (
+                            <input
+                                type="text"
+                                placeholder={language === 'ar' ? 'اكتب نوع أو سبب الخصم...' : 'Enter discount reason...'}
+                                value={customDiscountReason}
+                                onChange={(e) => setCustomDiscountReason(e.target.value)}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-xs font-medium outline-none focus:border-primary-500"
+                            />
+                        )}
+
+                        {/* إدخال قيمة الخصم حسب النوع المحدد */}
+                        {discountType === 'percentage' ? (
+                            <div>
+                                <Input
+                                    label={language === 'ar' ? 'نسبة الخصم (%)' : 'Discount (%)'}
+                                    type="number"
+                                    value={discountPercent}
+                                    onChange={(e: any) => setDiscountPercent(parseFloat(e.target.value || 0))}
+                                />
+                                <div className="flex items-center gap-1 -mt-2 mb-1 flex-wrap">
+                                    <span className="text-[10px] text-slate-400 font-semibold">{language === 'ar' ? 'سريع:' : 'Quick:'}</span>
+                                    {[0, 5, 10, 15, 20, 25, 50].map(p => (
+                                        <button
+                                            key={p}
+                                            type="button"
+                                            onClick={() => setDiscountPercent(p)}
+                                            className={`px-2 py-0.5 text-[11px] font-bold rounded-md border transition-colors cursor-pointer ${discountPercent === p ? 'bg-primary-600 text-white border-primary-600' : 'bg-white dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-100'}`}
+                                        >
+                                            {p}%
+                                        </button>
+                                    ))}
+                                </div>
+                                {discountPercent > 0 && subtotal > 0 && (
+                                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                                        = خصم {discountAmount.toLocaleString('en-US')} ج.م من الإجمالي
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
+                            <div>
+                                <Input
+                                    label={language === 'ar' ? 'قيمة الخصم (ج.م)' : 'Discount Amount (EGP)'}
+                                    type="number"
+                                    value={discountFixedAmount}
+                                    onChange={(e: any) => setDiscountFixedAmount(parseFloat(e.target.value || 0))}
+                                />
+                                <div className="flex items-center gap-1 -mt-2 mb-1 flex-wrap">
+                                    <span className="text-[10px] text-slate-400 font-semibold">{language === 'ar' ? 'سريع:' : 'Quick:'}</span>
+                                    {[0, 10, 20, 50, 100, 200].map(amt => (
+                                        <button
+                                            key={amt}
+                                            type="button"
+                                            onClick={() => setDiscountFixedAmount(amt)}
+                                            className={`px-2 py-0.5 text-[11px] font-bold rounded-md border transition-colors cursor-pointer ${discountFixedAmount === amt ? 'bg-primary-600 text-white border-primary-600' : 'bg-white dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-100'}`}
+                                        >
+                                            {amt} ج.م
+                                        </button>
+                                    ))}
+                                </div>
+                                {discountFixedAmount > 0 && subtotal > 0 && (
+                                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                                        = خصم {effectiveDiscountPercent}% من الإجمالي
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </div>
                     <Input label={t('tax_percent')} type="number" value={taxPercent} onChange={(e:any)=>setTaxPercent(parseFloat(e.target.value || 0))} />
                     <div className="flex flex-col justify-end gap-2">

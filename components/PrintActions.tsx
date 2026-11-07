@@ -63,12 +63,13 @@ export const buildInvoiceWhatsAppMessage = (
   }
 
   // 4. الحسابات والملاحظات
-  const discountAmount = invoice.discountPercent && invoice.subtotal
-    ? ((invoice.subtotal * invoice.discountPercent) / 100)
-    : 0;
+  const discountAmount = invoice.discountAmount !== undefined
+    ? Number(invoice.discountAmount)
+    : (invoice.discountPercent && invoice.subtotal ? ((invoice.subtotal * invoice.discountPercent) / 100) : 0);
 
+  const discountLabel = invoice.discountReason ? `الخصم (${invoice.discountReason})` : 'الخصم';
   const discountLine = discountAmount > 0
-    ? `*الخصم:* -${discountAmount.toLocaleString('en-US')} ج.م (${invoice.discountPercent}%)\n`
+    ? `*${discountLabel}:* -${discountAmount.toLocaleString('en-US')} ج.م (${invoice.discountPercent}%)\n`
     : '';
 
   const receivedLine = (invoice.received !== undefined && invoice.received > (invoice.total || 0))
