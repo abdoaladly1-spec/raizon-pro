@@ -2405,6 +2405,13 @@ export const AppProvider = ({ children }: any) => {
     const now = Date.now();
     const userWithLogin: User = { ...(migrated || user), lastLogin: now };
 
+    try {
+        Object.keys(sessionStorage).forEach(k => {
+            if (k.startsWith('admin_branch_selected')) {
+                sessionStorage.removeItem(k);
+            }
+        });
+    } catch (e) {}
     setState(prev => ({ 
         ...prev, 
         users: prev.users.map(u => u.id === userWithLogin.id ? userWithLogin : u) 
@@ -2434,6 +2441,13 @@ export const AppProvider = ({ children }: any) => {
         localStorage.removeItem(LOCK_KEY);
         const now = Date.now();
         const userWithLogin: User = { ...u, lastLogin: now };
+        try {
+            Object.keys(sessionStorage).forEach(k => {
+                if (k.startsWith('admin_branch_selected')) {
+                    sessionStorage.removeItem(k);
+                }
+            });
+        } catch (e) {}
         setState(prev => ({
             ...prev,
             users: prev.users.map(usr => usr.id === userWithLogin.id ? userWithLogin : usr)
@@ -2503,11 +2517,13 @@ export const AppProvider = ({ children }: any) => {
 
   const logout = () => {
       addAuditLog('Logout', `User ${currentUser?.username} logged out`, `تسجيل خروج المستخدم "${currentUser?.username || 'غير محدد'}" من النظام`);
-      if (currentUser?.id) {
-          try {
-              sessionStorage.removeItem('admin_branch_selected_' + currentUser.id);
-          } catch (e) {}
-      }
+      try {
+          Object.keys(sessionStorage).forEach(k => {
+              if (k.startsWith('admin_branch_selected')) {
+                  sessionStorage.removeItem(k);
+              }
+          });
+      } catch (e) {}
       setCurrentUser(null);
   };
 

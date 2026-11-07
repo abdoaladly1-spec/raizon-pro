@@ -1537,11 +1537,28 @@ const AppContent = () => {
   const { currentUser, state, updateSettings, addLocation, addToast, language, logout } = useApp();
   const [introFinished, setIntroFinished] = useState(false);
   const [adminBranchSelected, setAdminBranchSelected] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('admin_branch_selected_' + (currentUser?.id || ''));
+    if (typeof window !== 'undefined' && currentUser?.id) {
+      return sessionStorage.getItem('admin_branch_selected_' + currentUser.id);
     }
     return null;
   });
+
+  // إعادة مزامنة وتصفير اختيار الفرع للمدير عند تسجيل الخروج أو تبديل الحساب
+  useEffect(() => {
+    if (!currentUser) {
+      setAdminBranchSelected(null);
+      try {
+        Object.keys(sessionStorage).forEach(k => {
+          if (k.startsWith('admin_branch_selected')) {
+            sessionStorage.removeItem(k);
+          }
+        });
+      } catch (e) {}
+    } else {
+      const stored = sessionStorage.getItem('admin_branch_selected_' + currentUser.id);
+      setAdminBranchSelected(stored || null);
+    }
+  }, [currentUser?.id]);
 
   // حساب الفروع النشطة في النظام
   const activeLocations = useMemo(() => {
