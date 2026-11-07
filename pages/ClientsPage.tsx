@@ -24,6 +24,7 @@ export const Clients = () => {
 
     const [search, setSearch] = useState('');
     const [filterDebtOnly, setFilterDebtOnly] = useState(false);
+    const [filterVipOnly, setFilterVipOnly] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState({ 
         id: 0, 
@@ -68,9 +69,10 @@ export const Clients = () => {
                 String(c.id).includes(q);
             
             const matchesDebt = filterDebtOnly ? (c.balance || 0) > 0 : true;
-return matchesSearch && matchesDebt;
+            const matchesVip = filterVipOnly ? !!c.isVip : true;
+            return matchesSearch && matchesDebt && matchesVip;
         });
-    }, [state.customers, search, filterDebtOnly]);
+    }, [state.customers, search, filterDebtOnly, filterVipOnly]);
 
     // جميع فواتير العميل المختار
     const customerInvoices = useMemo(() => {
