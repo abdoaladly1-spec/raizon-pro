@@ -21,6 +21,7 @@ import { UnsavedChangesModal } from './components/UnsavedChangesModal';
 import { UpdateModal, type UpdateInfo } from './components/UpdateModal';
 import { WhatsNewModal } from './components/WhatsNewModal';
 import { RAIZON_LOGO_URI } from './lib/logoData';
+import { isMainBranch } from './lib/branchUtils';
 // الصفحات تُحمَّل عند الطلب (code-splitting) لتقليل حجم الحزمة الأولية
 const Dashboard = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.Dashboard })));
 const CreateInvoice = lazy(() => import('./pages/CreateInvoicePage').then(m => ({ default: m.CreateInvoice })));
@@ -633,12 +634,17 @@ const MainContent = () => {
                                                     key={loc.id}
                                                     type="button"
                                                     onClick={() => {
+                                                      const isTargetMain = isMainBranch(String(loc.id), state.locations);
                                                       updateSettings({ currentLocationId: String(loc.id) });
                                                       if (currentUser) {
                                                         sessionStorage.setItem('admin_branch_selected_' + currentUser.id, String(loc.id));
                                                       }
                                                       setShowBranchDropdown(false);
-                                                      addToast(language === 'ar' ? `تم التبديل بنجاح لإدارة فرع «${loc.name}»` : `Switched to branch: ${loc.name}`, 'success');
+                                                      if (!isTargetMain) {
+                                                        addToast(language === 'ar' ? 'تنبيه: هذا ليس الفرع الرئيسي يرجي الحذر لعدم تداخل الفواتير' : 'Warning: This is not the main branch. Please be careful to avoid invoice conflicts.', 'warning');
+                                                      } else {
+                                                        addToast(language === 'ar' ? `تم التبديل بنجاح لإدارة فرع «${loc.name}»` : `Switched to branch: ${loc.name}`, 'success');
+                                                      }
                                                     }}
                                                     className={`w-full p-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
                                                       isSelected
@@ -1063,11 +1069,16 @@ const ActivationScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => 
                 locations={state.locations.filter(l => l.active !== false)}
                 currentLocationId={state.settings.currentLocationId || (state.locations[0]?.id || '')}
                 onSelectBranch={(loc) => {
+                    const isTargetMain = isMainBranch(String(loc.id), state.locations);
                     updateSettings({ currentLocationId: loc.id });
                     if (currentUser) {
                         sessionStorage.setItem('admin_branch_selected_' + currentUser.id, loc.id);
                     }
-                    addToast(language === 'ar' ? `تم تحويل النظام لإدارة فرع «${loc.name}»` : `Switched to branch: ${loc.name}`, 'success');
+                    if (!isTargetMain) {
+                        addToast(language === 'ar' ? 'تنبيه: هذا ليس الفرع الرئيسي يرجي الحذر لعدم تداخل الفواتير' : 'Warning: This is not the main branch. Please be careful to avoid invoice conflicts.', 'warning');
+                    } else {
+                        addToast(language === 'ar' ? `تم تحويل النظام لإدارة فرع «${loc.name}»` : `Switched to branch: ${loc.name}`, 'success');
+                    }
                 }}
             />
         </div>
@@ -1545,10 +1556,15 @@ const AppContent = () => {
         locations={activeLocations}
         userName={adminDisplayName}
         onSelectBranch={(loc) => {
+          const isTargetMain = isMainBranch(String(loc.id), state.locations);
           updateSettings({ currentLocationId: loc.id });
           sessionStorage.setItem('admin_branch_selected_' + currentUser.id, loc.id);
           setAdminBranchSelected(loc.id);
-          addToast(language === 'ar' ? `تم تفعيل إدارة فرع: ${loc.name}` : `Switched to branch: ${loc.name}`, 'success');
+          if (!isTargetMain) {
+            addToast(language === 'ar' ? 'تنبيه: هذا ليس الفرع الرئيسي يرجي الحذر لعدم تداخل الفواتير' : 'Warning: This is not the main branch. Please be careful to avoid invoice conflicts.', 'warning');
+          } else {
+            addToast(language === 'ar' ? `تم تفعيل إدارة فرع: ${loc.name}` : `Switched to branch: ${loc.name}`, 'success');
+          }
         }}
         onAddBranch={(name, address, phone) => {
           const newLoc: Location = {

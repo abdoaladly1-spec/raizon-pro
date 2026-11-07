@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Plus, Trash2, Globe, Clock, Check, Info, MapPin, Sparkles, Building, Users, FileText } from '../components/Icons';
 import { Location } from '../types';
+import { isMainBranch } from '../lib/branchUtils';
 import { Card, Button, Input, ModalShell } from '../components/ui';
 import { testSupabaseConnection, pullFromSupabase, pushBranchToSupabase, DEFAULT_SUPABASE_URL } from '../lib/supabaseSync';
 
@@ -78,8 +79,13 @@ export const LocationsPage = () => {
     const activeLocationId = state.settings.currentLocationId || (state.locations[0]?.id || '1');
 
     const handleSetActive = (loc: Location) => {
+        const isTargetMain = isMainBranch(loc.id, state.locations);
         updateSettings({ currentLocationId: loc.id });
-        addToast(language === 'ar' ? `تم تحويل الجهاز للعمل على فرع «${loc.name}»` : `Active branch set to ${loc.name}`, 'success');
+        if (!isTargetMain) {
+            addToast(language === 'ar' ? 'تنبيه: هذا ليس الفرع الرئيسي يرجي الحذر لعدم تداخل الفواتير' : 'Warning: This is not the main branch. Please be careful to avoid invoice conflicts.', 'warning');
+        } else {
+            addToast(language === 'ar' ? `تم تحويل الجهاز للعمل على فرع «${loc.name}»` : `Active branch set to ${loc.name}`, 'success');
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {

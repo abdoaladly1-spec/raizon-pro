@@ -14,6 +14,7 @@ import { round2, validatePayment, paymentOf, type PaymentPart } from '../lib/pay
 import { buildPrintIdentity } from '../lib/printDesign';
 import { InvoiceReceipt } from '../components/InvoiceReceipt';
 import { PrintActions, openInvoiceWhatsApp } from '../components/PrintActions';
+import { isMainBranch, getActiveBranch } from '../lib/branchUtils';
 
 const DRAFT_KEY = 'procashier_active_invoice_draft_v1';
 
@@ -29,6 +30,8 @@ const getInitialInvoiceDraft = () => {
 
 export const CreateInvoice = ({ onClose }: any) => {
   const { state, addInvoice, holdInvoice, restoreInvoice, deleteHeldInvoice, t, addToast, addCustomer, updateSettings, language, addItem, formatNumber, formatDate, formatTime, formatDateTime } = useApp();
+  const isMain = isMainBranch(state.settings.currentLocationId, state.locations);
+  const activeBranch = getActiveBranch(state.settings.currentLocationId, state.locations);
   const { playBeep } = useSound();
   
   // استرجاع المسودة المحفوظة تلقائياً إذا وجدت حتى لا تضيع عند مغادرة الصفحة
@@ -304,7 +307,14 @@ export const CreateInvoice = ({ onClose }: any) => {
           if (e.key === 'Escape') setShowPaymentModal(false);
           return;
       }
-      if (e.ctrlKey && e.key.toLowerCase() === 'p') { e.preventDefault(); window.print(); }
+      if (e.ctrlKey && e.key.toLowerCase() === 'p') {
+          e.preventDefault();
+          if (isMain) {
+              window.print();
+          } else {
+              addToast(language === 'ar' ? 'هذا ليس الفرع الرئيسي يرجي الحذر لعدم تداخل الفواتير (يلزم تأكيد المدير للطباعة)' : 'This is not the main branch. Manager confirmation required to print.', 'warning');
+          }
+      }
       if (e.ctrlKey && e.key.toLowerCase() === 's') { e.preventDefault(); handleSave(); }
       if (e.key === 'Escape') { e.preventDefault(); onClose(); }
       if (e.ctrlKey && e.key.toLowerCase() === 'n') { e.preventDefault(); setSelectedItems([]); setPhone(''); setCustomerName(''); setNotes(''); setShowPreview(false); setCreatedInvoice(null); localStorage.removeItem(DRAFT_KEY); }
@@ -726,6 +736,22 @@ export const CreateInvoice = ({ onClose }: any) => {
     return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full relative">
         <div className="lg:col-span-2 space-y-6">
+             {!isMain && (
+                 <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 flex flex-wrap items-center justify-between gap-3 text-xs font-bold animate-fade-in shadow-xs">
+                     <div className="flex items-center gap-2.5">
+                         <AlertCircle size={20} className="shrink-0 text-amber-600 dark:text-amber-400" />
+                         <div>
+                             <span className="font-extrabold text-sm">{language === 'ar' ? 'هذا ليس الفرع الرئيسي يرجي الحذر لعدم تداخل الفواتير' : 'This is not the main branch. Please be careful to avoid invoice conflicts.'}</span>
+                             <span className="block text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                                 {language === 'ar' ? `الفرع المفعّل حالياً: «${activeBranch?.name}»` : `Current active branch: "${activeBranch?.name}"`}
+                             </span>
+                         </div>
+                     </div>
+                     <span className="text-[10px] px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/30 font-semibold shrink-0">
+                         {language === 'ar' ? 'الطباعة تتطلب تأكيد المدير' : 'Manager Auth Required for Print'}
+                     </span>
+                 </div>
+             )}
              <Card>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-bold flex items-center gap-2"><Users size={20} /> {t('customer_name')}</h3>
