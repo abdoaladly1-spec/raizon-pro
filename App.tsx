@@ -1162,7 +1162,13 @@ const AdminBranchSwitcherModal = ({
     );
 };
 
-// شاشة اختيار الفرع الإداري للمدير عند تسجيل الدخول (تظهر فقط عند توفر فرعين فأكثر)
+// شاشة اختيار الفرع الإداري للمدير عند تسجيل الدخول (تصميم بوابة التحكم الفاخرة)
+const CrownIcon = ({ className, size = 16 }: { className?: string; size?: number }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.767a2 2 0 0 1-1.936 1.488H6.789a2 2 0 0 1-1.936-1.488L2.019 6.019a.5.5 0 0 1 .798-.519l4.277 3.664a1 1 0 0 0 1.516-.294z"/>
+    <path d="M5 21h14"/>
+  </svg>
+);
 const AdminBranchSelectionScreen = ({
     locations,
     onSelectBranch,
@@ -1176,11 +1182,12 @@ const AdminBranchSelectionScreen = ({
     userName: string;
     onLogout: () => void;
 }) => {
-    const [showAddModal, setShowAddModal] = useState(false);
+    const [showAddDrawer, setShowAddDrawer] = useState(false);
     const [newBranchName, setNewBranchName] = useState('');
     const [newBranchAddress, setNewBranchAddress] = useState('');
     const [newBranchPhone, setNewBranchPhone] = useState('');
     const [addError, setAddError] = useState('');
+    const [activatingBranchId, setActivatingBranchId] = useState<string | null>(null);
 
     const handleCreateBranch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -1193,183 +1200,332 @@ const AdminBranchSelectionScreen = ({
         setNewBranchName('');
         setNewBranchAddress('');
         setNewBranchPhone('');
-        setShowAddModal(false);
+        setShowAddDrawer(false);
         setAddError('');
     };
 
+    const activateBranch = (loc: Location) => {
+        if (activatingBranchId) return;
+        setActivatingBranchId(loc.id);
+
+        setTimeout(() => {
+            onSelectBranch(loc);
+        }, 550);
+    };
+
+    // اختصارات الكيبورد (1-9 للتحديد، و N لإضافة فرع جديد، و Esc لإغلاق الدرج)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (['INPUT', 'TEXTAREA'].includes((document.activeElement as HTMLElement)?.tagName)) {
+                if (e.key === 'Escape') setShowAddDrawer(false);
+                return;
+            }
+
+            const num = parseInt(e.key);
+            if (!isNaN(num) && num >= 1 && num <= locations.length) {
+                e.preventDefault();
+                const selected = locations[num - 1];
+                if (selected) activateBranch(selected);
+            } else if (e.key.toLowerCase() === 'n') {
+                e.preventDefault();
+                setShowAddDrawer(prev => !prev);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [locations, activatingBranchId]);
+
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden bg-slate-950 font-sans" dir="rtl">
-            <div className="absolute inset-0 bg-radial-at-t from-slate-900 via-slate-950 to-slate-950 pointer-events-none" />
-
-            <div className="w-full max-w-4xl relative z-10 animate-fade-in space-y-6">
-                <div className="text-center space-y-2.5">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold">
-                        <Building size={14} className="text-slate-400" />
-                        <span>نظام الفروع المتعددة</span>
-                    </div>
-
-                    <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                        تحديد الفرع المُراد إدارته
-                    </h1>
-                    <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">
-                        مرحباً <span className="font-bold text-slate-200">{userName}</span>، يتوفر لديك ({locations.length}) فروع مسجلة. حدد الفرع الذي ترغب في متابعة مبيعاته وإدارته الآن:
-                    </p>
-                </div>
-
-                <div className="flex items-center justify-between gap-3 px-1">
-                    <span className="text-xs font-bold text-slate-400">
-                        قائمة الفروع المتاحة ({locations.length})
-                    </span>
-                    <button
-                        type="button"
-                        onClick={() => { setShowAddModal(true); setAddError(''); }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-bold transition-all shadow-xs cursor-pointer"
-                    >
-                        <Plus size={14} className="text-emerald-400" />
-                        <span>إضافة فرع جديد</span>
-                    </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {locations.map((loc) => (
-                        <div
-                            key={loc.id}
-                            onClick={() => onSelectBranch(loc)}
-                            className="group p-5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-slate-600 hover:bg-slate-850 hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between space-y-4"
-                        >
-                            <div className="space-y-3">
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center font-bold text-lg group-hover:border-slate-500 transition-colors">
-                                        <Building size={20} />
-                                    </div>
-                                    {loc.isDefault && (
-                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
-                                            الفرع الرئيسي
-                                        </span>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <h3 className="text-base font-bold text-white group-hover:text-slate-100 transition-colors">
-                                        {loc.name}
-                                    </h3>
-                                    <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                                        {loc.address || 'العنوان غير محدد'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                                {loc.phone ? (
-                                    <div className="flex items-center gap-1.5 text-slate-400 font-mono text-[11px]" dir="ltr">
-                                        <Phone size={12} className="text-slate-500" />
-                                        <span>{loc.phone}</span>
-                                    </div>
-                                ) : (
-                                    <span className="text-slate-500 text-[11px]">جاهز للتشغيل</span>
-                                )}
-
-                                <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-300 group-hover:text-white group-hover:translate-x-[-2px] transition-all">
-                                    <span>إدارة</span>
-                                    <span>←</span>
-                                </span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                <div className="text-center pt-2">
-                    <button
-                        type="button"
-                        onClick={onLogout}
-                        className="text-xs text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                    >
-                        تسجيل خروج أو تبديل الحساب
-                    </button>
-                </div>
+        <div 
+            className="h-screen w-screen flex items-center justify-center relative overflow-hidden select-none p-4"
+            dir="rtl"
+            style={{
+                backgroundColor: '#06070d',
+                backgroundImage: `
+                    linear-gradient(to right, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255, 255, 255, 0.018) 1px, transparent 1px)
+                `,
+                backgroundSize: '32px 32px'
+            }}
+        >
+            {/* Deep Ambient Radial Glows Directly Behind Portal */}
+            <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+                <div className="w-[460px] h-[460px] bg-[#1d4ed8]/25 rounded-full blur-[110px] -translate-x-16 -translate-y-8" />
+                <div className="w-[440px] h-[440px] bg-[#581c87]/30 rounded-full blur-[115px] translate-x-16 translate-y-10" />
+                <div className="w-[240px] h-[240px] bg-[#f59e0b]/10 rounded-full blur-[90px]" />
             </div>
 
-            {showAddModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fade-in" dir="rtl">
-                    <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300">
-                                    <Building size={16} />
-                                </div>
-                                <h3 className="font-bold text-sm text-white">إضافة فرع جديد للمنظومة</h3>
+            {/* MAIN COMMAND PORTAL (Max-Width 540px, Zero Clutter) */}
+            <main className="w-full max-w-[540px] relative z-10 animate-fade-in">
+                <div 
+                    style={{
+                        position: 'relative',
+                        borderRadius: '24px',
+                        padding: '1px',
+                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.55) 0%, rgba(139, 92, 246, 0.25) 35%, rgba(255, 255, 255, 0.06) 65%, rgba(245, 158, 11, 0.5) 100%)',
+                        boxShadow: '0 30px 70px -15px rgba(0, 0, 0, 0.9), 0 0 50px -10px rgba(29, 78, 216, 0.22), 0 0 35px -15px rgba(245, 158, 11, 0.15)'
+                    }}
+                >
+                    <div 
+                        className="p-6 sm:p-7 relative overflow-hidden"
+                        style={{
+                            background: 'rgba(10, 13, 22, 0.88)',
+                            backdropFilter: 'blur(28px)',
+                            WebkitBackdropFilter: 'blur(28px)',
+                            borderRadius: '23px'
+                        }}
+                    >
+                        {/* Top Metallic Highlight Line */}
+                        <div className="absolute top-0 inset-x-12 h-[1px] bg-gradient-to-r from-transparent via-blue-400/50 to-transparent pointer-events-none" />
+
+                        {/* 1. COMPACT HEADER */}
+                        <header className="text-center mb-6">
+                            {/* Metallic Gold/Blue Pill Badge */}
+                            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-gradient-to-r from-blue-950/80 via-slate-900/90 to-amber-950/60 border border-amber-500/30 shadow-inner mb-3">
+                                <Building size={12} className="text-amber-400" />
+                                <span className="text-[11px] font-bold tracking-wide bg-gradient-to-r from-blue-200 via-white to-amber-200 bg-clip-text text-transparent">
+                                    نظام الفروع المتعددة
+                                </span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setShowAddModal(false)}
-                                className="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center transition-colors cursor-pointer"
-                            >
-                                <X size={15} />
-                            </button>
+
+                            {/* Bold Commanding Title */}
+                            <h1 className="text-2xl sm:text-[27px] font-black text-white tracking-tight mb-1.5">
+                                تحديد الفرع المراد إدارته
+                            </h1>
+
+                            {/* Concise 1-Line Subtitle */}
+                            <p className="text-xs sm:text-[13px] text-slate-400 font-medium">
+                                مرحباً <span className="text-slate-100 font-bold">{userName}</span>، اختر الفرع للمتابعة:
+                            </p>
+                        </header>
+
+                        {/* 2. INTERACTIVE BRANCH SELECTOR ROWS */}
+                        <div className="space-y-3 max-h-[290px] overflow-y-auto custom-scrollbar pl-0.5">
+                            {locations.map((loc, index) => {
+                                const shortcutNum = index + 1;
+                                const isGold = !!loc.isDefault || String(loc.id) === '1' || index === 0;
+                                const isActivating = activatingBranchId === loc.id;
+
+                                return (
+                                    <div
+                                        key={loc.id}
+                                        onClick={() => activateBranch(loc)}
+                                        className={`relative rounded-2xl p-3.5 sm:px-4 cursor-pointer flex items-center justify-between gap-3 overflow-hidden group transition-all duration-200 ${
+                                            isActivating ? 'scale-[0.99] border-blue-400 shadow-lg' : ''
+                                        }`}
+                                        style={{
+                                            background: isActivating 
+                                                ? (isGold ? 'rgba(38, 28, 18, 0.95)' : 'rgba(26, 33, 54, 0.95)')
+                                                : 'rgba(18, 23, 38, 0.65)',
+                                            border: isGold 
+                                                ? '1px solid rgba(245, 158, 11, 0.28)' 
+                                                : '1px solid rgba(255, 255, 255, 0.06)'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (!isActivating) {
+                                                e.currentTarget.style.background = isGold ? 'rgba(38, 28, 18, 0.85)' : 'rgba(26, 33, 54, 0.92)';
+                                                e.currentTarget.style.borderColor = isGold ? 'rgba(245, 158, 11, 0.45)' : 'rgba(59, 130, 246, 0.45)';
+                                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                                e.currentTarget.style.boxShadow = isGold 
+                                                    ? '0 12px 28px -8px rgba(0, 0, 0, 0.65), 0 0 20px -4px rgba(245, 158, 11, 0.18)'
+                                                    : '0 12px 28px -8px rgba(0, 0, 0, 0.65), 0 0 20px -4px rgba(59, 130, 246, 0.18)';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (!isActivating) {
+                                                e.currentTarget.style.background = 'rgba(18, 23, 38, 0.65)';
+                                                e.currentTarget.style.borderColor = isGold ? 'rgba(245, 158, 11, 0.28)' : 'rgba(255, 255, 255, 0.06)';
+                                                e.currentTarget.style.transform = 'none';
+                                                e.currentTarget.style.boxShadow = 'none';
+                                            }
+                                        }}
+                                    >
+                                        {/* Loading Overlay */}
+                                        {isActivating && (
+                                            <div className="absolute inset-0 z-20 bg-slate-950/90 backdrop-blur-md flex items-center justify-center gap-3 animate-fade-in">
+                                                <div className={`w-4 h-4 border-2 border-t-transparent rounded-full animate-spin ${isGold ? 'border-amber-400' : 'border-blue-400'}`} />
+                                                <span className="text-xs font-bold text-white tracking-wide">
+                                                    جارِ فتح النظام ({loc.name})...
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Right Side: Glowing Icon Box + Branch Name + Compact Location/Phone */}
+                                        <div className="flex items-center gap-3.5 min-w-0">
+                                            {/* Icon Box */}
+                                            <div className={`w-11 h-11 rounded-xl shrink-0 flex items-center justify-center relative transition-transform group-hover:scale-105 ${
+                                                isGold 
+                                                    ? 'bg-gradient-to-br from-amber-500/20 via-amber-600/10 to-transparent border border-amber-500/40 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]' 
+                                                    : 'bg-gradient-to-br from-blue-600/25 via-purple-600/15 to-transparent border border-blue-500/40 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.15)]'
+                                            }`}>
+                                                {isGold ? (
+                                                    <CrownIcon size={18} className="text-amber-400" />
+                                                ) : (
+                                                    <Building size={18} className="text-blue-400" />
+                                                )}
+                                            </div>
+
+                                            {/* Text Info */}
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2 mb-0.5">
+                                                    <h2 className="text-sm sm:text-[15px] font-extrabold text-white truncate" dir="auto">{loc.name}</h2>
+                                                    {isGold && (
+                                                        <span className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] font-bold shrink-0">
+                                                            الفرع الرئيسي
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {/* Compact Inline Subtitle (Location & Phone) */}
+                                                <div className="flex items-center gap-3 text-[11px] text-slate-400 font-medium">
+                                                    <span className="flex items-center gap-1 truncate">
+                                                        <MapPin size={10} className={isGold ? 'text-amber-500/70' : 'text-blue-400/70'} />
+                                                        <span dir="auto">{loc.address || 'العنوان غير محدد'}</span>
+                                                    </span>
+                                                    {loc.phone && (
+                                                        <>
+                                                            <span className="text-slate-700">|</span>
+                                                            <span className="flex items-center gap-1 font-mono text-slate-300 shrink-0" dir="ltr">
+                                                                <Phone size={9} className="text-slate-500" />
+                                                                <span>{loc.phone}</span>
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Left Side: Shortcut Badge + Action Button */}
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <kbd className="hidden sm:inline-flex items-center justify-center w-6 h-6 rounded-lg bg-[#06070d]/90 border border-white/10 text-[11px] font-mono font-bold text-slate-400 group-hover:text-white group-hover:border-white/25 transition">
+                                                {shortcutNum}
+                                            </kbd>
+
+                                            <div className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all duration-200 ${
+                                                isGold 
+                                                    ? 'bg-white/[0.05] border-white/[0.08] text-amber-200 group-hover:bg-gradient-to-r group-hover:from-amber-500 group-hover:to-amber-600 group-hover:text-slate-950 group-hover:border-amber-400/60 group-hover:shadow-[0_0_16px_rgba(245,158,11,0.45)]'
+                                                    : 'bg-white/[0.05] border-white/[0.08] text-slate-200 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-indigo-600 group-hover:text-white group-hover:border-blue-400/50 group-hover:shadow-[0_0_16px_rgba(37,99,235,0.45)]'
+                                            }`}>
+                                                <span>دخول للفرع</span>
+                                                <ArrowLeft size={10} className="group-hover:-translate-x-0.5 transition-transform" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
 
-                        <form onSubmit={handleCreateBranch} className="space-y-3.5 text-xs">
-                            {addError && (
-                                <p className="text-rose-400 bg-rose-950/40 border border-rose-800/50 rounded-xl px-3 py-2">
-                                    {addError}
-                                </p>
-                            )}
+                        {/* INLINE SLIDE-DOWN DRAWER FOR ADDING NEW BRANCH */}
+                        {showAddDrawer && (
+                            <div className="mt-3 pt-3 border-t border-slate-800/80 transition-all animate-fade-in">
+                                <form onSubmit={handleCreateBranch} className="bg-slate-900/90 border border-blue-500/30 rounded-xl p-3.5 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-blue-300 flex items-center gap-1.5">
+                                            <Sparkles size={13} className="text-amber-400" />
+                                            إضافة فرع سريع
+                                        </span>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowAddDrawer(false)} 
+                                            className="text-slate-500 hover:text-slate-300 text-xs p-1 cursor-pointer"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
 
-                            <div>
-                                <label className="block text-slate-300 font-bold mb-1">اسم الفرع *</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={newBranchName}
-                                    onChange={(e) => setNewBranchName(e.target.value)}
-                                    placeholder="مثال: فرع وسط البلد، فرع المعادي..."
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 outline-none focus:border-slate-500"
-                                    autoFocus
-                                />
-                            </div>
+                                    {addError && (
+                                        <p className="text-rose-400 bg-rose-950/40 border border-rose-800/50 rounded-lg px-2.5 py-1 text-[11px]">
+                                            {addError}
+                                        </p>
+                                    )}
 
-                            <div>
-                                <label className="block text-slate-300 font-bold mb-1">العنوان (اختياري)</label>
-                                <input
-                                    type="text"
-                                    value={newBranchAddress}
-                                    onChange={(e) => setNewBranchAddress(e.target.value)}
-                                    placeholder="الشارع، المنطقة، المدينة"
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 outline-none focus:border-slate-500"
-                                />
-                            </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                        <input 
+                                            type="text" 
+                                            required 
+                                            placeholder="اسم الفرع *" 
+                                            value={newBranchName}
+                                            onChange={(e) => setNewBranchName(e.target.value)}
+                                            className="px-2.5 py-1.5 bg-[#06070d] border border-slate-700/80 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-sans"
+                                            autoFocus
+                                        />
+                                        <input 
+                                            type="text" 
+                                            placeholder="العنوان / المدينة" 
+                                            value={newBranchAddress}
+                                            onChange={(e) => setNewBranchAddress(e.target.value)}
+                                            className="px-2.5 py-1.5 bg-[#06070d] border border-slate-700/80 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-sans"
+                                        />
+                                        <input 
+                                            type="tel" 
+                                            placeholder="رقم الهاتف" 
+                                            dir="ltr" 
+                                            value={newBranchPhone}
+                                            onChange={(e) => setNewBranchPhone(e.target.value)}
+                                            className="px-2.5 py-1.5 bg-[#06070d] border border-slate-700/80 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-right font-mono"
+                                        />
+                                    </div>
 
-                            <div>
-                                <label className="block text-slate-300 font-bold mb-1">رقم الهاتف (اختياري)</label>
-                                <input
-                                    type="tel"
-                                    value={newBranchPhone}
-                                    onChange={(e) => setNewBranchPhone(e.target.value)}
-                                    placeholder="01xxxxxxxxx"
-                                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 outline-none focus:border-slate-500"
-                                    dir="ltr"
-                                />
+                                    <div className="flex justify-end gap-2">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowAddDrawer(false)} 
+                                            className="px-3 py-1 rounded-lg text-[11px] font-semibold text-slate-400 hover:bg-slate-800 transition cursor-pointer"
+                                        >
+                                            إلغاء
+                                        </button>
+                                        <button 
+                                            type="submit" 
+                                            className="px-3.5 py-1 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-bold shadow-md shadow-blue-600/20 transition cursor-pointer"
+                                        >
+                                            حفظ وتفعيل
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
+                        )}
 
-                            <div className="pt-2 flex items-center justify-end gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAddModal(false)}
-                                    className="px-4 py-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800 font-bold cursor-pointer transition-colors"
-                                >
-                                    إلغاء
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-600 font-bold cursor-pointer transition-colors shadow-sm"
-                                >
-                                    حفظ الفرع
-                                </button>
-                            </div>
-                        </form>
+                        {/* 3. COMPACT ACTION FOOTER */}
+                        <footer className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
+                            {/* Right Side: Add New Branch */}
+                            <button 
+                                type="button"
+                                onClick={() => setShowAddDrawer(prev => !prev)}
+                                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-200 hover:text-white border border-white/[0.07] hover:border-blue-500/40 font-bold transition active:scale-95 group cursor-pointer"
+                            >
+                                <Plus size={14} className="text-blue-400 group-hover:rotate-90 transition-transform duration-200" />
+                                <span>إضافة فرع جديد</span>
+                            </button>
+
+                            {/* Left Side: Logout or Switch Account */}
+                            <button 
+                                type="button"
+                                onClick={onLogout}
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 font-semibold transition cursor-pointer"
+                            >
+                                <LogOut size={12} />
+                                <span>تسجيل خروج أو تبديل الحساب</span>
+                            </button>
+                        </footer>
                     </div>
                 </div>
-            )}
+
+                {/* Subtle Keyboard Hint Bar Underneath Portal */}
+                <div className="mt-3 flex items-center justify-center gap-4 text-[11px] text-slate-500 font-medium">
+                    <span className="flex items-center gap-1.5">
+                        <kbd className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[10px] font-mono text-slate-400">1</kbd>
+                        <kbd className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[10px] font-mono text-slate-400">2</kbd>
+                        <span>اختيار سريع بالكيبورد</span>
+                    </span>
+                    <span className="text-slate-700">•</span>
+                    <span className="flex items-center gap-1.5">
+                        <kbd className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[10px] font-mono text-slate-400">N</kbd>
+                        <span>إضافة فرع</span>
+                    </span>
+                </div>
+            </main>
         </div>
     );
 };
