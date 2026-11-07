@@ -191,9 +191,7 @@ export const InvoicesList = () => {
                                 <tr>
                                     <th className="px-5 py-3.5">#</th>
                                     <th className="px-5 py-3.5">{t('customer_name')}</th>
-                                    {state.locations.length > 1 && (
-                                        <th className="px-5 py-3.5">{language === 'ar' ? 'الفرع' : 'Branch'}</th>
-                                    )}
+
                                     <th className="px-5 py-3.5">{t('date')}</th>
                                     <th className="px-5 py-3.5">{t('total')}</th>
                                     <th className="px-5 py-3.5">{t('payment_details')}</th>
@@ -217,14 +215,7 @@ export const InvoicesList = () => {
                                                 <Eye size={13} className="text-primary-400 opacity-60 group-hover:opacity-100 transition-opacity" />
                                             </button>
                                         </td>
-                                        {state.locations.length > 1 && (
-                                            <td className="px-5 py-3.5 whitespace-nowrap">
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/50">
-                                                    <Building size={11} className="text-purple-500" />
-                                                    <span>{invoice.branchName || 'الرئيسي'}</span>
-                                                </span>
-                                            </td>
-                                        )}
+
                                         <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 text-xs font-mono">{invoice.date}</td>
                                         <td className="px-5 py-3.5 font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{invoice.total} {t('egp')}</td>
                                         <td className="px-5 py-3.5 text-slate-700 dark:text-slate-300">
