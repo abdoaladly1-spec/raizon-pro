@@ -39,6 +39,10 @@ export default defineConfig({
       ignored: ['**/server/backups/**', '**/server/*.db', '**/release/**', '**/node_modules/**'],
     },
   },
+  preview: {
+    port: 4189,
+    host: '0.0.0.0',
+  },
   plugins: [react(), cspPlugin()],
   resolve: {
     alias: {
