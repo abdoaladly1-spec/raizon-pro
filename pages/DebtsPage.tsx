@@ -1,3 +1,4 @@
+import { printDebtsListThermal, printCustomerStatementThermal } from '../lib/thermalPrinter';
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
@@ -418,8 +419,10 @@ export const DebtsPage: React.FC = () => {
 
     setIsSubmittingDebt(true);
     try {
+      let isNewCustomerRecord = false;
       // لو الشخص غير مسجل مسبقاً، نقوم بتسجيله فوراً كعميل جديد
       if (!customer) {
+        isNewCustomerRecord = true;
         const cleanPhone = debtCustomerPhone.trim();
         const newCustId = addCustomer({
           name: queryName,

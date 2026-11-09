@@ -22,28 +22,57 @@ import { UpdateModal, type UpdateInfo } from './components/UpdateModal';
 import { WhatsNewModal } from './components/WhatsNewModal';
 import { RAIZON_LOGO_URI } from './lib/logoData';
 import { isMainBranch } from './lib/branchUtils';
-// الصفحات تُحمَّل عند الطلب (code-splitting) لتقليل حجم الحزمة الأولية
-const Dashboard = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.Dashboard })));
-const CreateInvoice = lazy(() => import('./pages/CreateInvoicePage').then(m => ({ default: m.CreateInvoice })));
-const InvoicesList = lazy(() => import('./pages/InvoicesPage').then(m => ({ default: m.InvoicesList })));
-const Inventory = lazy(() => import('./pages/InventoryPage').then(m => ({ default: m.Inventory })));
-const AuditLogs = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogs })));
-const AdminUsers = lazy(() => import('./pages/AdminUsersPage').then(m => ({ default: m.AdminUsers })));
-const Clients = lazy(() => import('./pages/ClientsPage').then(m => ({ default: m.Clients })));
-const DebtsPage = lazy(() => import('./pages/DebtsPage').then(m => ({ default: m.DebtsPage })));
-const ReservationsPage = lazy(() => import('./pages/ReservationsPage').then(m => ({ default: m.ReservationsPage })));
-const StatsPage = lazy(() => import('./pages/StatsPage').then(m => ({ default: m.StatsPage })));
-const StaffPage = lazy(() => import('./pages/StaffPage').then(m => ({ default: m.StaffPage })));
-const ClosingPage = lazy(() => import('./pages/ClosingPage').then(m => ({ default: m.ClosingPage })));
-const NotesPage = lazy(() => import('./pages/NotesPage').then(m => ({ default: m.NotesPage })));
-const LocationsPage = lazy(() => import('./pages/LocationsPage').then(m => ({ default: m.LocationsPage })));
-const CategoriesPage = lazy(() => import('./pages/CategoriesPage').then(m => ({ default: m.CategoriesPage })));
-const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
-const ExpensesPage = lazy(() => import('./pages/ExpensesPage').then(m => ({ default: m.ExpensesPage })));
-const ReturnsPage = lazy(() => import('./pages/ReturnsPage').then(m => ({ default: m.ReturnsPage })));
-const SuppliersPage = lazy(() => import('./pages/SuppliersPage').then(m => ({ default: m.SuppliersPage })));
-const PurchaseOrdersPage = lazy(() => import('./pages/PurchaseOrdersPage').then(m => ({ default: m.PurchaseOrdersPage })));
-const InventoryHistoryPage = lazy(() => import('./pages/InventoryHistoryPage').then(m => ({ default: m.InventoryHistoryPage })));
+/**
+ * تحميل ذكي ومرن للصفحات مع إعادة المحاولة التلقائية عند انقطاع الاتصال أو تحديث السيرفر
+ */
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  componentImport: () => Promise<{ default: T }>,
+  retriesLeft = 3,
+  interval = 350
+): React.LazyExoticComponent<T> {
+  return lazy(() =>
+    new Promise<{ default: T }>((resolve, reject) => {
+      const attempt = (remaining: number) => {
+        componentImport()
+          .then(resolve)
+          .catch((error) => {
+            if (remaining <= 0) {
+              console.error('Dynamic module load failed after retries:', error);
+              reject(error);
+              return;
+            }
+            setTimeout(() => {
+              attempt(remaining - 1);
+            }, interval);
+          });
+      };
+      attempt(retriesLeft);
+    })
+  );
+}
+
+// الصفحات تُحمَّل عند الطلب بمرونة ومقاومة لأخطاء الشبكة
+const Dashboard = lazyWithRetry(() => import('./pages/DashboardPage').then(m => ({ default: m.Dashboard })));
+const CreateInvoice = lazyWithRetry(() => import('./pages/CreateInvoicePage').then(m => ({ default: m.CreateInvoice })));
+const InvoicesList = lazyWithRetry(() => import('./pages/InvoicesPage').then(m => ({ default: m.InvoicesList })));
+const Inventory = lazyWithRetry(() => import('./pages/InventoryPage').then(m => ({ default: m.Inventory })));
+const AuditLogs = lazyWithRetry(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogs })));
+const AdminUsers = lazyWithRetry(() => import('./pages/AdminUsersPage').then(m => ({ default: m.AdminUsers })));
+const Clients = lazyWithRetry(() => import('./pages/ClientsPage').then(m => ({ default: m.Clients })));
+const DebtsPage = lazyWithRetry(() => import('./pages/DebtsPage').then(m => ({ default: m.DebtsPage })));
+const ReservationsPage = lazyWithRetry(() => import('./pages/ReservationsPage').then(m => ({ default: m.ReservationsPage })));
+const StatsPage = lazyWithRetry(() => import('./pages/StatsPage').then(m => ({ default: m.StatsPage })));
+const StaffPage = lazyWithRetry(() => import('./pages/StaffPage').then(m => ({ default: m.StaffPage })));
+const ClosingPage = lazyWithRetry(() => import('./pages/ClosingPage').then(m => ({ default: m.ClosingPage })));
+const NotesPage = lazyWithRetry(() => import('./pages/NotesPage').then(m => ({ default: m.NotesPage })));
+const LocationsPage = lazyWithRetry(() => import('./pages/LocationsPage').then(m => ({ default: m.LocationsPage })));
+const CategoriesPage = lazyWithRetry(() => import('./pages/CategoriesPage').then(m => ({ default: m.CategoriesPage })));
+const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const ExpensesPage = lazyWithRetry(() => import('./pages/ExpensesPage').then(m => ({ default: m.ExpensesPage })));
+const ReturnsPage = lazyWithRetry(() => import('./pages/ReturnsPage').then(m => ({ default: m.ReturnsPage })));
+const SuppliersPage = lazyWithRetry(() => import('./pages/SuppliersPage').then(m => ({ default: m.SuppliersPage })));
+const PurchaseOrdersPage = lazyWithRetry(() => import('./pages/PurchaseOrdersPage').then(m => ({ default: m.PurchaseOrdersPage })));
+const InventoryHistoryPage = lazyWithRetry(() => import('./pages/InventoryHistoryPage').then(m => ({ default: m.InventoryHistoryPage })));
 
 // --- Hooks ---
 const ScreenSaver = ({ onActive }: { onActive: () => void }) => {
@@ -414,7 +443,7 @@ const MainContent = () => {
           case 'categories': return <CategoriesPage />;
           case 'locations': {
               if (currentUser?.role !== 'admin') {
-                  return <Dashboard onNewInvoice={() => setActiveTab('create_invoice')} />;
+                  return <Dashboard onNavigate={setActiveTab} showStats={showStats} />;
               }
               return <LocationsPage />;
           }

@@ -630,7 +630,7 @@ export const NotesPage: React.FC = () => {
                                         marginTop: isLinedPaper ? '-7px' : '0px',
                                     }}
                                     onInput={(e) => setEditorContent(e.currentTarget.innerHTML)}
-                                    placeholder="اكتب ملاحظاتك وتفاصيلك هنا..."
+                                    data-placeholder="اكتب ملاحظاتك وتفاصيلك هنا..."
                                 ></div>
                             </div>
 

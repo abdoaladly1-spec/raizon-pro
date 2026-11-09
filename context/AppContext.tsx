@@ -105,7 +105,7 @@ interface AppContextType {
   toggleExperimentalMode: () => void;
   updateSettings: (settings: Partial<AppState['settings']> | AppState['settings']) => void;
   toasts: { id: string; message: string; type: 'success' | 'error' | 'info'; action?: { label: string, onClick: () => void } }[];
-  addToast: (message: string, type?: 'success' | 'error' | 'info', action?: { label: string, onClick: () => void }) => void;
+  addToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning', action?: { label: string, onClick: () => void }) => void;
   removeToast: (id: string) => void;
   formatNumber: (n: number, options?: Intl.NumberFormatOptions) => string;
   formatDate: (date: Date | number, options?: Intl.DateTimeFormatOptions) => string;
@@ -2296,9 +2296,9 @@ export const AppProvider = ({ children }: any) => {
     if (saved === null) return true;
     return saved === 'true';
   });
-  const [toasts, setTodsts] = useState<{ id: string; message: string; type: 'success' | 'error' | 'info'; action?: { label: string, onClick: () => void } }[]>([]);
+  const [toasts, setTodsts] = useState<{ id: string; message: string; type: 'success' | 'error' | 'info' | 'warning'; action?: { label: string, onClick: () => void } }[]>([]);
 
-  const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info', action?: { label: string, onClick: () => void }) => {
+  const addToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', action?: { label: string, onClick: () => void }) => {
       const id = crypto.randomUUID();
       setTodsts(prev => [...prev, { id, message, type, action }]);
       setTimeout(() => removeToast(id), 5000);

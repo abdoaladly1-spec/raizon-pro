@@ -4,10 +4,11 @@ export interface IconProps {
   className?: string;
   size?: number | string;
   strokeWidth?: number | string;
+  style?: React.CSSProperties;
 }
 
 // Reusable SVG Icon Component wrapper
-const IconWrapper = ({ children, className, size = 24, strokeWidth = 2 }: { children?: React.ReactNode, className?: string, size?: number | string, strokeWidth?: number | string }) => (
+const IconWrapper = ({ children, className, size = 24, strokeWidth = 2, style }: { children?: React.ReactNode, className?: string, size?: number | string, strokeWidth?: number | string, style?: React.CSSProperties }) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
     width={size} 
@@ -19,6 +20,7 @@ const IconWrapper = ({ children, className, size = 24, strokeWidth = 2 }: { chil
     strokeLinecap="round" 
     strokeLinejoin="round" 
     className={className}
+    style={style}
   >
     {children}
   </svg>
@@ -184,6 +186,9 @@ export const WifiOff = ({ className, size, strokeWidth }: IconProps) => (
 );
 export const Wifi = ({ className, size, strokeWidth }: IconProps) => (
   <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M5 12.55a11 11 0 0 1 14.08 0" /><path d="M1.42 9a16 16 0 0 1 21.16 0" /><path d="M8.53 16.11a6 6 0 0 1 6.95 0" /><line x1="12" y1="20" x2="12.01" y2="20" /></IconWrapper>
+);
+export const ArrowUpRight = ({ className, size, strokeWidth, style }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth} style={style}><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></IconWrapper>
 );
 export const ArrowUp = ({ className, size, strokeWidth }: IconProps) => (
   <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" /></IconWrapper>

@@ -2073,7 +2073,7 @@ export const SettingsPage = () => {
             primaryColor: '#000000',
             accentColor: '#333333',
             textColor: '#000000',
-            template: 'thermal',
+            template: 'thermal' as const,
         };
 
         const existingList: CustomReceiptTemplate[] = form.customReceiptTemplates || [];
@@ -2144,7 +2144,7 @@ export const SettingsPage = () => {
             footerText: '',
             enableShading: true,
             showBarcode: false,
-            template: 'thermal',
+            template: 'thermal' as const,
         };
 
         setForm(prev => ({
@@ -2180,7 +2180,7 @@ export const SettingsPage = () => {
             ...(isActive ? {
                 printDesign: {
                     ...prev.printDesign,
-                    ...initial,
+                    ...(initial as any),
                 }
             } : {})
         }));

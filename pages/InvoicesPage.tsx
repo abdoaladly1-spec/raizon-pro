@@ -230,7 +230,8 @@ export const InvoicesList = () => {
                                                         name: invoice.customerName,
                                                         phone: '',
                                                         balance: 0,
-                                                        totalSpent: invoice.total
+                                                        totalSpent: invoice.total,
+                                                        lastVisit: invoice.date || new Date().toISOString()
                                                     };
                                                     setSelectedCustomer(foundCustomer);
                                                 }}

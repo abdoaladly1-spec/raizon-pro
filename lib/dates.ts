@@ -5,8 +5,12 @@ const ISO_RE = /^\d{4}[-/]\d{2}[-/]\d{2}/;
 const LEGACY_RE = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
 
 /** يُحوّل أي صيغة تاريخ معروفة إلى YYYY-MM-DD محلي (يقبل ISO و DD/MM/YYYY). */
-export const toIsoDate = (value?: string | null, timestamp?: number): string => {
-    const text = (value || '').trim();
+export const toIsoDate = (value?: string | Date | null, timestamp?: number): string => {
+    if (value instanceof Date && !isNaN(value.getTime())) {
+        const d = value;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    const text = (typeof value === 'string' ? value : '').trim();
     if (ISO_RE.test(text)) return text.slice(0, 10).replace(/\//g, '-');
     const legacy = LEGACY_RE.exec(text);
     if (legacy) {

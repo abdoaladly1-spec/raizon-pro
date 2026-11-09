@@ -47,6 +47,7 @@ const ArabicCalendarPicker = ({
     value: string; 
     onChange: (date: string) => void;
 }) => {
+    const { state } = useApp();
     const today = useMemo(() => new Date(), []);
     const todayIso = useMemo(() => localIsoToday(), []);
 

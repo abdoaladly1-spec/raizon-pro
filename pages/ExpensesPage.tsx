@@ -130,7 +130,7 @@ export const ExpensesPage = () => {
 
     const todayCashSales = useMemo(() => {
         return state.invoices
-            .filter(inv => (inv.status !== 'cancelled' && inv.status !== 'refunded') && isAfterClosing(inv.date, inv.timestamp, previousClosingReport))
+            .filter(inv => (inv.status !== ('cancelled' as any) && inv.status !== 'refunded') && isAfterClosing(inv.date, inv.timestamp, previousClosingReport))
             .reduce((s, inv) => {
                 if (inv.paymentParts && inv.paymentParts.length > 0) {
                     return s + inv.paymentParts.filter(p => p.method === 'cash').reduce((ps, p) => ps + p.amount, 0);

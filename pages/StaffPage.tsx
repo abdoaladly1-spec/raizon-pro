@@ -1,3 +1,4 @@
+import { printStaffPayslipThermal, printStaffStatementThermal } from '../lib/thermalPrinter';
 /* صفحة إدارة الموظفين وفريق العمل - نظام RIZON PRO */
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
@@ -5,7 +6,7 @@ import {
     Users, Plus, Trash2, Printer, DollarSign, Clock, Search, Award, X,
     User, ArrowLeft, Wallet, Banknote, Calendar, FileText, Package,
     Check, Phone, CheckCircle2, XCircle, AlertCircle, RefreshCw, Scissors,
-    CreditCard, ArrowUpRight, ChevronRight, BarChart2,
+    CreditCard, ArrowUpRight, ChevronRight, BarChart2, AlertTriangle,
     WhatsAppIcon, StatementIcon, CustomEditIcon, TimeIcon, PhotoIcon,
     CustomTrashIcon, CustomPrinterIcon
 } from '../components/Icons';
@@ -74,6 +75,12 @@ export const StaffPage = () => {
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'card'>('cash');
     const [paymentNotes, setPaymentNotes] = useState('');
 
+    const [showDeductionModal, setShowDeductionModal] = useState(false);
+    const [deductionStaffId, setDeductionStaffId] = useState<string>('');
+    const [deductionAmount, setDeductionAmount] = useState('');
+    const [deductionReason, setDeductionReason] = useState('');
+    const [deductionDate, setDeductionDate] = useState('');
+
     // كشف حساب موظف للطباعة (Statement Print Modal)
     const [showStatementModal, setShowStatementModal] = useState(false);
     const [statementStaffId, setStatementStaffId] = useState<string>('');
@@ -109,6 +116,7 @@ export const StaffPage = () => {
         const map = new Map<string, {
             totalCommissions: number;
             totalAdvances: number;
+            totalDeductions: number;
             totalSalaries: number;
             netDue: number;
             invoicesCount: number;
@@ -439,7 +447,7 @@ export const StaffPage = () => {
 
     // طباعة فاتورة / إيصال مسير راتب واستحقاقات الموظف (Salary Slip)
     const handlePrintSalarySlip = (staff: Staff) => {
-        const fin = staffFinances[staff.id];
+        const fin = staffFinancials.get(staff.id);
         const payments = (state.staffPayments || []).filter(p => p.staffId === staff.id);
         const advances = payments.filter(p => p.type === 'advance');
         const deductions = payments.filter(p => p.type === 'deduction');

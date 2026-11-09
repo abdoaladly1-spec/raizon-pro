@@ -50,8 +50,10 @@ declare global {
         installerAsset?: any;
         htmlUrl?: string;
         error?: string;
+        skippedVersions?: string[];
+        isAlreadyDownloaded?: boolean;
       }>;
-      downloadUpdate?: (opts?: { downloadUrl?: string; filename?: string }) => Promise<{ ok: boolean; filePath?: string; error?: string }>;
+      downloadUpdate?: (opts?: { downloadUrl?: string; filename?: string; expectedSize?: number; version?: string; releaseName?: string; token?: string }) => Promise<{ ok: boolean; filePath?: string; error?: string }>;
       installUpdate?: () => Promise<{ ok: boolean; error?: string }>;
       getAppVersion?: () => Promise<string>;
       openExternalUrl?: (url: string) => Promise<boolean>;

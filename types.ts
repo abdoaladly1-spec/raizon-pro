@@ -41,6 +41,8 @@ export interface Location {
   address: string;
   phone: string;
   active: boolean;
+  isDefault?: boolean;
+  createdAt?: number;
 }
 
 export interface User {
@@ -96,6 +98,8 @@ export interface Item {
   categoryId: string;
   price: number;
   cost?: number;
+  costPrice?: number;
+  stock?: number;
   sku?: string;
   barcode?: string;
   trackStock: boolean;
@@ -141,6 +145,8 @@ export interface Customer {
   creditLimit?: number;
   /** الرصيد المدين الحالي / المديونية المستحقة على العميل */
   balance?: number;
+  /** إجمالي الدين (مرادف للرصيد المدين للتوافق) */
+  totalDebt?: number;
   /** مؤهل للشراء الآجل (عميل VIP) */
   isVip?: boolean;
   /** الفرع التابع له العميل */
@@ -225,6 +231,10 @@ export interface ReturnRecord {
   items: ReturnItem[];
   /** إجمالي المسترد (بنود + خصم/ضريبة وقت البيع) */
   refundAmount: number;
+  /** مرادف إجمالي المسترد للتوافق */
+  total?: number;
+  /** طريقة الرد للتوافق */
+  refundMethod?: string;
   /** توزيع رد المبلغ على الطرق */
   refundParts: PaymentPart[];
   /** الجزء النقدي من المرتجع — يُخصم من درج النقدية فقط */
@@ -424,6 +434,9 @@ export interface Expense {
   category: string;
   date: string;
   description?: string;
+  note?: string;
+  time?: string;
+  branchName?: string;
   recordedBy: string;
   /** كيف دُفعت المصروفة — 'cash' فقط يُخصم من درج النقدية (افتراضي نقدي للتوافق) */
   method?: 'cash' | 'card' | 'transfer' | 'wallet';

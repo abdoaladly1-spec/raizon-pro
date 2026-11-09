@@ -15,6 +15,9 @@ export const ClosingPage = () => {
         currentUser, logout, updateSettings, formatTime, formatDateTime, addToast, language, triggerOpenCashDrawer
     } = useApp();
 
+    const activeLocationId = String(state.settings.currentLocationId || state.locations[0]?.id || '1');
+    const activeBranch = state.locations.find(l => String(l.id) === activeLocationId) || state.locations[0];
+
     const localDate = (d: Date = new Date()) =>
         `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const today = localDate();

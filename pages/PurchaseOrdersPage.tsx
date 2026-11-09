@@ -1,3 +1,4 @@
+import { printPurchaseOrderThermal } from '../lib/thermalPrinter';
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Plus, Search, Package, Check, X, Printer, Eye } from '../components/Icons';

@@ -142,8 +142,8 @@ export const remainingRefundable = (invoice: Invoice | undefined | null, returns
 export const paidPartsOf = (invoice: Invoice): PaymentPart[] => {
     const info = paymentOf(invoice);
     return (info.parts || [])
-        .filter(p => PAYMENT_KINDS.includes(p.method))
-        .map(p => ({ method: p.method, amount: round2(p.amount) }));
+        .filter((p): p is PaymentPart => PAYMENT_KINDS.includes(p.method as any))
+        .map(p => ({ method: p.method as PaymentPart['method'], amount: round2(p.amount) }));
 };
 
 export const paidForMethod = (invoice: Invoice, method: PaymentPart['method']): number => {

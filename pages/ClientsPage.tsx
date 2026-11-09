@@ -1,3 +1,5 @@
+import { printCustomerStatementThermal } from '../lib/thermalPrinter';
+import { CustomerProfileModal } from '../components/CustomerProfileModal';
 /* تم فصل هذا الملف من App.tsx (نظام ProCashier) */
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
@@ -295,7 +297,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
             {
                 name: customer.name,
                 phone: customer.phone,
-                totalDebt: customer.totalDebt || 0,
+                totalDebt: customer.balance || customer.totalDebt || 0,
             },
             ledgerEntries.map(e => ({
                 date: e.date,
