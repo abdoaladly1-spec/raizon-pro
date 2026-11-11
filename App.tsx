@@ -475,19 +475,19 @@ const MainContent = () => {
     <div className={`flex h-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 ${language === 'ar' ? 'font-cairo' : ''}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <ToastContainer />
         {/* Sidebar */}
-        <aside className={`${sidebarCollapsed ? "w-16" : "w-60"} bg-white dark:bg-[#0c0617] border-e border-slate-300 dark:border-purple-900/30 flex flex-col transition-all duration-300 z-20 flex-shrink-0 select-none`}>
+        <aside className={`${sidebarCollapsed ? "w-16" : "w-60"} theme-chrome-sidebar border-e flex flex-col transition-all duration-300 z-20 flex-shrink-0 select-none backdrop-blur-md`}>
             {/* Sidebar Top Header */}
-            <div className={`h-[72px] flex items-center ${sidebarCollapsed ? 'justify-center px-1.5' : 'justify-between px-3.5'} gap-2 border-b border-slate-300 dark:border-purple-900/30 shrink-0`}>
+            <div className={`h-[72px] flex items-center ${sidebarCollapsed ? 'justify-center px-1.5' : 'justify-between px-3.5'} gap-2 border-b theme-chrome-divider shrink-0`}>
                 {sidebarCollapsed ? (
                     <button
                         onClick={() => setSidebarCollapsed(false)}
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 dark:hover:bg-purple-950/50 transition-all cursor-pointer relative group"
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-primary-600 dark:text-primary-400 hover:bg-primary-500/10 dark:hover:bg-primary-950/50 transition-all cursor-pointer relative group"
                         title="توسيع الشريط الجانبي"
                         aria-label="توسيع الشريط الجانبي"
                     >
                         <img src={RAIZON_LOGO_URI} alt="RaiZon Pro" className="w-7 h-7 object-contain shrink-0 drop-shadow-[0_2px_8px_rgba(168,85,247,0.35)] group-hover:scale-95 transition-transform" />
-                        <div className="absolute inset-0 rounded-xl bg-purple-600/15 dark:bg-purple-400/15 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                            <ChevronRight size={17} className="rotate-180 text-purple-700 dark:text-purple-300" />
+                        <div className="absolute inset-0 rounded-xl bg-primary-600/15 dark:bg-primary-400/15 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <ChevronRight size={17} className="rotate-180 text-primary-700 dark:text-primary-300" />
                         </div>
                     </button>
                 ) : (
@@ -495,12 +495,12 @@ const MainContent = () => {
                         <div className="flex items-center gap-2.5 min-w-0">
                             <img src={RAIZON_LOGO_URI} alt="RaiZon Pro" className="w-8 h-8 object-contain shrink-0 drop-shadow-[0_2px_10px_rgba(168,85,247,0.35)]" />
                             <span className="font-bold text-base font-cairo truncate animate-fade-in tracking-tight">
-                                <span className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]">RaiZon</span> <span className="text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.3)]">Pro</span>
+                                <span className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]">RaiZon</span> <span className="text-primary-500 dark:text-primary-400 drop-shadow-[0_0_8px_rgba(14,165,233,0.3)]">Pro</span>
                             </span>
                         </div>
                         <button
                             onClick={() => setSidebarCollapsed(true)}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 dark:hover:bg-purple-950/50 border border-transparent hover:border-purple-500/20 transition-all shrink-0 cursor-pointer"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary-400 hover:bg-primary-500/10 dark:hover:bg-primary-950/50 border border-transparent hover:border-primary-500/20 transition-all shrink-0 cursor-pointer"
                             title="طي الشريط الجانبي"
                             aria-label="طي الشريط الجانبي"
                         >
@@ -519,9 +519,9 @@ const MainContent = () => {
                         <div key={item.id}>
                             {showGroup && (
                                 sidebarCollapsed ? (
-                                    <div className="my-2 border-t border-slate-200 dark:border-purple-900/30 mx-1.5" />
+                                    <div className="my-2 border-t theme-chrome-divider mx-1.5" />
                                 ) : (
-                                    <div className="px-3.5 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-purple-300/60 truncate">
+                                    <div className="px-3.5 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-primary-300/60 truncate">
                                         {item.group}
                                     </div>
                                 )
@@ -531,14 +531,14 @@ const MainContent = () => {
                                 title={sidebarCollapsed ? item.label : undefined}
                                 className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-0 h-10' : 'gap-3 px-3.5 py-2.5'} rounded-xl transition-all duration-200 group relative cursor-pointer
                                     ${isActive 
-                                        ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-bold border border-purple-200 dark:border-purple-800/60 shadow-2xs' 
-                                        : 'text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-950 dark:hover:text-white'
+                                        ? 'bg-primary-500/15 dark:bg-primary-500/20 text-primary-700 dark:text-primary-300 font-bold border border-primary-500/35 dark:border-primary-500/40 shadow-xs ring-1 ring-primary-500/20' 
+                                        : 'text-slate-700 dark:text-slate-300 font-semibold hover:bg-primary-500/10 dark:hover:bg-primary-950/40 hover:text-slate-950 dark:hover:text-white'
                                     }`}
                             >
-                                <item.icon size={21} className={`transition-transform duration-200 group-hover:scale-110 shrink-0 ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
+                                <item.icon size={21} className={`transition-transform duration-200 group-hover:scale-110 shrink-0 ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 group-hover:text-primary-600 dark:group-hover:text-primary-300'}`} />
                                 {!sidebarCollapsed && <span className="text-sm truncate leading-none">{item.label}</span>}
                                 {isActive && (
-                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-purple-600 dark:bg-purple-400 rounded-l-full"></div>
+                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary-600 dark:bg-primary-400 rounded-l-full"></div>
                                 )}
                             </button>
                         </div>
@@ -547,20 +547,20 @@ const MainContent = () => {
             </nav>
 
             {/* Sidebar Bottom Controls */}
-            <div className={`p-2.5 ${sidebarCollapsed ? 'px-1.5' : 'p-3.5'} border-t border-slate-300 dark:border-purple-900/30 space-y-1 shrink-0`}>
+            <div className={`p-2.5 ${sidebarCollapsed ? 'px-1.5' : 'p-3.5'} border-t theme-chrome-divider space-y-1 shrink-0`}>
                  <button 
                     onClick={toggleTheme} 
                     title={theme === 'dark' ? t('light_mode') : t('dark_mode')}
-                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-0 h-9' : 'gap-3 px-3 py-2'} rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-950 dark:hover:text-white transition-all cursor-pointer`}
+                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-0 h-9' : 'gap-3 px-3 py-2'} rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary-500/10 dark:hover:bg-primary-950/40 hover:text-slate-950 dark:hover:text-white transition-all cursor-pointer`}
                  >
-                    {theme === 'dark' ? <Sun size={19} className="text-amber-400 shrink-0" /> : <Moon size={19} className="text-purple-600 shrink-0" />}
+                    {theme === 'dark' ? <Sun size={19} className="text-amber-400 shrink-0" /> : <Moon size={19} className="text-primary-600 shrink-0" />}
                     {!sidebarCollapsed && <span className="text-xs font-semibold truncate">{theme === 'dark' ? t('light_mode') : t('dark_mode')}</span>}
                  </button>
 
                  <button 
                     onClick={toggleLanguage} 
                     title={language === 'ar' ? 'English' : 'العربية'}
-                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-0 h-9' : 'gap-3 px-3 py-2'} rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-950 dark:hover:text-white transition-all cursor-pointer`}
+                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-0 h-9' : 'gap-3 px-3 py-2'} rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary-500/10 dark:hover:bg-primary-950/40 hover:text-slate-950 dark:hover:text-white transition-all cursor-pointer`}
                  >
                     <Globe size={19} className="shrink-0 text-slate-400" />
                     {!sidebarCollapsed && <span className="text-xs font-semibold truncate">{language === 'ar' ? 'English' : 'العربية'}</span>}
@@ -584,17 +584,17 @@ const MainContent = () => {
                 const currentNavItem = navItems.find(i => i.id === activeTab);
                 const ActiveTabIcon = currentNavItem?.icon;
                 return (
-                    <header className="h-[72px] bg-white/95 dark:bg-[#0c0617]/90 backdrop-blur-md border-b border-slate-300 dark:border-purple-900/30 flex items-center justify-between px-3 md:px-6 z-10 sticky top-0 shadow-xs transition-colors duration-200">
+                    <header className="h-[72px] theme-chrome-header backdrop-blur-md border-b flex items-center justify-between px-3 md:px-6 z-10 sticky top-0 shadow-xs transition-colors duration-200">
                         {/* Right: Active Page Breadcrumb & Title */}
                         <div className="flex items-center gap-3 shrink-0">
-                            <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-500/15 border border-purple-300 dark:border-purple-500/25 flex items-center justify-center text-purple-700 dark:text-purple-400 shadow-xs">
+                            <div className="w-9 h-9 rounded-xl bg-primary-500/15 border border-primary-500/30 flex items-center justify-center text-primary-600 dark:text-primary-400 shadow-xs">
                                 {ActiveTabIcon ? <ActiveTabIcon size={19} /> : <FileText size={19} />}
                             </div>
                             <div className="flex flex-col text-right">
                                 <h2 className="text-sm md:text-base font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5 leading-tight">
                                     <span>{currentNavItem?.label || t('dashboard')}</span>
                                 </h2>
-                                <span className="text-[10px] font-semibold text-slate-500 dark:text-purple-300/60 font-bold leading-none mt-0.5">
+                                <span className="text-[10px] font-semibold text-slate-500 dark:text-primary-300/70 font-bold leading-none mt-0.5">
                                     {currentNavItem?.group || 'RaiZon Pro'}
                                 </span>
                             </div>
@@ -605,14 +605,14 @@ const MainContent = () => {
                             <button
                                 type="button"
                                 onClick={() => setShowSearch(true)}
-                                className="w-full flex items-center justify-between gap-2.5 px-3.5 h-10 rounded-xl border border-slate-300 dark:border-purple-500/20 bg-slate-100 hover:bg-slate-200/80 dark:bg-purple-950/20 dark:hover:bg-purple-950/40 text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-slate-100 text-xs font-bold transition-all cursor-pointer shadow-inner group"
+                                className="w-full flex items-center justify-between gap-2.5 px-3.5 h-10 rounded-xl border border-primary-200/80 dark:border-primary-500/25 bg-white/70 hover:bg-white dark:bg-primary-950/25 dark:hover:bg-primary-950/45 text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-slate-100 text-xs font-bold transition-all cursor-pointer shadow-inner group"
                                 title={language === 'ar' ? 'بحث فوري في كل الصفحات والفواتير والعملاء (Ctrl + K)' : 'Quick Search (Ctrl + K)'}
                             >
                                 <div className="flex items-center gap-2 truncate">
-                                    <Search size={14} className="text-purple-500 dark:text-purple-400 group-hover:scale-110 transition-transform shrink-0" />
+                                    <Search size={14} className="text-primary-500 dark:text-primary-400 group-hover:scale-110 transition-transform shrink-0" />
                                     <span className="truncate">{language === 'ar' ? 'بحث سريع وتنقل بين الصفحات...' : 'Quick search...'}</span>
                                 </div>
-                                <kbd className="px-2 py-0.5 rounded-md bg-white dark:bg-purple-900/40 text-[10px] font-mono text-slate-700 dark:text-purple-200 border border-slate-300 dark:border-purple-500/30 shadow-2xs font-extrabold shrink-0">Ctrl K</kbd>
+                                <kbd className="px-2 py-0.5 rounded-md bg-white dark:bg-primary-900/40 text-[10px] font-mono text-slate-700 dark:text-primary-200 border border-primary-200 dark:border-primary-500/30 shadow-2xs font-extrabold shrink-0">Ctrl K</kbd>
                             </button>
                         </div>
                         
@@ -653,13 +653,13 @@ const MainContent = () => {
                              {!syncStatus.lastError && syncStatus.lastSyncAt && syncStatus.lastSyncAt > 0 && (
                                  <span
                                      title={language === 'ar' ? `آخر مزامنة ناجحة: ${new Date(syncStatus.lastSyncAt).toLocaleString('ar-EG')}` : `${t('last_sync_at')}: ${new Date(syncStatus.lastSyncAt).toLocaleString()}`}
-                                     className="hidden lg:flex items-center gap-1.5 px-2.5 h-9 rounded-xl bg-slate-100/80 dark:bg-purple-950/20 border border-slate-300 dark:border-purple-900/30 text-xs text-slate-700 dark:text-slate-300 font-semibold select-none shadow-2xs"
+                                     className="hidden lg:flex items-center gap-1.5 px-2.5 h-9 rounded-xl bg-primary-500/10 dark:bg-primary-950/20 border border-primary-500/20 dark:border-primary-900/30 text-xs text-slate-700 dark:text-slate-300 font-semibold select-none shadow-2xs"
                                  >
-                                     <Clock size={12} className="text-purple-500 dark:text-purple-400 shrink-0" />
-                                     <span className="text-[11px] font-sans text-slate-500 dark:text-purple-300/80">
+                                     <Clock size={12} className="text-primary-500 dark:text-primary-400 shrink-0" />
+                                     <span className="text-[11px] font-sans text-slate-500 dark:text-primary-300/80">
                                          {language === 'ar' ? 'آخر مزامنة' : 'Synced'}
                                      </span>
-                                     <span className="font-bold text-slate-900 dark:text-purple-200">
+                                     <span className="font-bold text-slate-900 dark:text-primary-200">
                                          {formatSyncRelativeTime(syncStatus.lastSyncAt, systemClock.getTime(), language)}
                                      </span>
                                      <Check size={13} className="text-emerald-500 shrink-0" />
@@ -683,13 +683,13 @@ const MainContent = () => {
                                       <button
                                         type="button"
                                         onClick={() => setShowBranchDropdown(prev => !prev)}
-                                        className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-bold bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-200 border border-purple-200 dark:border-purple-500/40 transition-all shadow-xs cursor-pointer group active:scale-95"
+                                        className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-bold bg-primary-500/10 hover:bg-primary-500/20 dark:bg-primary-950/40 dark:hover:bg-primary-900/60 text-primary-700 dark:text-primary-200 border border-primary-500/30 dark:border-primary-500/40 transition-all shadow-xs cursor-pointer group active:scale-95"
                                         title={language === 'ar' ? 'تبديل الفرع المدار' : 'Switch managed branch'}
                                       >
-                                        <Building size={14} className="text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
-                                        <span className="hidden xl:inline text-slate-500 dark:text-purple-300/70">{language === 'ar' ? 'فرع:' : 'Branch:'}</span>
+                                        <Building size={14} className="text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform" />
+                                        <span className="hidden xl:inline text-slate-500 dark:text-primary-300/70">{language === 'ar' ? 'فرع:' : 'Branch:'}</span>
                                         <span className="font-extrabold text-slate-900 dark:text-white max-w-[120px] truncate">{activeBranch.name}</span>
-                                        <ChevronDown size={13} className={`text-purple-500 transition-transform duration-200 ${showBranchDropdown ? 'rotate-180' : ''}`} />
+                                        <ChevronDown size={13} className={`text-primary-500 transition-transform duration-200 ${showBranchDropdown ? 'rotate-180' : ''}`} />
                                       </button>
 
                                       {showBranchDropdown && (
@@ -701,7 +701,7 @@ const MainContent = () => {
                                                 <span className="text-xs font-extrabold text-slate-900 dark:text-white block">{language === 'ar' ? 'تبديل الفرع المدار' : 'Switch Branch'}</span>
                                                 <span className="text-[10px] text-slate-400 font-medium">{language === 'ar' ? 'اختر الفرع لمتابعة فواتيره وعملياته' : 'Select active branch'}</span>
                                               </div>
-                                              <span className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400">
+                                              <span className="p-1.5 rounded-lg bg-primary-500/15 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400">
                                                 <Building size={16} />
                                               </span>
                                             </div>
@@ -724,8 +724,8 @@ const MainContent = () => {
                                                     }}
                                                     className={`w-full p-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
                                                       isSelected
-                                                        ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 shadow-xs'
-                                                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                                                        ? 'bg-primary-500/15 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 border border-primary-500/30 dark:border-primary-800/60 shadow-xs'
+                                                        : 'text-slate-700 dark:text-slate-300 hover:bg-primary-50/50 dark:hover:bg-slate-800/60'
                                                     }`}
                                                   >
                                                     <div className="flex items-center gap-2">
@@ -740,7 +740,7 @@ const MainContent = () => {
                                                         {language === 'ar' ? 'النشط ✓' : 'Active'}
                                                       </span>
                                                     ) : (
-                                                      <span className="text-[10px] text-purple-500 font-medium">
+                                                      <span className="text-[10px] text-primary-500 font-medium">
                                                         {language === 'ar' ? 'اختيار' : 'Select'}
                                                       </span>
                                                     )}
@@ -758,7 +758,7 @@ const MainContent = () => {
                                                 }}
                                                 className="w-full py-2 px-3 rounded-xl text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-center transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                                               >
-                                                <Settings size={13} className="text-purple-500" />
+                                                <Settings size={13} className="text-primary-500" />
                                                 <span>{language === 'ar' ? 'إدارة جميع الفروع والمواقع...' : 'Manage Branches...'}</span>
                                               </button>
                                             </div>
@@ -770,8 +770,8 @@ const MainContent = () => {
                                 }
 
                                 return (
-                                  <div className="hidden sm:flex items-center gap-1.5 px-2.5 h-9 rounded-xl text-xs font-semibold bg-slate-100/80 dark:bg-purple-950/20 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-purple-900/30 shadow-xs">
-                                    <Building size={13} className="text-purple-400 shrink-0" />
+                                  <div className="hidden sm:flex items-center gap-1.5 px-2.5 h-9 rounded-xl text-xs font-semibold bg-primary-500/10 dark:bg-primary-950/20 text-slate-600 dark:text-slate-300 border border-primary-500/20 dark:border-primary-900/30 shadow-xs">
+                                    <Building size={13} className="text-primary-500 dark:text-primary-400 shrink-0" />
                                     <span className="max-w-[110px] truncate">{activeBranch.name}</span>
                                   </div>
                                 );
@@ -786,13 +786,13 @@ const MainContent = () => {
                                      ? trimmedName 
                                      : (currentUser?.username || (language === 'ar' ? 'المستخدم' : 'User'));
                                  return (
-                                     <div className="flex items-center gap-2.5 ps-3 md:ps-3.5 border-s border-slate-300 dark:border-purple-900/40">
+                                     <div className="flex items-center gap-2.5 ps-3 md:ps-3.5 border-s theme-chrome-divider">
                                          <div className="text-right hidden sm:block leading-tight">
                                              <div className="flex items-center justify-end gap-1.5">
                                                  <p className="text-xs md:text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">{effectiveUserName}</p>
                                                  <span className="w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse shrink-0" title={t('online')}></span>
                                              </div>
-                                             <p className={`text-[11px] font-bold capitalize leading-none mt-0.5 ${avatarStyle.isAdmin ? 'text-amber-500 dark:text-amber-400' : 'text-purple-600 dark:text-purple-300'}`}>
+                                             <p className={`text-[11px] font-bold capitalize leading-none mt-0.5 ${avatarStyle.isAdmin ? 'text-amber-500 dark:text-amber-400' : 'text-primary-600 dark:text-primary-300'}`}>
                                                  {t(currentUser?.role || '')}
                                              </p>
                                          </div>
