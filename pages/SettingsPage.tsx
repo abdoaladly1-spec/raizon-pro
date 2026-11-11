@@ -6,7 +6,7 @@ import {
     Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, 
     Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, 
     ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, 
-    ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw,
+    ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, AlertTriangle,
     Building, Bell, Lock, Save, Key, Shield, Download, Edit, MessageSquare,
     WhatsAppIcon, StatementIcon, CustomEditIcon, TimeIcon, PhotoIcon, SecurityIcon, MailIcon,
     BackupIcon, MailNotificationIcon, GmailLogo, EmailAlertsLogo
@@ -45,6 +45,15 @@ export const SettingsPage = () => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('general');
     const [showCustomizeNotificationsModal, setShowCustomizeNotificationsModal] = useState(false);
     const [showVisibilityModal, setShowVisibilityModal] = useState(false);
+    const [restoreConfirmData, setRestoreConfirmData] = useState<{
+        actualState: any;
+        filename: string;
+        invCount: number;
+        itemsCount: number;
+        custCount: number;
+        restoredEmail?: string;
+        restoredEmailConfig?: any;
+    } | null>(null);
     const [form, setForm] = useState(state.settings);
     const initialFormJsonRef = useRef(JSON.stringify(state.settings));
     const initialEmailJsonRef = useRef('');
@@ -658,13 +667,21 @@ export const SettingsPage = () => {
             || actualState.managerEmail;
         const restoredEmailConfig = actualState.settings?.emailConfig || actualState.emailConfig;
 
-        const emailNote = restoredEmail ? `• بريد المدير للتقارير: ${restoredEmail}` : '• بريد المدير: (غير مسجل في هذه النسخة)';
+        // فتح نافذة التأكيد المصممة الفاخرة بدلاً من حوار المتصفح القديم
+        setRestoreConfirmData({
+            actualState,
+            filename,
+            invCount,
+            itemsCount,
+            custCount,
+            restoredEmail,
+            restoredEmailConfig
+        });
+    };
 
-        const confirmMsg = language === 'ar'
-            ? `هل أنت متأكد من استعادة النسخة الاحتياطية (${filename})؟\n\nملخص محتويات الملف:\n• الفواتير: ${invCount}\n• الأصناف والمنتجات: ${itemsCount}\n• العملاء: ${custCount}\n${emailNote}\n\nسيتم استبدال البيانات الحالية وتطبيق بيانات هذا الملف وبريد المدير بالكامل.`
-            : `Are you sure you want to restore (${filename})?\nInvoices: ${invCount}, Items: ${itemsCount}, Customers: ${custCount}\nManager Email: ${restoredEmail || 'None'}`;
-
-        if (!confirm(confirmMsg)) return;
+    const executeRestore = async () => {
+        if (!restoreConfirmData) return;
+        const { actualState, filename, restoredEmail, restoredEmailConfig } = restoreConfirmData;
 
         setBackupBusy(true);
         try {
@@ -714,6 +731,7 @@ export const SettingsPage = () => {
                 // صامت إذا كان السيرفر غير متصل
             }
 
+            setRestoreConfirmData(null);
             addToast(
                 language === 'ar' 
                     ? `تم استعادة كافة البيانات وبريد المدير (${restoredEmail || 'الافتراضي'}) بنجاح!` 
@@ -3199,6 +3217,160 @@ export const SettingsPage = () => {
                         </div>
                     </div>
                 </ModalShell>
+            )}
+
+            {/* =========================================================================
+                نافذة تأكيد استعادة النسخة الاحتياطية المصممة باحترافية وأناقة كاملة
+               ========================================================================= */}
+            {restoreConfirmData && (
+                <div 
+                    className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in"
+                    onClick={() => !backupBusy && setRestoreConfirmData(null)}
+                    dir={language === 'ar' ? 'rtl' : 'ltr'}
+                >
+                    <div 
+                        className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-scale-in transition-all text-slate-800 dark:text-slate-100"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* خط تزييني علوي ملون بلون الثيم والتحذير */}
+                        <div className="h-2 w-full bg-gradient-to-r from-amber-400 via-primary-500 to-amber-500" />
+
+                        <div className="p-6 md:p-7 space-y-6">
+                            {/* ترويسة النافذة مع الأيقونة والعنوان */}
+                            <div className="text-center space-y-3">
+                                <div className="w-16 h-16 mx-auto rounded-3xl bg-amber-500/15 dark:bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center shadow-lg shadow-amber-500/10">
+                                    <BackupIcon size={32} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg md:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                                        {language === 'ar' ? 'تأكيد استعادة النسخة الاحتياطية' : 'Confirm Backup Restoration'}
+                                    </h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                        {language === 'ar' 
+                                            ? 'يرجى مراجعة ملخص بيانات النسخة الاحتياطية قبل البدء بالتطبيق' 
+                                            : 'Please review the backup summary before proceeding'}
+                                    </p>
+                                </div>
+
+                                {/* شارة اسم الملف */}
+                                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 max-w-full truncate shadow-2xs">
+                                    <FileText size={13} className="text-primary-500 shrink-0" />
+                                    <span className="truncate" dir="ltr">{restoreConfirmData.filename}</span>
+                                </div>
+                            </div>
+
+                            {/* شبكة بطاقات ملخص المحتويات */}
+                            <div className="space-y-2">
+                                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                                    {language === 'ar' ? 'ملخص محتويات النسخة:' : 'Backup Contents Summary:'}
+                                </span>
+                                <div className="grid grid-cols-3 gap-2.5">
+                                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-center space-y-1">
+                                        <div className="flex items-center justify-center text-primary-500 mb-1">
+                                            <FileText size={18} />
+                                        </div>
+                                        <div className="text-lg font-black text-slate-900 dark:text-white font-mono">
+                                            {restoreConfirmData.invCount.toLocaleString()}
+                                        </div>
+                                        <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                            {language === 'ar' ? 'الفواتير' : 'Invoices'}
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-center space-y-1">
+                                        <div className="flex items-center justify-center text-emerald-500 mb-1">
+                                            <Package size={18} />
+                                        </div>
+                                        <div className="text-lg font-black text-slate-900 dark:text-white font-mono">
+                                            {restoreConfirmData.itemsCount.toLocaleString()}
+                                        </div>
+                                        <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                            {language === 'ar' ? 'المنتجات' : 'Products'}
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-center space-y-1">
+                                        <div className="flex items-center justify-center text-purple-500 mb-1">
+                                            <Users size={18} />
+                                        </div>
+                                        <div className="text-lg font-black text-slate-900 dark:text-white font-mono">
+                                            {restoreConfirmData.custCount.toLocaleString()}
+                                        </div>
+                                        <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                            {language === 'ar' ? 'العملاء' : 'Customers'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* بطاقة بريد تقارير المدير */}
+                                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between gap-3 text-xs">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className="w-8 h-8 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center shrink-0">
+                                            <MailIcon size={16} />
+                                        </div>
+                                        <div className="min-w-0 text-right">
+                                            <span className="text-[10px] text-slate-400 font-bold block">
+                                                {language === 'ar' ? 'بريد تقارير المدير:' : 'Manager Reports Email:'}
+                                            </span>
+                                            <span className="font-extrabold text-slate-800 dark:text-slate-200 truncate block font-mono" dir="ltr">
+                                                {restoreConfirmData.restoredEmail || (language === 'ar' ? '(غير مسجل بالنسخة)' : 'Not specified')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {restoreConfirmData.restoredEmail && (
+                                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20 shrink-0">
+                                            {language === 'ar' ? 'سيتفعل تلقائياً' : 'Will activate'}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* صندوق التحذير الأنيق */}
+                            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-500/30 flex items-start gap-3 text-amber-900 dark:text-amber-200 text-xs leading-relaxed shadow-xs">
+                                <AlertTriangle size={18} className="text-amber-500 shrink-0 mt-0.5" />
+                                <div>
+                                    <strong className="block font-bold mb-0.5 text-amber-800 dark:text-amber-300">
+                                        {language === 'ar' ? 'تنبيه استبدال البيانات:' : 'Data Replacement Notice:'}
+                                    </strong>
+                                    {language === 'ar' 
+                                        ? 'سيتم استبدال البيانات الحالية بالكامل في النظام وتطبيق بيانات هذا الملف وبريد المدير. هذه الخطوة لا يمكن التراجع عنها بعدها.'
+                                        : 'Current data will be completely replaced with the data from this backup file. This action cannot be undone.'}
+                                </div>
+                            </div>
+
+                            {/* أزرار الإجراءات */}
+                            <div className="grid grid-cols-2 gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setRestoreConfirmData(null)}
+                                    disabled={backupBusy}
+                                    className="py-3 px-4 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                    {language === 'ar' ? 'إلغاء الأمر' : 'Cancel'}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={executeRestore}
+                                    disabled={backupBusy}
+                                    className="py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-xs shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                                >
+                                    {backupBusy ? (
+                                        <>
+                                            <RefreshCw size={14} className="animate-spin" />
+                                            <span>{language === 'ar' ? 'جاري الاستعادة...' : 'Restoring...'}</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check size={15} />
+                                            <span>{language === 'ar' ? 'تأكيد واستعادة البيانات' : 'Confirm & Restore'}</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
 
 </div>
