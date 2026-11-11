@@ -8,7 +8,7 @@ import React, { useState, useRef, useMemo, useEffect, lazy, Suspense } from 'rea
 import { AppProvider, useApp } from './context/AppContext';
 import { Intro } from './components/Intro';
 import { AnimatedBackground } from './components/AnimatedBackground';
-import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, Key, User, Lock, ArrowLeft, ChevronRight, ChevronDown, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Truck, Bell, AlertTriangle, Shield, Phone, Copy, Building } from './components/Icons';
+import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, Key, User, Lock, ArrowLeft, ChevronRight, ChevronDown, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Truck, Bell, AlertTriangle, Shield, Phone, Copy, Building, History } from './components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from './types';
 import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, clearSyncError, type SyncStatus } from './lib/serverSync';
 import { startAutoBackupScheduler } from './lib/autoBackupScheduler';
@@ -73,6 +73,7 @@ const ReturnsPage = lazyWithRetry(() => import('./pages/ReturnsPage').then(m => 
 const SuppliersPage = lazyWithRetry(() => import('./pages/SuppliersPage').then(m => ({ default: m.SuppliersPage })));
 const PurchaseOrdersPage = lazyWithRetry(() => import('./pages/PurchaseOrdersPage').then(m => ({ default: m.PurchaseOrdersPage })));
 const InventoryHistoryPage = lazyWithRetry(() => import('./pages/InventoryHistoryPage').then(m => ({ default: m.InventoryHistoryPage })));
+const ClosingHistoryPage = lazyWithRetry(() => import('./pages/ClosingHistoryPage').then(m => ({ default: m.ClosingHistoryPage })));
 
 // --- Hooks ---
 const ScreenSaver = ({ onActive }: { onActive: () => void }) => {
@@ -300,7 +301,7 @@ const MainContent = () => {
     setPendingNavigation(null);
     if (next) setActiveTab(next as any);
   };
-  const [activeTab, setActiveTab] = useState('dashboard' as 'dashboard' | 'create_invoice' | 'invoices' | 'returns' | 'inventory' | 'categories' | 'locations' | 'suppliers' | 'purchase_orders' | 'inventory_history' | 'clients' | 'debts' | 'reservations' | 'stats' | 'settings' | 'expenses' | 'staff' | 'closing' | 'notes' | 'users' | 'audit_logs');
+  const [activeTab, setActiveTab] = useState('dashboard' as 'dashboard' | 'create_invoice' | 'invoices' | 'returns' | 'inventory' | 'categories' | 'locations' | 'suppliers' | 'purchase_orders' | 'inventory_history' | 'clients' | 'debts' | 'reservations' | 'stats' | 'settings' | 'expenses' | 'staff' | 'closing' | 'closing_history' | 'notes' | 'users' | 'audit_logs');
   const [showStats, setShowStats] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -418,6 +419,7 @@ const MainContent = () => {
       { id: 'returns', icon: RefreshCw, label: t('returns'), group: t('nav_group_daily') },
       { id: 'expenses', icon: TrendingUp, label: t('expenses'), group: t('nav_group_daily') },
       { id: 'closing', icon: Wallet, label: t('closing'), group: t('nav_group_daily') },
+      { id: 'closing_history', icon: History, label: language === 'ar' ? 'سجل الإقفال' : 'Closing Records', group: t('nav_group_daily') },
       { id: 'clients', icon: Users, label: t('clients'), group: t('nav_group_daily') },
       { id: 'debts', icon: CreditCard, label: t('debts') || 'الديون والآجل', group: t('nav_group_daily') },
       { id: 'reservations', icon: Calendar, label: t('reservations'), group: t('nav_group_daily') },
@@ -431,6 +433,7 @@ const MainContent = () => {
       if (item.id === 'locations') return currentUser?.role === 'admin';
       if (currentUser?.role === 'admin') return true;
       if (!currentUser?.permissions) return true;
+      if (item.id === 'closing_history') return currentUser.permissions.includes('closing') || currentUser.permissions.includes('closing_history');
       return currentUser.permissions.includes(item.id) || ['dashboard', 'create_invoice', 'stats'].includes(item.id);
   });
 
@@ -458,7 +461,8 @@ const MainContent = () => {
           case 'stats': return <StatsPage />;
           case 'settings': return <SettingsPage />;
           case 'notes': return <NotesPage />;
-          case 'closing': return <ClosingPage />;
+          case 'closing': return <ClosingPage onNavigate={(tab) => handleNavigate(tab as any)} />;
+          case 'closing_history': return <ClosingHistoryPage onNavigate={(tab) => handleNavigate(tab as any)} />;
           case 'users': return <AdminUsers />;
           case 'audit_logs': return <AuditLogs />;
           case 'dashboard': 

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
-import { LogOut, Printer, Award, Clock, Wallet, Plus, Trash2, AlertCircle, ArrowUp, ArrowDown, Check, RefreshCw } from '../components/Icons';
+import { LogOut, Printer, Award, Clock, Wallet, Plus, Trash2, AlertCircle, ArrowUp, ArrowDown, Check, RefreshCw, FileText } from '../components/Icons';
 import { ClosingReport } from '../types';
 import { cashOfInvoice, isCashExpense, paymentOf } from '../lib/payments';
 import { getDrawerOpeningBalance, isAfterClosing, countableInvoice } from '../lib/analytics';
@@ -9,7 +9,11 @@ import { cashReturnsFor } from '../lib/returns';
 import { Card } from '../components/ui';
 import { printClosingReportThermal } from '../lib/thermalPrinter';
 
-export const ClosingPage = () => {
+interface ClosingPageProps {
+    onNavigate?: (tab: string) => void;
+}
+
+export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
     const {
         state, t, addClosingReport, addDrawerMovement, deleteDrawerMovement,
         currentUser, logout, updateSettings, formatTime, formatDateTime, addToast, language, triggerOpenCashDrawer
@@ -603,8 +607,8 @@ export const ClosingPage = () => {
 
                         <p className="text-xs text-slate-400">
                             {language === 'ar'
-                                ? 'يتم جلب الرصيد الافتتاحي تلقائياً من المتبقي بالدرج عند إقفال الأمس، ويتأثر مباشرة بأي مبالغ مسحوبة أو مضافة.'
-                                : 'Opening balance is loaded from yesterday drawer cash and updates on deposits/withdrawals.'}
+                                ? 'الرصيد اليدوي يسري لليوم الحالي فقط؛ وبعد الساعة 12 منتصف الليل يعود تلقائياً لمبلغ التقفيل النهائي لليوم السابق.'
+                                : 'Manual opening balance applies to today only. After midnight, it automatically rolls over to yesterday\'s final closing amount.'}
                         </p>
                     </div>
 
@@ -1156,9 +1160,21 @@ export const ClosingPage = () => {
                         <Clock size={18} className="text-primary-400" />
                         <span>{language === 'ar' ? 'سجل تقارير الإقفال السابقة' : 'Closing Reports History'}</span>
                     </h3>
-                    <span className="text-xs text-slate-400">
-                        {branchClosingReports.length} {language === 'ar' ? 'تقرير مسجل' : 'reports'}
-                    </span>
+                    <div className="flex items-center gap-3">
+                        {onNavigate && (
+                            <button
+                                type="button"
+                                onClick={() => onNavigate('closing_history')}
+                                className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-600/30 transition-all cursor-pointer"
+                            >
+                                <FileText size={14} />
+                                <span>{language === 'ar' ? 'فتح سجل الإقفال والطباعة الشاملة (PDF)' : 'Full Closing Records (PDF)'}</span>
+                            </button>
+                        )}
+                        <span className="text-xs text-slate-400">
+                            {branchClosingReports.length} {language === 'ar' ? 'تقرير مسجل' : 'reports'}
+                        </span>
+                    </div>
                 </div>
 
                 <Card className="overflow-hidden p-0 border border-slate-800 bg-slate-900/80">

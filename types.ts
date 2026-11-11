@@ -383,6 +383,10 @@ export interface ClosingReport {
   cardSales?: number;
   creditSales?: number;
   totalClosingAmount?: number;
+  customerDebtCollected?: number;
+  cashReturns?: number;
+  branchName?: string;
+  openingSource?: 'yesterday_closing' | 'manual_override' | 'settings_default';
 }
 
 /** حركة يدوية على درج النقدية (سحب/إيداع) مع سبب مسجَّل */

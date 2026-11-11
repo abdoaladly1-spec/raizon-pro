@@ -474,9 +474,17 @@ export const getDrawerOpeningBalance = (
     const manualDate = branchOpening?.manualOpeningDate ?? settings?.manualOpeningDate;
 
     // 2. هل قام المستخدم بتعيين رصيد افتتاحي يدوي؟
-    const hasManualOverride = Boolean(manualDate && typeof openingCash === 'number');
+    // الرصيد الافتتاحي اليدوي يسري لليوم الحالي فقط؛ وبعد الساعة 12 منتصف الليل (تغير التاريخ)
+    // يعود النظام تلقائياً لاعتماد مبلغ التقفيل النهائي لليوم السابق (أمس) كرصيد افتتاحي لبداية اليوم الجديد
+    const cleanCurrentDate = (currentDate || localIsoToday()).slice(0, 10);
+    const cleanManualDate = manualDate ? String(manualDate).slice(0, 10) : '';
+    const isManualForToday = Boolean(
+        cleanManualDate && 
+        typeof openingCash === 'number' && 
+        cleanManualDate === cleanCurrentDate
+    );
 
-    if (hasManualOverride) {
+    if (isManualForToday) {
         return {
             balance: Number(openingCash),
             source: 'manual_override',

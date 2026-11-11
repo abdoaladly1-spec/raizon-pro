@@ -423,3 +423,19 @@ export const EmailAlertsLogo = ({ className, size = 24 }: { className?: string; 
     <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-slate-900" />
   </div>
 );
+
+export const Layers = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}>
+    <polygon points="12 2 2 7 12 12 22 7 12 2" />
+    <polyline points="2 17 12 22 22 17" />
+    <polyline points="2 12 12 17 22 12" />
+  </IconWrapper>
+);
+
+export const History = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}>
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+    <path d="M3 3v5h5" />
+    <path d="M12 7v5l4 2" />
+  </IconWrapper>
+);

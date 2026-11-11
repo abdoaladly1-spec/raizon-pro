@@ -240,6 +240,7 @@ export interface ClosingReportData {
   reportId?: string;
   date?: string;
   openingBalance: number;
+  openingSource?: string;
   cashSales: number;
   deposits: number;
   withdrawals: number;
@@ -256,6 +257,10 @@ export interface ClosingReportData {
   retainedInDrawer?: number;
   transferredToSafe?: number;
   cashierName?: string;
+  customerDebtCollected?: number;
+  cashReturns?: number;
+  branchName?: string;
+  notes?: string;
 }
 
 export const printClosingReportThermal = (
@@ -385,6 +390,453 @@ export const printClosingReportThermal = (
 
   const html = wrapThermalHtml('تقرير إقفال الوردية والخزينة', bodyHtml, shop);
   openThermalPrintWindow('Shift Closing Report', html);
+};
+
+/** فتح نافذة طباعة A4 رسمية لتصدير وحفظ PDF */
+export const openA4PrintWindow = (title: string, htmlContent: string) => {
+  const printWindow = window.open('', '_blank', 'width=950,height=1000');
+  if (!printWindow) {
+    const frame = document.createElement('iframe');
+    frame.style.position = 'fixed';
+    frame.style.right = '0';
+    frame.style.bottom = '0';
+    frame.style.width = '0';
+    frame.style.height = '0';
+    frame.style.border = '0';
+    document.body.appendChild(frame);
+    const doc = frame.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(htmlContent);
+      doc.close();
+      setTimeout(() => {
+        frame.contentWindow?.focus();
+        frame.contentWindow?.print();
+        setTimeout(() => document.body.removeChild(frame), 2500);
+      }, 350);
+    }
+    return;
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+  printWindow.onload = () => {
+    try {
+      printWindow.focus();
+      printWindow.print();
+    } catch (e) {
+      console.warn('A4 Print error:', e);
+    }
+  };
+};
+
+/** طباعة وتصدير تقرير إقفال الوردية كملف PDF رسمي بحجم A4 */
+export const printClosingReportA4Pdf = (
+  report: ClosingReportData,
+  shop?: ThermalShopInfo,
+  cashierName?: string
+) => {
+  const shopName = (shop?.shopName || 'RaiZon Pro').trim();
+  const phone = (shop?.phone || '').trim();
+  const address = (shop?.address || '').trim();
+  const cashier = cashierName || report.cashierName || 'كاشير رئيسي';
+  const diff = report.difference;
+  const diffLabel = diff === 0
+    ? 'مطابق تماماً (لا يوجد عجز أو زيادة)'
+    : diff < 0
+      ? `عجز في الدرج بمقدار ${Math.abs(diff).toLocaleString('en-US')} ج.م`
+      : `زيادة في الدرج بمقدار ${diff.toLocaleString('en-US')} ج.م`;
+  const diffColor = diff === 0 ? '#10b981' : diff < 0 ? '#ef4444' : '#3b82f6';
+  const diffBg = diff === 0 ? '#ecfdf5' : diff < 0 ? '#fef2f2' : '#eff6ff';
+
+  const openingSourceLabel = report.openingSource === 'manual_override'
+    ? 'رصيد يدوي لليوم فقط'
+    : 'مرحّل تلقائياً من إقفال الأمس';
+
+  const html = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8">
+  <title>تقرير إقفال الوردية - ${report.date || ''}</title>
+  <style>
+    @media print {
+      @page { size: A4 portrait; margin: 12mm; }
+      body { margin: 0; padding: 0; background: #fff !important; }
+      .no-print { display: none !important; }
+    }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body {
+      font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+      margin: 0;
+      padding: 20px;
+      color: #1e293b;
+      background: #f8fafc;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      border: 1px solid #e2e8f0;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #8b5cf6;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+    .shop-title { font-size: 24px; font-weight: 800; color: #1e1b4b; margin: 0 0 4px 0; }
+    .shop-subtitle { font-size: 12px; color: #64748b; margin: 0; }
+    .report-meta { text-align: left; font-size: 12px; color: #475569; }
+    .meta-tag {
+      background: #f1f5f9;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+    .status-banner {
+      background: ${diffBg};
+      border: 1.5px solid ${diffColor};
+      color: ${diffColor};
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px; }
+    .card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      background: #fafafa;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #334155;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px dashed #e2e8f0;
+      font-size: 12px;
+    }
+    .data-row:last-child { border-bottom: none; }
+    .data-row.highlight {
+      font-weight: 800;
+      font-size: 13px;
+      background: #f8fafc;
+      padding: 8px;
+      border-radius: 6px;
+      margin-top: 4px;
+    }
+    .amount { font-family: 'Consolas', monospace; font-weight: 700; direction: ltr; }
+    .table-container { margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; text-align: right; }
+    th { background: #f1f5f9; color: #475569; padding: 10px; font-weight: 700; font-size: 12px; border: 1px solid #e2e8f0; }
+    td { padding: 9px 10px; border: 1px solid #e2e8f0; font-size: 12px; }
+    .notes-box {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 12px;
+      color: #92400e;
+    }
+    .signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+    }
+    .sign-col { text-align: center; }
+    .sign-line {
+      margin-top: 45px;
+      border-top: 1px dashed #94a3b8;
+      padding-top: 6px;
+      color: #64748b;
+      font-size: 12px;
+    }
+    .print-actions { text-align: center; margin-bottom: 20px; }
+    .btn-print {
+      background: #8b5cf6;
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print print-actions">
+    <button class="btn-print" onclick="window.print()">طباعة / حفظ كـ PDF</button>
+  </div>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1 class="shop-title">${shopName}</h1>
+        <p class="shop-subtitle">${address ? address + ' • ' : ''}${phone ? phone : ''}</p>
+        <p style="margin: 4px 0 0 0; color: #8b5cf6; font-weight: 800; font-size: 15px;">تقرير إقفال الوردية اليومي (Shift Closing Report)</p>
+      </div>
+      <div class="report-meta">
+        <div class="meta-tag">رقم التقرير: ${report.reportId || report.date || 'R-CLOSING'}</div>
+        <div>التاريخ: ${report.date || ''}</div>
+        <div>الكاشير المسؤول: <strong>${cashier}</strong></div>
+        ${report.branchName ? `<div>الفرع: <strong>${report.branchName}</strong></div>` : ''}
+      </div>
+    </div>
+
+    <div class="status-banner">
+      <span>حالة المطابقة: ${diffLabel}</span>
+      <span class="amount" style="font-size: 16px;">${diff > 0 ? '+' : ''}${diff.toLocaleString('en-US')} ج.م</span>
+    </div>
+
+    <div class="grid-2">
+      <!-- بطاقة حركة درج النقدية -->
+      <div class="card">
+        <div class="card-title">
+          <span>حركة درج النقدية (الكاش)</span>
+          <span style="font-size: 11px; color: #8b5cf6;">${openingSourceLabel}</span>
+        </div>
+        <div class="data-row">
+          <span>الرصيد الافتتاحي لبداية اليوم:</span>
+          <span class="amount">${Number(report.openingBalance || 0).toLocaleString('en-US')} ج.م</span>
+        </div>
+        <div class="data-row">
+          <span>(+) المبيعات النقدية المحصلة:</span>
+          <span class="amount" style="color: #10b981;">+${Number(report.cashSales || 0).toLocaleString('en-US')} ج.م</span>
+        </div>
+        ${report.customerDebtCollected ? `
+        <div class="data-row">
+          <span>(+) تحصيلات ديون العملاء:</span>
+          <span class="amount" style="color: #10b981;">+${Number(report.customerDebtCollected).toLocaleString('en-US')} ج.م</span>
+        </div>` : ''}
+        <div class="data-row">
+          <span>(+) إيداعات نقدية للدرج:</span>
+          <span class="amount" style="color: #10b981;">+${Number(report.deposits || 0).toLocaleString('en-US')} ج.م</span>
+        </div>
+        <div class="data-row">
+          <span>(-) مسحوبات من الدرج:</span>
+          <span class="amount" style="color: #ef4444;">-${Number(report.withdrawals || 0).toLocaleString('en-US')} ج.م</span>
+        </div>
+        <div class="data-row">
+          <span>(-) المصروفات النقدية:</span>
+          <span class="amount" style="color: #ef4444;">-${Number(report.totalExpenses || 0).toLocaleString('en-US')} ج.م</span>
+        </div>
+        ${report.cashReturns ? `
+        <div class="data-row">
+          <span>(-) المرتجعات النقدية:</span>
+          <span class="amount" style="color: #ef4444;">-${Number(report.cashReturns).toLocaleString('en-US')} ج.م</span>
+        </div>` : ''}
+        <div class="data-row highlight">
+          <span>(=) النقدية المتوقعة في الدرج:</span>
+          <span class="amount" style="color: #8b5cf6;">${Number(report.expectedCash || 0).toLocaleString('en-US')} ج.م</span>
+        </div>
+      </div>
+
+      <!-- بطاقة وسائل الدفع والجرد الفعلي -->
+      <div class="card">
+        <div class="card-title">
+          <span>إجمالي وسائل الدفع والجرد الفعلي</span>
+        </div>
+        <div class="data-row">
+          <span>المبيعات النقدية (Cash):</span>
+          <span class="amount">${Number(report.cashSales || 0).toLocaleString('en-US')} ج.م</span>
+        </div>
+        <div class="data-row">
+          <span>مدفوعات البطاقات البنكية (Visa/Card):</span>
+          <span class="amount">${Number(report.cardSales || 0).toLocaleString('en-US')} ج.م</span>
+        </div>
+        <div class="data-row">
+          <span>المحافظ الإلكترونية وإنستاباي:</span>
+          <span class="amount">${Number(report.walletSales || 0).toLocaleString('en-US')} ج.م</span>
+        </div>
+        <div class="data-row">
+          <span>المبيعات الآجلة (ديون/شكك):</span>
+          <span class="amount">${Number(report.creditSales || 0).toLocaleString('en-US')} ج.م</span>
+        </div>
+        <div class="data-row highlight">
+          <span>إجمالي المبيعات الشامل:</span>
+          <span class="amount" style="color: #10b981;">${Number(report.totalClosingAmount || 0).toLocaleString('en-US')} ج.م</span>
+        </div>
+        <div class="data-row" style="margin-top: 10px; background: #fff; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1;">
+          <span style="font-weight: 800;">النقدية الفعلية المحصاة في الدرج:</span>
+          <span class="amount" style="font-size: 14px; font-weight: 800; color: #d97706;">${Number(report.actualCash || 0).toLocaleString('en-US')} ج.م</span>
+        </div>
+        <div class="data-row">
+          <span>المتبقي في الدرج للوردية القادمة:</span>
+          <span class="amount" style="color: #10b981; font-weight: 800;">${Number(report.retainedInDrawer || report.actualCash || 0).toLocaleString('en-US')} ج.م</span>
+        </div>
+      </div>
+    </div>
+
+    ${report.notes ? `
+    <div class="notes-box">
+      <strong>ملاحظات الإقفال:</strong> ${report.notes}
+    </div>` : ''}
+
+    <div class="signatures">
+      <div class="sign-col">
+        <div class="sign-line">توقيع واعتماد الكاشير المسؤول (${cashier})</div>
+      </div>
+      <div class="sign-col">
+        <div class="sign-line">توقيع الإدارة / المشرف العام</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  openA4PrintWindow('Shift Closing Report A4', html);
+};
+
+/** طباعة وتصدير سجل تقارير الإقفال المجمعة كملف PDF */
+export const printClosingHistoryReportA4Pdf = (
+  reports: ClosingReportData[],
+  filterTitle: string = 'سجل الإقفالات الشامل',
+  shop?: ThermalShopInfo
+) => {
+  const shopName = (shop?.shopName || 'RaiZon Pro').trim();
+  const phone = (shop?.phone || '').trim();
+  const totalSalesAll = reports.reduce((s, r) => s + (r.totalClosingAmount || r.cashSales || 0), 0);
+  const totalExpectedAll = reports.reduce((s, r) => s + (r.expectedCash || 0), 0);
+  const totalActualAll = reports.reduce((s, r) => s + (r.actualCash || 0), 0);
+  const totalDiffAll = reports.reduce((s, r) => s + (r.difference || 0), 0);
+
+  const rowsHtml = reports.map((r, i) => {
+    const diff = r.difference || 0;
+    const diffColor = diff === 0 ? '#10b981' : diff < 0 ? '#ef4444' : '#3b82f6';
+    return `<tr>
+      <td style="text-align: center; font-weight: bold;">${i + 1}</td>
+      <td style="font-family: monospace; font-weight: bold;">${r.date || ''}</td>
+      <td>${r.branchName || '-'}</td>
+      <td>${r.cashierName || '-'}</td>
+      <td class="amount">${Number(r.openingBalance || 0).toLocaleString('en-US')}</td>
+      <td class="amount" style="font-weight: bold;">${Number(r.totalClosingAmount || r.cashSales || 0).toLocaleString('en-US')}</td>
+      <td class="amount">${Number(r.expectedCash || 0).toLocaleString('en-US')}</td>
+      <td class="amount" style="font-weight: bold; color: #d97706;">${Number(r.actualCash || 0).toLocaleString('en-US')}</td>
+      <td class="amount" style="font-weight: bold; color: ${diffColor};">${diff > 0 ? '+' : ''}${diff.toLocaleString('en-US')}</td>
+      <td class="amount" style="color: #10b981;">${Number(r.retainedInDrawer || 0).toLocaleString('en-US')}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8">
+  <title>${filterTitle}</title>
+  <style>
+    @media print {
+      @page { size: A4 landscape; margin: 10mm; }
+      body { margin: 0; padding: 0; }
+      .no-print { display: none !important; }
+    }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: 'Cairo', Tahoma, sans-serif; font-size: 11px; margin: 0; padding: 15px; color: #1e293b; background: #fff; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #8b5cf6; padding-bottom: 12px; margin-bottom: 15px; }
+    .title { font-size: 20px; font-weight: 800; color: #1e1b4b; margin: 0; }
+    .subtitle { font-size: 11px; color: #64748b; margin: 2px 0 0 0; }
+    .meta { text-align: left; font-size: 11px; color: #475569; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; }
+    .kpi-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; text-align: center; }
+    .kpi-label { font-size: 10px; color: #64748b; font-weight: bold; }
+    .kpi-val { font-size: 14px; font-weight: 800; font-family: monospace; color: #1e293b; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { background: #f1f5f9; padding: 7px 8px; border: 1px solid #cbd5e1; font-weight: bold; color: #334155; }
+    td { padding: 6px 8px; border: 1px solid #e2e8f0; }
+    .amount { font-family: monospace; direction: ltr; text-align: right; }
+    .footer { margin-top: 20px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 8px; }
+    .print-bar { text-align: center; margin-bottom: 15px; }
+    .btn-print { background: #8b5cf6; color: white; border: none; padding: 8px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="no-print print-bar">
+    <button class="btn-print" onclick="window.print()">طباعة / تصدير PDF</button>
+  </div>
+  <div class="header">
+    <div>
+      <h1 class="title">${shopName}</h1>
+      <p class="subtitle">${phone ? phone + ' • ' : ''}${filterTitle}</p>
+    </div>
+    <div class="meta">
+      <div>تاريخ التصدير: ${new Date().toLocaleDateString('ar-EG')}</div>
+      <div>إجمالي التقارير: <strong>${reports.length} تقرير</strong></div>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">إجمالي المبيعات المقفلة</div>
+      <div class="kpi-val" style="color: #10b981;">${totalSalesAll.toLocaleString('en-US')} ج.م</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">إجمالي النقدية المتوقعة</div>
+      <div class="kpi-val">${totalExpectedAll.toLocaleString('en-US')} ج.م</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">إجمالي النقدية الفعلية</div>
+      <div class="kpi-val" style="color: #d97706;">${totalActualAll.toLocaleString('en-US')} ج.م</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">صافي الفروقات (عجز/زيادة)</div>
+      <div class="kpi-val" style="color: ${totalDiffAll === 0 ? '#10b981' : totalDiffAll < 0 ? '#ef4444' : '#3b82f6'};">${totalDiffAll > 0 ? '+' : ''}${totalDiffAll.toLocaleString('en-US')} ج.م</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>التاريخ</th>
+        <th>الفرع</th>
+        <th>الكاشير</th>
+        <th>الافتتاحي</th>
+        <th>إجمالي المبيعات</th>
+        <th>المتوقع</th>
+        <th>الفعلي</th>
+        <th>الفارق</th>
+        <th>المتبقي لغداً</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsHtml}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    تم استخراج هذا التقرير تلقائياً بواسطة نظام RaiZon Pro الإداري المتكامل.
+  </div>
+</body>
+</html>`;
+
+  openA4PrintWindow('Closing History Report', html);
 };
 
 // =========================================================================
