@@ -31,6 +31,8 @@ export const Dashboard = ({ onNavigate, showStats, onOpenTour }: { onNavigate: (
     const [staffModalRange, setStaffModalRange] = useState<DashboardRange>('day');
     // نمط العرض التنفيذي الفاخر (4 بطاقات رئيسية) أو التفصيلي الكامل (10 بطاقات)
     const [executiveView, setExecutiveView] = useState(true);
+    // نمط عرض الرسم البياني أو خريطة ساعات النشاط والذروة
+    const [chartSubView, setChartSubView] = useState<'chart' | 'heatmap'>('chart');
 
     // الساعة الحية
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -462,6 +464,41 @@ export const Dashboard = ({ onNavigate, showStats, onOpenTour }: { onNavigate: (
         }
         return result;
     }, [periodFilteredInvoices, range, language]);
+
+    // خريطة الساعات الأكثر نشاطاً والذروة (Peak Hours Heatmap) لقرارات التشغيل وتوزيع الموظفين
+    const hourlyHeatmapData = useMemo(() => {
+        const hours = Array.from({ length: 24 }, (_, i) => {
+            const h12 = i === 0 ? 12 : i > 12 ? i - 12 : i;
+            const ampm = i >= 12 ? (language === 'ar' ? 'م' : 'PM') : (language === 'ar' ? 'ص' : 'AM');
+            return {
+                hour: i,
+                label: `${h12} ${ampm}`,
+                count: 0,
+                total: 0
+            };
+        });
+
+        periodFilteredInvoices.forEach(inv => {
+            let h = 12;
+            if (inv.timestamp) {
+                h = new Date(inv.timestamp).getHours();
+            } else if ((inv as any).time) {
+                const parts = String((inv as any).time).split(':');
+                h = parseInt(parts[0], 10);
+            }
+            if (h >= 0 && h < 24) {
+                hours[h].count += 1;
+                hours[h].total += (inv.total || 0);
+            }
+        });
+
+        const maxCount = Math.max(1, ...hours.map(h => h.count));
+        const activeHours = hours.filter(h => h.count > 0);
+        const peakHour = hours.reduce((max, h) => (h.count > max.count ? h : max), hours[0]);
+        const totalVisits = hours.reduce((acc, h) => acc + h.count, 0);
+
+        return { hours, maxCount, peakHour, totalVisits, activeHoursCount: activeHours.length };
+    }, [periodFilteredInvoices, language]);
 
     const profitMargin = totalRevenue > 0 ? Math.round((accrualNetProfit / totalRevenue) * 100) : 0;
     const lowStockCount = useMemo(() => (state.items || []).filter(i => i.type === 'product' && i.trackStock && (i.quantity <= (i.alertThreshold || 5))).length, [state.items]);
@@ -1277,25 +1314,132 @@ export const Dashboard = ({ onNavigate, showStats, onOpenTour }: { onNavigate: (
 
             {/* 4. قسم الرسم البياني + الفواتير الأخيرة */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* الرسم البياني لمبيعات الفترة المحددة */}
-                <Card className="lg:col-span-2 relative overflow-hidden">
-                    <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-                        <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
-                            <div className="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-xl text-primary-600 dark:text-primary-400">
-                                <TrendingUp size={20}/>
+                {/* الرسم البياني لمبيعات الفترة المحددة وخريطة ساعات الذروة */}
+                <Card className="lg:col-span-2 relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                        <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
+                            <div className="flex items-center gap-3">
+                                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
+                                    <div className="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-xl text-primary-600 dark:text-primary-400">
+                                        {chartSubView === 'chart' ? <TrendingUp size={20}/> : <Clock size={20}/>}
+                                    </div>
+                                    <span>
+                                        {chartSubView === 'chart' 
+                                            ? `مبيعات ${rangeLabels.find(r => r.key === range)?.label}` 
+                                            : (language === 'ar' ? 'خريطة ساعات النشاط والذروة (Heatmap)' : 'Peak Hours Traffic Heatmap')}
+                                    </span>
+                                </h3>
+
+                                {/* Subview Switcher */}
+                                <div className="inline-flex items-center p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                                    <button
+                                        type="button"
+                                        onClick={() => setChartSubView('chart')}
+                                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                            chartSubView === 'chart'
+                                                ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-300 shadow-xs'
+                                                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                                        }`}
+                                    >
+                                        <span>📊 {language === 'ar' ? 'رسم بياني' : 'Chart'}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setChartSubView('heatmap')}
+                                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                            chartSubView === 'heatmap'
+                                                ? 'bg-white dark:bg-slate-700 text-amber-500 dark:text-amber-300 shadow-xs'
+                                                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                                        }`}
+                                    >
+                                        <span>🔥 {language === 'ar' ? 'ساعات الذروة' : 'Heatmap'}</span>
+                                    </button>
+                                </div>
                             </div>
-                            <span>مبيعات {rangeLabels.find(r => r.key === range)?.label}</span>
-                        </h3>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                                {language === 'ar' ? 'إجمالي مبيعات الفترة:' : 'Period Total:'}
-                            </span>
-                            <span className="text-xs font-black text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-2.5 py-1 rounded-lg border border-primary-200/50 dark:border-primary-800/50 font-mono">
-                                {totalRevenue.toLocaleString('en-US')} {t('egp')}
-                            </span>
+
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                                    {language === 'ar' ? 'إجمالي مبيعات الفترة:' : 'Period Total:'}
+                                </span>
+                                <span className="text-xs font-black text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-2.5 py-1 rounded-lg border border-primary-200/50 dark:border-primary-800/50 font-mono">
+                                    {totalRevenue.toLocaleString('en-US')} {t('egp')}
+                                </span>
+                            </div>
                         </div>
+
+                        {chartSubView === 'chart' ? (
+                            <SimpleBarChart data={chartData} />
+                        ) : (
+                            <div className="space-y-4 animate-fade-in">
+                                {/* Insights Header Banner */}
+                                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 flex flex-wrap items-center justify-between gap-3 text-xs">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold text-sm shrink-0">
+                                            🔥
+                                        </span>
+                                        <div>
+                                            <span className="font-extrabold text-slate-800 dark:text-slate-100 block">
+                                                {hourlyHeatmapData.peakHour.count > 0 ? (
+                                                    language === 'ar' 
+                                                        ? `ساعة الذروة القصوى: الساعة ${hourlyHeatmapData.peakHour.label} (${hourlyHeatmapData.peakHour.count} فاتورة — ${hourlyHeatmapData.peakHour.total.toLocaleString('en-US')} ج.م)`
+                                                        : `Peak Rush Hour: ${hourlyHeatmapData.peakHour.label} (${hourlyHeatmapData.peakHour.count} sales — ${hourlyHeatmapData.peakHour.total.toLocaleString('en-US')} EGP)`
+                                                ) : (
+                                                    language === 'ar' ? 'لا توجد حركة مبيعات مسجلة في هذه الفترة بعد' : 'No sales activity recorded for this period yet'
+                                                )}
+                                            </span>
+                                            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                                                {language === 'ar' ? 'توصية للموارد البشرية: زيادة موظفي الكاشير والخدمة خلال ساعات الذروة لتسريع خدمة العملاء' : 'HR Insight: Allocate more staff during peak rush hours for faster service'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                                        <span>{language === 'ar' ? 'إجمالي المعاملات:' : 'Total:'} <strong className="text-slate-900 dark:text-white font-bold">{hourlyHeatmapData.totalVisits}</strong></span>
+                                    </div>
+                                </div>
+
+                                {/* 24-Hours Heatmap Grid */}
+                                <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
+                                    {hourlyHeatmapData.hours.map(h => {
+                                        const ratio = hourlyHeatmapData.maxCount > 0 ? (h.count / hourlyHeatmapData.maxCount) : 0;
+                                        const isPeak = h.count > 0 && h.count === hourlyHeatmapData.peakHour.count;
+                                        
+                                        // Dynamic heat styles
+                                        let bgClass = 'bg-slate-50 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700/60 text-slate-400';
+                                        if (isPeak) {
+                                            bgClass = 'bg-gradient-to-tr from-amber-500/30 to-amber-500/15 border-amber-500/50 text-amber-500 dark:text-amber-300 ring-1 ring-amber-500/40 shadow-xs';
+                                        } else if (ratio > 0.6) {
+                                            bgClass = 'bg-amber-500/20 dark:bg-amber-500/25 border-amber-500/40 text-amber-600 dark:text-amber-300';
+                                        } else if (ratio > 0.3) {
+                                            bgClass = 'bg-emerald-500/15 dark:bg-emerald-500/20 border-emerald-500/30 text-emerald-600 dark:text-emerald-300';
+                                        } else if (h.count > 0) {
+                                            bgClass = 'bg-blue-500/10 dark:bg-blue-500/15 border-blue-500/25 text-blue-600 dark:text-blue-300';
+                                        }
+
+                                        return (
+                                            <div
+                                                key={h.hour}
+                                                className={`p-2.5 rounded-xl border flex flex-col items-center justify-between text-center transition-all hover:scale-105 cursor-default relative group ${bgClass}`}
+                                                title={`${h.label}: ${h.count} ${language === 'ar' ? 'فاتورة' : 'sales'} (${h.total.toLocaleString('en-US')} ج.م)`}
+                                            >
+                                                {isPeak && (
+                                                    <span className="absolute -top-1.5 -end-1 text-[10px]">🔥</span>
+                                                )}
+                                                <span className="text-[11px] font-bold block mb-1">
+                                                    {h.label}
+                                                </span>
+                                                <span className={`text-base font-black font-mono leading-none ${h.count > 0 ? 'text-slate-900 dark:text-white' : 'text-slate-300 dark:text-slate-600'}`}>
+                                                    {h.count}
+                                                </span>
+                                                <span className="text-[9px] font-mono mt-1 text-slate-500 dark:text-slate-400 block truncate max-w-full">
+                                                    {h.total > 0 ? `${Math.round(h.total)} ج.م` : '—'}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
-                    <SimpleBarChart data={chartData} />
                 </Card>
                 
                 {/* الفواتير الأخيرة في الفترة */}
