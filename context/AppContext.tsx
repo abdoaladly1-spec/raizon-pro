@@ -9,7 +9,7 @@ import {
 import { validateReturn, reversedPointsFor, commissionReversalPlan } from '../lib/returns';
 import { round2, PAYMENT_KINDS } from '../lib/payments';
 import {
-  pushInvoiceToSupabase, pushCustomerToSupabase, pushBranchToSupabase,
+  pushInvoiceToSupabase, pushCustomerToSupabase, pushBranchToSupabase, deleteBranchFromSupabase,
   subscribeSupabaseRealtime, pullFromSupabase
 } from '../lib/supabaseSync';
 import { toIsoDate } from '../lib/dates';
@@ -2053,8 +2053,9 @@ export const AppProvider = ({ children }: any) => {
       };
   }, []);
 
-  // اشتراك لحظي في سحابة Supabase لتلقي أي فواتير أو تعديلات من الفروع الأخرى
+  // اشتراك لحظي في سحابة Supabase لتلقي أي فواتير أو تعديلات من الفروع الأخرى (فقط إذا أعد المستخدم سوبابيس)
   useEffect(() => {
+    if (!state.settings.supabaseUrl) return;
     const unsub = subscribeSupabaseRealtime({
       onNewInvoice: (inv) => {
         if (!inv || !inv.invoice_number) return;
@@ -2096,7 +2097,18 @@ export const AppProvider = ({ children }: any) => {
           )
         }));
       },
-      onBranchChange: (branch) => {
+      onBranchChange: (branch, eventType, oldRecord) => {
+        if (eventType === 'DELETE' || (!branch && oldRecord?.id)) {
+          const targetId = String(branch?.id || oldRecord?.id);
+          setState(prev => {
+            const remaining = prev.locations.filter(l => String(l.id) !== targetId);
+            return {
+              ...prev,
+              locations: remaining.length > 0 ? remaining : initialLocations
+            };
+          });
+          return;
+        }
         if (!branch || !branch.id) return;
         setState(prev => {
           if (!prev.locations.some(l => String(l.id) === String(branch.id))) {
@@ -2639,7 +2651,20 @@ export const AppProvider = ({ children }: any) => {
   };
 
   const deleteLocation = (id: string) => {
-    setState(prev => ({ ...prev, locations: prev.locations.filter(l => l.id !== id) }));
+    setState(prev => {
+      const remaining = prev.locations.filter(l => l.id !== id);
+      const newLocations = remaining.length > 0 ? remaining : initialLocations;
+      const newCurrent = prev.settings.currentLocationId === id ? (newLocations[0]?.id || '1') : prev.settings.currentLocationId;
+      return {
+        ...prev,
+        locations: newLocations,
+        settings: {
+          ...prev.settings,
+          currentLocationId: newCurrent,
+        }
+      };
+    });
+    void deleteBranchFromSupabase(id, state.settings.supabaseUrl, state.settings.supabaseKey);
   };
 
   const addSupplier = (supplier: Supplier) => {
@@ -3467,6 +3492,14 @@ export const AppProvider = ({ children }: any) => {
   };
 
   const resetSystem = () => {
+    // حذف أي فروع إضافية من السحابة إذا كانت متصلة وإرجاعها للفرع الرئيسي فقط
+    try {
+      const extraBranches = (state?.locations || []).filter(l => String(l.id) !== '1');
+      for (const b of extraBranches) {
+        void deleteBranchFromSupabase(b.id, state?.settings?.supabaseUrl, state?.settings?.supabaseKey);
+      }
+    } catch {}
+
     localStorage.removeItem('appState');
     localStorage.removeItem('procashier_sync_status');
     localStorage.removeItem('procashier_sync_queue');
@@ -3477,6 +3510,16 @@ export const AppProvider = ({ children }: any) => {
     localStorage.removeItem('pro_staff_tools_v1');
     localStorage.removeItem('closing_include_debts');
     localStorage.removeItem('report_print_size');
+
+    // مسح مفاتيح الجلسة الخاصة باختيار الفروع
+    try {
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const k = sessionStorage.key(i);
+        if (k && (k.startsWith('admin_branch_selected_') || k.includes('branch'))) {
+          sessionStorage.removeItem(k);
+        }
+      }
+    } catch {}
 
     // مسح شامل لأي مفاتيح مسودات أو فواتير مؤقتة متبقية في المتصفح
     try {

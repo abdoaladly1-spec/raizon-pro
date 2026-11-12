@@ -121,6 +121,19 @@ export const pushBranchToSupabase = async (branch: any, url?: string, key?: stri
   }
 };
 
+/** حذف فرع من سحابة Supabase */
+export const deleteBranchFromSupabase = async (branchId: string, url?: string, key?: string) => {
+  try {
+    const client = getSupabaseClient(url, key);
+    const { error } = await client.from('branches').delete().eq('id', String(branchId));
+    if (error) console.warn('[Supabase Branch Delete Error]', error.message);
+    return { ok: !error };
+  } catch (e: any) {
+    console.warn('[Supabase Branch Delete Exception]', e);
+    return { ok: false };
+  }
+};
+
 /** سحب كافة البيانات الحديثة من السحابة */
 export const pullFromSupabase = async (url?: string, key?: string) => {
   try {
@@ -146,7 +159,7 @@ export const subscribeSupabaseRealtime = (
   callbacks: {
     onNewInvoice?: (invoice: any) => void;
     onCustomerChange?: (customer: any) => void;
-    onBranchChange?: (branch: any) => void;
+    onBranchChange?: (branch: any, eventType?: string, oldRecord?: any) => void;
   },
   url?: string,
   key?: string
@@ -160,7 +173,7 @@ export const subscribeSupabaseRealtime = (
       callbacks.onCustomerChange?.(payload.new);
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'branches' }, payload => {
-      callbacks.onBranchChange?.(payload.new);
+      callbacks.onBranchChange?.(payload.new, payload.eventType, payload.old);
     })
     .subscribe();
 

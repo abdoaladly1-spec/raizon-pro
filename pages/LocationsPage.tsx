@@ -15,11 +15,12 @@ export const LocationsPage = () => {
     const [isSyncing, setIsSyncing] = useState(false);
     const [locationToDelete, setLocationToDelete] = useState<Location | null>(null);
 
-    // تحديث وتزامن تلقائي للفروع بمجرد فتح الصفحة
+    // تحديث وتزامن تلقائي للفروع بمجرد فتح الصفحة (فقط إذا كان المستخدم قد أعد بيانات الربط السحابي)
     useEffect(() => {
         let mounted = true;
         const autoSync = async () => {
             try {
+                if (!state.settings.supabaseUrl) return;
                 const pulled = await pullFromSupabase(state.settings.supabaseUrl, state.settings.supabaseKey);
                 if (mounted && pulled.ok && pulled.branches && pulled.branches.length > 0) {
                     for (const remoteBranch of pulled.branches) {
@@ -40,7 +41,7 @@ export const LocationsPage = () => {
         };
         autoSync();
         return () => { mounted = false; };
-    }, []);
+    }, [state.settings.supabaseUrl, state.settings.supabaseKey]);
 
     const handleManualSync = async () => {
         setIsSyncing(true);
