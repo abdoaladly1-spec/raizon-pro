@@ -38,10 +38,27 @@ export const useLiveTick = (ms: number = 5000) => {
 
 // --- Reusable UI Components ---
 export const Card = ({ children, className = "" }: any) => (
-  <div className={`bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl p-5 card-hover ${className}`}>
+  <div className={`bg-white dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/70 rounded-2xl p-5 card-hover shadow-xs transition-all duration-200 ${className}`}>
     {children}
   </div>
 );
+
+export const Badge = ({ children, variant = "default", className = "" }: { children: React.ReactNode, variant?: "default" | "success" | "danger" | "warning" | "info" | "primary" | "neutral", className?: string }) => {
+  const badgeStyles = {
+    default: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700",
+    success: "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30",
+    danger: "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-500/30",
+    warning: "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30",
+    info: "bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-500/30",
+    primary: "bg-primary-50 dark:bg-primary-950/60 text-primary-700 dark:text-primary-300 border-primary-200 dark:border-primary-500/30",
+    neutral: "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600"
+  };
+  return (
+    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border transition-colors ${badgeStyles[variant] || badgeStyles.default} ${className}`}>
+      {children}
+    </span>
+  );
+};
 
 export const Button = ({ children, variant = "primary", className = "", ...props }: any) => {
   const variants = {
@@ -154,32 +171,32 @@ export const Input = ({ label, error, validationRegex, onEnter, endAdornment, co
 export const ToastContainer = () => {
   const { toasts, removeToast } = useApp();
   return (
-    <div className="fixed bottom-4 end-4 z-[100] flex flex-col gap-2 pointer-events-none">
+    <div className="fixed bottom-4 end-4 z-[100] flex flex-col gap-2.5 pointer-events-none max-w-sm w-full">
       {toasts.map(toast => (
-        <div key={toast.id} className={`pointer-events-auto min-w-[300px] p-4 rounded-xl shadow-lg border backdrop-blur-md animate-fade-in-up flex items-center justify-between gap-3
-          ${toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 
-            toast.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-500' : 
-            'bg-blue-500/10 border-blue-500/20 text-blue-500'}`}
+        <div key={toast.id} className={`pointer-events-auto p-4 rounded-2xl shadow-xl border backdrop-blur-md animate-fade-in-up flex items-center justify-between gap-3 transition-all duration-200
+          ${toast.type === 'success' ? 'bg-white/95 dark:bg-slate-900/95 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 shadow-emerald-500/5' : 
+            toast.type === 'error' ? 'bg-white/95 dark:bg-slate-900/95 border-rose-500/40 text-rose-700 dark:text-rose-300 shadow-rose-500/5' : 
+            'bg-white/95 dark:bg-slate-900/95 border-primary-500/40 text-primary-700 dark:text-primary-300 shadow-primary-500/5'}`}
         >
-          <div className="flex items-center gap-2">
-            {toast.type === 'success' ? <div className="p-1 rounded-full bg-emerald-500/20"><Check size={16} /></div> :
-             toast.type === 'error' ? <div className="p-1 rounded-full bg-red-500/20"><AlertCircle size={16} /></div> :
-             <div className="p-1 rounded-full bg-blue-500/20"><Info size={16} /></div>}
-            <span className="font-medium">{toast.message}</span>
+          <div className="flex items-center gap-3 min-w-0">
+            {toast.type === 'success' ? <div className="p-1.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0"><Check size={18} /></div> :
+             toast.type === 'error' ? <div className="p-1.5 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 shrink-0"><AlertCircle size={18} /></div> :
+             <div className="p-1.5 rounded-xl bg-primary-500/15 text-primary-600 dark:text-primary-400 shrink-0"><Info size={18} /></div>}
+            <span className="font-bold text-xs text-slate-800 dark:text-slate-100 leading-snug truncate">{toast.message}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             {toast.action && (
                 <button 
                     onClick={() => {
                         toast.action?.onClick();
                         removeToast(toast.id);
                     }}
-                    className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded transition-colors font-bold uppercase tracking-wider"
+                    className="text-xs bg-primary-500/15 hover:bg-primary-500/25 text-primary-700 dark:text-primary-300 px-2.5 py-1 rounded-lg transition-colors font-bold cursor-pointer"
                 >
                     {toast.action.label}
                 </button>
             )}
-            <button onClick={() => removeToast(toast.id)} className="hover:bg-black/10 p-1 rounded"><X size={16}/></button>
+            <button onClick={() => removeToast(toast.id)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"><X size={15}/></button>
           </div>
         </div>
       ))}
@@ -244,15 +261,15 @@ export const SimpleBarChart = ({ data, color = "#0ea5e9" }: { data: { label: str
 
 // --- EmptyState Component ---
 export const EmptyState = ({ icon: Icon, title, description, action }: { icon?: any; title: string; description?: string; action?: React.ReactNode }) => (
-  <div className="flex flex-col items-center justify-center py-12 text-center gap-2">
+  <div className="flex flex-col items-center justify-center py-16 px-4 text-center animate-fade-in">
     {Icon && (
-      <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700/60 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-1">
-        <Icon size={24} />
+      <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200/60 dark:from-slate-800 dark:to-slate-700/50 border border-slate-200 dark:border-slate-700/80 flex items-center justify-center text-slate-400 dark:text-slate-400 mb-3.5 shadow-xs">
+        <Icon size={30} strokeWidth={1.75} />
       </div>
     )}
-    <p className="text-slate-700 dark:text-slate-200 font-semibold text-sm">{title}</p>
-    {description && <p className="text-slate-400 dark:text-slate-500 text-xs max-w-xs">{description}</p>}
-    {action && <div className="mt-2">{action}</div>}
+    <h4 className="text-slate-800 dark:text-slate-100 font-extrabold text-base mb-1">{title}</h4>
+    {description && <p className="text-slate-500 dark:text-slate-400 text-xs max-w-sm leading-relaxed">{description}</p>}
+    {action && <div className="mt-4">{action}</div>}
   </div>
 );
 
