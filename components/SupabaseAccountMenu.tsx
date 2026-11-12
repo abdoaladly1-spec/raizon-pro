@@ -5,7 +5,6 @@ import {
   getCloudAccount, 
   clearCloudAccount, 
   getConnectedDevicesCount, 
-  getConnectedDevicesList,
   subscribeDevicesCount, 
   getLastSyncTimestamp,
   subscribeLastSync,
@@ -13,18 +12,16 @@ import {
 } from '../lib/supabaseSync';
 import { verifySecret } from '../lib/crypto';
 import { 
-  Cloud, 
   Smartphone, 
   RefreshCw, 
   LogOut, 
   ChevronDown, 
-  ShieldAlert, 
   Building, 
   Lock, 
   Eye, 
   EyeOff, 
   X,
-  Sparkles
+  User
 } from './Icons';
 
 interface Props {
@@ -50,7 +47,6 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
 
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // تحديث بيانات الحساب والاشتراك في الـ Presence و الـ Sync
   useEffect(() => {
     const checkAccount = () => {
       setAccount(getCloudAccount());
@@ -78,7 +74,7 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
     const updateRelativeTime = () => {
       const diffSec = Math.max(0, Math.floor((Date.now() - lastSyncTs) / 1000));
       if (diffSec < 15) {
-        setTimeAgo('الآن (لحظي)');
+        setTimeAgo('الآن');
       } else if (diffSec < 60) {
         setTimeAgo(`منذ ${diffSec} ثانية`);
       } else if (diffSec < 3600) {
@@ -95,7 +91,6 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
     return () => clearInterval(interval);
   }, [lastSyncTs]);
 
-  // إغلاق القائمة عند النقر خارجها
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -114,7 +109,6 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
     l => String(l.id) === String(state.settings?.currentLocationId || account?.branchId)
   )?.name || account?.branchName || 'الفرع الرئيسي';
 
-  // معالجة بدء تسجيل الخروج
   const handleStartLogout = () => {
     setIsOpen(false);
     setLogoutStep('confirm');
@@ -123,19 +117,17 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
     setShowLogoutModal(true);
   };
 
-  // تأكيد الانتقال لمرحلة إدخال كلمة المرور
   const handleProceedToPassword = () => {
     setLogoutStep('password');
     setPasswordInput('');
     setErrorMessage('');
   };
 
-  // التحقق من كلمة مرور المدير وإتمام الخروج
   const handleVerifyAndLogout = async (e: React.FormEvent) => {
     e.preventDefault();
     const entered = passwordInput.trim();
     if (!entered) {
-      setErrorMessage('يرجى إدخال كلمة المرور');
+      setErrorMessage(language === 'ar' ? 'يرجى إدخال كلمة المرور' : 'Please enter password');
       return;
     }
 
@@ -150,7 +142,7 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
         isAuthorized = true;
       }
 
-      // 2. أو التحقق من أي مستخدم مدير في النظام (admin role)
+      // 2. التحقق من أي حساب مدير
       if (!isAuthorized) {
         const adminUsers = state.users.filter(u => u.role === 'admin' && u.active);
         for (const admin of adminUsers) {
@@ -168,44 +160,40 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
         }
       }
 
-      // كلمة مرور افتراضية للطوارئ في حال كان حساب جديد
       if (!isAuthorized && entered === 'admin') {
         const hasAdminUser = state.users.some(u => u.username === 'admin');
         if (hasAdminUser) isAuthorized = true;
       }
 
       if (!isAuthorized) {
-        setErrorMessage('كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى.');
+        setErrorMessage(language === 'ar' ? 'كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى.' : 'Incorrect password');
         setIsVerifying(false);
         return;
       }
 
-      // إتمام الخروج بنجاح
       clearCloudAccount();
       setAccount(null);
       setShowLogoutModal(false);
       addAuditLog(
         'Security',
         `Cloud account ${account?.username || ''} logged out`,
-        `تسجيل خروج وفك ارتباط الجهاز بالحساب السحابي والفرع بنجاح`
+        `تسجيل خروج وفك ارتباط الجهاز بالحساب السحابي والفرع`
       );
-      addToast(language === 'ar' ? 'تم تسجيل الخروج وفك ارتباط السحابة بنجاح' : 'Cloud account logged out successfully', 'success');
-      
-      // فتح شاشة الإعداد والربط من جديد
+      addToast(language === 'ar' ? 'تم تسجيل الخروج بنجاح' : 'Logged out successfully', 'success');
       onOpenOnboarding();
     } catch (err: any) {
-      setErrorMessage(err.message || 'حدث خطأ في التحقق من الصلاحيات');
+      setErrorMessage(err.message || 'خطأ في التحقق');
     } finally {
       setIsVerifying(false);
     }
   };
 
-  const usernameDisplay = account?.username || 'سحابة الفروع';
+  const usernameDisplay = account?.username || 'ربط السحابة';
 
   return (
     <div className="relative inline-block" ref={menuRef} dir="rtl">
       
-      {/* زر البروفايل والحساب السحابي (يظهر على اليسار) */}
+      {/* زر البروفايل في الهيدر */}
       <button
         type="button"
         onClick={() => {
@@ -215,130 +203,92 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
             setIsOpen(!isOpen);
           }
         }}
-        className="flex items-center gap-2 px-2.5 py-1.5 rounded-2xl bg-gradient-to-r from-slate-800/90 to-slate-900/90 hover:from-slate-700 hover:to-slate-800 border border-slate-700/80 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-95 group"
-        title="إدارة الحساب السحابي وربط الفروع"
+        className="flex items-center gap-2 px-2.5 h-9 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-200 text-xs font-semibold transition-all cursor-pointer"
+        title="إدارة الحساب والفرع"
       >
-        {/* صورة البروفايل السحابية مع حلقة مضيئة */}
-        <div className="relative">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-xs shadow-md shadow-indigo-500/30 overflow-hidden shrink-0 border border-white/20">
-            {account ? (
-              <span className="uppercase">{usernameDisplay.substring(0, 2)}</span>
-            ) : (
-              <Cloud size={16} className="text-white" />
-            )}
+        <div className="relative flex items-center justify-center">
+          <div className="w-6 h-6 rounded-lg bg-slate-700 flex items-center justify-center text-slate-200 font-bold text-[11px]">
+            {account ? usernameDisplay.substring(0, 2).toUpperCase() : <User size={13} />}
           </div>
-          {/* مؤشر الاتصال اللحظي الأخضر */}
           <span 
-            className="absolute -bottom-0.5 -end-0.5 w-2.5 h-2.5 bg-emerald-400 border-2 border-slate-900 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" 
-            title="متصل بالسحابة اللحظية"
+            className="absolute -bottom-0.5 -end-0.5 w-2 h-2 bg-emerald-500 rounded-full" 
+            title="متصل"
           />
         </div>
 
-        {/* اسم الحساب والفرع */}
-        <div className="text-right hidden md:block leading-tight">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-black text-slate-100 group-hover:text-white max-w-[110px] truncate">
-              {usernameDisplay}
-            </span>
-          </div>
-          <div className="flex items-center gap-1 text-[10px] text-sky-400 font-bold">
-            <Building size={10} className="shrink-0" />
-            <span className="max-w-[100px] truncate">{activeBranchName}</span>
-          </div>
+        <div className="text-right hidden sm:block leading-tight">
+          <span className="text-xs font-bold text-slate-200 block max-w-[100px] truncate">
+            {usernameDisplay}
+          </span>
+          <span className="text-[10px] text-slate-400 block max-w-[100px] truncate">
+            {activeBranchName}
+          </span>
         </div>
 
         <ChevronDown 
-          size={13} 
-          className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+          size={12} 
+          className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
         />
       </button>
 
-      {/* القائمة المنسدلة عند الضغط */}
+      {/* القائمة المنسدلة الهادئة */}
       {isOpen && account && (
-        <div className="absolute top-full mt-2 end-0 w-80 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-3xl shadow-2xl p-4 z-50 animate-scale-in text-right text-slate-100">
+        <div className="absolute top-full mt-2 end-0 w-72 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-3 z-50 animate-scale-in text-right text-slate-200">
           
-          {/* رأس القائمة */}
-          <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-sm shadow-md border border-white/20 shrink-0">
-              <span className="uppercase">{usernameDisplay.substring(0, 2)}</span>
+          <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-800">
+            <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-white font-bold text-xs shrink-0">
+              {usernameDisplay.substring(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <h4 className="text-sm font-black text-white truncate">{usernameDisplay}</h4>
-                <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-400 text-[9px] font-bold border border-emerald-500/30">
-                  متصل
-                </span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white truncate">{usernameDisplay}</span>
+                <span className="text-[10px] text-emerald-400 font-semibold">متصل</span>
               </div>
-              <p className="text-[11px] text-slate-400 truncate mt-0.5">
-                {account.deviceName || 'جهاز الكاشير الرئيسي'}
-              </p>
+              <span className="text-[11px] text-slate-400 truncate block mt-0.5">
+                {account.deviceName || 'كاشير 1'}
+              </span>
             </div>
           </div>
 
-          {/* بطاقات البيانات المطلوبة: عدد الأجهزة المتصلة + آخر مزامنة */}
-          <div className="py-3 space-y-2.5">
-            
-            {/* 1. عدد الأجهزة المتصلة */}
-            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-800/60 border border-slate-700/60">
-              <div className="flex items-center gap-2.5">
-                <span className="p-2 rounded-xl bg-sky-500/15 text-sky-400">
-                  <Smartphone size={16} />
-                </span>
-                <div>
-                  <span className="text-xs font-bold text-slate-300 block">الأجهزة المتصلة الآن</span>
-                  <span className="text-[10px] text-slate-400">على هذا الحساب السحابي</span>
-                </div>
-              </div>
-              <div className="text-left">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-sky-500/20 text-sky-300 text-xs font-black border border-sky-500/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
-                  {devicesCount} {devicesCount === 1 ? 'جهاز' : 'أجهزة'}
-                </span>
-              </div>
+          <div className="py-2.5 space-y-2 text-xs">
+            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/60">
+              <span className="text-slate-400 flex items-center gap-1.5">
+                <Smartphone size={14} className="text-slate-400" />
+                <span>الأجهزة المتصلة:</span>
+              </span>
+              <span className="font-bold text-slate-200">
+                {devicesCount} {devicesCount === 1 ? 'جهاز' : 'أجهزة'}
+              </span>
             </div>
 
-            {/* 2. آخر مزامنة */}
-            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-800/60 border border-slate-700/60">
-              <div className="flex items-center gap-2.5">
-                <span className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400">
-                  <RefreshCw size={16} />
-                </span>
-                <div>
-                  <span className="text-xs font-bold text-slate-300 block">آخر مزامنة لحظية</span>
-                  <span className="text-[10px] text-slate-400">تحديث فوري تلقائي</span>
-                </div>
-              </div>
-              <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/60">
+              <span className="text-slate-400 flex items-center gap-1.5">
+                <RefreshCw size={14} className="text-slate-400" />
+                <span>آخر مزامنة:</span>
+              </span>
+              <span className="font-bold text-slate-200">
                 {timeAgo}
               </span>
             </div>
 
-            {/* 3. الفرع المرتبط به هذا الجهاز */}
-            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-800/60 border border-slate-700/60">
-              <div className="flex items-center gap-2.5">
-                <span className="p-2 rounded-xl bg-purple-500/15 text-purple-400">
-                  <Building size={16} />
-                </span>
-                <div>
-                  <span className="text-xs font-bold text-slate-300 block">فرع هذا الجهاز</span>
-                  <span className="text-[10px] text-slate-400">فصل تام لكافة العمليات</span>
-                </div>
-              </div>
-              <span className="text-xs font-black text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-lg border border-purple-500/20">
+            <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/60">
+              <span className="text-slate-400 flex items-center gap-1.5">
+                <Building size={14} className="text-slate-400" />
+                <span>الفرع:</span>
+              </span>
+              <span className="font-bold text-slate-200">
                 {activeBranchName}
               </span>
             </div>
-
           </div>
 
-          {/* زر تسجيل الخروج */}
           <div className="pt-2 border-t border-slate-800">
             <button
               type="button"
               onClick={handleStartLogout}
-              className="w-full py-2.5 px-3 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/20 font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+              className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
-              <LogOut size={14} />
+              <LogOut size={13} />
               <span>تسجيل الخروج من الحساب</span>
             </button>
           </div>
@@ -346,48 +296,43 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
         </div>
       )}
 
-      {/* نافذة تأكيد وتسجيل الخروج بكلمة المرور (المرحلتين المطلوبة) */}
+      {/* نافذة تأكيد وتسجيل الخروج بكلمة المرور */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in" dir="rtl">
-          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-right text-slate-100 animate-scale-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in" dir="rtl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative text-right text-slate-200">
             
-            {/* زر الإغلاق السريع */}
             <button
               type="button"
               onClick={() => setShowLogoutModal(false)}
-              className="absolute top-4 start-4 p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="absolute top-4 start-4 p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
-              <X size={18} />
+              <X size={16} />
             </button>
 
             {/* المرحلة الأولى: تأكيد وإلغاء */}
             {logoutStep === 'confirm' && (
               <div className="space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-2 border border-rose-500/30">
-                  <ShieldAlert size={26} />
-                </div>
-                
-                <div className="text-center">
-                  <h3 className="text-lg font-black text-white">
-                    تأكيد تسجيل الخروج من الحساب السحابي
+                <div className="text-center pt-2">
+                  <h3 className="text-base font-bold text-white">
+                    تسجيل الخروج من الحساب
                   </h3>
                   <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                    هل أنت متأكد من رغبتك في تسجيل الخروج وفك ارتباط هذا الجهاز بفرع «{activeBranchName}» والسحابة؟
+                    هل تريد تسجيل الخروج وفك ارتباط هذا الجهاز بفرع «{activeBranchName}»؟
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="grid grid-cols-2 gap-2 pt-2">
                   <button
                     type="button"
                     onClick={handleProceedToPassword}
-                    className="h-11 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs transition-all shadow-lg shadow-rose-600/20 cursor-pointer active:scale-95"
+                    className="h-10 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-colors cursor-pointer"
                   >
                     تأكيد
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowLogoutModal(false)}
-                    className="h-11 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-all border border-slate-700 cursor-pointer"
+                    className="h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-colors cursor-pointer border border-slate-700"
                   >
                     إلغاء
                   </button>
@@ -397,30 +342,25 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
 
             {/* المرحلة الثانية: طلب كلمة مرور المدير بالنص المطلوب تماماً */}
             {logoutStep === 'password' && (
-              <form onSubmit={handleVerifyAndLogout} className="space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-2 border border-amber-500/30">
-                  <Lock size={26} />
-                </div>
-
+              <form onSubmit={handleVerifyAndLogout} className="space-y-3.5 pt-1">
                 <div className="text-center">
-                  <h3 className="text-base font-black text-white">
-                    التحقق الأمني للمدير
+                  <h3 className="text-sm font-bold text-white">
+                    التحقق من المدير
                   </h3>
-                  {/* النص المطلوب في السؤال حرفياً: */}
-                  <p className="text-xs font-bold text-amber-300/90 mt-2 leading-relaxed bg-amber-950/40 p-3 rounded-2xl border border-amber-500/30">
+                  <p className="text-xs text-amber-300 font-semibold mt-2 bg-amber-950/40 p-2.5 rounded-xl border border-amber-500/30">
                     نود التحقق قبل تسجيل الخروج من انك المدير يرجي ادخال كلمه مرور هذا الحساب
                   </p>
                 </div>
 
                 {errorMessage && (
-                  <div className="p-2.5 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs font-bold text-center">
+                  <div className="p-2 rounded-lg bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs text-center font-medium">
                     {errorMessage}
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-black text-slate-300 mb-1.5">
-                    كلمة مرور الحساب / المدير
+                  <label className="block text-xs text-slate-300 mb-1 font-medium">
+                    كلمة المرور
                   </label>
                   <div className="relative">
                     <input
@@ -430,7 +370,7 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
                       value={passwordInput}
                       onChange={(e) => setPasswordInput(e.target.value)}
                       placeholder="أدخل كلمة المرور..."
-                      className="w-full h-11 px-3.5 pe-10 rounded-xl bg-slate-800 border border-slate-700 text-sm font-bold text-white focus:outline-none focus:border-amber-500 transition-all text-left dir-ltr"
+                      className="w-full h-10 px-3 pe-10 rounded-xl bg-slate-800 border border-slate-700 text-sm font-semibold text-white focus:outline-none focus:border-primary-500 transition-all text-left dir-ltr"
                     />
                     <button
                       type="button"
@@ -442,18 +382,18 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
                     type="submit"
                     disabled={isVerifying}
-                    className="h-11 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-black text-xs transition-all shadow-lg cursor-pointer active:scale-95 disabled:opacity-50"
+                    className="h-10 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
                   >
-                    {isVerifying ? 'جاري التحقق...' : 'تحقق وتسجيل الخروج'}
+                    {isVerifying ? 'جاري التحقق...' : 'تأكيد الخروج'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowLogoutModal(false)}
-                    className="h-11 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-all border border-slate-700 cursor-pointer"
+                    className="h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-colors cursor-pointer border border-slate-700"
                   >
                     إلغاء
                   </button>
