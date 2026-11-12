@@ -76,7 +76,7 @@ export const CreateInvoice = ({ onClose }: any) => {
     if (e) e.preventDefault();
     const trimmed = newBarberName.trim();
     if (!trimmed) {
-      addToast(language === 'ar' ? 'يرجى كتابة اسم الحلاق' : 'Please enter barber name', 'error');
+      addToast(language === 'ar' ? 'يرجى كتابة اسم الموظف أو مقدم الخدمة' : 'Please enter staff name', 'error');
       return;
     }
     const newId = String(Date.now());
@@ -93,7 +93,7 @@ export const CreateInvoice = ({ onClose }: any) => {
       dailyRate: newBarberCommissionType === 'daily' ? commVal : undefined,
     });
     setSelectedStaffId(newId);
-    addToast(language === 'ar' ? `تم إضافة الحلاق "${trimmed}" وتحديده بنجاح` : `Barber "${trimmed}" added and selected`, 'success');
+    addToast(language === 'ar' ? `تم إضافة الموظف "${trimmed}" وتحديده بنجاح` : `Staff "${trimmed}" added and selected`, 'success');
     setNewBarberName('');
     setNewBarberPhone('');
     setNewBarberCommissionType('none');
@@ -1508,45 +1508,95 @@ export const CreateInvoice = ({ onClose }: any) => {
                     )}
                 </div>
              </Card>
-             <Card>
-                <h3 className="text-lg font-bold mb-4">{t('billing')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input
-                        id="pos-quick-discount-input"
-                        label={t('discount_percent')}
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={discountPercent}
-                        onChange={(e: any) => setDiscountPercent(parseFloat(e.target.value || 0))}
-                    />
-                    <Input
-                        label={t('tax_percent')}
-                        type="number"
-                        min="0"
-                        value={taxPercent}
-                        onChange={(e: any) => setTaxPercent(parseFloat(e.target.value || 0))}
-                    />
-                    <div className="flex flex-col justify-end gap-2">
-                        <div className="text-sm text-slate-600 dark:text-slate-300">{t('subtotal')}: <span className="font-bold">{subtotal.toLocaleString('en-US')} {t('egp')}</span></div>
-                        {existingCustomer && (existingCustomer.balance || 0) > 0 && (
-                            <div className="flex flex-col items-end gap-0.5">
-                                <div className="text-xs text-rose-500 font-bold">
-                                    {language === 'ar' ? 'مديونية سابقة:' : 'Prev Debt:'} {Number(existingCustomer.balance).toLocaleString('en-US')} ج.م
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                <div className="mt-4">
-                     <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">{t('barber')}</label>
+              <Card className="border border-slate-200/80 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5">
+                 {/* Card Header: Title on Right + Subtotal Badge on Left */} 
+                 <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100 dark:border-slate-800">
                      <div className="flex items-center gap-2">
+                         <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400 flex items-center justify-center">
+                             <FileText size={18} />
+                         </div>
+                         <div>
+                             <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                                 {language === 'ar' ? 'الفوترة وحساب الإجمالي' : t('billing')}
+                             </h3>
+                             <p className="text-[11px] text-slate-400">
+                                 {language === 'ar' ? 'الخصم، الضريبة، والموظف المسؤول عن الفاتورة' : 'Discounts, tax, and staff assignment'}
+                             </p>
+                         </div>
+                     </div>
+
+                     <div className="flex items-center gap-2">
+                         {existingCustomer && (existingCustomer.balance || 0) > 0 && (
+                             <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 text-xs font-bold">
+                                 <span>{language === 'ar' ? 'مديونية:' : 'Debt:'}</span>
+                                 <span className="font-mono">{Number(existingCustomer.balance).toLocaleString('en-US')} ج.م</span>
+                             </span>
+                         )}
+                         <div className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 flex items-baseline gap-1.5">
+                             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('subtotal')}:</span>
+                             <span className="font-mono font-black text-slate-900 dark:text-white text-sm">
+                                 {subtotal.toLocaleString('en-US')}
+                             </span>
+                             <span className="text-[11px] font-bold text-slate-400">{t('egp')}</span>
+                         </div>
+                     </div>
+                 </div>
+
+                 {/* Row 1: Discounts and Tax in 2 Clean Columns */} 
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-4">
+                     <div>
+                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                             {t('discount_percent')} (%)
+                         </label>
+                         <input
+                             id="pos-quick-discount-input"
+                             type="number"
+                             min="0"
+                             max="100"
+                             value={discountPercent || ''}
+                             onChange={(e) => setDiscountPercent(parseFloat(e.target.value) || 0)}
+                             placeholder="0"
+                             className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/60 text-slate-900 dark:text-slate-100 font-mono font-bold text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
+                         />
+                     </div>
+                     <div>
+                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                             {t('tax_percent')} (%)
+                         </label>
+                         <input
+                             type="number"
+                             min="0"
+                             value={taxPercent || ''}
+                             onChange={(e) => setTaxPercent(parseFloat(e.target.value) || 0)}
+                             placeholder="0"
+                             className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/60 text-slate-900 dark:text-slate-100 font-mono font-bold text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
+                         />
+                     </div>
+                 </div>
+
+                 {/* Row 2: Staff / Service Provider Selection with sleek Add button */} 
+                 <div className="mb-4">
+                     <div className="flex items-center justify-between mb-1.5">
+                         <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
+                             <User size={14} className="text-primary-500" />
+                             <span>{language === 'ar' ? 'الموظف / مقدم الخدمة' : 'Staff / Service Provider'}</span>
+                         </label>
+                         <button
+                             type="button"
+                             onClick={() => setShowQuickAddBarberModal(true)}
+                             className="inline-flex items-center gap-1 text-xs font-bold text-primary-600 hover:text-primary-700 dark:text-primary-400 hover:underline cursor-pointer transition-colors"
+                         >
+                             <Plus size={13} className="stroke-[2.5]" />
+                             <span>{language === 'ar' ? 'إضافة موظف جديد' : 'Add New Staff'}</span>
+                         </button>
+                     </div>
+                     <div className="relative">
                          <select 
-                             className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500 font-bold" 
+                             className="w-full px-3.5 py-2.5 pe-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-bold outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer transition-all shadow-2xs appearance-none" 
                              value={selectedStaffId} 
                              onChange={(e) => setSelectedStaffId(e.target.value)}
                          >
-                             <option value="">{t('select_barber')}</option>
+                             <option value="">{language === 'ar' ? '-- اختر الموظف / مقدم الخدمة --' : '-- Select Staff / Provider --'}</option>
                              {state.staff.filter(s => s.active).map(s => {
                                  const commText = s.commissionType === 'daily'
                                       ? ` [يومية: ${s.commissionValue || s.dailyRate || 0} ج.م]`
@@ -1560,28 +1610,26 @@ export const CreateInvoice = ({ onClose }: any) => {
                                  );
                              })}
                          </select>
-                         <button
-                             type="button"
-                             onClick={() => setShowQuickAddBarberModal(true)}
-                             className="px-3.5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
-                             title={language === 'ar' ? 'إضافة حلاق جديد سريعاً' : 'Quick Add Barber'}
-                         >
-                             <Plus size={16} className="stroke-[3]" />
-                             <span>{language === 'ar' ? 'أضف حلاق' : 'Add Barber'}</span>
-                         </button>
+                         <div className="absolute inset-y-0 end-0 pe-3 flex items-center pointer-events-none text-slate-400">
+                             <ChevronDown size={16} />
+                         </div>
                      </div>
-                </div>
-                <div className="mt-4">
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('notes')}</label>
-                    <textarea 
-                        className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500 outline-none transition-all duration-300 hover:border-slate-400 dark:hover:border-slate-500"
-                        rows={2}
-                        placeholder={t('ph_invoice_notes')}
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                    ></textarea>
-                </div>
-             </Card>
+                 </div>
+
+                 {/* Row 3: Notes */} 
+                 <div>
+                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                         {t('notes')} <span className="text-[11px] font-normal text-slate-400">({language === 'ar' ? 'اختياري' : 'optional'})</span>
+                     </label>
+                     <textarea 
+                         className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all placeholder:text-slate-400 resize-none"
+                         rows={2}
+                         placeholder={t('ph_invoice_notes')}
+                         value={notes}
+                         onChange={(e) => setNotes(e.target.value)}
+                     ></textarea>
+                 </div>
+              </Card>
         </div>
         
         <div className="lg:col-span-1 self-start sticky top-4">
@@ -2561,13 +2609,13 @@ export const CreateInvoice = ({ onClose }: any) => {
         {/* Quick Add Barber Modal — إضافة حلاق سريعاً واختياره مباشرة في الفاتورة */}
         {showQuickAddBarberModal && (
             <ModalShell
-                title={language === 'ar' ? 'إضافة حلاق جديد' : 'Add New Barber'}
+                title={language === 'ar' ? 'إضافة موظف جديد' : 'Add New Staff'}
                 onClose={() => setShowQuickAddBarberModal(false)}
                 maxWidth="max-w-md"
             >
                 <form onSubmit={handleCreateBarber} className="space-y-4 text-right" dir={language === 'ar' ? 'rtl' : 'ltr'}>
                     <Input 
-                        label={language === 'ar' ? 'اسم الحلاق (مطلوب)' : 'Barber Name (Required)'} 
+                        label={language === 'ar' ? 'اسم الموظف / مقدم الخدمة (مطلوب)' : 'Staff / Provider Name (Required)'} 
                         value={newBarberName} 
                         onChange={(e: any) => setNewBarberName(e.target.value)} 
                         required 
@@ -2669,7 +2717,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                     <div className="flex gap-3 pt-2">
                         <Button type="submit" variant="success" className="flex-1 justify-center py-2.5 font-bold">
                             <Plus size={15} />
-                            <span>{language === 'ar' ? 'حفظ واختيار الحلاق' : 'Save & Select'}</span>
+                            <span>{language === 'ar' ? 'حفظ واختيار الموظف' : 'Save & Select Staff'}</span>
                         </Button>
                         <Button type="button" variant="secondary" onClick={() => setShowQuickAddBarberModal(false)} className="flex-1 justify-center py-2.5 font-bold">
                             {t('cancel')}
