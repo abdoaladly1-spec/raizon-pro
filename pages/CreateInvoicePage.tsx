@@ -1613,18 +1613,11 @@ export const CreateInvoice = ({ onClose }: any) => {
                              {state.staff.filter(s => s.active).length === 0 ? (
                                  <option value="">{language === 'ar' ? 'لا يوجد حلاقين متاحين - اضغط أضف حلاق' : 'No staff available'}</option>
                              ) : (
-                                 state.staff.filter(s => s.active).map(s => {
-                                     const commText = s.commissionType === 'daily'
-                                          ? ` [يومية: ${s.commissionValue || s.dailyRate || 0} ج.م]`
-                                          : (Number(s.commissionValue) > 0 && s.commissionType !== 'none')
-                                              ? (s.commissionType === 'fixed' ? ` [عمولة: ${s.commissionValue} ج.م]` : ` [عمولة: ${s.commissionValue}%]`)
-                                              : ' [بدون عمولة]';
-                                     return (
-                                         <option key={s.id} value={s.id}>
-                                             {s.name}{commText}
-                                         </option>
-                                     );
-                                 })
+                                 state.staff.filter(s => s.active).map(s => (
+                                     <option key={s.id} value={s.id}>
+                                         {s.name}
+                                     </option>
+                                 ))
                              )}
                          </select>
                          <div className="absolute inset-y-0 end-0 pe-3 flex items-center pointer-events-none text-slate-400">
