@@ -1066,22 +1066,16 @@ export const CreateInvoice = ({ onClose }: any) => {
                      <span className="hidden sm:inline">{language === 'ar' ? 'اختصارات الكاشير السريعة:' : 'POS Hotkeys:'}</span>
                  </div>
                  <div className="flex flex-wrap items-center gap-2">
-                     <button
-                         type="button"
-                         onClick={() => {
-                             if (selectedItems.length > 0) {
-                                 setShowPaymentModal(true);
-                             } else {
-                                 addToast(language === 'ar' ? 'السلة فارغة، يرجى إضافة أصناف أولاً' : 'Cart is empty', 'warning');
-                             }
-                         }}
-                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-2xs"
-                         title="إتمام الدفع والحفظ فوراً (F8)"
-                     >
-                         <CreditCard size={14} className="text-emerald-600 dark:text-emerald-400" />
-                         <span>{language === 'ar' ? 'دفع وحفظ' : 'Checkout'}</span>
-                         <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 text-[10px] font-mono border border-emerald-500/40">F8</kbd>
-                     </button>
+                      <button
+                          type="button"
+                          onClick={() => triggerOpenCashDrawer()}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-2xs"
+                          title={language === 'ar' ? 'فتح درج النقدية يدوياً (F7)' : 'Open Cash Drawer (F7)'}
+                      >
+                          <Wallet size={14} className="text-amber-600 dark:text-amber-400" />
+                          <span>{language === 'ar' ? 'فتح الدرج' : 'Open Drawer'}</span>
+                          <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 text-[10px] font-mono border border-amber-500/40">F7</kbd>
+                      </button>
 
                      <button
                          type="button"
