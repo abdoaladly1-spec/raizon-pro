@@ -53,7 +53,7 @@ export const StaffPage = () => {
         services: [] as string[],
         locationIds: [] as string[],
         active: true,
-        commissionType: 'none' as 'none' | 'percent' | 'fixed',
+        commissionType: 'none' as 'none' | 'daily' | 'percent' | 'fixed',
         commissionValue: '' as string | number,
         nationalId: '',
         address: ''
@@ -227,7 +227,7 @@ export const StaffPage = () => {
             services: staff.services || [],
             locationIds: staff.locationIds || [],
             active: staff.active !== false,
-            commissionType: hasComm ? (staff.commissionType || 'percent') : 'none',
+            commissionType: (staff.commissionType || (hasComm ? 'percent' : 'none')) as any,
             commissionValue: hasComm ? staff.commissionValue! : '',
             nationalId: staff.nationalId || '',
             address: staff.address || ''
@@ -257,6 +257,7 @@ export const StaffPage = () => {
             active: staffForm.active,
             commissionType: staffForm.commissionType === 'none' ? undefined : staffForm.commissionType,
             commissionValue: commVal,
+            dailyRate: staffForm.commissionType === 'daily' ? commVal : undefined,
             nationalId: staffForm.nationalId?.trim(),
             address: staffForm.address?.trim()
         };
@@ -626,11 +627,13 @@ export const StaffPage = () => {
                                     )}
                                     <span>•</span>
                                     <span>
-                                        {Number(selectedStaff.commissionValue) > 0
-                                            ? (selectedStaff.commissionType === 'fixed'
-                                                ? `${isAr ? 'عمولة ثابتة:' : 'Commission:'} ${selectedStaff.commissionValue} ج.م / فاتورة`
-                                                : `${isAr ? 'عمولة نسبة:' : 'Commission:'} ${selectedStaff.commissionValue}% على الفاتورة`)
-                                            : (isAr ? 'راتب ثابت (بدون عمولة مبيعات)' : 'Fixed Salary (No Commission)')}
+                                        {selectedStaff.commissionType === 'daily'
+                                            ? `${isAr ? 'نظام اليومية:' : 'Daily Wage:'} ${selectedStaff.commissionValue || selectedStaff.dailyRate || 0} ج.م / يوم`
+                                            : (Number(selectedStaff.commissionValue) > 0 && selectedStaff.commissionType !== 'none')
+                                                ? (selectedStaff.commissionType === 'fixed'
+                                                    ? `${isAr ? 'عمولة ثابتة:' : 'Commission:'} ${selectedStaff.commissionValue} ج.م / فاتورة`
+                                                    : `${isAr ? 'عمولة نسبة:' : 'Commission:'} ${selectedStaff.commissionValue}% على الفاتورة`)
+                                                : (isAr ? 'بدون عمولة مبيعات' : 'No Commission')}
                                     </span>
                                 </div>
                             </div>
@@ -1426,7 +1429,11 @@ export const StaffPage = () => {
 
                                             <div className="flex items-center gap-1 font-bold">
                                                 <span className="text-slate-400 text-[10px]">{isAr ? 'العمولة:' : 'Comm:'}</span>
-                                                {commVal > 0 ? (
+                                                {staff.commissionType === 'daily' ? (
+                                                    <span className="text-sky-500 font-mono">
+                                                        {commVal} ج.م / يوم
+                                                    </span>
+                                                ) : commVal > 0 && staff.commissionType !== 'none' ? (
                                                     <span className="text-emerald-500 font-mono">
                                                         {staff.commissionType === 'fixed'
                                                             ? `${commVal} ج.م`
@@ -1600,19 +1607,27 @@ export const StaffPage = () => {
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-1.5">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                                 <button
                                     type="button"
                                     onClick={() => setStaffForm({ ...staffForm, commissionType: 'none', commissionValue: '' })}
-                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'none' ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'none' ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
                                 >
                                     {isAr ? 'بدون عمولة' : 'No Comm'}
                                 </button>
 
                                 <button
                                     type="button"
+                                    onClick={() => setStaffForm({ ...staffForm, commissionType: 'daily' })}
+                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'daily' ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
+                                >
+                                    {isAr ? 'يومية محددة' : 'Daily Wage'}
+                                </button>
+
+                                <button
+                                    type="button"
                                     onClick={() => setStaffForm({ ...staffForm, commissionType: 'percent' })}
-                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'percent' ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'percent' ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
                                 >
                                     {isAr ? 'نسبة مئوية %' : 'Percent %'}
                                 </button>
@@ -1620,7 +1635,7 @@ export const StaffPage = () => {
                                 <button
                                     type="button"
                                     onClick={() => setStaffForm({ ...staffForm, commissionType: 'fixed' })}
-                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'fixed' ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}
+                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'fixed' ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
                                 >
                                     {isAr ? 'مبلغ ثابت ج.م' : 'Fixed EGP'}
                                 </button>
@@ -1629,23 +1644,25 @@ export const StaffPage = () => {
                             {staffForm.commissionType !== 'none' && (
                                 <div className="pt-1">
                                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                        {staffForm.commissionType === 'fixed'
-                                            ? (isAr ? 'قيمة العمولة الثابتة لكل فاتورة (ج.م):' : 'Fixed amount per invoice (EGP):')
-                                            : (isAr ? 'نسبة العمولة من إجمالي الفاتورة (%):' : 'Commission percentage (%):')}
+                                        {staffForm.commissionType === 'daily'
+                                            ? (isAr ? 'سعر اليومية المحدد (ج.م / يوم):' : 'Daily Wage Rate (EGP/day):')
+                                            : staffForm.commissionType === 'fixed'
+                                                ? (isAr ? 'قيمة العمولة الثابتة لكل فاتورة (ج.م):' : 'Fixed amount per invoice (EGP):')
+                                                : (isAr ? 'نسبة العمولة من إجمالي الفاتورة (%):' : 'Commission percentage (%):')}
                                     </label>
                                     <div className="relative">
                                         <input
                                             type="number"
                                             min="0"
-                                            step={staffForm.commissionType === 'fixed' ? '1' : '0.5'}
+                                            step={staffForm.commissionType === 'percent' ? '0.5' : '1'}
                                             max={staffForm.commissionType === 'percent' ? '100' : undefined}
                                             value={staffForm.commissionValue}
                                             onChange={(e) => setStaffForm({ ...staffForm, commissionValue: e.target.value })}
-                                            placeholder={staffForm.commissionType === 'fixed' ? 'مثال: 20' : 'مثال: 10'}
-                                            className="w-full px-3.5 py-2.5 pe-12 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm font-bold outline-none focus:border-purple-500 font-mono"
+                                            placeholder={staffForm.commissionType === 'daily' ? 'مثال: 150' : staffForm.commissionType === 'fixed' ? 'مثال: 20' : 'مثال: 10'}
+                                            className="w-full px-3.5 py-2.5 pe-16 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm font-bold outline-none focus:border-purple-500 font-mono"
                                         />
                                         <span className="absolute inset-y-0 end-0 pe-3 flex items-center text-xs font-bold text-slate-500 pointer-events-none">
-                                            {staffForm.commissionType === 'fixed' ? 'ج.م' : '%'}
+                                            {staffForm.commissionType === 'daily' ? 'ج.م / يوم' : staffForm.commissionType === 'fixed' ? 'ج.م' : '%'}
                                         </span>
                                     </div>
                                 </div>

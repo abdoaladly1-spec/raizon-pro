@@ -69,7 +69,7 @@ export const CreateInvoice = ({ onClose }: any) => {
   const [showQuickAddBarberModal, setShowQuickAddBarberModal] = useState(false);
   const [newBarberName, setNewBarberName] = useState('');
   const [newBarberPhone, setNewBarberPhone] = useState('');
-  const [newBarberCommissionType, setNewBarberCommissionType] = useState<'percent' | 'fixed'>('percent');
+  const [newBarberCommissionType, setNewBarberCommissionType] = useState<'none' | 'daily' | 'percent' | 'fixed'>('none');
   const [newBarberCommissionValue, setNewBarberCommissionValue] = useState<string>('0');
 
   const handleCreateBarber = (e?: React.FormEvent) => {
@@ -80,7 +80,7 @@ export const CreateInvoice = ({ onClose }: any) => {
       return;
     }
     const newId = String(Date.now());
-    const commVal = parseFloat(newBarberCommissionValue) || 0;
+    const commVal = newBarberCommissionType === 'none' ? 0 : (parseFloat(newBarberCommissionValue) || 0);
     addStaff({
       id: newId,
       name: trimmed,
@@ -90,11 +90,13 @@ export const CreateInvoice = ({ onClose }: any) => {
       locationIds: [state.settings?.currentLocationId || '1'],
       commissionType: newBarberCommissionType,
       commissionValue: commVal,
+      dailyRate: newBarberCommissionType === 'daily' ? commVal : undefined,
     });
     setSelectedStaffId(newId);
     addToast(language === 'ar' ? `تم إضافة الحلاق "${trimmed}" وتحديده بنجاح` : `Barber "${trimmed}" added and selected`, 'success');
     setNewBarberName('');
     setNewBarberPhone('');
+    setNewBarberCommissionType('none');
     setNewBarberCommissionValue('0');
     setShowQuickAddBarberModal(false);
   };
@@ -1538,10 +1540,12 @@ export const CreateInvoice = ({ onClose }: any) => {
                          >
                              <option value="">{t('select_barber')}</option>
                              {state.staff.filter(s => s.active).map(s => {
-                                 const commText = Number(s.commissionValue) > 0 
-                                     ? (s.commissionType === 'fixed' ? ` [عمولة: ${s.commissionValue} ج.م]` : ` [عمولة: ${s.commissionValue}%]`)
-                                     : '';
-                                 return (
+                                 const commText = s.commissionType === 'daily'
+                                      ? ` [يومية: ${s.commissionValue || s.dailyRate || 0} ج.م]`
+                                      : (Number(s.commissionValue) > 0 && s.commissionType !== 'none')
+                                          ? (s.commissionType === 'fixed' ? ` [عمولة: ${s.commissionValue} ج.م]` : ` [عمولة: ${s.commissionValue}%]`)
+                                          : ' [بدون عمولة]';
+                                  return (
                                      <option key={s.id} value={s.id}>
                                          {s.name}{commText}
                                      </option>
@@ -2486,30 +2490,91 @@ export const CreateInvoice = ({ onClose }: any) => {
                         onChange={(e: any) => setNewBarberPhone(e.target.value)} 
                         placeholder="01xxxxxxxxx"
                     />
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                {language === 'ar' ? 'نوع العمولة' : 'Commission Type'}
-                            </label>
-                            <select
-                                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-bold outline-none focus:ring-2 focus:ring-primary-500"
-                                value={newBarberCommissionType}
-                                onChange={(e) => setNewBarberCommissionType(e.target.value as any)}
+                    <div>
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                            {language === 'ar' ? 'نظام الحساب والعمولة' : 'Compensation & Commission'}
+                        </label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setNewBarberCommissionType('none');
+                                    setNewBarberCommissionValue('0');
+                                }}
+                                className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                                    newBarberCommissionType === 'none'
+                                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                                }`}
                             >
-                                <option value="percent">{language === 'ar' ? 'نسبة مئوية (%)' : 'Percentage (%)'}</option>
-                                <option value="fixed">{language === 'ar' ? 'مبلغ ثابت (ج.م)' : 'Fixed (EGP)'}</option>
-                            </select>
+                                {language === 'ar' ? 'بدون عمولة' : 'No Comm'}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setNewBarberCommissionType('daily')}
+                                className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                                    newBarberCommissionType === 'daily'
+                                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                                }`}
+                            >
+                                {language === 'ar' ? 'يومية محددة' : 'Daily Wage'}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setNewBarberCommissionType('percent')}
+                                className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                                    newBarberCommissionType === 'percent'
+                                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                                }`}
+                            >
+                                {language === 'ar' ? 'نسبة مئوية %' : 'Percent %'}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setNewBarberCommissionType('fixed')}
+                                className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                                    newBarberCommissionType === 'fixed'
+                                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                                }`}
+                            >
+                                {language === 'ar' ? 'مبلغ ثابت ج.م' : 'Fixed EGP'}
+                            </button>
                         </div>
-                        <Input 
-                            label={newBarberCommissionType === 'percent' ? (language === 'ar' ? 'نسبة العمولة (%)' : 'Commission (%)') : (language === 'ar' ? 'قيمة العمولة (ج.م)' : 'Commission (EGP)')}
-                            type="number" 
-                            min="0"
-                            step="any"
-                            value={newBarberCommissionValue} 
-                            onChange={(e: any) => setNewBarberCommissionValue(e.target.value)} 
-                            placeholder="0"
-                        />
                     </div>
+
+                    {newBarberCommissionType !== 'none' && (
+                        <div className="pt-1">
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {newBarberCommissionType === 'daily'
+                                    ? (language === 'ar' ? 'سعر اليومية المحدد (ج.م / يوم) *' : 'Daily Wage Rate (EGP/day) *')
+                                    : newBarberCommissionType === 'percent'
+                                        ? (language === 'ar' ? 'نسبة العمولة من الفاتورة (%) *' : 'Commission Percentage (%) *')
+                                        : (language === 'ar' ? 'قيمة العمولة الثابتة لكل فاتورة (ج.م) *' : 'Fixed Commission per invoice (EGP) *')}
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step={newBarberCommissionType === 'percent' ? '0.5' : '1'}
+                                    max={newBarberCommissionType === 'percent' ? '100' : undefined}
+                                    value={newBarberCommissionValue}
+                                    onChange={(e) => setNewBarberCommissionValue(e.target.value)}
+                                    placeholder={newBarberCommissionType === 'daily' ? 'مثال: 150' : newBarberCommissionType === 'percent' ? 'مثال: 10' : 'مثال: 20'}
+                                    className="w-full px-3.5 py-2.5 pe-16 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm font-bold outline-none focus:border-purple-500 font-mono"
+                                    required
+                                />
+                                <span className="absolute inset-y-0 end-0 pe-3 flex items-center text-xs font-bold text-slate-500 pointer-events-none">
+                                    {newBarberCommissionType === 'daily' ? 'ج.م / يوم' : newBarberCommissionType === 'percent' ? '%' : 'ج.م'}
+                                </span>
+                            </div>
+                        </div>
+                    )}
                     <div className="flex gap-3 pt-2">
                         <Button type="submit" variant="success" className="flex-1 justify-center py-2.5 font-bold">
                             <Plus size={15} />

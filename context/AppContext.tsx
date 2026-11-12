@@ -2801,7 +2801,7 @@ export const AppProvider = ({ children }: any) => {
       let nextStaffPayments = prev.staffPayments || [];
       if (newInvoice.staffId) {
         const staffMember = prev.staff.find(s => s.id === newInvoice.staffId);
-        if (staffMember && Number(staffMember.commissionValue) > 0) {
+        if (staffMember && Number(staffMember.commissionValue) > 0 && staffMember.commissionType !== 'none' && staffMember.commissionType !== 'daily') {
           const val = Number(staffMember.commissionValue);
           const commissionAmt = staffMember.commissionType === 'fixed'
             ? round2(val)

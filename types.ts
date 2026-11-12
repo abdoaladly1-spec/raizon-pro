@@ -423,8 +423,9 @@ export interface Staff {
   active: boolean;
   locationIds: string[];
   services?: string[];
-  commissionType?: 'percent' | 'fixed';
+  commissionType?: 'percent' | 'fixed' | 'none' | 'daily';
   commissionValue?: number;
+  dailyRate?: number;
   nationalId?: string;
   address?: string;
   baseSalary?: number;
