@@ -613,7 +613,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                     ['نقداً (كاش)', paymentBreakdown.cash.toLocaleString('en-US'), totalRevenue > 0 ? `${round2((paymentBreakdown.cash / totalRevenue) * 100)}%` : '0%'],
                     ['بطاقة ائتمان / فيزا', paymentBreakdown.card.toLocaleString('en-US'), totalRevenue > 0 ? `${round2((paymentBreakdown.card / totalRevenue) * 100)}%` : '0%'],
                     ['محافظ إلكترونية (فودافون كاش وغيرها)', paymentBreakdown.wallet.toLocaleString('en-US'), totalRevenue > 0 ? `${round2((paymentBreakdown.wallet / totalRevenue) * 100)}%` : '0%'],
-                    ['إنستا باي (InstaPay)', paymentBreakdown.instapay.toLocaleString('en-US'), totalRevenue > 0 ? `${round2((paymentBreakdown.instapay / totalRevenue) * 100)}%` : '0%'],
+                    ['تحويل بنكي (انستا)', paymentBreakdown.instapay.toLocaleString('en-US'), totalRevenue > 0 ? `${round2((paymentBreakdown.instapay / totalRevenue) * 100)}%` : '0%'],
                     ['آجل (على الحساب)', paymentBreakdown.credit.toLocaleString('en-US'), totalRevenue > 0 ? `${round2((paymentBreakdown.credit / totalRevenue) * 100)}%` : '0%']
                 ],
                 totals: [
@@ -2154,7 +2154,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                 </span>
                             </div>
                             <div className="p-3 rounded-xl bg-pink-50 dark:bg-pink-950/40 border border-pink-200 dark:border-pink-800">
-                                <span className="text-[10px] text-pink-700 dark:text-pink-400 block font-bold">إنستا باي (InstaPay)</span>
+                                <span className="text-[10px] text-pink-700 dark:text-pink-400 block font-bold">تحويل بنكي (انستا)</span>
                                 <span className="text-base font-black text-pink-600 dark:text-pink-300 font-mono">
                                     {paymentBreakdown.instapay.toLocaleString('en-US')} ج.م
                                 </span>

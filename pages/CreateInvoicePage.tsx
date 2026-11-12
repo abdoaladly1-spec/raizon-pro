@@ -1919,7 +1919,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 }`}
                             >
                                 <CreditCard size={15} />
-                                <span>{language === 'ar' ? 'انستاباي / فيزا' : 'Card / Insta'}</span>
+                                <span>{language === 'ar' ? 'تحويل بنكي (انستا)' : 'Bank Transfer (Insta)'}</span>
                             </button>
 
                             <button
@@ -2021,7 +2021,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                         <div className="bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded-2xl p-4 text-center space-y-1">
                             <CreditCard size={26} className="mx-auto text-blue-500 mb-1" />
                             <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                                {language === 'ar' ? 'سداد إلكتروني عبر انستاباي / بطاقة بنكية' : 'InstaPay / Card'}
+                                {language === 'ar' ? 'سداد إلكتروني عبر تحويل بنكي (انستا)' : 'Bank Transfer (Insta)'}
                             </h4>
                             <p className="text-xs text-slate-500 dark:text-slate-400">
                                 {language === 'ar' 
@@ -2122,7 +2122,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 {/* انستا */}
                                 <div className="border border-slate-200 dark:border-slate-750 rounded-xl p-2 bg-white dark:bg-slate-900">
                                     <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-1">
-                                        {language === 'ar' ? '💳 انستا' : 'Insta'}
+                                        {language === 'ar' ? '💳 تحويل بنكي (انستا)' : 'Transfer (Insta)'}
                                     </span>
                                     <input
                                         type="number"
@@ -2138,7 +2138,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                         onClick={() => fillRest('card')}
                                         className="w-full mt-1 text-[10px] font-bold py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
                                     >
-                                        {language === 'ar' ? 'الباقي انستا' : 'Rest'}
+                                        {language === 'ar' ? 'الباقي تحويل بنكي' : 'Rest'}
                                     </button>
                                 </div>
 

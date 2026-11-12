@@ -293,7 +293,7 @@ export const DebtsPage: React.FC = () => {
     (state.customerPayments || [])
       .filter(p => p.customerId === profileCustomer.id)
       .forEach(p => {
-        const methodStr = p.paymentMethod === 'cash' ? 'نقدًا' : p.paymentMethod === 'card' ? 'بطاقة' : p.paymentMethod === 'instapay' ? 'إنستا باي' : 'محفظة';
+        const methodStr = p.paymentMethod === 'cash' ? 'نقدًا' : (p.paymentMethod === 'card' || p.paymentMethod === 'instapay') ? 'تحويل بنكي (انستا)' : 'محفظة';
         items.push({
           timestamp: p.timestamp || Date.parse(p.date) || 0,
           entry: {
@@ -1238,7 +1238,7 @@ export const DebtsPage: React.FC = () => {
                   { id: 'cash', label: 'نقدًا', icon: null },
                   { id: 'card', label: 'بطاقة', icon: null },
                   { id: 'wallet', label: 'محفظة', icon: null },
-                  { id: 'instapay', label: 'إنستا باي', icon: null },
+                  { id: 'instapay', label: 'تحويل بنكي (انستا)', icon: null },
                 ].map(m => (
                   <button
                     key={m.id}

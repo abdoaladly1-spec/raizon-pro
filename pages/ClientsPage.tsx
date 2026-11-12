@@ -151,7 +151,7 @@ export const Clients = () => {
         (state.customerPayments || [])
             .filter(p => p.customerId === selectedCustomer.id)
             .forEach(pm => {
-                const methodLabel = pm.paymentMethod === 'cash' ? 'نقداً (كاش)' : pm.paymentMethod === 'card' ? 'بطاقة بنكية' : 'محفظة إلكترونية';
+                const methodLabel = pm.paymentMethod === 'cash' ? 'نقداً (كاش)' : pm.paymentMethod === 'card' ? 'تحويل بنكي (انستا)' : 'محفظة إلكترونية';
                 list.push({
                     id: `pm-${pm.id}`,
                     date: pm.date,
@@ -603,7 +603,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                             <div className="grid grid-cols-3 gap-2">
                                 {[
                                     { id: 'cash', labelAr: 'نقداً (كاش)', icon: null },
-                                    { id: 'card', labelAr: 'بطاقة بنكية', icon: null },
+                                    { id: 'card', labelAr: 'تحويل بنكي (انستا)', icon: null },
                                     { id: 'wallet', labelAr: 'محفظة', icon: null },
                                 ].map(m => (
                                     <button

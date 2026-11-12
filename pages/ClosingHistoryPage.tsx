@@ -778,7 +778,7 @@ export const ClosingHistoryPage: React.FC<Props> = ({ onNavigate }) => {
                 </div>
 
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-500 dark:text-slate-400">{isAr ? 'المحافظ وإنستاباي:' : 'Wallets & InstaPay:'}</span>
+                  <span className="text-slate-500 dark:text-slate-400">{isAr ? 'المحافظ والتحويل البنكي (انستا):' : 'Wallets & Bank Transfer (Insta):'}</span>
                   <span className="font-mono text-slate-800 dark:text-slate-200">{formatNumber(activeReport.walletSales || 0)} {t('egp')}</span>
                 </div>
 

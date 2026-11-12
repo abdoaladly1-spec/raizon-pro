@@ -674,7 +674,7 @@ export const printClosingReportA4Pdf = (
           <span class="amount">${Number(report.cardSales || 0).toLocaleString('en-US')} ج.م</span>
         </div>
         <div class="data-row">
-          <span>المحافظ الإلكترونية وإنستاباي:</span>
+          <span>المحافظ والتحويل البنكي (انستا):</span>
           <span class="amount">${Number(report.walletSales || 0).toLocaleString('en-US')} ج.م</span>
         </div>
         <div class="data-row">

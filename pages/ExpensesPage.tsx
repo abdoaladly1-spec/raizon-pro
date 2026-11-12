@@ -430,7 +430,6 @@ export const ExpensesPage = () => {
                                 >
                                     <option value="cash">{t('cash')} ({t('from_drawer')})</option>
                                     <option value="card">{t('card')}</option>
-                                    <option value="transfer">{t('transfer')}</option>
                                     <option value="wallet">{t('wallet')}</option>
                                 </select>
                                 <p className="text-[11px] text-slate-400 mt-1">{t('expense_method_hint')}</p>

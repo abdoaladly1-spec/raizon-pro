@@ -777,7 +777,7 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
                         +{walletTotal.toLocaleString('en-US')}
                     </p>
                     <p className="text-[10px] text-slate-500 mt-0.5 truncate">
-                        {language === 'ar' ? 'إنستاباي ومحافظ' : 'Instapay & Wallets'}
+                        {language === 'ar' ? 'تحويل بنكي (انستا) ومحافظ' : 'Bank Transfer (Insta) & Wallets'}
                     </p>
                 </Card>
 
