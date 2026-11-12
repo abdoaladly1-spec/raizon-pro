@@ -360,7 +360,7 @@ export const CustomPrinterIcon = createPngIcon('/icons/printer.png', 'طباعة
 export const PhoneIcon = createPngIcon('/icons/phone.png', 'هاتف');
 export const AddIcon = createPngIcon('/icons/add.png', 'إضافة');
 export const UserIcon = createPngIcon('/icons/user.png', 'مستخدم');
-export const CashIcon = createPngIcon('/icons/cash.png', 'كاش');
+export const CashIcon = createPngIcon('/icons/cash.png', 'نقدي');
 export const SearchIcon = createPngIcon('/icons/search.png', 'بحث');
 
 export const MoreVertical = ({ className, size = 20, strokeWidth = 2 }: IconProps) => (

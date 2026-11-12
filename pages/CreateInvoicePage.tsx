@@ -1915,7 +1915,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 }`}
                             >
                                 <Banknote size={15} />
-                                <span>{language === 'ar' ? 'نقدي (كاش)' : 'Cash'}</span>
+                                <span>{language === 'ar' ? 'نقدي' : 'Cash'}</span>
                             </button>
 
                             <button
@@ -2103,7 +2103,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 {/* كاش */}
                                 <div className="border border-slate-200 dark:border-slate-750 rounded-xl p-2 bg-white dark:bg-slate-900">
                                     <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-1">
-                                        {language === 'ar' ? '💵 كاش' : 'Cash'}
+                                        {language === 'ar' ? '💵 نقدي' : 'Cash'}
                                     </span>
                                     <input
                                         type="number"
@@ -2124,7 +2124,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                         onClick={() => fillRest('cash')}
                                         className="w-full mt-1 text-[10px] font-bold py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
                                     >
-                                        {language === 'ar' ? 'الباقي كاش' : 'Rest'}
+                                        {language === 'ar' ? 'الباقي نقدي' : 'Rest'}
                                     </button>
                                 </div>
 

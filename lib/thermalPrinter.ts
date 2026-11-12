@@ -294,7 +294,7 @@ export const printClosingReportThermal = (
 
     <!-- تفاصيل حركة درج النقدية -->
     <div class="thermal-box">
-      <div style="font-weight: 800; text-align: center; margin-bottom: 4px; font-size: 10px; background: #eee; padding: 2px;">حركة درج النقدية (الكاش)</div>
+      <div style="font-weight: 800; text-align: center; margin-bottom: 4px; font-size: 10px; background: #eee; padding: 2px;">حركة درج النقدية</div>
       
       <div class="thermal-row">
         <span>الرصيد الافتتاحي (أمس):</span>
@@ -621,7 +621,7 @@ export const printClosingReportA4Pdf = (
       <!-- بطاقة حركة درج النقدية -->
       <div class="card">
         <div class="card-title">
-          <span>حركة درج النقدية (الكاش)</span>
+          <span>حركة درج النقدية</span>
           <span style="font-size: 11px; color: #8b5cf6;">${openingSourceLabel}</span>
         </div>
         <div class="data-row">

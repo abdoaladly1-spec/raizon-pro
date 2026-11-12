@@ -723,7 +723,7 @@ export const ClosingHistoryPage: React.FC<Props> = ({ onNavigate }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 space-y-2.5">
                 <h4 className="text-xs font-bold text-primary-600 dark:text-primary-400 border-b border-slate-200 dark:border-slate-700/80 pb-2 mb-3">
-                  {isAr ? '1. حركة درج النقدية (الكاش)' : 'Cash Drawer Flow'}
+                  {isAr ? '1. حركة درج النقدية' : 'Cash Drawer Flow'}
                 </h4>
                 
                 <div className="flex justify-between text-xs">
@@ -732,7 +732,7 @@ export const ClosingHistoryPage: React.FC<Props> = ({ onNavigate }) => {
                 </div>
 
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-500 dark:text-slate-400">{isAr ? '(+) مبيعات الكاش المحصلة:' : '(+) Cash Sales:'}</span>
+                  <span className="text-slate-500 dark:text-slate-400">{isAr ? '(+) مبيعات نقدي المحصلة:' : '(+) Cash Sales:'}</span>
                   <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">+{formatNumber(activeReport.cashSales || 0)} {t('egp')}</span>
                 </div>
 

@@ -43,10 +43,10 @@ const buildInvoiceWhatsAppMessage = (
     .join('\n');
 
   // 3. طريقة الدفع
-  let paymentText = 'نقداً (كاش)';
+  let paymentText = 'نقدي';
   if (invoice.paymentParts && invoice.paymentParts.length > 1) {
     const partsDesc = invoice.paymentParts.map(p => {
-      const name = p.method === 'cash' ? 'كاش' : p.method === 'card' ? 'فيزا' : p.method === 'wallet' ? 'محفظة' : p.method;
+      const name = p.method === 'cash' ? 'نقدي' : p.method === 'card' ? 'تحويل بنكي (انستا)' : p.method === 'wallet' ? 'محفظة' : p.method;
       return `${name}: ${p.amount.toLocaleString('en-US')} ج.م`;
     }).join(' + ');
     paymentText = `دفع مجزأ (${partsDesc})`;

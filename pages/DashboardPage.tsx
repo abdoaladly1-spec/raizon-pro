@@ -610,7 +610,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                 subtitle: `تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')}`,
                 headers: ['طريقة الدفع', 'المبلغ المحصل (ج.م)', 'النسبة من الإجمالي'],
                 rows: [
-                    ['نقداً (كاش)', paymentBreakdown.cash.toLocaleString('en-US'), totalRevenue > 0 ? `${round2((paymentBreakdown.cash / totalRevenue) * 100)}%` : '0%'],
+                    ['نقدي', paymentBreakdown.cash.toLocaleString('en-US'), totalRevenue > 0 ? `${round2((paymentBreakdown.cash / totalRevenue) * 100)}%` : '0%'],
                     ['بطاقة ائتمان / فيزا', paymentBreakdown.card.toLocaleString('en-US'), totalRevenue > 0 ? `${round2((paymentBreakdown.card / totalRevenue) * 100)}%` : '0%'],
                     ['محافظ إلكترونية (فودافون كاش وغيرها)', paymentBreakdown.wallet.toLocaleString('en-US'), totalRevenue > 0 ? `${round2((paymentBreakdown.wallet / totalRevenue) * 100)}%` : '0%'],
                     ['تحويل بنكي (انستا)', paymentBreakdown.instapay.toLocaleString('en-US'), totalRevenue > 0 ? `${round2((paymentBreakdown.instapay / totalRevenue) * 100)}%` : '0%'],
@@ -657,7 +657,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                     inv.date,
                     inv.customerName || 'عميل نقدي',
                     inv.staffName || '-',
-                    inv.paymentMethod === 'credit' ? 'آجل' : inv.paymentMethod === 'cash' ? 'كاش' : inv.paymentMethod,
+                    inv.paymentMethod === 'credit' ? 'آجل' : inv.paymentMethod === 'cash' ? 'نقدي' : inv.paymentMethod,
                     inv.total.toLocaleString('en-US')
                 ]),
                 totals: [
@@ -741,7 +741,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     {totalRevenue.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                                 </h3>
                                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
-                                    <span>كاش: <b className="text-emerald-600 dark:text-emerald-400 font-mono">{paymentBreakdown.cash.toLocaleString('en-US')}</b></span>
+                                    <span>نقدي: <b className="text-emerald-600 dark:text-emerald-400 font-mono">{paymentBreakdown.cash.toLocaleString('en-US')}</b></span>
                                     <span className="text-primary-500 font-bold group-hover:-translate-x-0.5 transition-transform text-[11px]">تفاصيل ←</span>
                                 </div>
                             </div>
@@ -873,7 +873,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     {expectedDrawerCash.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
                                 </h3>
                                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
-                                    <span>مبيعات كاش: <b className="font-mono text-emerald-500">{paymentBreakdown.cash.toLocaleString('en-US')}</b></span>
+                                    <span>مبيعات نقدي: <b className="font-mono text-emerald-500">{paymentBreakdown.cash.toLocaleString('en-US')}</b></span>
                                     <span className="text-amber-500 font-bold group-hover:-translate-x-0.5 transition-transform text-[11px]">الجرد ←</span>
                                 </div>
                             </div>
@@ -1239,7 +1239,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                                 <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                             </h3>
                                             <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
-                                                <span className="truncate">محصل كاش: <b className="text-emerald-500 font-mono">{paymentBreakdown.cash.toLocaleString('en-US')}</b></span>
+                                                <span className="truncate">محصل نقدي: <b className="text-emerald-500 font-mono">{paymentBreakdown.cash.toLocaleString('en-US')}</b></span>
                                                 <span className="text-primary-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">تفاصيل ←</span>
                                             </div>
                                         </div>
@@ -1332,7 +1332,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                                 <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                             </h3>
                                             <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
-                                                <span className="truncate">كاش مبيعات: <b className="text-emerald-500 font-mono">+{todayCashSales.toLocaleString('en-US')}</b></span>
+                                                <span className="truncate">مبيعات نقدي: <b className="text-emerald-500 font-mono">+{todayCashSales.toLocaleString('en-US')}</b></span>
                                                 <span className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">الجرد ←</span>
                                             </div>
                                         </div>
@@ -2136,7 +2136,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-center">
                             <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
-                                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block font-bold">نقداً (كاش)</span>
+                                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block font-bold">نقدي</span>
                                 <span className="text-base font-black text-emerald-600 dark:text-emerald-300 font-mono">
                                     {paymentBreakdown.cash.toLocaleString('en-US')} ج.م
                                 </span>
@@ -2449,7 +2449,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                 <span className="text-purple-600">{drawerOpeningBalance.toLocaleString('en-US')} ج.م</span>
                             </div>
                             <div className="flex justify-between py-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
-                                <span>[+] مبيعات الكاش المحصلة بالدرج اليوم:</span>
+                                <span>[+] مبيعات نقدي المحصلة بالدرج اليوم:</span>
                                 <span>+{todayCashSales.toLocaleString('en-US')} ج.م</span>
                             </div>
                             {todayCustomerDebtCash > 0 && (
@@ -2476,13 +2476,13 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                             )}
                             {todayCashReturnsDeducted > 0 && (
                                 <div className="flex justify-between py-1.5 text-rose-500">
-                                    <span>[-] مرتجعات نقدية مردودة كاش اليوم:</span>
+                                    <span>[-] مرتجعات نقدية مردودة اليوم:</span>
                                     <span>-{todayCashReturnsDeducted.toLocaleString('en-US')} ج.م</span>
                                 </div>
                             )}
                             {todayStaffCashPayouts > 0 && (
                                 <div className="flex justify-between py-1.5 text-orange-500">
-                                    <span>[-] سلف وأجور مدفوعة كاش من الدرج اليوم:</span>
+                                    <span>[-] سلف وأجور مدفوعة نقداً من الدرج اليوم:</span>
                                     <span>-{todayStaffCashPayouts.toLocaleString('en-US')} ج.م</span>
                                 </div>
                             )}

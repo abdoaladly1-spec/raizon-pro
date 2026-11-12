@@ -256,7 +256,7 @@ const formatMoney = (n: any): string => {
 
 const translateMethod = (m: string): string => {
   const lower = String(m || '').toLowerCase();
-  if (lower === 'cash') return 'نقداً (كاش)';
+  if (lower === 'cash') return 'نقدي';
   if (lower === 'card' || lower === 'visa' || lower === 'instapay' || lower === 'transfer') return 'تحويل بنكي (انستا)';
   if (lower === 'wallet') return 'محفظة إلكترونية';
   if (lower === 'mixed') return 'دفع مركب (متعدد)';
