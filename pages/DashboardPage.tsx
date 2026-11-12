@@ -6,7 +6,7 @@ import {
     FileText, Calendar, Award, PieChart, Activity, Plus,
     Package, ChevronRight, TrendingUp, ShoppingCart, Sparkles,
     CreditCard, Printer, X, Check, ArrowUp, ArrowDown, User,
-    Phone, Building, Wallet, Info, Filter
+    Phone, Building, Wallet, Info, Filter, History
 } from '../components/Icons';
 import { Card, SimpleBarChart, ModalShell } from '../components/ui';
 import { parseInvoiceDate, localIsoToday, toIsoDate } from '../lib/dates';
@@ -669,30 +669,38 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     <button
                         onClick={() => onNavigate('debts')}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white border border-slate-300 dark:border-slate-700 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white border border-slate-300 dark:border-slate-700 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
                         title="ديون وحسابات العملاء"
                     >
-                        <CreditCard size={16} className="shrink-0 text-primary-500" />
+                        <CreditCard size={15} className="shrink-0 text-primary-500" />
                         <span>ديون العملاء</span>
                     </button>
                     <button
                         onClick={() => onNavigate('expenses')}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
                         title={t('expenses')}
                     >
-                        <Banknote size={16} className="shrink-0" />
+                        <Banknote size={15} className="shrink-0" />
                         <span>{t('expenses')}</span>
                     </button>
                     <button
                         onClick={() => onNavigate('closing')}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
                         title={t('closing')}
                     >
-                        <Award size={16} className="shrink-0" />
+                        <Award size={15} className="shrink-0" />
                         <span>{t('closing')}</span>
+                    </button>
+                    <button
+                        onClick={() => onNavigate('closing_history')}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                        title={language === 'ar' ? 'سجل تقارير الإقفال اليومية' : 'Closing Records History'}
+                    >
+                        <History size={15} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
+                        <span>{language === 'ar' ? 'سجل الإقفال' : 'Closing Records'}</span>
                     </button>
                     <button
                         onClick={() => onNavigate('create_invoice')}
@@ -1193,45 +1201,65 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                      <ShoppingCart size={20} className="text-primary-600" />
                      <span>{t('quick_access')}</span>
                  </h3>
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
                      <button
                         onClick={() => onNavigate('create_invoice')}
-                        className="card-hover flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 p-6 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all group relative overflow-hidden ring-2 ring-emerald-400/30 hover:scale-[1.02] active:scale-95 cursor-pointer"
+                        className="card-hover flex flex-col items-center justify-center gap-2.5 bg-gradient-to-br from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 p-5 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all group relative overflow-hidden ring-2 ring-emerald-400/30 hover:scale-[1.02] active:scale-95 cursor-pointer text-center"
                      >
-                         <div className="w-14 h-14 rounded-2xl bg-white/20 text-white flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-inner">
-                            <Plus size={30} strokeWidth={2.5} />
+                         <div className="w-12 h-12 rounded-2xl bg-white/20 text-white flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-inner">
+                            <Plus size={26} strokeWidth={2.5} />
                          </div>
-                         <span className="font-black text-white text-base">{t('new_invoice')}</span>
+                         <span className="font-black text-white text-sm">{t('new_invoice')}</span>
                      </button>
                      
                      <button
                         onClick={() => onNavigate('invoices')}
-                        className="card-hover flex flex-col items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden hover:scale-[1.02] active:scale-95 cursor-pointer"
+                        className="card-hover flex flex-col items-center justify-center gap-2.5 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden hover:scale-[1.02] active:scale-95 cursor-pointer text-center"
                      >
-                         <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <FileText size={28} strokeWidth={1.75} />
+                         <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <FileText size={24} strokeWidth={1.75} />
                          </div>
-                         <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{t('invoices')}</span>
+                         <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors text-sm">{t('invoices')}</span>
                      </button>
                      
                      <button
                         onClick={() => onNavigate('inventory')}
-                        className="card-hover flex flex-col items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden hover:scale-[1.02] active:scale-95 cursor-pointer"
+                        className="card-hover flex flex-col items-center justify-center gap-2.5 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden hover:scale-[1.02] active:scale-95 cursor-pointer text-center"
                      >
-                         <div className="w-14 h-14 rounded-2xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <Package size={28} strokeWidth={1.75} />
+                         <div className="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <Package size={24} strokeWidth={1.75} />
                          </div>
-                         <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">{t('inventory')}</span>
+                         <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors text-sm">{t('inventory')}</span>
                      </button>
                      
                      <button
                         onClick={() => onNavigate('debts')}
-                        className="card-hover flex flex-col items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden hover:scale-[1.02] active:scale-95 cursor-pointer"
+                        className="card-hover flex flex-col items-center justify-center gap-2.5 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden hover:scale-[1.02] active:scale-95 cursor-pointer text-center"
                      >
-                         <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <CreditCard size={28} strokeWidth={1.75} />
+                         <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <CreditCard size={24} strokeWidth={1.75} />
                          </div>
-                         <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">ديون العملاء</span>
+                         <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors text-sm">ديون العملاء</span>
+                     </button>
+
+                     <button
+                        onClick={() => onNavigate('closing')}
+                        className="card-hover flex flex-col items-center justify-center gap-2.5 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden hover:scale-[1.02] active:scale-95 cursor-pointer text-center"
+                     >
+                         <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <Award size={24} strokeWidth={1.75} />
+                         </div>
+                         <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors text-sm">{t('closing')}</span>
+                     </button>
+
+                     <button
+                        onClick={() => onNavigate('closing_history')}
+                        className="card-hover flex flex-col items-center justify-center gap-2.5 bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all group relative overflow-hidden hover:scale-[1.02] active:scale-95 cursor-pointer text-center"
+                     >
+                         <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <History size={24} strokeWidth={1.75} />
+                         </div>
+                         <span className="font-bold text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors text-sm">{language === 'ar' ? 'سجل الإقفال' : 'Closing Records'}</span>
                      </button>
                  </div>
             </div>

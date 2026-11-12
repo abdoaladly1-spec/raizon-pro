@@ -240,21 +240,21 @@ export const formatSyncRelativeTime = (timestamp?: number | null, nowMs: number 
     return isAr ? 'الآن' : 'Just now';
   }
   if (diffHours < 1) {
-    return isAr ? `${diffMin}د` : `${diffMin}m`;
+    return isAr ? `منذ ${diffMin} د` : `${diffMin}m ago`;
   }
   if (diffHours < 24) {
-    return isAr ? `${diffHours}س` : `${diffHours}h`;
+    return isAr ? `منذ ${diffHours} س` : `${diffHours}h ago`;
   }
   if (diffDays < 7) {
-    return isAr ? `${diffDays}ي` : `${diffDays}d`;
+    return isAr ? `منذ ${diffDays} يوم` : `${diffDays}d ago`;
   }
   if (diffDays < 30) {
-    return isAr ? `${diffWeeks} اسبوع` : `${diffWeeks}w`;
+    return isAr ? `منذ ${diffWeeks} أسبوع` : `${diffWeeks}w ago`;
   }
   if (diffMonths < 12) {
-    return isAr ? `${diffMonths}ش` : `${diffMonths}mo`;
+    return isAr ? `منذ ${diffMonths} شهر` : `${diffMonths}mo ago`;
   }
-  return isAr ? `${diffYears}ع` : `${diffYears}y`;
+  return isAr ? `منذ ${diffYears} سنة` : `${diffYears}y ago`;
 };
 
 const MainContent = () => {
@@ -538,7 +538,7 @@ const MainContent = () => {
                                 <item.icon size={21} className={`transition-transform duration-200 group-hover:scale-110 shrink-0 ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 group-hover:text-primary-600 dark:group-hover:text-primary-300'}`} />
                                 {!sidebarCollapsed && <span className="text-sm truncate leading-none">{item.label}</span>}
                                 {isActive && (
-                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary-600 dark:bg-primary-400 rounded-l-full"></div>
+                                    <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-primary-600 dark:bg-primary-400 rounded-e-full shadow-sm"></div>
                                 )}
                             </button>
                         </div>
@@ -610,7 +610,8 @@ const MainContent = () => {
                             >
                                 <div className="flex items-center gap-2 truncate">
                                     <Search size={14} className="text-primary-500 dark:text-primary-400 group-hover:scale-110 transition-transform shrink-0" />
-                                    <span className="truncate">{language === 'ar' ? 'بحث سريع وتنقل بين الصفحات...' : 'Quick search...'}</span>
+                                    <span className="truncate hidden xl:inline">{language === 'ar' ? 'بحث سريع وتنقل بين الصفحات...' : 'Quick search...'}</span>
+                                    <span className="truncate xl:hidden">{language === 'ar' ? 'بحث سريع...' : 'Search...'}</span>
                                 </div>
                                 <kbd className="px-2 py-0.5 rounded-md bg-white dark:bg-primary-900/40 text-[10px] font-mono text-slate-700 dark:text-primary-200 border border-primary-200 dark:border-primary-500/30 shadow-2xs font-extrabold shrink-0">Ctrl K</kbd>
                             </button>
@@ -657,7 +658,7 @@ const MainContent = () => {
                                  >
                                      <Clock size={12} className="text-primary-500 dark:text-primary-400 shrink-0" />
                                      <span className="text-[11px] font-sans text-slate-500 dark:text-primary-300/80">
-                                         {language === 'ar' ? 'آخر مزامنة' : 'Synced'}
+                                         {language === 'ar' ? 'آخر مزامنة:' : 'Synced:'}
                                      </span>
                                      <span className="font-bold text-slate-900 dark:text-primary-200">
                                          {formatSyncRelativeTime(syncStatus.lastSyncAt, systemClock.getTime(), language)}
@@ -688,7 +689,7 @@ const MainContent = () => {
                                       >
                                         <Building size={14} className="text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform" />
                                         <span className="hidden xl:inline text-slate-500 dark:text-primary-300/70">{language === 'ar' ? 'فرع:' : 'Branch:'}</span>
-                                        <span className="font-extrabold text-slate-900 dark:text-white max-w-[120px] truncate">{activeBranch.name}</span>
+                                        <bdi className="font-extrabold text-slate-900 dark:text-white max-w-[120px] truncate">{activeBranch.name}</bdi>
                                         <ChevronDown size={13} className={`text-primary-500 transition-transform duration-200 ${showBranchDropdown ? 'rotate-180' : ''}`} />
                                       </button>
 

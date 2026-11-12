@@ -1342,7 +1342,7 @@ export const SettingsPage = () => {
 
                     <div>
                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">{t('theme_color')}</label>
-                        <div className="flex gap-3 flex-wrap">
+                        <div className="flex gap-2.5 flex-wrap">
                             {[
                                 { id: 'blue', color: '#0ea5e9', nameAr: 'أزرق سماوي' },
                                 { id: 'ocean', color: '#06b6d4', nameAr: 'محيطي' },
@@ -1353,11 +1353,19 @@ export const SettingsPage = () => {
                             ].map(theme => (
                                 <button 
                                     key={theme.id}
+                                    type="button"
                                     onClick={() => setForm({...form, themeColor: theme.id as any})}
-                                    className={`w-9 h-9 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center ${form.themeColor === theme.id ? 'border-slate-800 dark:border-white scale-110 shadow-md' : 'border-transparent'}`}
+                                    className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 transition-all cursor-pointer ${
+                                        form.themeColor === theme.id 
+                                            ? 'border-primary-500 bg-primary-500/10 shadow-xs scale-105 font-bold' 
+                                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800/60'
+                                    }`}
                                     title={theme.nameAr}
                                 >
-                                    <div className="w-7 h-7 rounded-full" style={{ backgroundColor: theme.color }}></div>
+                                    <div className="w-5 h-5 rounded-full shadow-inner flex items-center justify-center shrink-0" style={{ backgroundColor: theme.color }}>
+                                        {form.themeColor === theme.id && <Check size={12} className="text-white drop-shadow-xs stroke-[3]" />}
+                                    </div>
+                                    <span className="text-xs text-slate-700 dark:text-slate-200">{theme.nameAr}</span>
                                 </button>
                             ))}
                         </div>

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
-import { LogOut, Printer, Award, Clock, Wallet, Plus, Trash2, AlertCircle, ArrowUp, ArrowDown, Check, RefreshCw, FileText } from '../components/Icons';
+import { LogOut, Printer, Award, Clock, Wallet, Plus, Trash2, AlertCircle, ArrowUp, ArrowDown, Check, RefreshCw, FileText, History } from '../components/Icons';
 import { ClosingReport } from '../types';
 import { cashOfInvoice, isCashExpense, paymentOf } from '../lib/payments';
 import { getDrawerOpeningBalance, isAfterClosing, countableInvoice } from '../lib/analytics';
@@ -554,7 +554,18 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center gap-2.5">
+                    {onNavigate && (
+                        <button
+                            type="button"
+                            onClick={() => onNavigate('closing_history')}
+                            className="px-3.5 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 hover:border-indigo-400 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95"
+                            title={language === 'ar' ? 'عرض سجل تقارير الإقفال السابقة والطباعة والتصدير' : 'View past closing records'}
+                        >
+                            <History size={15} className="text-indigo-400" />
+                            <span>{language === 'ar' ? 'سجل الإقفال' : 'Closing Records'}</span>
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={() => triggerOpenCashDrawer()}
