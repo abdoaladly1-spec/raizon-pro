@@ -728,6 +728,44 @@ export const CreateInvoice = ({ onClose }: any) => {
       addToast(t('invoice_restored'), 'info');
   };
 
+  
+  const isCashCustomerName = (name: string) => /^عميل نقدي(?:\s+\d+)?$/i.test((name || '').trim()) || /^cash customer(?:\s+\d+)?$/i.test((name || '').trim());
+
+  const getNextCashCustomerName = () => {
+    let maxNum = 0;
+    const regexAr = /^عميل نقدي(?:\s+(\d+))?$/i;
+    const regexEn = /^cash customer(?:\s+(\d+))?$/i;
+
+    (state.invoices || []).forEach(inv => {
+      const name = (inv.customerName || '').trim();
+      const match = name.match(regexAr) || name.match(regexEn);
+      if (match) {
+        const num = match[1] ? parseInt(match[1], 10) : 1;
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+      }
+    });
+
+    (state.customers || []).forEach(c => {
+      const name = (c.name || '').trim();
+      const match = name.match(regexAr) || name.match(regexEn);
+      if (match) {
+        const num = match[1] ? parseInt(match[1], 10) : 1;
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+      }
+    });
+
+    const nextNum = maxNum + 1;
+    return language === 'ar' ? `عميل نقدي ${nextNum}` : `Cash Customer ${nextNum}`;
+  };
+
+  const applyCashCustomer = () => {
+    const nextName = getNextCashCustomerName();
+    setCustomerName(nextName);
+    setPhone('--');
+    setCustomerIdInput('');
+    setShowCustomerDropdown(false);
+  };
+
   const handleHold = () => {
       // إذا كانت السلة فارغة، نقوم بفتح قائمة الفواتير المعلقة مباشرة
       if (selectedItems.length === 0) {
@@ -740,7 +778,7 @@ export const CreateInvoice = ({ onClose }: any) => {
       }
 
       // إذا كانت السلة تحتوي على عناصر، نجهز الاسم الافتراضي ونفتح نافذة التعليق التفاعلية
-      const defaultName = customerName?.trim() && customerName.trim() !== 'عميل نقدي' && customerName.trim() !== t('guest')
+      const defaultName = customerName?.trim() && !isCashCustomerName(customerName) && customerName.trim() !== t('guest')
           ? customerName.trim()
           : (language === 'ar' ? `طلب معلق #${(state.heldInvoices || []).length + 1}` : `Held Order #${(state.heldInvoices || []).length + 1}`);
 
@@ -750,7 +788,7 @@ export const CreateInvoice = ({ onClose }: any) => {
 
   const confirmHoldInvoice = (customName?: string) => {
       const defaultName = language === 'ar' ? `طلب معلق #${(state.heldInvoices || []).length + 1}` : `Held Order #${(state.heldInvoices || []).length + 1}`;
-      const finalHoldName = (customName || holdNoteInput || '').trim() || (customerName?.trim() && customerName.trim() !== 'عميل نقدي' ? customerName.trim() : defaultName);
+      const finalHoldName = (customName || holdNoteInput || '').trim() || (customerName?.trim() && !isCashCustomerName(customerName) ? customerName.trim() : defaultName);
 
       const invoiceData: any = {
           customerId: existingCustomer ? existingCustomer.id : 0,
@@ -792,7 +830,7 @@ export const CreateInvoice = ({ onClose }: any) => {
       // Validation
       const phoneRegex = /^01\d{9}$/;
       const nameRegex = /^(\S+)\s+(\S+)\s+(\S+).*$/; // At least 3 parts
-      const isCashWalkIn = phone === '01000000000' || customerName.trim() === 'عميل نقدي' || customerName.trim().toLowerCase() === 'cash customer';
+      const isCashWalkIn = phone === '--' || phone === '01000000000' || isCashCustomerName(customerName);
 
       if (!phone || !customerName || selectedItems.length === 0) {
           addToast(t('fill_all_fields'), 'error');
@@ -820,7 +858,7 @@ export const CreateInvoice = ({ onClose }: any) => {
       const creditPartAmount = num(partCredit);
       if (creditPartAmount > 0) {
           const trimmedName = customerName.trim();
-          if (!trimmedName || trimmedName === 'عميل نقدي' || trimmedName.toLowerCase() === 'cash customer') {
+          if (!trimmedName || isCashCustomerName(trimmedName)) {
               addToast(language === 'ar' ? 'لتسجيل مبلغ على الحساب، يرجى كتابة أو اختيار اسم العميل أولاً' : 'Please provide or select a customer name for on-account balance', 'error');
               return;
           }
@@ -833,13 +871,14 @@ export const CreateInvoice = ({ onClose }: any) => {
       }
 
       setShowPaymentModal(false);
-      const existing = state.customers.find(c => c.phone === phone);
-      const customerId = existing ? existing.id : addCustomer({ 
+      const isCash = phone === '--' || phone === '01000000000' || isCashCustomerName(customerName);
+      const existing = (phone !== '--' && phone) ? state.customers.find(c => c.phone === phone) : null;
+      const customerId = existing ? existing.id : (isCash && phone === '--' ? undefined : addCustomer({ 
         name: customerName, 
-        phone 
-      } as any);
+        phone: phone === '--' ? '' : phone 
+      } as any));
 
-      if (!existing && customerName.trim() !== 'عميل نقدي') {
+      if (!existing && !isCash) {
         addToast(`${t('customer_added')}: ${customerName}`, 'success');
       }
       
@@ -1078,40 +1117,43 @@ export const CreateInvoice = ({ onClose }: any) => {
                  </div>
              )}
              <Card>
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-bold flex items-center gap-2"><Users size={20} /> {t('customer_name')}</h3>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold">
+                            <Users size={17} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight">
+                                {language === 'ar' ? 'بيانات العميل' : t('customer_name')}
+                            </h3>
+                            <p className="text-[11px] text-slate-400 mt-0.5">
+                                {language === 'ar' ? 'اختيار عميل مسجل أو استخدام عميل نقدي سريع' : 'Select client or quick cash customer'}
+                            </p>
+                        </div>
+                    </div>
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
-                            onClick={() => triggerOpenCashDrawer()}
-                            className="flex items-center gap-1 text-xs bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 px-3 py-1.5 rounded-lg border border-amber-500/30 hover:border-amber-400 font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
-                            title="فتح درج النقدية يدوياً (F7)"
+                            onClick={applyCashCustomer}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-xs"
+                            title={language === 'ar' ? 'تسجيل عميل نقدي ترتيبي (عميل نقدي 1، 2، 3...)' : 'Quick sequential cash customer'}
                         >
-                            <Wallet size={14} className="text-amber-500" />
-                            <span>{language === 'ar' ? 'فتح الدرج (F7)' : 'Open Drawer (F7)'}</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setCustomerName('عميل نقدي');
-                                setPhone('01000000000');
-                                setCustomerIdInput('');
-                                setShowCustomerDropdown(false);
-                            }}
-                            className="flex items-center gap-1 text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 transition-colors font-medium"
-                            title={language === 'ar' ? 'تعبئة سريعة لعميل نقدي عابر' : 'Quick Cash Customer'}
-                        >
+                            <User size={13} />
                             <span>{language === 'ar' ? 'عميل نقدي' : 'Cash Client'}</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setIsQuickAddingCustomer(true)}
-                            className="flex items-center gap-1 text-xs bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 hover:bg-primary-100 px-3 py-1.5 rounded-lg border border-primary-200 dark:border-primary-700 transition-colors font-medium"
+                            className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-bold transition-all active:scale-95 cursor-pointer"
                         >
                             <Plus size={14}/> {language === 'ar' ? 'عميل جديد' : 'New Client'}
                         </button>
                         {state.heldInvoices.length > 0 && (
-                            <button onClick={() => setShowHeldInvoices(true)} className="flex items-center gap-1 text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full hover:bg-amber-200 transition-colors font-bold ">
+                            <button 
+                                type="button" 
+                                onClick={() => setShowHeldInvoices(true)} 
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                            >
                                 <PauseCircle size={14}/> {state.heldInvoices.length} {t('held')}
                             </button>
                         )}
@@ -1140,7 +1182,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                             }} 
                             onFocus={() => setShowCustomerDropdown(true)}
                             placeholder={t('ph_phone')} 
-                            validationRegex={/^01\d{9}$/}
+                            validationRegex={phone === '--' || !phone ? undefined : /^01\d{9}$/}
                             error={t('invalid_phone_format')}
                             onEnter={() => {
                                 setShowCustomerDropdown(false);
@@ -1717,7 +1759,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                             )}
                         </div>
                     )}
-                    <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-primary-500/10 border border-emerald-400/30 dark:border-emerald-600/30 flex items-center justify-between shadow-2xs">
+                    <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between shadow-2xs">
                         <span className="text-xs sm:text-sm font-black text-slate-700 dark:text-slate-200">{t('total')}</span>
                         <div className="flex items-baseline gap-1.5">
                             <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400 tracking-tight">
