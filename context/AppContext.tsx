@@ -3473,6 +3473,7 @@ export const AppProvider = ({ children }: any) => {
     localStorage.removeItem('procashier_returns_queue');
     localStorage.removeItem('raizon_closing_events');
     localStorage.removeItem('procashier_active_invoice_draft_v1');
+    localStorage.removeItem('raizon_dashboard_kpi_cards_v1');
     localStorage.removeItem('pro_staff_tools_v1');
     localStorage.removeItem('closing_include_debts');
     localStorage.removeItem('report_print_size');
