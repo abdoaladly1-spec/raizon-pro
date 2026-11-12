@@ -125,7 +125,7 @@ const translations = {
     welcome: 'مرحباً بك',
     dashboard: 'لوحة التحكم',
     settings: 'الإعدادات',
-    logout: 'خروج',
+    logout: 'تسجيل خروج',
     active: 'نشط',
     inactive: 'غير نشط',
     actions: 'إجراءات',
@@ -694,7 +694,7 @@ const translations = {
     total_sales: 'إجمالي المبيعات',
     total_expenses: 'إجمالي المصاريف',
     print: 'طباعة',
-    logout_system: 'تسجيل الخروج',
+    logout_system: 'تسجيل خروج',
     closing: 'الإقفال',
     closing_done: 'تم إقفال الدرج',
     // درج النقدية والإغلاق اليومي

@@ -2302,7 +2302,7 @@ const InitialAdminSetupWizard = () => {
                   onClick={logout}
                   className="py-3 px-4 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer transition-all"
                 >
-                  خروج
+                  تسجيل خروج
                 </button>
               </div>
             </form>
