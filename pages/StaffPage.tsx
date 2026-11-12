@@ -11,7 +11,7 @@ import {
     CustomTrashIcon, CustomPrinterIcon
 } from '../components/Icons';
 import { Staff, StaffPayment } from '../types';
-import { Card, Button, Input, ModalShell } from '../components/ui';
+import { Card, Button, Input, ModalShell, ConfirmModal } from '../components/ui';
 
 // قائمة المسميات الوظيفية الشائعة لتسهيل وتنسيق الاختيار
 const PRESET_ROLES = [
@@ -59,6 +59,7 @@ export const StaffPage = () => {
         address: ''
     };
     const [staffForm, setStaffForm] = useState(initialStaffForm);
+    const [confirmModalData, setConfirmModalData] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
 
     // نموذج سحب السلفة (Advance Modal)
     const [showAdvanceModal, setShowAdvanceModal] = useState(false);
@@ -275,14 +276,19 @@ export const StaffPage = () => {
 
     // حذف موظف مع تأكيد
     const handleDeleteStaff = (staff: Staff) => {
-        if (window.confirm(isAr ? `هل أنت متأكد من حذف الموظف "${staff.name}"؟` : `Delete staff member "${staff.name}"?`)) {
-            deleteStaff(staff.id);
-            addToast(isAr ? 'تم حذف الموظف من النظام' : 'Staff deleted', 'info');
-            if (selectedStaffId === staff.id) {
-                setView('list');
-                setSelectedStaffId(null);
+        setConfirmModalData({
+            title: isAr ? 'تأكيد حذف الموظف' : 'Confirm Delete Staff',
+            message: isAr ? `هل أنت متأكد من حذف الموظف "${staff.name}" نهائياً من النظام؟` : `Delete staff member "${staff.name}"?`,
+            onConfirm: () => {
+                deleteStaff(staff.id);
+                addToast(isAr ? 'تم حذف الموظف من النظام' : 'Staff deleted', 'info');
+                if (selectedStaffId === staff.id) {
+                    setView('list');
+                    setSelectedStaffId(null);
+                }
+                setConfirmModalData(null);
             }
-        }
+        });
     };
 
     // تبديل حالة نشط / غير نشط بنقرة واحدة سريعة
@@ -509,10 +515,15 @@ export const StaffPage = () => {
 
     // حذف عهدة
     const handleDeleteTool = (toolId: string) => {
-        if (window.confirm(isAr ? 'هل أنت متأكد من استرجاع / إزالة هذه العهدة؟' : 'Return / remove this custody item?')) {
-            setStaffTools(prev => prev.filter(t => t.id !== toolId));
-            addToast(isAr ? 'تم إزالة العهدة' : 'Custody item removed', 'info');
-        }
+        setConfirmModalData({
+            title: isAr ? 'تأكيد استرجاع / إزالة العهدة' : 'Confirm Custody Removal',
+            message: isAr ? 'هل أنت متأكد من استرجاع / إزالة هذه العهدة المسجلة للموظف؟' : 'Return / remove this custody item?',
+            onConfirm: () => {
+                setStaffTools(prev => prev.filter(t => t.id !== toolId));
+                addToast(isAr ? 'تم إزالة العهدة' : 'Custody item removed', 'info');
+                setConfirmModalData(null);
+            }
+        });
     };
 
     // بيانات الموظف المختار التفصيلية
@@ -902,10 +913,15 @@ export const StaffPage = () => {
                                                         <button
                                                             type="button"
                                                             onClick={() => {
-                                                                if (window.confirm(isAr ? 'هل أنت متأكد من حذف هذا القيد؟' : 'Delete this payment record?')) {
-                                                                    deleteStaffPayment(pay.id);
-                                                                    addToast(isAr ? 'تم حذف القيد' : 'Payment record removed', 'info');
-                                                                }
+                                                                setConfirmModalData({
+                                                                    title: isAr ? 'تأكيد حذف القيد المالي' : 'Confirm Delete Payment',
+                                                                    message: isAr ? 'هل أنت متأكد من حذف هذا القيد المالي نهائياً؟' : 'Delete this payment record?',
+                                                                    onConfirm: () => {
+                                                                        deleteStaffPayment(pay.id);
+                                                                        addToast(isAr ? 'تم حذف القيد' : 'Payment record removed', 'info');
+                                                                        setConfirmModalData(null);
+                                                                    }
+                                                                });
                                                             }}
                                                             className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
                                                             title={isAr ? 'حذف القيد' : 'Delete'}
@@ -2113,6 +2129,18 @@ export const StaffPage = () => {
                     </div>
                 </ModalShell>
             )}
+            {/* نافذة تأكيد الإجراءات الفاخرة */}
+            <ConfirmModal
+                isOpen={!!confirmModalData}
+                title={confirmModalData?.title || ''}
+                message={confirmModalData?.message || ''}
+                confirmText={isAr ? 'تأكيد الحذف' : 'Delete'}
+                cancelText={isAr ? 'إلغاء' : 'Cancel'}
+                variant="danger"
+                onConfirm={() => confirmModalData?.onConfirm()}
+                onCancel={() => setConfirmModalData(null)}
+            />
+
         </div>
     );
 };

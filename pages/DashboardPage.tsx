@@ -6,7 +6,7 @@ import {
     FileText, Calendar, Award, PieChart, Activity, Plus,
     Package, ChevronRight, TrendingUp, ShoppingCart, Sparkles,
     CreditCard, Printer, X, Check, ArrowUp, ArrowDown, User, Users,
-    Phone, Building, Wallet, Info, Filter, History
+    Phone, Building, Wallet, Info, Filter, History, Settings
 } from '../components/Icons';
 import { Card, SimpleBarChart, ModalShell } from '../components/ui';
 import { parseInvoiceDate, localIsoToday, toIsoDate } from '../lib/dates';
@@ -716,6 +716,54 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                     </button>
                 </div>
             </div>
+
+            {/* بطاقة البدء السريع وإعداد المتجر الجديد (تظهر عند عدم وجود أصناف وفواتير) */}
+            {state.items.length === 0 && state.invoices.length === 0 && (
+                <div className="p-5 md:p-6 rounded-3xl bg-gradient-to-r from-amber-500/10 via-primary-500/10 to-amber-500/10 border border-primary-500/30 text-slate-800 dark:text-slate-100 shadow-sm animate-fade-in relative overflow-hidden">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-12 h-12 rounded-2xl bg-primary-500/20 text-primary-600 dark:text-primary-400 border border-primary-500/30 flex items-center justify-center shrink-0">
+                                <Sparkles size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-base md:text-lg font-black text-slate-900 dark:text-white">
+                                    {language === 'ar' ? 'مرحباً بك في RaiZon Pro! متجرك الجديد جاهز للبدء' : 'Welcome to RaiZon Pro! Your clean store is ready'}
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    {language === 'ar' ? 'ابدأ تشغيل نشاطك التجاري في 3 خطوات سريعة ومرنة:' : 'Start your business operations in 3 simple steps:'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                            <button
+                                type="button"
+                                onClick={() => onNavigate('inventory')}
+                                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-black shadow-sm transition-all cursor-pointer active:scale-95"
+                            >
+                                <Plus size={14} />
+                                <span>{language === 'ar' ? '1. إضافة أول صنف بالمخزون' : '1. Add First Item'}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onNavigate('settings')}
+                                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer"
+                            >
+                                <Settings size={14} />
+                                <span>{language === 'ar' ? '2. إعدادات المتجر' : '2. Store Settings'}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onNavigate('create_invoice')}
+                                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-sm transition-all cursor-pointer active:scale-95"
+                            >
+                                <FileText size={14} />
+                                <span>{language === 'ar' ? '3. أول فاتورة' : '3. First Invoice'}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* 2. شريط فلترة الفترة الزمنية المتطور الشامل (إحصائيات اليوم | يوم | أسبوع | شهر | سنة | المدة الكاملة) والفروع */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 shadow-xs">

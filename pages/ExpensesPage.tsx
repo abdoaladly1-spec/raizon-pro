@@ -61,19 +61,17 @@ export const ExpensesPage = () => {
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm(t('confirm_delete_expense'))) {
-            const expenseToDelete = state.expenses.find(e => e.id === id);
-            deleteExpense(id);
-            addToast(t('expense_deleted'), 'success', {
-                label: t('undo_action'),
-                onClick: () => {
-                    if (expenseToDelete) {
-                        addExpense(expenseToDelete);
-                        addToast(t('expense_restored'), 'success');
-                    }
+        const expenseToDelete = state.expenses.find(e => e.id === id);
+        deleteExpense(id);
+        addToast(t('expense_deleted'), 'success', {
+            label: t('undo_action'),
+            onClick: () => {
+                if (expenseToDelete) {
+                    addExpense(expenseToDelete);
+                    addToast(t('expense_restored'), 'success');
                 }
-            });
-        }
+            }
+        });
     };
 
     const activeLocationId = String(state.settings.currentLocationId || state.locations[0]?.id || '1');

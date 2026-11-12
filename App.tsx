@@ -860,30 +860,129 @@ const MainContent = () => {
                 customers={state.customers}
             />
             
-            {/* Keyboard Shortcuts Modal */}
+            {/* دليل اختصارات لوحة المفاتيح الفاخر (Keyboard Cheat Sheet) */}
             {showShortcuts && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowShortcuts(false)}>
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl max-w-md w-full animate-scale-in" onClick={e => e.stopPropagation()}>
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold flex items-center gap-2"><Keyboard size={24} className="text-primary-500"/> {t('shortcuts')}</h3>
-                    <button onClick={() => setShowShortcuts(false)} className="hover:bg-slate-100 dark:hover:bg-slate-700 p-1 rounded-full"><X size={20}/></button>
+              <div 
+                className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in" 
+                onClick={() => setShowShortcuts(false)}
+                dir={language === 'ar' ? 'rtl' : 'ltr'}
+              >
+                <div 
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-7 rounded-3xl shadow-2xl max-w-lg w-full animate-scale-in text-slate-800 dark:text-slate-100 space-y-6" 
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-primary-500/15 text-primary-600 dark:text-primary-400 border border-primary-500/30 flex items-center justify-center shadow-xs">
+                        <Keyboard size={22} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                          {language === 'ar' ? 'دليل اختصارات الكاشير ولوحة المفاتيح' : 'Keyboard Shortcuts Cheat Sheet'}
+                        </h3>
+                        <p className="text-xs text-slate-400">
+                          {language === 'ar' ? 'اضغط أي مفتاح بالأسفل للتنفيذ السريع والمباشر' : 'Press any key combination to execute instantly'}
+                        </p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setShowShortcuts(false)} 
+                      className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                    >
+                      <X size={18} />
+                    </button>
                   </div>
-                  <div className="space-y-4">
-                    <div className="space-y-3">
-                      <h3 className="font-bold text-slate-500 uppercase text-xs tracking-wider border-b pb-1 mb-2">{t('general_shortcuts')}</h3>
-                      <div className="flex justify-between text-sm"><span className="text-slate-600 dark:text-slate-300">{t('global_search')}</span> <kbd className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">Ctrl + K</kbd></div>
-                      <div className="flex justify-between text-sm"><span className="text-slate-600 dark:text-slate-300">{t('show_shortcuts')}</span> <kbd className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">?</kbd></div>
-                      <div className="flex justify-between text-sm"><span className="text-slate-600 dark:text-slate-300">{t('print_invoice')}</span> <kbd className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">Ctrl + P</kbd></div>
-                      <div className="flex justify-between text-sm"><span className="text-amber-500 font-bold">{language === 'ar' ? 'فتح درج النقدية' : 'Open Cash Drawer'}</span> <kbd className="bg-amber-500/15 text-amber-500 border border-amber-500/40 px-2 py-1 rounded font-mono text-xs font-bold">F7</kbd></div>
 
-                      <div className="flex justify-between text-sm"><span className="text-amber-500 font-bold">{language === 'ar' ? 'فتح درج النقدية' : 'Open Cash Drawer'}</span> <kbd className="bg-amber-500/15 text-amber-500 border border-amber-500/40 px-2 py-1 rounded font-mono text-xs font-bold">F7</kbd></div>
+                  <div className="space-y-4">
+                    {/* قسم اختصارات الكاشير الفورية */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                        {language === 'ar' ? 'اختصارات نقطة البيع السريعة (POS):' : 'Point of Sale Hotkeys:'}
+                      </span>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 text-xs">
+                          <span className="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                            <Wallet size={15} />
+                            <span>{language === 'ar' ? 'فتح درج النقدية يدوياً' : 'Open Cash Drawer'}</span>
+                          </span>
+                          <kbd className="px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-mono text-xs font-black shadow-2xs">F7</kbd>
+                        </div>
+
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 text-xs">
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                            <CreditCard size={15} />
+                            <span>{language === 'ar' ? 'إتمام الدفع وحفظ الفاتورة' : 'Checkout & Pay'}</span>
+                          </span>
+                          <kbd className="px-2 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-mono text-xs font-black shadow-2xs">F8</kbd>
+                        </div>
+
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 text-xs">
+                          <span className="font-bold text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                            <Tag size={15} />
+                            <span>{language === 'ar' ? 'التركيز على حقل الخصم السريع' : 'Quick Discount'}</span>
+                          </span>
+                          <kbd className="px-2 py-0.5 rounded-lg bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 font-mono text-xs font-black shadow-2xs">F9</kbd>
+                        </div>
+
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 text-xs">
+                          <span className="font-bold text-sky-600 dark:text-sky-400 flex items-center gap-2">
+                            <Plus size={15} />
+                            <span>{language === 'ar' ? 'فاتورة بيع جديدة' : 'New Invoice'}</span>
+                          </span>
+                          <kbd className="px-2 py-0.5 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 font-mono text-xs font-extrabold shadow-2xs">Ctrl + N</kbd>
+                        </div>
+                      </div>
                     </div>
-                    <div className="space-y-3">
-                      <h3 className="font-bold text-slate-500 uppercase text-xs tracking-wider border-b pb-1 mb-2">{t('invoice_shortcuts')}</h3>
-                      <div className="flex justify-between text-sm"><span className="text-slate-600 dark:text-slate-300">{t('save_print_short')}</span> <kbd className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">Ctrl + S</kbd></div>
-                      <div className="flex justify-between text-sm"><span className="text-slate-600 dark:text-slate-300">{t('new_invoice_shortcut')}</span> <kbd className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">Ctrl + N</kbd></div>
-                      <div className="flex justify-between text-sm"><span className="text-slate-600 dark:text-slate-300">{t('cancel_shortcut')}</span> <kbd className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 font-mono text-xs">ESC</kbd></div>
+
+                    {/* قسم اختصارات النظام العامة */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                        {language === 'ar' ? 'اختصارات عامة والتنقل:' : 'General & Navigation Shortcuts:'}
+                      </span>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 text-xs">
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <Search size={15} className="text-primary-500" />
+                            <span>{language === 'ar' ? 'البحث الذكي والتنقل بين الصفحات' : 'Smart Search / Palette'}</span>
+                          </span>
+                          <kbd className="px-2 py-0.5 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 font-mono text-xs font-extrabold shadow-2xs">Ctrl + K</kbd>
+                        </div>
+
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 text-xs">
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <Printer size={15} className="text-primary-500" />
+                            <span>{language === 'ar' ? 'طباعة سريعة' : 'Quick Print'}</span>
+                          </span>
+                          <kbd className="px-2 py-0.5 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 font-mono text-xs font-extrabold shadow-2xs">Ctrl + P</kbd>
+                        </div>
+
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 text-xs">
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <HelpCircle size={15} className="text-primary-500" />
+                            <span>{language === 'ar' ? 'إظهار / إخفاء دليل الاختصارات' : 'Toggle Shortcuts Help'}</span>
+                          </span>
+                          <kbd className="px-2 py-0.5 rounded-lg bg-primary-500/15 text-primary-600 dark:text-primary-400 border border-primary-500/30 font-mono text-xs font-black shadow-2xs">?</kbd>
+                        </div>
+
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 text-xs">
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <X size={15} className="text-rose-500" />
+                            <span>{language === 'ar' ? 'إغلاق النوافذ المنبثقة' : 'Close Modals / Cancel'}</span>
+                          </span>
+                          <kbd className="px-2 py-0.5 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 font-mono text-xs font-extrabold shadow-2xs">ESC</kbd>
+                        </div>
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="pt-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowShortcuts(false)}
+                      className="w-full py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-black text-xs shadow-md transition-all cursor-pointer active:scale-95"
+                    >
+                      {language === 'ar' ? 'فهمت ذلك، إغلاق' : 'Got it, Close'}
+                    </button>
                   </div>
                 </div>
               </div>

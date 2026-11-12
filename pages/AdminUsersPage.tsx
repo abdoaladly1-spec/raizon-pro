@@ -8,7 +8,7 @@ import {
     MoreVertical, ChevronDown, CheckCircle2, Building, RefreshCw, XCircle
 } from '../components/Icons';
 import { User as UserType, AuditLog } from '../types';
-import { Card, Button, Input, ModalShell } from '../components/ui';
+import { Card, Button, Input, ModalShell, ConfirmModal } from '../components/ui';
 import { makePasswordRecord } from '../lib/crypto';
 import { translateAuditLogToAr } from '../lib/auditLogAr';
 
@@ -88,6 +88,7 @@ export const AdminUsers = () => {
     const [modalTab, setModalTab] = useState<'profile' | 'permissions' | 'password' | 'activity'>('profile');
     const [form, setForm] = useState<UserType>(emptyUser());
     const [showPassword, setShowPassword] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<UserType | null>(null);
     
     // قائمة الإجراءات السريعة (...)
     const [activeActionMenuId, setActiveActionMenuId] = useState<string | null>(null);
@@ -253,10 +254,7 @@ export const AdminUsers = () => {
             addToast(language === 'ar' ? 'لا يمكن حذف حسابك الحالي أو آخر مدير في النظام' : 'Cannot delete self or last admin', 'error');
             return;
         }
-        if (window.confirm(language === 'ar' ? `هل أنت متأكد من حذف المستخدم «${u.name}» نهائياً؟` : `Are you sure you want to delete user ${u.name}?`)) {
-            deleteUser(u.id);
-            addToast(language === 'ar' ? `تم حذف المستخدم «${u.name}» بنجاح` : `User ${u.name} deleted`, 'info');
-        }
+        setUserToDelete(u);
     };
 
     // حفظ المستخدم من النافذة الشاملة
@@ -1173,6 +1171,26 @@ export const AdminUsers = () => {
                     </form>
                 </ModalShell>
             )}
+
+            {/* نافذة تأكيد حذف المستخدم الفاخرة */}
+            <ConfirmModal
+                isOpen={!!userToDelete}
+                title={language === 'ar' ? 'تأكيد حذف المستخدم' : 'Confirm Delete User'}
+                message={language === 'ar' 
+                    ? `هل أنت متأكد من حذف المستخدم «${userToDelete?.name}» نهائياً من النظام؟ لا يمكن التراجع عن هذا الإجراء.`
+                    : `Are you sure you want to permanently delete user "${userToDelete?.name}"?`}
+                confirmText={language === 'ar' ? 'حذف نهائياً' : 'Delete'}
+                cancelText={language === 'ar' ? 'إلغاء' : 'Cancel'}
+                variant="danger"
+                onConfirm={() => {
+                    if (userToDelete) {
+                        deleteUser(userToDelete.id);
+                        addToast(language === 'ar' ? `تم حذف المستخدم «${userToDelete.name}» بنجاح` : `User ${userToDelete.name} deleted`, 'info');
+                        setUserToDelete(null);
+                    }
+                }}
+                onCancel={() => setUserToDelete(null)}
+            />
 
         </div>
     );
