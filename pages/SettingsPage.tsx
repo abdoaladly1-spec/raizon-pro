@@ -1347,9 +1347,9 @@ export const SettingsPage = () => {
                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">{t('theme_color')}</label>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             {[
+                                { id: 'forest', color: '#10b981', nameAr: 'أسود فحمي + زمردي (افتراضي)', descAr: 'Dark Emerald (Default)' },
                                 { id: 'luxury', color: '#CA8A04', nameAr: 'ذهبي فاخر + كحلي', descAr: 'Premium Gold & Navy' },
                                 { id: 'ocean', color: '#0284c7', nameAr: 'أزرق محيطي + فضي', descAr: 'Ocean Corporate' },
-                                { id: 'forest', color: '#10b981', nameAr: 'أسود فحمي + زمردي', descAr: 'Dark Emerald' },
                             ].map(theme => (
                                 <button 
                                     key={theme.id}
@@ -3378,8 +3378,8 @@ export const SettingsPage = () => {
                 isOpen={showResetConfirmModal}
                 title={language === 'ar' ? 'استعادة الإعدادات الافتراضية وبدء متجر نظيف' : 'Restore System Defaults'}
                 message={language === 'ar' 
-                    ? 'سيتم مسح البيانات الحالية وبدء متجر جديد نظيف تماماً وفق الإعدادات الافتراضية:\n• بدون مخزون وبدون أصناف\n• بدون عملاء\n• بدون موظفين\n• الثيم الافتراضي الملكي (ذهبي فاخر + كحلي داكن)\n\nسيتم حفظ نسخة احتياطية على جهازك تلقائياً قبل البدء.'
-                    : 'All data will be reset to default clean state (no inventory, no customers, no staff, default luxury theme). A backup will be downloaded automatically.'}
+                    ? 'سيتم مسح البيانات الحالية وبدء متجر جديد نظيف تماماً وفق الإعدادات الافتراضية:\n• بدون مخزون وبدون أصناف\n• بدون عملاء\n• بدون موظفين\n• الثيم الافتراضي الأخضر الزمردي (أسود فحمي + زمردي)\n\nسيتم حفظ نسخة احتياطية على جهازك تلقائياً قبل البدء.'
+                    : 'All data will be reset to default clean state (no inventory, no customers, no staff, default emerald green theme). A backup will be downloaded automatically.'}
                 confirmText={language === 'ar' ? 'تأكيد وإعادة التعيين' : 'Confirm Reset'}
                 cancelText={language === 'ar' ? 'إلغاء' : 'Cancel'}
                 variant="danger"

@@ -1837,7 +1837,7 @@ export const AppProvider = ({ children }: any) => {
                     serverUrl: parsed.settings?.serverUrl || 'http://127.0.0.1:8087',
                     serverApiKey: parsed.settings?.serverApiKey || '',
                     cashDrawerOpening: Number(parsed.settings?.cashDrawerOpening) || 0,
-                    themeColor: parsed.settings?.themeColor || 'luxury',
+                    themeColor: parsed.settings?.themeColor || 'forest',
                 }
             };
         }
@@ -1882,7 +1882,7 @@ export const AppProvider = ({ children }: any) => {
         enableSound: true,
         enableScreenSaver: false,
         touchMode: false,
-        themeColor: 'luxury',
+        themeColor: 'forest',
         loyaltyEnabled: true,
         loyaltyMinSpend: 0,
         loyaltyPointsAward: 1,
@@ -2571,14 +2571,14 @@ export const AppProvider = ({ children }: any) => {
   }, [state.users]);
 
   useEffect(() => {
-    // توحيد الألوان وحصرها في 3 ثيمات فاخرة فقط: ذهبي فاخر (luxury)، أزرق محيطي (ocean)، زمردي (forest)
-    let normalizedTheme = state.settings.themeColor || 'luxury';
+    // توحيد الألوان وحصرها في 3 ثيمات فاخرة: زمردي أخضر (forest - الافتراضي)، ذهبي فاخر (luxury)، أزرق محيطي (ocean)
+    let normalizedTheme = state.settings.themeColor || 'forest';
     if (normalizedTheme === 'blue' || normalizedTheme === 'ocean') {
       normalizedTheme = 'ocean';
-    } else if (normalizedTheme === 'forest') {
-      normalizedTheme = 'forest';
+    } else if (normalizedTheme === 'luxury') {
+      normalizedTheme = 'luxury';
     } else {
-      normalizedTheme = 'luxury'; // الافتراضي الملكي: ذهبي فاخر + كحلي داكن
+      normalizedTheme = 'forest'; // الافتراضي: الثيم الأخضر الزمردي
     }
     const classList = document.documentElement.classList;
     // إزالة أي ثيمات قديمة
