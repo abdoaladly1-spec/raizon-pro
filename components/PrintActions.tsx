@@ -14,7 +14,7 @@ export interface ShopContactInfo {
   address?: string;
 }
 
-export const buildInvoiceWhatsAppMessage = (
+const buildInvoiceWhatsAppMessage = (
   invoice: Invoice, 
   shopInfo?: string | ShopContactInfo
 ): string => {
