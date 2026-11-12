@@ -1044,17 +1044,6 @@ export const CreateInvoice = ({ onClose }: any) => {
                  <div className="flex flex-wrap items-center gap-2">
                      <button
                          type="button"
-                         onClick={() => triggerOpenCashDrawer()}
-                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-2xs"
-                         title="فتح درج النقدية يدوياً (F7)"
-                     >
-                         <Wallet size={14} className="text-amber-600 dark:text-amber-400" />
-                         <span>{language === 'ar' ? 'فتح الدرج' : 'Open Drawer'}</span>
-                         <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 text-[10px] font-mono border border-amber-500/40">F7</kbd>
-                     </button>
-
-                     <button
-                         type="button"
                          onClick={() => {
                              if (selectedItems.length > 0) {
                                  setShowPaymentModal(true);
