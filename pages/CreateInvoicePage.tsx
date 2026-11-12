@@ -369,16 +369,25 @@ export const CreateInvoice = ({ onClose }: any) => {
     }
   }, [existingCustomer]);
 
-  // Lookup by ID
+  // Lookup by ID (فقط للعملاء المسجلين برقم هاتف فعلي لتجنب التعارض مع ترقيم العميل النقدي)
   useEffect(() => {
-      if (customerIdInput) {
+      if (customerIdInput && phone !== '--') {
           const c = state.customers.find(c => c.id.toString() === customerIdInput);
           if (c) {
               setPhone(c.phone);
               // Name will be set by existingCustomer effect since phone changes
           }
       }
-  }, [customerIdInput, state.customers]);
+  }, [customerIdInput, state.customers, phone]);
+
+  // مزامنة كود العميل تلقائياً مع ترقيم العميل النقدي
+  useEffect(() => {
+    const match = (customerName || '').trim().match(/^عميل نقدي(?:\s+(\d+))?$/i) || (customerName || '').trim().match(/^cash customer(?:\s+(\d+))?$/i);
+    if (match) {
+      const num = match[1] || '1';
+      setCustomerIdInput(num);
+    }
+  }, [customerName]);
 
   const [selectedItems, setSelectedItems] = useState((initialDraft?.selectedItems || []) as any);
   const [showPreview, setShowPreview] = useState(false);
@@ -742,7 +751,7 @@ export const CreateInvoice = ({ onClose }: any) => {
   
   const isCashCustomerName = (name: string) => /^عميل نقدي(?:\s+\d+)?$/i.test((name || '').trim()) || /^cash customer(?:\s+\d+)?$/i.test((name || '').trim());
 
-  const getNextCashCustomerName = () => {
+  const getNextCashCustomerNum = () => {
     let maxNum = 0;
     const regexAr = /^عميل نقدي(?:\s+(\d+))?$/i;
     const regexEn = /^cash customer(?:\s+(\d+))?$/i;
@@ -765,15 +774,20 @@ export const CreateInvoice = ({ onClose }: any) => {
       }
     });
 
-    const nextNum = maxNum + 1;
+    return maxNum + 1;
+  };
+
+  const getNextCashCustomerName = () => {
+    const nextNum = getNextCashCustomerNum();
     return language === 'ar' ? `عميل نقدي ${nextNum}` : `Cash Customer ${nextNum}`;
   };
 
   const applyCashCustomer = () => {
-    const nextName = getNextCashCustomerName();
+    const nextNum = getNextCashCustomerNum();
+    const nextName = language === 'ar' ? `عميل نقدي ${nextNum}` : `Cash Customer ${nextNum}`;
     setCustomerName(nextName);
     setPhone('--');
-    setCustomerIdInput('');
+    setCustomerIdInput(String(nextNum));
     setShowCustomerDropdown(false);
   };
 
@@ -884,7 +898,7 @@ export const CreateInvoice = ({ onClose }: any) => {
       setShowPaymentModal(false);
       const isCash = phone === '--' || phone === '01000000000' || isCashCustomerName(customerName);
       const existing = (phone !== '--' && phone) ? state.customers.find(c => c.phone === phone) : null;
-      const customerId = existing ? existing.id : (isCash && phone === '--' ? undefined : addCustomer({ 
+      const customerId = existing ? existing.id : (isCash ? (parseInt(customerIdInput, 10) || undefined) : addCustomer({ 
         name: customerName, 
         phone: phone === '--' ? '' : phone 
       } as any));
@@ -1071,12 +1085,7 @@ export const CreateInvoice = ({ onClose }: any) => {
 
                      <button
                          type="button"
-                         onClick={() => {
-                             setCustomerName('عميل نقدي');
-                             setPhone('01000000000');
-                             setCustomerIdInput('');
-                             setShowCustomerDropdown(false);
-                         }}
+                         onClick={applyCashCustomer}
                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-bold transition-all active:scale-95 cursor-pointer"
                          title="تعبئة سريعة لعميل نقدي"
                      >
