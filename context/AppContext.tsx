@@ -2627,14 +2627,19 @@ export const AppProvider = ({ children }: any) => {
   }, [state.users]);
 
   useEffect(() => {
-    // Apply Theme Color
-    const themeColor = state.settings.themeColor || 'blue';
-    const classList = document.documentElement.classList;
-    // Remove old themes
-    classList.remove('theme-ocean', 'theme-sunset', 'theme-forest', 'theme-midnight', 'theme-luxury');
-    if (themeColor !== 'blue') {
-      classList.add(`theme-${themeColor}`);
+    // توحيد الألوان وحصرها في 3 ثيمات فاخرة فقط: ذهبي فاخر (luxury)، أزرق محيطي (ocean)، زمردي (forest)
+    let normalizedTheme = state.settings.themeColor || 'luxury';
+    if (normalizedTheme === 'blue' || normalizedTheme === 'ocean') {
+      normalizedTheme = 'ocean';
+    } else if (normalizedTheme === 'forest') {
+      normalizedTheme = 'forest';
+    } else {
+      normalizedTheme = 'luxury'; // الافتراضي الملكي: ذهبي فاخر + كحلي داكن
     }
+    const classList = document.documentElement.classList;
+    // إزالة أي ثيمات قديمة
+    classList.remove('theme-ocean', 'theme-sunset', 'theme-forest', 'theme-midnight', 'theme-luxury');
+    classList.add(`theme-${normalizedTheme}`);
     
     // Apply Touch Mode
     if (state.settings.touchMode) {

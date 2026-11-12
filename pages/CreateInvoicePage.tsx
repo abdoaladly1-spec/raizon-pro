@@ -327,6 +327,28 @@ export const CreateInvoice = ({ onClose }: any) => {
   // Effects
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'F7') {
+        e.preventDefault();
+        triggerOpenCashDrawer();
+        return;
+      }
+      if (e.key === 'F8') {
+        e.preventDefault();
+        if (selectedItems.length > 0) {
+          setShowPaymentModal(true);
+        } else {
+          addToast(language === 'ar' ? 'السلة فارغة، يرجى إضافة أصناف أولاً' : 'Cart is empty', 'warning');
+        }
+        return;
+      }
+      if (e.key === 'F9') {
+        e.preventDefault();
+        const discInput = document.getElementById('pos-quick-discount-input');
+        if (discInput) {
+          discInput.focus();
+        }
+        return;
+      }
       if (showPaymentModal) {
           if (e.key === 'Escape') setShowPaymentModal(false);
           return;
@@ -345,7 +367,7 @@ export const CreateInvoice = ({ onClose }: any) => {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [showPaymentModal]);
+  }, [showPaymentModal, selectedItems]);
 
   const addToInvoice = (item: Item) => {
     const isProduct = item.type === 'product';
@@ -785,6 +807,72 @@ export const CreateInvoice = ({ onClose }: any) => {
     return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full relative">
         <div className="lg:col-span-2 space-y-6">
+             {/* شريط الإجراءات السريعة واختصارات لوحة المفاتيح الهوت كي (Quick Actions Bar) */}
+             <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 shadow-xs">
+                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
+                     <Keyboard size={16} className="text-primary-500" />
+                     <span className="hidden sm:inline">{language === 'ar' ? 'اختصارات الكاشير السريعة:' : 'POS Hotkeys:'}</span>
+                 </div>
+                 <div className="flex flex-wrap items-center gap-2">
+                     <button
+                         type="button"
+                         onClick={() => triggerOpenCashDrawer()}
+                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-2xs"
+                         title="فتح درج النقدية يدوياً (F7)"
+                     >
+                         <Wallet size={14} className="text-amber-600 dark:text-amber-400" />
+                         <span>{language === 'ar' ? 'فتح الدرج' : 'Open Drawer'}</span>
+                         <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 text-[10px] font-mono border border-amber-500/40">F7</kbd>
+                     </button>
+
+                     <button
+                         type="button"
+                         onClick={() => {
+                             if (selectedItems.length > 0) {
+                                 setShowPaymentModal(true);
+                             } else {
+                                 addToast(language === 'ar' ? 'السلة فارغة، يرجى إضافة أصناف أولاً' : 'Cart is empty', 'warning');
+                             }
+                         }}
+                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-2xs"
+                         title="إتمام الدفع والحفظ فوراً (F8)"
+                     >
+                         <CreditCard size={14} className="text-emerald-600 dark:text-emerald-400" />
+                         <span>{language === 'ar' ? 'دفع وحفظ' : 'Checkout'}</span>
+                         <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 text-[10px] font-mono border border-emerald-500/40">F8</kbd>
+                     </button>
+
+                     <button
+                         type="button"
+                         onClick={() => {
+                             const el = document.getElementById('pos-quick-discount-input');
+                             if (el) { el.focus(); (el as HTMLInputElement).select(); }
+                         }}
+                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-2xs"
+                         title="تطبيق خصم سريع على الفاتورة (F9)"
+                     >
+                         <Tag size={14} className="text-purple-600 dark:text-purple-400" />
+                         <span>{language === 'ar' ? 'خصم سريع' : 'Discount'}</span>
+                         <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 text-[10px] font-mono border border-purple-500/40">F9</kbd>
+                     </button>
+
+                     <button
+                         type="button"
+                         onClick={() => {
+                             setCustomerName('عميل نقدي');
+                             setPhone('01000000000');
+                             setCustomerIdInput('');
+                             setShowCustomerDropdown(false);
+                         }}
+                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                         title="تعبئة سريعة لعميل نقدي"
+                     >
+                         <User size={13} className="text-slate-500" />
+                         <span>{language === 'ar' ? 'عميل نقدي سريع' : 'Cash Client'}</span>
+                     </button>
+                 </div>
+             </div>
+
              {!isMain && (
                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 flex flex-wrap items-center justify-between gap-3 text-xs font-bold animate-fade-in shadow-xs">
                      <div className="flex items-center gap-2.5">
@@ -1201,6 +1289,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                 <h3 className="text-lg font-bold mb-4">{t('billing')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Input
+                        id="pos-quick-discount-input"
                         label={t('discount_percent')}
                         type="number"
                         min="0"

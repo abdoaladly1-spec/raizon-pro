@@ -62,6 +62,13 @@ export class ErrorBoundary extends Component<Props, State> {
                 <RefreshCw size={14} />
                 <span>إعادة المحاولة</span>
               </button>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer"
+              >
+                <span>تحديث الصفحة كاملة</span>
+              </button>
             </div>
           </div>
         </div>

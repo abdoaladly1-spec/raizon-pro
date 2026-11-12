@@ -5,7 +5,7 @@ import {
     Clock, DollarSign, TrendingDown, AlertCircle, Banknote,
     FileText, Calendar, Award, PieChart, Activity, Plus,
     Package, ChevronRight, TrendingUp, ShoppingCart, Sparkles,
-    CreditCard, Printer, X, Check, ArrowUp, ArrowDown, User,
+    CreditCard, Printer, X, Check, ArrowUp, ArrowDown, User, Users,
     Phone, Building, Wallet, Info, Filter, History
 } from '../components/Icons';
 import { Card, SimpleBarChart, ModalShell } from '../components/ui';
@@ -29,6 +29,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
     const [activeModal, setActiveModal] = useState<DetailModalType>(null);
     // إمكانية تبديل فترة أفضل موظف من داخل النافذة
     const [staffModalRange, setStaffModalRange] = useState<DashboardRange>('day');
+    // نمط العرض التنفيذي الفاخر (4 بطاقات رئيسية) أو التفصيلي الكامل (10 بطاقات)
+    const [executiveView, setExecutiveView] = useState(true);
 
     // الساعة الحية
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -461,6 +463,9 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
         return result;
     }, [periodFilteredInvoices, range, language]);
 
+    const profitMargin = totalRevenue > 0 ? Math.round((accrualNetProfit / totalRevenue) * 100) : 0;
+    const lowStockCount = useMemo(() => (state.items || []).filter(i => i.type === 'product' && i.trackStock && (i.quantity <= (i.alertThreshold || 5))).length, [state.items]);
+
     // وظائف طباعة التقارير لكل بطاقة
     const handlePrintCard = (type: DetailModalType) => {
         const periodTitle = range === 'today' ? 'إحصائيات اليوم' :
@@ -745,313 +750,470 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
             {/* 3. شبكة البطاقات الإحصائية التفاعلية (قابلة للنقر لعرض التفاصيل الكاملة والطباعة) */}
             {showStats && (
                 <div className="space-y-3.5 animate-fade-in">
-                    {/* الصف الأول: المبيعات، صافي الأرباح، المصروفات، المتوقع بالدرج، الرصيد الافتتاحي، ديون العملاء */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-3.5">
-                        {/* 1. المبيعات */}
-                        <div 
-                            onClick={() => setActiveModal('revenue')}
-                            className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
-                            title="انقر لعرض تفاصيل المبيعات وطباعة التقرير"
+                    {/* شريط التبديل بين العرض التنفيذي الفاخر (4 بطاقات) والعرض التفصيلي الشامل (10 بطاقات) */}
+                    <div className="flex items-center justify-between px-1">
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <Sparkles size={14} className="text-amber-500" />
+                            <span>{executiveView ? 'الملخص التنفيذي الفاخر (4 مؤشرات رئيسية)' : 'المؤشرات التفصيلية الشاملة (10 بطاقات كاملة)'}</span>
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => setExecutiveView(!executiveView)}
+                            className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center gap-1 transition-colors cursor-pointer bg-primary-500/10 hover:bg-primary-500/15 px-3 py-1.5 rounded-xl border border-primary-500/25 active:scale-95"
                         >
-                            <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
-                                    {t('total_revenue')}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 whitespace-nowrap">
-                                    {rangeLabels.find(r => r.key === range)?.label}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                                    <DollarSign size={20} />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="text-lg sm:text-xl xl:text-2xl font-black text-emerald-500 font-mono tracking-tight truncate" title={`${totalRevenue.toLocaleString('en-US')} ${t('egp')}`}>
-                                        {totalRevenue.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
-                                    </h3>
-                                    <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
-                                        <span className="truncate">محصل كاش: <b className="text-emerald-500 font-mono">{paymentBreakdown.cash.toLocaleString('en-US')}</b></span>
-                                        <span className="text-primary-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">تفاصيل ←</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 2. صافي الأرباح (دقيق 100% مع ربط التكلفة التجارية والديون) */}
-                        <div 
-                            onClick={() => setActiveModal('profit')}
-                            className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
-                            title="انقر لعرض تفاصيل العملية الحسابية للأرباح وطباعة التقرير"
-                        >
-                            <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
-                                    {t('net_profit')}
-                                </span>
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 whitespace-nowrap ${accrualNetProfit >= 0 ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'}`}>
-                                    {accrualNetProfit >= 0 ? 'صافي أرباح' : 'عجز'}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200/60 dark:border-purple-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                                    <Banknote size={20} />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <h3 className={`text-lg sm:text-xl xl:text-2xl font-black font-mono tracking-tight truncate ${accrualNetProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} title={`${accrualNetProfit.toLocaleString('en-US')} ${t('egp')}`}>
-                                        {accrualNetProfit.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
-                                    </h3>
-                                    <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
-                                        <span className="truncate">التكلفة (COGS): <b className="font-mono">{totalCOGS.toLocaleString('en-US')}</b></span>
-                                        <span className="text-purple-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">المعادلة ←</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 3. المصروفات التشغيلية */}
-                        <div 
-                            onClick={() => setActiveModal('expenses')}
-                            className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
-                            title="انقر لعرض العملية الحسابية التفصيلية للمصروفات وطباعة التقرير"
-                        >
-                            <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
-                                    {t('expenses')}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0 whitespace-nowrap">
-                                    تشغيلي
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                                    <PieChart size={20} />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="text-lg sm:text-xl xl:text-2xl font-black text-rose-500 font-mono tracking-tight truncate" title={`${totalExpenses.toLocaleString('en-US')} ${t('egp')}`}>
-                                        {totalExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
-                                    </h3>
-                                    <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
-                                        <span className="truncate">المتوقع بالدرج: <b className="text-emerald-500 font-mono">{expectedDrawerCash.toLocaleString('en-US')}</b></span>
-                                        <span className="text-rose-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">حساب كامل ←</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 4. بطاقة المبلغ المتوقع في الدرج (بجانب المصروفات مباشرة) */}
-                        <div 
-                            onClick={() => setActiveModal('drawer')}
-                            className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
-                            title="انقر لعرض العملية الحسابية وتفاصيل المبلغ المتوقع بالدرج"
-                        >
-                            <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
-                                    المتوقع بالدرج
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 shrink-0 whitespace-nowrap">
-                                    الدرج الآن
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                                    <Wallet size={20} />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="text-lg sm:text-xl xl:text-2xl font-black font-mono tracking-tight text-emerald-500 truncate" title={`${expectedDrawerCash.toLocaleString('en-US')} ${t('egp')}`}>
-                                        {expectedDrawerCash.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
-                                    </h3>
-                                    <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
-                                        <span className="truncate">كاش مبيعات: <b className="text-emerald-500 font-mono">+{todayCashSales.toLocaleString('en-US')}</b></span>
-                                        <span className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">الجرد ←</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 5. بطاقة الرصيد الافتتاحي للدرج (بجانب المتوقع بالدرج) */}
-                        <div 
-                            onClick={() => setActiveModal('opening')}
-                            className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
-                            title="انقر لعرض تفاصيل الرصيد الافتتاحي المعتمد لبداية اليوم"
-                        >
-                            <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
-                                    الرصيد الافتتاحي
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 shrink-0 whitespace-nowrap">
-                                    افتتاحي
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                                    <Banknote size={20} />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="text-lg sm:text-xl xl:text-2xl font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight truncate" title={`${drawerOpeningBalance.toLocaleString('en-US')} ${t('egp')}`}>
-                                        {drawerOpeningBalance.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
-                                    </h3>
-                                    <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
-                                        <span className="truncate">{hasManualOverrideToday ? 'تم تعيينه يدوياً' : (yesterdayRemainingInDrawer !== null ? 'مرحل من الأمس' : 'رصيد الأساس')}</span>
-                                        <span className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">العهدة ←</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 6. بطاقة ديون العملاء (مطلوبة ومربوطة بصافي الأرباح) */}
-                        <div 
-                            onClick={() => setActiveModal('debts')}
-                            className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
-                            title="انقر لعرض كشف حسابات وديون العملاء وطباعة التقرير"
-                        >
-                            <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
-                                    ديون العملاء
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0 whitespace-nowrap">
-                                    {debtors.length} عميل
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                                    <CreditCard size={20} />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="text-lg sm:text-xl xl:text-2xl font-black text-rose-500 font-mono tracking-tight truncate" title={`${totalCurrentDebts.toLocaleString('en-US')} ${t('egp')}`}>
-                                        {totalCurrentDebts.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
-                                    </h3>
-                                    <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
-                                        <span className="truncate">آجل بالفترة: <b className="font-mono">{paymentBreakdown.credit.toLocaleString('en-US')}</b></span>
-                                        <span className="text-amber-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">كشف الحساب ←</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                            <Activity size={13} />
+                            <span>{executiveView ? 'عرض 10 مؤشرات تفصيلية ↓' : 'عرض 4 مؤشرات رئيسية ↑'}</span>
+                        </button>
                     </div>
 
-                    {/* الصف الثاني: عدد الفواتير، متوسط الفاتورة، المرتجعات، أفضل موظف */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                        {/* 1. عدد الفواتير */}
-                        <div 
-                            onClick={() => setActiveModal('invoices')}
-                            className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
-                            title="انقر لعرض قائمة الفواتير وطباعة التقرير"
-                        >
-                            <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
-                                    {t('invoices')}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 shrink-0 whitespace-nowrap">
-                                    إجمالي الفترة
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200/60 dark:border-sky-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                                    <FileText size={20} />
+                    {executiveView ? (
+                        /* =========================================================================
+                           العرض التنفيذي الفاخر (4 بطاقات رئيسية فائقة الوضوح والراحة البصرية)
+                           ========================================================================= */
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* 1. المبيعات الإجمالية */}
+                            <div 
+                                onClick={() => setActiveModal('revenue')}
+                                className="rounded-2xl p-5 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+                                title="انقر لعرض تفاصيل المبيعات وطباعة التقرير"
+                            >
+                                <div className="flex items-center justify-between gap-1.5 mb-3">
+                                    <span className="text-xs font-black text-slate-700 dark:text-slate-300">
+                                        {t('total_revenue')} ({rangeLabels.find(r => r.key === range)?.label})
+                                    </span>
+                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 font-mono">
+                                        {periodFilteredInvoices.length} فاتورة
+                                    </span>
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="text-lg sm:text-xl xl:text-2xl font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight truncate" title={`${totalInvoicesCount.toLocaleString('en-US')} ${t('invoices')}`}>
-                                        {totalInvoicesCount.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('invoices')}</span>
-                                    </h3>
-                                    <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
-                                        <span className="truncate">فواتير نقدية وآجلة</span>
-                                        <span className="text-sky-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">عرض القائمة ←</span>
+                                <div className="flex items-center gap-3.5">
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                                        <DollarSign size={24} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight truncate">
+                                            {totalRevenue.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                                        </h3>
+                                        <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
+                                            <span>كاش: <b className="text-emerald-600 dark:text-emerald-400 font-mono">{paymentBreakdown.cash.toLocaleString('en-US')}</b></span>
+                                            <span className="text-primary-500 font-bold group-hover:-translate-x-0.5 transition-transform text-[11px]">تفاصيل ←</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 2. صافي الأرباح وهامش الربح */}
+                            <div 
+                                onClick={() => setActiveModal('profit')}
+                                className="rounded-2xl p-5 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+                                title="انقر لعرض تفاصيل العملية الحسابية للأرباح وطباعة التقرير"
+                            >
+                                <div className="flex items-center justify-between gap-1.5 mb-3">
+                                    <span className="text-xs font-black text-slate-700 dark:text-slate-300">
+                                        {t('net_profit')} وهامش الربح
+                                    </span>
+                                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono shrink-0 ${profitMargin >= 0 ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'}`}>
+                                        {profitMargin}% هامش
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-3.5">
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform">
+                                        <TrendingUp size={24} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className={`text-xl sm:text-2xl font-black font-mono tracking-tight truncate ${accrualNetProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {accrualNetProfit.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                                        </h3>
+                                        <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
+                                            <span>التكلفة: <b className="font-mono">{totalCOGS.toLocaleString('en-US')}</b></span>
+                                            <span className="text-purple-500 font-bold group-hover:-translate-x-0.5 transition-transform text-[11px]">المعادلة ←</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. المتوقع بالدرج والمصروفات */}
+                            <div 
+                                onClick={() => setActiveModal('drawer')}
+                                className="rounded-2xl p-5 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+                                title="انقر لعرض تفاصيل النقدية المتوقعة بالدرج والمصروفات"
+                            >
+                                <div className="flex items-center justify-between gap-1.5 mb-3">
+                                    <span className="text-xs font-black text-slate-700 dark:text-slate-300">
+                                        المتوقع بالدرج والمصروفات
+                                    </span>
+                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0 font-mono">
+                                        مصروفات: {totalExpenses.toLocaleString('en-US')}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-3.5">
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 to-orange-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
+                                        <Wallet size={24} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight truncate">
+                                            {expectedDrawerCash.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                                        </h3>
+                                        <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
+                                            <span>الافتتاحي: <b className="font-mono">{drawerOpeningBalance.toLocaleString('en-US')}</b></span>
+                                            <span className="text-amber-500 font-bold group-hover:-translate-x-0.5 transition-transform text-[11px]">الجرد ←</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 4. العملاء وتنبيهات المخزون */}
+                            <div 
+                                onClick={() => setActiveModal('debts')}
+                                className="rounded-2xl p-5 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+                                title="انقر لعرض تفاصيل العملاء والديون"
+                            >
+                                <div className="flex items-center justify-between gap-1.5 mb-3">
+                                    <span className="text-xs font-black text-slate-700 dark:text-slate-300">
+                                        العملاء والنشاط
+                                    </span>
+                                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 font-mono ${lowStockCount > 0 ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' : 'bg-blue-500/10 text-blue-600 border border-blue-500/20'}`}>
+                                        {lowStockCount > 0 ? `⚠️ ${lowStockCount} نواقص مخزون` : 'المخزون متزن'}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-3.5">
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 to-blue-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-sky-500/20 group-hover:scale-105 transition-transform">
+                                        <Users size={24} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight truncate">
+                                            {state.customers.length} <span className="text-xs font-bold text-slate-400">عميل مسجل</span>
+                                        </h3>
+                                        <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
+                                            <span>ديون: <b className="font-mono text-rose-500">{totalCurrentDebts.toLocaleString('en-US')}</b></span>
+                                            <span className="text-sky-500 font-bold group-hover:-translate-x-0.5 transition-transform text-[11px]">كشف الحساب ←</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        {/* 2. متوسط الفاتورة */}
-                        <div 
-                            onClick={() => setActiveModal('avg')}
-                            className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
-                            title="انقر لعرض تحليل سلة المبيعات وطباعة التقرير"
-                        >
-                            <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
-                                    {language === 'ar' ? 'متوسط الفاتورة' : 'Avg Invoice'}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0 whitespace-nowrap">
-                                    معدل السلة
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                                    <TrendingUp size={20} />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="text-lg sm:text-xl xl:text-2xl font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight truncate" title={`${averageInvoice.toLocaleString('en-US')} ${t('egp')}`}>
-                                        {averageInvoice.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
-                                    </h3>
-                                    <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
-                                        <span className="truncate">الإيرادات ÷ عدد الفواتير</span>
-                                        <span className="text-blue-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">تحليل ←</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 3. المرتجعات */}
-                        <div 
-                            onClick={() => setActiveModal('returns')}
-                            className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
-                            title="انقر لعرض سجل المرتجعات وطباعة التقرير"
-                        >
-                            <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
-                                    {t('returns')}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0 whitespace-nowrap">
-                                    {periodFilteredReturns.length} عملية
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                                    <TrendingDown size={20} />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="text-lg sm:text-xl xl:text-2xl font-black text-rose-500 font-mono tracking-tight truncate" title={`${totalReturns.toLocaleString('en-US')} ${t('egp')}`}>
-                                        {totalReturns.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
-                                    </h3>
-                                    <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
-                                        <span className="truncate">مرتجعات الفترة المحددة</span>
-                                        <span className="text-amber-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">السجل ←</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 4. أفضل موظف (مع إمكانية التبديل والطباعة) */}
-                        <div 
-                            onClick={() => setActiveModal('staff')}
-                            className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
-                            title="انقر لعرض تصنيف وإنتاجية جميع الموظفين مع إمكانية التحديد والطباعة"
-                        >
-                            <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
-                                    {language === 'ar' ? 'أفضل موظف' : 'Top Staff'}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 whitespace-nowrap">
-                                    الأعلى مبيعاً
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                                    <Award size={20} />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight truncate" title={topStaff ? topStaff[0] : (language === 'ar' ? 'لا يوجد' : 'None')}>
-                                        {topStaff ? topStaff[0] : (language === 'ar' ? 'لا يوجد' : 'None')}
-                                    </h3>
-                                    <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
-                                        <span className="font-mono text-emerald-500 font-extrabold truncate">
-                                            {topStaff ? `${Number(topStaff[1]).toLocaleString('en-US')} ج.م` : 'لم تسجل مبيعات'}
+                    ) : (
+                        /* =========================================================================
+                           العرض التفصيلي الشامل (10 بطاقات KPI متناسقة 5x2 دون أي تداخل)
+                           ========================================================================= */
+                        <div className="space-y-4">
+                            {/* الصف الأول: المؤشرات المالية (المبيعات، الأرباح، المصروفات، المتوقع بالدرج، الرصيد الافتتاحي) */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5">
+                                {/* 1. المبيعات */}
+                                <div 
+                                    onClick={() => setActiveModal('revenue')}
+                                    className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+                                    title="انقر لعرض تفاصيل المبيعات وطباعة التقرير"
+                                >
+                                    <div className="flex items-center justify-between gap-1.5 mb-2.5">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                            {t('total_revenue')}
                                         </span>
-                                        <span className="text-emerald-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">الترتيب ←</span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 whitespace-nowrap">
+                                            {rangeLabels.find(r => r.key === range)?.label}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                                            <DollarSign size={20} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="text-lg sm:text-xl font-black text-emerald-500 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${totalRevenue.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="truncate">{totalRevenue.toLocaleString('en-US')}</span>
+                                                <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
+                                            </h3>
+                                            <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
+                                                <span className="truncate">محصل كاش: <b className="text-emerald-500 font-mono">{paymentBreakdown.cash.toLocaleString('en-US')}</b></span>
+                                                <span className="text-primary-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">تفاصيل ←</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 2. صافي الأرباح (دقيق 100% مع ربط التكلفة التجارية والديون) */}
+                                <div 
+                                    onClick={() => setActiveModal('profit')}
+                                    className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+                                    title="انقر لعرض تفاصيل العملية الحسابية للأرباح وطباعة التقرير"
+                                >
+                                    <div className="flex items-center justify-between gap-1.5 mb-2.5">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                            {t('net_profit')}
+                                        </span>
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 whitespace-nowrap ${accrualNetProfit >= 0 ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'}`}>
+                                            {accrualNetProfit >= 0 ? 'صافي أرباح' : 'عجز'}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200/60 dark:border-purple-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                                            <Banknote size={20} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className={`text-lg sm:text-xl font-black font-mono tracking-tight flex items-baseline gap-1 ${accrualNetProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} dir="ltr" title={`${accrualNetProfit.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="truncate">{accrualNetProfit.toLocaleString('en-US')}</span>
+                                                <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
+                                            </h3>
+                                            <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
+                                                <span className="truncate">التكلفة (COGS): <b className="font-mono">{totalCOGS.toLocaleString('en-US')}</b></span>
+                                                <span className="text-purple-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">المعادلة ←</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 3. المصروفات التشغيلية */}
+                                <div 
+                                    onClick={() => setActiveModal('expenses')}
+                                    className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+                                    title="انقر لعرض العملية الحسابية التفصيلية للمصروفات وطباعة التقرير"
+                                >
+                                    <div className="flex items-center justify-between gap-1.5 mb-2.5">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                            {t('expenses')}
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0 whitespace-nowrap">
+                                            تشغيلي
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                                            <PieChart size={20} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="text-lg sm:text-xl font-black text-rose-500 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${totalExpenses.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="truncate">{totalExpenses.toLocaleString('en-US')}</span>
+                                                <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
+                                            </h3>
+                                            <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
+                                                <span className="truncate">المتوقع بالدرج: <b className="text-emerald-500 font-mono">{expectedDrawerCash.toLocaleString('en-US')}</b></span>
+                                                <span className="text-rose-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">حساب كامل ←</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 4. بطاقة المبلغ المتوقع في الدرج */}
+                                <div 
+                                    onClick={() => setActiveModal('drawer')}
+                                    className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+                                    title="انقر لعرض العملية الحسابية وتفاصيل المبلغ المتوقع بالدرج"
+                                >
+                                    <div className="flex items-center justify-between gap-1.5 mb-2.5">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                            المتوقع بالدرج
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 shrink-0 whitespace-nowrap">
+                                            الدرج الآن
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                                            <Wallet size={20} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="text-lg sm:text-xl font-black font-mono tracking-tight text-emerald-500 flex items-baseline gap-1" dir="ltr" title={`${expectedDrawerCash.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="truncate">{expectedDrawerCash.toLocaleString('en-US')}</span>
+                                                <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
+                                            </h3>
+                                            <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
+                                                <span className="truncate">كاش مبيعات: <b className="text-emerald-500 font-mono">+{todayCashSales.toLocaleString('en-US')}</b></span>
+                                                <span className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">الجرد ←</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 5. بطاقة الرصيد الافتتاحي للدرج */}
+                                <div 
+                                    onClick={() => setActiveModal('opening')}
+                                    className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+                                    title="انقر لعرض تفاصيل الرصيد الافتتاحي المعتمد لبداية اليوم"
+                                >
+                                    <div className="flex items-center justify-between gap-1.5 mb-2.5">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                            الرصيد الافتتاحي
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 shrink-0 whitespace-nowrap">
+                                            افتتاحي
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                                            <Banknote size={20} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="text-lg sm:text-xl font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${drawerOpeningBalance.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="truncate">{drawerOpeningBalance.toLocaleString('en-US')}</span>
+                                                <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
+                                            </h3>
+                                            <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
+                                                <span className="truncate">{hasManualOverrideToday ? 'تم تعيينه يدوياً' : (yesterdayRemainingInDrawer !== null ? 'مرحل من الأمس' : 'رصيد الأساس')}</span>
+                                                <span className="text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">العهدة ←</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* الصف الثاني: العمليات والعملاء (ديون العملاء، عدد الفواتير، متوسط الفاتورة، المرتجعات، أفضل موظف) */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5">
+                                {/* 6. بطاقة ديون العملاء */}
+                                <div 
+                                    onClick={() => setActiveModal('debts')}
+                                    className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+                                    title="انقر لعرض كشف حسابات وديون العملاء وطباعة التقرير"
+                                >
+                                    <div className="flex items-center justify-between gap-1.5 mb-2.5">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                            ديون العملاء
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0 whitespace-nowrap">
+                                            {debtors.length} عميل
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                                            <CreditCard size={20} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="text-lg sm:text-xl font-black text-rose-500 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${totalCurrentDebts.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="truncate">{totalCurrentDebts.toLocaleString('en-US')}</span>
+                                                <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
+                                            </h3>
+                                            <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
+                                                <span className="truncate">آجل بالفترة: <b className="font-mono">{paymentBreakdown.credit.toLocaleString('en-US')}</b></span>
+                                                <span className="text-amber-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">كشف الحساب ←</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 7. عدد الفواتير */}
+                                <div 
+                                    onClick={() => setActiveModal('invoices')}
+                                    className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+                                    title="انقر لعرض قائمة الفواتير وطباعة التقرير"
+                                >
+                                    <div className="flex items-center justify-between gap-1.5 mb-2.5">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                            {t('invoices')}
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 shrink-0 whitespace-nowrap">
+                                            إجمالي الفترة
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200/60 dark:border-sky-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                                            <FileText size={20} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="text-lg sm:text-xl font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${totalInvoicesCount.toLocaleString('en-US')} ${t('invoices')}`}>
+                                                <span className="truncate">{totalInvoicesCount.toLocaleString('en-US')}</span>
+                                                <span className="text-xs font-bold text-slate-400 shrink-0">{t('invoices')}</span>
+                                            </h3>
+                                            <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
+                                                <span className="truncate">فواتير نقدية وآجلة</span>
+                                                <span className="text-sky-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">عرض القائمة ←</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 8. متوسط الفاتورة */}
+                                <div 
+                                    onClick={() => setActiveModal('avg')}
+                                    className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+                                    title="انقر لعرض تحليل سلة المبيعات وطباعة التقرير"
+                                >
+                                    <div className="flex items-center justify-between gap-1.5 mb-2.5">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                            {language === 'ar' ? 'متوسط الفاتورة' : 'Avg Invoice'}
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0 whitespace-nowrap">
+                                            معدل السلة
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                                            <TrendingUp size={20} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="text-lg sm:text-xl font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${averageInvoice.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="truncate">{averageInvoice.toLocaleString('en-US')}</span>
+                                                <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
+                                            </h3>
+                                            <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
+                                                <span className="truncate">الإيرادات ÷ عدد الفواتير</span>
+                                                <span className="text-blue-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">تحليل ←</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 9. المرتجعات */}
+                                <div 
+                                    onClick={() => setActiveModal('returns')}
+                                    className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+                                    title="انقر لعرض سجل المرتجعات وطباعة التقرير"
+                                >
+                                    <div className="flex items-center justify-between gap-1.5 mb-2.5">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                            {t('returns')}
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0 whitespace-nowrap">
+                                            {periodFilteredReturns.length} عملية
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                                            <TrendingDown size={20} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="text-lg sm:text-xl font-black text-rose-500 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${totalReturns.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="truncate">{totalReturns.toLocaleString('en-US')}</span>
+                                                <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
+                                            </h3>
+                                            <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
+                                                <span className="truncate">مرتجعات الفترة</span>
+                                                <span className="text-amber-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">السجل ←</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 10. أفضل موظف */}
+                                <div 
+                                    onClick={() => setActiveModal('staff')}
+                                    className="rounded-2xl p-4 bg-white dark:bg-slate-800/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+                                    title="انقر لعرض تصنيف وإنتاجية جميع الموظفين مع إمكانية التحديد والطباعة"
+                                >
+                                    <div className="flex items-center justify-between gap-1.5 mb-2.5">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                            {language === 'ar' ? 'أفضل موظف' : 'Top Staff'}
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 whitespace-nowrap">
+                                            الأعلى مبيعاً
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                                            <Award size={20} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight truncate" title={topStaff ? topStaff[0] : (language === 'ar' ? 'لا يوجد' : 'None')}>
+                                                {topStaff ? topStaff[0] : (language === 'ar' ? 'لا يوجد' : 'None')}
+                                            </h3>
+                                            <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
+                                                <span className="font-mono text-emerald-500 font-extrabold truncate" dir="ltr">
+                                                    {topStaff ? `${Number(topStaff[1]).toLocaleString('en-US')} ج.م` : 'لم تسجل مبيعات'}
+                                                </span>
+                                                <span className="text-emerald-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">الترتيب ←</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             )}
 

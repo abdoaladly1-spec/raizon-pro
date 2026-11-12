@@ -192,11 +192,13 @@ export const Clients = () => {
 
         const cleanPhone = form.phone.trim().replace(/[٠-٩]/g, (d: string) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString()).replace(/[^\d]/g, '');
         if (cleanPhone.length !== 11 || !cleanPhone.startsWith('01')) {
-            return alert(language === 'ar' ? 'شرط: رقم الهاتف يجب أن يتكون من 11 رقماً بالضبط ويبدأ بـ 01' : 'Phone number must be exactly 11 digits starting with 01');
+            addToast(language === 'ar' ? 'شرط: رقم الهاتف يجب أن يتكون من 11 رقماً بالضبط ويبدأ بـ 01' : 'Phone number must be exactly 11 digits starting with 01', 'error');
+            return;
         }
         const nameParts = form.name.trim().split(/\s+/).filter(Boolean);
         if (nameParts.length < 3) {
-            return alert(language === 'ar' ? 'شرط: يرجى كتابة اسم العميل ثلاثياً على الأقل (3 أسماء)' : 'Customer name must be at least 3 parts (tripartite name)');
+            addToast(language === 'ar' ? 'شرط: يرجى كتابة اسم العميل ثلاثياً على الأقل (3 أسماء)' : 'Customer name must be at least 3 parts (tripartite name)', 'error');
+            return;
         }
 
         const creditLimitNum = Math.max(0, parseFloat(String(form.creditLimit)) || 0);

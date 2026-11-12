@@ -23,7 +23,7 @@ import { WhatsNewModal } from './components/WhatsNewModal';
 import { RAIZON_LOGO_URI } from './lib/logoData';
 import { isMainBranch } from './lib/branchUtils';
 /**
- * تحميل ذكي ومرن للصفحات مع إعادة المحاولة التلقائية عند انقطاع الاتصال أو تحديث السيرفر
+ * تحميل ذكي ومرن للصفحات مع إعادة المحاولة التلقائية والتعافي الفوري من أخطاء الـ Chunks
  */
 function lazyWithRetry<T extends React.ComponentType<any>>(
   componentImport: () => Promise<{ default: T }>,
@@ -38,6 +38,21 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
           .catch((error) => {
             if (remaining <= 0) {
               console.error('Dynamic module load failed after retries:', error);
+              // التحقق إن كان الخطأ ناتج عن تحديث الـ Chunks في Vite / الشبكة
+              const isChunkError = error?.message?.includes('dynamically imported module') ||
+                error?.name === 'ChunkLoadError' ||
+                String(error).includes('fetch dynamically imported module');
+              
+              if (isChunkError && typeof window !== 'undefined') {
+                const reloadKey = `chunk_reload_${window.location.pathname}_${Date.now()}`;
+                const lastReload = sessionStorage.getItem('last_chunk_reload');
+                // منع حلقة إعادة التحميل المستمرة (إعادة المحاولة تلقائياً مرة واحدة كل 15 ثانية فقط)
+                if (!lastReload || Date.now() - parseInt(lastReload, 10) > 15000) {
+                  sessionStorage.setItem('last_chunk_reload', String(Date.now()));
+                  window.location.reload();
+                  return;
+                }
+              }
               reject(error);
               return;
             }

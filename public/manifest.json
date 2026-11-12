@@ -1,11 +1,14 @@
 ﻿{
-  "name": "RaiZon Pro v1",
+  "name": "RaiZon Pro - نظام إدارة الكاشير ونقاط البيع المتطور",
   "short_name": "RaiZon Pro",
+  "description": "نظام كاشير وإدارة محلات ذكي وسحابي متكامل يدعم الأجهزة اللوحية والمحمولة",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#A855F7",
-  "orientation": "portrait",
+  "background_color": "#0b1120",
+  "theme_color": "#ca8a04",
+  "orientation": "any",
+  "dir": "rtl",
+  "lang": "ar",
   "icons": [
     {
       "src": "/icon-192.png",

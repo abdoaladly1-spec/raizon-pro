@@ -32,89 +32,92 @@
   --pri-200: #bbf7d0;
   --pri-300: #86efac;
   --pri-400: #4ade80;
-  --pri-500: #22c55e;
-  --pri-600: #16a34a;
-  --pri-700: #15803d;
-  --pri-800: #166534;
-  --pri-900: #14532d;
-  --pri-950: #052e16;
-}
-
-.theme-midnight {
-  --pri-50: #f5f3ff;
-  --pri-100: #ede9fe;
-  --pri-200: #ddd6fe;
-  --pri-300: #c4b5fd;
-  --pri-400: #a78bfa;
-  --pri-500: #8b5cf6;
-  --pri-600: #7c3aed;
-  --pri-700: #6d28d9;
-  --pri-800: #5b21b6;
-  --pri-900: #4c1d95;
-  --pri-950: #2e1065;
+  --pri-500: #10b981;
+  --pri-600: #059669;
+  --pri-700: #047857;
+  --pri-800: #065f46;
+  --pri-900: #064e3b;
+  --pri-950: #022c22;
 }
 
 .theme-ocean {
-  --pri-50: #ecfeff;
-  --pri-100: #cffafe;
-  --pri-200: #a5f3fc;
-  --pri-300: #67e8f9;
-  --pri-400: #22d3ee;
-  --pri-500: #06b6d4;
-  --pri-600: #0891b2;
-  --pri-700: #0e7490;
-  --pri-800: #155e75;
-  --pri-900: #164e63;
-  --pri-950: #083344;
+  --pri-50: #f0f9ff;
+  --pri-100: #e0f2fe;
+  --pri-200: #bae6fd;
+  --pri-300: #7dd3fc;
+  --pri-400: #38bdf8;
+  --pri-500: #0ea5e9;
+  --pri-600: #0284c7;
+  --pri-700: #0369a1;
+  --pri-800: #075985;
+  --pri-900: #0c4a6e;
+  --pri-950: #082f49;
 }
 
 .theme-luxury {
-  --pri-50: #fefce8;
-  --pri-100: #fef9c3;
-  --pri-200: #fef08a;
-  --pri-300: #fde047;
-  --pri-400: #facc15;
-  --pri-500: #eab308;
-  --pri-600: #ca8a04;
-  --pri-700: #a16207;
-  --pri-800: #854d0e;
-  --pri-900: #713f12;
-  --pri-950: #422006;
+  --pri-50: #fffbeb;
+  --pri-100: #fef3c7;
+  --pri-200: #fde68a;
+  --pri-300: #fcd34d;
+  --pri-400: #fbbf24;
+  --pri-500: #f59e0b;
+  --pri-600: #d97706;
+  --pri-700: #b45309;
+  --pri-800: #92400e;
+  --pri-900: #78350f;
+  --pri-950: #0f172a;
+}
+
+/* التوافق مع أي أسماء قديمة وتوجيهها للثيمات الفاخرة المعتمدة */
+.theme-midnight {
+  --pri-50: #fffbeb;
+  --pri-100: #fef3c7;
+  --pri-200: #fde68a;
+  --pri-300: #fcd34d;
+  --pri-400: #fbbf24;
+  --pri-500: #f59e0b;
+  --pri-600: #d97706;
+  --pri-700: #b45309;
+  --pri-800: #92400e;
+  --pri-900: #78350f;
+  --pri-950: #0f172a;
 }
 
 /* =========================================================================
    Theme Chrome (Sidebar & Header) Backgrounds - Dynamic for Day and Night
    ========================================================================= */
 .theme-chrome-sidebar {
-  background: linear-gradient(180deg, var(--pri-100) 0%, rgba(255, 255, 255, 0.92) 35%, var(--pri-50) 100%) !important;
-  border-inline-end-color: var(--pri-200) !important;
-  box-shadow: 2px 0 16px -4px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+  border-inline-end: 1px solid rgba(226, 232, 240, 0.9) !important;
+  box-shadow: 2px 0 16px -4px rgba(0, 0, 0, 0.04);
 }
 .dark .theme-chrome-sidebar,
 :where(.dark, .dark *) .theme-chrome-sidebar {
-  background: linear-gradient(180deg, var(--pri-950) 0%, rgba(13, 17, 28, 0.96) 40%, var(--pri-950) 100%) !important;
-  border-inline-end-color: var(--pri-900) !important;
-  box-shadow: 4px 0 24px -4px rgba(0, 0, 0, 0.45);
+  background: linear-gradient(180deg, #0b1120 0%, #080d19 100%) !important;
+  border-inline-end: 1px solid rgba(30, 41, 59, 0.8) !important;
+  box-shadow: 4px 0 24px -4px rgba(0, 0, 0, 0.5);
 }
 
 .theme-chrome-header {
-  background: linear-gradient(90deg, var(--pri-100) 0%, rgba(255, 255, 255, 0.94) 45%, var(--pri-50) 100%) !important;
-  border-bottom-color: var(--pri-200) !important;
-  box-shadow: 0 2px 14px -3px rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
 }
 .dark .theme-chrome-header,
 :where(.dark, .dark *) .theme-chrome-header {
-  background: linear-gradient(90deg, var(--pri-950) 0%, rgba(13, 17, 28, 0.96) 45%, var(--pri-950) 100%) !important;
-  border-bottom-color: var(--pri-900) !important;
-  box-shadow: 0 4px 22px -4px rgba(0, 0, 0, 0.45);
+  background: rgba(11, 17, 32, 0.94) !important;
+  backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.8) !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
 }
 
 .theme-chrome-divider {
-  border-color: var(--pri-200) !important;
+  border-color: rgba(226, 232, 240, 0.8) !important;
 }
 .dark .theme-chrome-divider,
 :where(.dark, .dark *) .theme-chrome-divider {
-  border-color: var(--pri-900) !important;
+  border-color: rgba(30, 41, 59, 0.8) !important;
 }
 
 /* Touch Mode Utilities */

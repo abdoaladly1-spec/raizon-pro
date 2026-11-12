@@ -1342,30 +1342,30 @@ export const SettingsPage = () => {
 
                     <div>
                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">{t('theme_color')}</label>
-                        <div className="flex gap-2.5 flex-wrap">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             {[
-                                { id: 'blue', color: '#0ea5e9', nameAr: 'أزرق سماوي' },
-                                { id: 'ocean', color: '#06b6d4', nameAr: 'محيطي' },
-                                { id: 'sunset', color: '#f97316', nameAr: 'غروب برتقالي' },
-                                { id: 'forest', color: '#22c55e', nameAr: 'زمردي' },
-                                { id: 'midnight', color: '#8b5cf6', nameAr: 'ليلي بنفسجي' },
-                                { id: 'luxury', color: '#CA8A04', nameAr: 'ذهبي فاخر' }
+                                { id: 'luxury', color: '#CA8A04', nameAr: 'ذهبي فاخر + كحلي', descAr: 'Premium Gold & Navy' },
+                                { id: 'ocean', color: '#0284c7', nameAr: 'أزرق محيطي + فضي', descAr: 'Ocean Corporate' },
+                                { id: 'forest', color: '#10b981', nameAr: 'أسود فحمي + زمردي', descAr: 'Dark Emerald' },
                             ].map(theme => (
                                 <button 
                                     key={theme.id}
                                     type="button"
                                     onClick={() => setForm({...form, themeColor: theme.id as any})}
-                                    className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 transition-all cursor-pointer ${
+                                    className={`group flex items-center gap-3 p-3 rounded-2xl border-2 transition-all cursor-pointer text-right ${
                                         form.themeColor === theme.id 
-                                            ? 'border-primary-500 bg-primary-500/10 shadow-xs scale-105 font-bold' 
-                                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800/60'
+                                            ? 'border-primary-500 bg-primary-500/10 shadow-sm scale-102 font-bold ring-2 ring-primary-500/20' 
+                                            : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800/80'
                                     }`}
                                     title={theme.nameAr}
                                 >
-                                    <div className="w-5 h-5 rounded-full shadow-inner flex items-center justify-center shrink-0" style={{ backgroundColor: theme.color }}>
-                                        {form.themeColor === theme.id && <Check size={12} className="text-white drop-shadow-xs stroke-[3]" />}
+                                    <div className="w-8 h-8 rounded-xl shadow-sm flex items-center justify-center shrink-0" style={{ backgroundColor: theme.color }}>
+                                        {form.themeColor === theme.id ? <Check size={16} className="text-white drop-shadow-xs stroke-[3]" /> : <Sparkles size={14} className="text-white/80" />}
                                     </div>
-                                    <span className="text-xs text-slate-700 dark:text-slate-200">{theme.nameAr}</span>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-xs font-black text-slate-800 dark:text-slate-100 truncate">{theme.nameAr}</div>
+                                        <div className="text-[10px] text-slate-400 font-medium truncate">{theme.descAr}</div>
+                                    </div>
                                 </button>
                             ))}
                         </div>

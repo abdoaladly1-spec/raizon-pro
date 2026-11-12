@@ -259,6 +259,64 @@ export const SimpleBarChart = ({ data, color = "#0ea5e9" }: { data: { label: str
 };
 
 
+// --- ConfirmModal: نافذة تأكيد مصممة باحترافية وأناقة كاملة بديلة عن alert/confirm المتصفح القديمة ---
+export const ConfirmModal = ({
+  isOpen,
+  title,
+  message,
+  confirmText,
+  cancelText,
+  variant = 'danger',
+  onConfirm,
+  onCancel,
+}: {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  variant?: 'danger' | 'warning' | 'primary';
+  onConfirm: () => void;
+  onCancel: () => void;
+}) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in" dir="rtl">
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 text-slate-800 dark:text-slate-100 animate-scale-in">
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${
+          variant === 'danger' ? 'bg-rose-500/15 text-rose-500 border border-rose-500/30' :
+          variant === 'warning' ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30' :
+          'bg-primary-500/15 text-primary-500 border border-primary-500/30'
+        }`}>
+          <AlertCircle size={26} />
+        </div>
+        <h3 className="text-base font-black mb-1.5">{title}</h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed whitespace-pre-line">{message}</p>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="py-2.5 px-4 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs transition-all cursor-pointer"
+          >
+            {cancelText || 'إلغاء'}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className={`py-2.5 px-4 rounded-xl text-white font-extrabold text-xs shadow-md transition-all cursor-pointer active:scale-95 ${
+              variant === 'danger' ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30' :
+              variant === 'warning' ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/30' :
+              'bg-primary-600 hover:bg-primary-500 shadow-primary-600/30'
+            }`}
+          >
+            {confirmText || 'تأكيد'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- EmptyState Component ---
 export const EmptyState = ({ icon: Icon, title, description, action }: { icon?: any; title: string; description?: string; action?: React.ReactNode }) => (
   <div className="flex flex-col items-center justify-center py-16 px-4 text-center animate-fade-in">
