@@ -1073,20 +1073,6 @@ export const CreateInvoice = ({ onClose }: any) => {
                      <button
                          type="button"
                          onClick={() => {
-                             const el = document.getElementById('pos-quick-discount-input');
-                             if (el) { el.focus(); (el as HTMLInputElement).select(); }
-                         }}
-                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-2xs"
-                         title="تطبيق خصم سريع على الفاتورة (F9)"
-                     >
-                         <Tag size={14} className="text-purple-600 dark:text-purple-400" />
-                         <span>{language === 'ar' ? 'خصم سريع' : 'Discount'}</span>
-                         <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 text-[10px] font-mono border border-purple-500/40">F9</kbd>
-                     </button>
-
-                     <button
-                         type="button"
-                         onClick={() => {
                              setCustomerName('عميل نقدي');
                              setPhone('01000000000');
                              setCustomerIdInput('');
