@@ -6,6 +6,7 @@ import { useApp } from '../context/AppContext';
 import { 
     FileText, Users, Plus, Trash2, Printer, Search, X, 
     User, DollarSign, Clock, Settings, Check, CreditCard, Wallet, Banknote,
+    Filter, ChevronDown,
     WhatsAppIcon, StatementIcon, CustomEditIcon, CustomTrashIcon, CustomPrinterIcon, TimeIcon
 } from '../components/Icons';
 import { Customer, CustomerPayment } from '../types';
@@ -28,7 +29,20 @@ export const Clients = () => {
 
     const [search, setSearch] = useState('');
     const [filterDebtOnly, setFilterDebtOnly] = useState(false);
-    const [filterVipOnly, setFilterVipOnly] = useState(false);
+    const [clientFilter, setClientFilter] = useState<'all' | 'vip' | 'debt' | 'clear' | 'loyalty'>('all');
+    const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+    const filterRef = React.useRef<HTMLDivElement>(null);
+
+    // إغلاق قائمة الفلترة عند النقر خارجها
+    React.useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+                setShowFilterDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState({ 
         id: 0, 
@@ -73,11 +87,22 @@ export const Clients = () => {
                 c.phone.toLowerCase().includes(q) ||
                 String(c.id).includes(q);
             
+            // مطابقة الفلتر المختار
+            let matchesFilter = true;
+            if (clientFilter === 'vip') {
+                matchesFilter = !!c.isVip;
+            } else if (clientFilter === 'debt') {
+                matchesFilter = (c.balance || 0) > 0;
+            } else if (clientFilter === 'clear') {
+                matchesFilter = (c.balance || 0) <= 0;
+            } else if (clientFilter === 'loyalty') {
+                matchesFilter = (c.loyaltyPoints || 0) > 0;
+            }
+
             const matchesDebt = filterDebtOnly ? (c.balance || 0) > 0 : true;
-            const matchesVip = filterVipOnly ? !!c.isVip : true;
-            return matchesSearch && matchesDebt && matchesVip;
+            return matchesSearch && matchesDebt && matchesFilter;
         });
-    }, [state.customers, search, filterDebtOnly, filterVipOnly]);
+    }, [state.customers, search, filterDebtOnly, clientFilter]);
 
     // جميع فواتير العميل المختار
     const customerInvoices = useMemo(() => {
@@ -345,15 +370,89 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                         <span>{language === 'ar' ? 'المديونيات فقط' : 'Debt Only'}</span>
                     </button>
 
-                    {/* فلتر عملاء VIP فقط */}
-                    <button
-                        type="button"
-                        onClick={() => setFilterVipOnly(!filterVipOnly)}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5 ${filterVipOnly ? 'bg-amber-600 text-white border-amber-600 shadow-xs' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200'}`}
-                    >
-                        
-                        <span>{language === 'ar' ? 'عملاء VIP' : 'VIP Only'}</span>
-                    </button>
+                    {/* زر فلترة العملاء المتقدم */}
+                    <div className="relative" ref={filterRef}>
+                        <button
+                            type="button"
+                            onClick={() => setShowFilterDropdown(prev => !prev)}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5 ${
+                                clientFilter !== 'all'
+                                    ? 'bg-primary-600 text-white border-primary-600 shadow-xs'
+                                    : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'
+                            }`}
+                        >
+                            <Filter size={14} className={clientFilter !== 'all' ? 'text-white' : 'text-primary-500'} />
+                            <span>
+                                {clientFilter === 'all' && (language === 'ar' ? 'فلترة العملاء' : 'Filter Clients')}
+                                {clientFilter === 'vip' && (language === 'ar' ? 'عملاء VIP' : 'VIP Only')}
+                                {clientFilter === 'debt' && (language === 'ar' ? 'المديونيات' : 'Debt Only')}
+                                {clientFilter === 'clear' && (language === 'ar' ? 'حسابات مسددة' : 'Clear Balance')}
+                                {clientFilter === 'loyalty' && (language === 'ar' ? 'نقاط الولاء' : 'With Points')}
+                            </span>
+                            <ChevronDown size={14} className={`transition-transform duration-200 ${showFilterDropdown ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {showFilterDropdown && (
+                            <div className="absolute top-full mt-1.5 start-0 z-50 w-56 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden py-1 animate-scale-in text-right">
+                                <button
+                                    type="button"
+                                    onClick={() => { setClientFilter('all'); setShowFilterDropdown(false); }}
+                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'all' ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
+                                >
+                                    <span>{language === 'ar' ? 'جميع العملاء' : 'All Clients'}</span>
+                                    <span className="font-mono text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700">{state.customers.length}</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => { setClientFilter('vip'); setShowFilterDropdown(false); }}
+                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'vip' ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
+                                >
+                                    <span className="flex items-center gap-1.5">
+                                        <span className="text-amber-500">⭐</span>
+                                        <span>{language === 'ar' ? 'عملاء VIP فقط' : 'VIP Clients'}</span>
+                                    </span>
+                                    <span className="font-mono text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700">{state.customers.filter(c => c.isVip).length}</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => { setClientFilter('debt'); setShowFilterDropdown(false); }}
+                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'debt' ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
+                                >
+                                    <span className="flex items-center gap-1.5">
+                                        <span className="text-rose-500">⚠️</span>
+                                        <span>{language === 'ar' ? 'عليهم مديونية (آجل)' : 'Clients with Debt'}</span>
+                                    </span>
+                                    <span className="font-mono text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700">{state.customers.filter(c => (c.balance || 0) > 0).length}</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => { setClientFilter('clear'); setShowFilterDropdown(false); }}
+                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'clear' ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
+                                >
+                                    <span className="flex items-center gap-1.5">
+                                        <span className="text-emerald-500">✓</span>
+                                        <span>{language === 'ar' ? 'حسابات مسددة (بدون دين)' : 'Clear Balance (0 Debt)'}</span>
+                                    </span>
+                                    <span className="font-mono text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700">{state.customers.filter(c => (c.balance || 0) <= 0).length}</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => { setClientFilter('loyalty'); setShowFilterDropdown(false); }}
+                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'loyalty' ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
+                                >
+                                    <span className="flex items-center gap-1.5">
+                                        <span className="text-purple-500">🎁</span>
+                                        <span>{language === 'ar' ? 'لديهم نقاط ولاء' : 'Has Loyalty Points'}</span>
+                                    </span>
+                                    <span className="font-mono text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700">{state.customers.filter(c => (c.loyaltyPoints || 0) > 0).length}</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     {/* حقل البحث */}
                     <div className="relative flex-1 md:w-64">
