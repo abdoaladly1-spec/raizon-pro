@@ -1773,47 +1773,12 @@ const translations = {
 
 
 const initialLocations: Location[] = [
-  { id: '1', name: 'Main Store', address: '123 Main St', phone: '0123456789', active: true },
+  { id: '1', name: 'الفرع الرئيسي', address: '', phone: '', active: true },
 ];
 
-const initidlCdtegories: Category[] = [
-  { id: '1', nameAr: 'عناية بالشعر', nameEn: 'Hair Care', color: '#3b82f6' },
-  { id: '2', nameAr: 'حلاقة', nameEn: 'Shaving', color: '#ef4444' },
-  { id: '3', nameAr: 'أطعمة', nameEn: 'Food', color: '#10b981' },
-  { id: '4', nameAr: 'عناية بالبشرة', nameEn: 'Skin Care', color: '#8b5cf6' },
-];
+const initidlCdtegories: Category[] = [];
 
-// خدمات الصالون — تُضاف إلى أي قاعدة موجودة مرة واحدة (إضافة فقط، لا حذف أبداً)
-const salonSeedItems: Item[] = [
-  { id: 'svc2', nameAr: 'حلاقة ذقن', nameEn: 'Beard Trim', categoryId: '2', price: 80, trackStock: false, quantity: 0, alertThreshold: 0, variants: [], modifiers: [], type: 'service' },
-  { id: 'svc3', nameAr: 'قص شعر + ذقن', nameEn: 'Haircut & Beard', categoryId: '2', price: 200, trackStock: false, quantity: 0, alertThreshold: 0, variants: [], modifiers: [], type: 'service' },
-  { id: 'svc4', nameAr: 'تنظيف بشرة', nameEn: 'Facial Cleansing', categoryId: '4', price: 250, trackStock: false, quantity: 0, alertThreshold: 0, variants: [], modifiers: [], type: 'service' },
-  { id: 'svc5', nameAr: 'صبغة شعر', nameEn: 'Hair Dye', categoryId: '1', price: 350, trackStock: false, quantity: 0, alertThreshold: 0, variants: [], modifiers: [], type: 'service' },
-  { id: 'svc6', nameAr: 'تصفيف شعر', nameEn: 'Hair Styling', categoryId: '1', price: 180, trackStock: false, quantity: 0, alertThreshold: 0, variants: [], modifiers: [], type: 'service' },
-  { id: 'svc7', nameAr: 'حلاقة أطفال', nameEn: 'Kids Haircut', categoryId: '2', price: 100, trackStock: false, quantity: 0, alertThreshold: 0, variants: [], modifiers: [], type: 'service' },
-];
-
-const initidlItems: Item[] = [
-  { 
-    id: '1', nameAr: 'قص شعر', nameEn: 'Haircut', categoryId: '1', price: 150, trackStock: false, 
-    quantity: 0, alertThreshold: 0, variants: [], modifiers: [], type: 'service' 
-  },
-  { 
-    id: '2', nameAr: 'شامبو', nameEn: 'Shampoo', categoryId: '1', price: 120, trackStock: true, 
-    quantity: 50, alertThreshold: 10, variants: [], modifiers: [], type: 'product' 
-  },
-  { 
-    id: '3', nameAr: 'وجبة غداء', nameEn: 'Lunch Meal', categoryId: '3', price: 200, trackStock: false, 
-    quantity: 0, alertThreshold: 0, variants: [
-      { id: 'v1', name: 'Large', price: 50, quantity: 0 },
-      { id: 'v2', name: 'Small', price: 0, quantity: 0 }
-    ], modifiers: [
-      { id: 'm1', name: 'Extra Cheese', price: 20 },
-      { id: 'm2', name: 'Spicy', price: 0 }
-    ], type: 'product' 
-  },
-  ...salonSeedItems,
-];
+const initidlItems: Item[] = [];
 
 const AppContext = createContext(undefined as any);
 
@@ -1848,20 +1813,22 @@ export const AppProvider = ({ children }: any) => {
         const saved = localStorage.getItem('appState');
         if (saved) {
             const parsed = normalizeInvoiceDates(JSON.parse(saved));
-            // Migrdtion logic for older versions
+            // Migration logic for older versions
             return {
                 ...parsed,
-                locations: parsed.locations || initialLocations,
-                categories: parsed.categories || initidlCdtegories,
-                items: parsed.items || initidlItems,
-                suppliers: parsed.suppliers || [],
-                inventoryHistory: parsed.inventoryHistory || [],
-                purchaseOrders: parsed.purchaseOrders || [],
-                closingReports: parsed.closingReports || [],
-                auditLogs: parsed.auditLogs || [],
-                returns: parsed.returns || [],
-                users: parsed.users || [{ id: '1', username: 'admin', name: 'Admin', password: 'admin', role: 'admin', active: true, permissions: [] }],
-                drawerMovements: parsed.drawerMovements || [],
+                locations: (Array.isArray(parsed.locations) && parsed.locations.length > 0) ? parsed.locations : initialLocations,
+                categories: Array.isArray(parsed.categories) ? parsed.categories : [],
+                items: Array.isArray(parsed.items) ? parsed.items : [],
+                customers: Array.isArray(parsed.customers) ? parsed.customers : [],
+                staff: Array.isArray(parsed.staff) ? parsed.staff : [],
+                suppliers: Array.isArray(parsed.suppliers) ? parsed.suppliers : [],
+                inventoryHistory: Array.isArray(parsed.inventoryHistory) ? parsed.inventoryHistory : [],
+                purchaseOrders: Array.isArray(parsed.purchaseOrders) ? parsed.purchaseOrders : [],
+                closingReports: Array.isArray(parsed.closingReports) ? parsed.closingReports : [],
+                auditLogs: Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [],
+                returns: Array.isArray(parsed.returns) ? parsed.returns : [],
+                users: (Array.isArray(parsed.users) && parsed.users.length > 0) ? parsed.users : [{ id: '1', username: 'admin', name: 'Admin', password: 'admin', role: 'admin', active: true, permissions: [] }],
+                drawerMovements: Array.isArray(parsed.drawerMovements) ? parsed.drawerMovements : [],
                 settings: {
                     ...parsed.settings,
                     currentLocationId: parsed.settings?.currentLocationId || '1',
@@ -1869,6 +1836,7 @@ export const AppProvider = ({ children }: any) => {
                     serverUrl: parsed.settings?.serverUrl || 'http://127.0.0.1:8087',
                     serverApiKey: parsed.settings?.serverApiKey || '',
                     cashDrawerOpening: Number(parsed.settings?.cashDrawerOpening) || 0,
+                    themeColor: parsed.settings?.themeColor || 'luxury',
                 }
             };
         }
@@ -1877,8 +1845,8 @@ export const AppProvider = ({ children }: any) => {
     }
     return {
       locations: initialLocations,
-      categories: initidlCdtegories,
-      items: initidlItems,
+      categories: [],
+      items: [],
       customers: [],
       invoices: [],
       returns: [],
@@ -1900,9 +1868,9 @@ export const AppProvider = ({ children }: any) => {
       purchaseOrders: [],
       customerPayments: [],
       settings: {
-        shopName: 'صالون ابراهيم نوار',
-        phone: '01016828238 - 01102002750',
-        address: 'شارع حديقة الطفل بجوار البنك الاهلي القديم',
+        shopName: 'RaiZon Pro',
+        phone: '',
+        address: '',
         currentLocationId: '1',
         printerName: 'Default',
         timeFormat: '12h' as '12h' | '24h',
@@ -1913,7 +1881,7 @@ export const AppProvider = ({ children }: any) => {
         enableSound: true,
         enableScreenSaver: false,
         touchMode: false,
-        themeColor: 'blue',
+        themeColor: 'luxury',
         loyaltyEnabled: true,
         loyaltyMinSpend: 0,
         loyaltyPointsAward: 1,
@@ -2003,31 +1971,6 @@ export const AppProvider = ({ children }: any) => {
       };
   }, [state]);
 
-  // بذر خدمات الصالون مرة واحدة في القاعدة الموجودة (يضيف فقط ولا يمسح أي صنف/فئة)
-  useEffect(() => {
-      try {
-          if (state.settings?.salonServicesSeeded) return;
-          setState((prev: any) => {
-              if (prev.settings?.salonServicesSeeded) return prev;
-              const existingIds = new Set((prev.items || []).map((i: any) => i.id));
-              const missingItems = salonSeedItems.filter(i => !existingIds.has(i.id));
-              const missingCats = [{ id: '4', nameAr: 'عناية بالبشرة', nameEn: 'Skin Care', color: '#8b5cf6' }]
-                  .filter(c => !(prev.categories || []).some((x: any) => x.id === c.id));
-              if (!missingItems.length && !missingCats.length) {
-                  return { ...prev, settings: { ...prev.settings, salonServicesSeeded: true } };
-              }
-              return {
-                  ...prev,
-                  categories: [...(prev.categories || []), ...missingCats],
-                  items: [...(prev.items || []), ...missingItems],
-                  settings: { ...prev.settings, salonServicesSeeded: true },
-              };
-          });
-      } catch (e) {
-          console.error('Salon services seed failed', e);
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // استرجاع من IndexedDB لو مسح localStorage (حد السعة/وضع خاص)
   useEffect(() => {
@@ -3481,8 +3424,8 @@ export const AppProvider = ({ children }: any) => {
         ...prev,
         ...parsed,
         locations: (Array.isArray(parsed.locations) && parsed.locations.length > 0) ? parsed.locations : (prev?.locations?.length ? prev.locations : initialLocations),
-        categories: (Array.isArray(parsed.categories) && parsed.categories.length > 0) ? parsed.categories : (prev?.categories?.length ? prev.categories : initidlCdtegories),
-        items: Array.isArray(parsed.items) ? parsed.items : (Array.isArray(parsed.products) ? parsed.products : (prev?.items || initidlItems)),
+        categories: Array.isArray(parsed.categories) ? parsed.categories : (prev?.categories || []),
+        items: Array.isArray(parsed.items) ? parsed.items : (Array.isArray(parsed.products) ? parsed.products : (prev?.items || [])),
         invoices: Array.isArray(parsed.invoices) ? parsed.invoices : (prev?.invoices || []),
         customers: Array.isArray(parsed.customers) ? parsed.customers : (prev?.customers || []),
         suppliers: Array.isArray(parsed.suppliers) ? parsed.suppliers : (prev?.suppliers || []),

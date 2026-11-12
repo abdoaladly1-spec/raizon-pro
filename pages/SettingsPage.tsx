@@ -12,7 +12,7 @@ import {
     BackupIcon, MailNotificationIcon, GmailLogo, EmailAlertsLogo
 } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier, AppState, CustomReceiptTemplate } from '../types';
-import { Card, Button, Input, ToastContainer, ModalShell } from '../components/ui';
+import { Card, Button, Input, ToastContainer, ModalShell, ConfirmModal } from '../components/ui';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AuditLogs } from './AuditLogsPage';
 import { AdminUsers } from './AdminUsersPage';
@@ -45,6 +45,7 @@ export const SettingsPage = () => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('general');
     const [showCustomizeNotificationsModal, setShowCustomizeNotificationsModal] = useState(false);
     const [showVisibilityModal, setShowVisibilityModal] = useState(false);
+    const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
     const [restoreConfirmData, setRestoreConfirmData] = useState<{
         actualState: any;
         filename: string;
@@ -1930,22 +1931,12 @@ export const SettingsPage = () => {
 
                     <button
                         type="button"
-                        onClick={() => {
-                            if (confirm(t('confirm_system_reset'))) {
-                                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
-                                const downloadAnchorNode = document.createElement('a');
-                                downloadAnchorNode.setAttribute("href", dataStr);
-                                downloadAnchorNode.setAttribute("download", "procashier_pre_reset_backup_" + new Date().toISOString().split('T')[0] + ".json");
-                                document.body.appendChild(downloadAnchorNode);
-                                downloadAnchorNode.click();
-                                downloadAnchorNode.remove();
-                                resetSystem();
-                            }
-                        }}
+                        onClick={() => setShowResetConfirmModal(true)}
                         className="px-4 py-2 border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 rounded-xl hover:bg-red-100 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs mr-auto"
+                        title={language === 'ar' ? 'إعادة تعيين وبدء متجر نظيف تماماً (بدون مخزون، بدون عملاء، وبدون موظفين)' : 'Reset to default clean system'}
                     >
                         <AlertCircle size={15} />
-                        <span>{t('restore_defaults')}</span>
+                        <span>{language === 'ar' ? 'استعادة الإعدادات الافتراضية (بدء متجر نظيف)' : t('restore_defaults')}</span>
                     </button>
                 </div>
             </Card>
@@ -3380,6 +3371,30 @@ export const SettingsPage = () => {
                     </div>
                 </div>
             )}
+
+            {/* نافذة تأكيد استعادة الإعدادات الافتراضية الفاخرة */}
+            <ConfirmModal
+                isOpen={showResetConfirmModal}
+                title={language === 'ar' ? 'استعادة الإعدادات الافتراضية وبدء متجر نظيف' : 'Restore System Defaults'}
+                message={language === 'ar' 
+                    ? 'سيتم مسح البيانات الحالية وبدء متجر جديد نظيف تماماً وفق الإعدادات الافتراضية:\n• بدون مخزون وبدون أصناف\n• بدون عملاء\n• بدون موظفين\n• الثيم الافتراضي الملكي (ذهبي فاخر + كحلي داكن)\n\nسيتم حفظ نسخة احتياطية على جهازك تلقائياً قبل البدء.'
+                    : 'All data will be reset to default clean state (no inventory, no customers, no staff, default luxury theme). A backup will be downloaded automatically.'}
+                confirmText={language === 'ar' ? 'تأكيد وإعادة التعيين' : 'Confirm Reset'}
+                cancelText={language === 'ar' ? 'إلغاء' : 'Cancel'}
+                variant="danger"
+                onConfirm={() => {
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+                    const downloadAnchorNode = document.createElement('a');
+                    downloadAnchorNode.setAttribute("href", dataStr);
+                    downloadAnchorNode.setAttribute("download", "raizon_pre_reset_backup_" + new Date().toISOString().split('T')[0] + ".json");
+                    document.body.appendChild(downloadAnchorNode);
+                    downloadAnchorNode.click();
+                    downloadAnchorNode.remove();
+                    setShowResetConfirmModal(false);
+                    resetSystem();
+                }}
+                onCancel={() => setShowResetConfirmModal(false)}
+            />
 
 </div>
     );
