@@ -33,10 +33,9 @@ export const SupabaseOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSu
   const [newBranchName, setNewBranchName] = useState('');
   const [newBranchAddress, setNewBranchAddress] = useState('');
 
-  // إعدادات متقدمة
-  const [supabaseUrl, setSupabaseUrl] = useState(DEFAULT_SUPABASE_URL);
-  const [supabaseKey, setSupabaseKey] = useState(DEFAULT_SUPABASE_ANON_KEY);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  // إعدادات السيرفر الافتراضية تعمل تلقائياً دون إظهارها للمستخدم
+  const [supabaseUrl] = useState(DEFAULT_SUPABASE_URL);
+  const [supabaseKey] = useState(DEFAULT_SUPABASE_ANON_KEY);
 
   // حالة الاتصال
   const [isTesting, setIsTesting] = useState(false);
@@ -334,40 +333,6 @@ export const SupabaseOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSu
               placeholder="مثال: كاشير 1"
               className="w-full h-10 px-3 rounded-xl bg-slate-800 border border-slate-700 text-sm font-semibold text-white focus:outline-none focus:border-primary-500"
             />
-          </div>
-
-          {/* إعدادات السيرفر المتقدمة (رابط نصي خفيف) */}
-          <div className="pt-1">
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-xs text-slate-400 hover:text-slate-300 underline font-medium"
-            >
-              {showAdvanced ? 'إخفاء الإعدادات المتقدمة' : 'إعدادات السيرفر المتقدمة'}
-            </button>
-            
-            {showAdvanced && (
-              <div className="mt-2 space-y-2 p-3 rounded-xl bg-slate-800/50 border border-slate-700/60">
-                <div>
-                  <label className="block text-[11px] text-slate-400 mb-0.5">Project URL</label>
-                  <input
-                    type="text"
-                    value={supabaseUrl}
-                    onChange={(e) => setSupabaseUrl(e.target.value)}
-                    className="w-full h-8 px-2.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-slate-300 text-left dir-ltr"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] text-slate-400 mb-0.5">Anon Key</label>
-                  <input
-                    type="password"
-                    value={supabaseKey}
-                    onChange={(e) => setSupabaseKey(e.target.value)}
-                    className="w-full h-8 px-2.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono text-slate-300 text-left dir-ltr"
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
           {/* الأزرار العملية */}
