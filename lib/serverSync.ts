@@ -47,7 +47,21 @@ export const getSyncStatus = (): SyncStatus => {
     status.lastError = null;
     writeJson(STATUS_KEY, status);
   }
+  // إذا كانت آخر مزامنة قديمة جداً (أكثر من 24 ساعة) فليست حالة حالية نشطة ويجب تصفيرها لتجنب ظهور "منذ 4 أيام"
+  if (status.lastSyncAt && (Date.now() - status.lastSyncAt > 24 * 60 * 60 * 1000)) {
+    status.lastSyncAt = null;
+    writeJson(STATUS_KEY, status);
+  }
   return status;
+};
+
+export const resetSyncStatus = (): SyncStatus => {
+  const initial: SyncStatus = { pending: 0, lastSyncAt: null, lastError: null, syncing: false };
+  writeJson(STATUS_KEY, initial);
+  writeJson(QUEUE_KEY, []);
+  writeJson(RET_QUEUE_KEY, []);
+  window.dispatchEvent(new CustomEvent('sync-status-changed', { detail: initial }));
+  return initial;
 };
 
 const saveStatus = (patch: Partial<SyncStatus>) => {

@@ -10,7 +10,7 @@ import { Intro } from './components/Intro';
 import { AnimatedBackground } from './components/AnimatedBackground';
 import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, Key, User, Lock, ArrowLeft, ChevronRight, ChevronDown, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Truck, Bell, AlertTriangle, Shield, Phone, Copy, Building, History } from './components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from './types';
-import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, clearSyncError, type SyncStatus } from './lib/serverSync';
+import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, clearSyncError, resetSyncStatus, type SyncStatus } from './lib/serverSync';
 import { startAutoBackupScheduler } from './lib/autoBackupScheduler';
 import { Card, Button, Input, ToastContainer, SimpleBarChart, useSound, useLiveTick, ModalShell } from './components/ui';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -673,10 +673,12 @@ const MainContent = () => {
                                      <span>{t('sync_retry')}</span>
                                  </button>
                              )}
-                             {!syncStatus.lastError && syncStatus.lastSyncAt && syncStatus.lastSyncAt > 0 && (
-                                 <span
-                                     title={language === 'ar' ? `آخر مزامنة ناجحة: ${new Date(syncStatus.lastSyncAt).toLocaleString('ar-EG')}` : `${t('last_sync_at')}: ${new Date(syncStatus.lastSyncAt).toLocaleString()}`}
-                                     className="hidden lg:flex items-center gap-1.5 px-2.5 h-9 rounded-xl bg-primary-500/10 dark:bg-primary-950/20 border border-primary-500/20 dark:border-primary-900/30 text-xs text-slate-700 dark:text-slate-300 font-semibold select-none shadow-2xs"
+                             {!syncStatus.lastError && syncStatus.lastSyncAt && syncStatus.lastSyncAt > 0 && (Date.now() - syncStatus.lastSyncAt <= 24 * 60 * 60 * 1000) && (
+                                 <button
+                                     type="button"
+                                     onClick={() => setShowSyncInfoModal(true)}
+                                     title={language === 'ar' ? `آخر مزامنة ناجحة: ${new Date(syncStatus.lastSyncAt).toLocaleString('ar-EG')} (انقر لعرض التفاصيل)` : `${t('last_sync_at')}: ${new Date(syncStatus.lastSyncAt).toLocaleString()} (Click for details)`}
+                                     className="hidden lg:flex items-center gap-1.5 px-2.5 h-9 rounded-xl bg-primary-500/10 dark:bg-primary-950/20 border border-primary-500/20 dark:border-primary-900/30 text-xs text-slate-700 dark:text-slate-300 font-semibold select-none shadow-2xs hover:bg-primary-500/20 transition-all cursor-pointer"
                                  >
                                      <Clock size={12} className="text-primary-500 dark:text-primary-400 shrink-0" />
                                      <span className="text-[11px] font-sans text-slate-500 dark:text-primary-300/80">
@@ -686,7 +688,7 @@ const MainContent = () => {
                                          {formatSyncRelativeTime(syncStatus.lastSyncAt, systemClock.getTime(), language)}
                                      </span>
                                      <Check size={13} className="text-emerald-500 shrink-0" />
-                                 </span>
+                                 </button>
                              )}
                              {!isOnline && (
                                  <div className="bg-rose-500/90 text-white text-xs px-2.5 h-9 rounded-xl flex items-center gap-1.5 animate-pulse font-bold shadow-xs">
@@ -1050,12 +1052,13 @@ const MainContent = () => {
                                 variant="secondary" 
                                 onClick={() => {
                                     clearSyncError();
+                                    resetSyncStatus();
                                     setShowSyncInfoModal(false);
-                                    addToast(language === 'ar' ? 'تم مسح تنبيه المزامنة' : 'Alert dismissed', 'info');
+                                    addToast(language === 'ar' ? 'تم مسح وتصفير حالة المزامنة بنجاح' : 'Sync status reset successfully', 'info');
                                 }}
                                 className="flex-1 justify-center"
                             >
-                                {language === 'ar' ? 'مسح التنبيه وإخفاؤه' : 'Dismiss Alert'}
+                                {language === 'ar' ? 'مسح وتصفير السجل' : 'Reset Sync Log'}
                             </Button>
                         </div>
                     </div>

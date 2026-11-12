@@ -3464,6 +3464,10 @@ export const AppProvider = ({ children }: any) => {
 
   const resetSystem = () => {
     localStorage.removeItem('appState');
+    localStorage.removeItem('procashier_sync_status');
+    localStorage.removeItem('procashier_sync_queue');
+    localStorage.removeItem('procashier_returns_queue');
+    localStorage.removeItem('raizon_closing_events');
     // نحذف نسخة IndexedDB أيضاً حتى لا تُستعاد الحالة القديمة بعد إعادة التشغيل
     idbRemove('appState').finally(() => window.location.reload());
   };
