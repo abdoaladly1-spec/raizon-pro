@@ -20,6 +20,9 @@ import { PatcherModal } from './components/PatcherModal';
 import { UnsavedChangesModal } from './components/UnsavedChangesModal';
 import { UpdateModal, type UpdateInfo } from './components/UpdateModal';
 import { WhatsNewModal } from './components/WhatsNewModal';
+import { SupabaseAccountMenu } from './components/SupabaseAccountMenu';
+import { SupabaseOnboardingModal } from './components/SupabaseOnboardingModal';
+import { isCloudAccountConfigured } from './lib/supabaseSync';
 import { RAIZON_LOGO_URI } from './lib/logoData';
 import { isMainBranch } from './lib/branchUtils';
 /**
@@ -283,6 +286,7 @@ const MainContent = () => {
   const [showBranchSwitcherModal, setShowBranchSwitcherModal] = useState(false);
   const [showBranchDropdown, setShowBranchDropdown] = useState(false);
   const [showSyncInfoModal, setShowSyncInfoModal] = useState(false);
+  const [showOnboardingModal, setShowOnboardingModal] = useState(() => !isCloudAccountConfigured());
 
   const [isNavSaving, setIsNavSaving] = useState(false);
 
@@ -847,6 +851,9 @@ const MainContent = () => {
                                 );
                              })()}
 
+                             {/* زر وحساب سوبابيز السحابي للفروع المتزامنة (على اليسار مع صورة البروفايل) */}
+                             <SupabaseAccountMenu onOpenOnboarding={() => setShowOnboardingModal(true)} />
+
                              {/* User Profile Pill & Divider (المدير ذهبي والموظفون بألوان حيوية) */}
                              {(() => {
                                  const avatarStyle = getUserAvatarStyle(currentUser);
@@ -897,6 +904,13 @@ const MainContent = () => {
                  </footer>
             </div>
             
+            {/* نافذة إعداد وربط السحابة والفروع لأول مرة (Supabase Cloud Onboarding) */}
+            <SupabaseOnboardingModal
+                isOpen={showOnboardingModal}
+                onClose={() => setShowOnboardingModal(false)}
+                onSuccess={() => setShowOnboardingModal(false)}
+            />
+
                         {/* Modal تأكيد حفظ التعديلات عند الانتقال لصفحة أخرى */}
             <UnsavedChangesModal
                 isOpen={!!pendingNavigation}

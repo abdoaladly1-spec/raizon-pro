@@ -169,8 +169,13 @@ const StatBox = ({ label, value, sub, icon: Icon, color = 'emerald', valueColor 
 /* --------------------------------- الصفحة --------------------------------- */
 
 export const StatsPage = () => {
-    const { state, t, language } = useApp();
+    const { state, t, language, currentUser } = useApp();
     useLiveTick(); // ربط لحظي: يعيد الحساب كل بضع ثوانٍ مع أي فاتورة جديدة
+
+    // فصل وعزل الفروع بالكامل
+    const activeLocationId = String(state.settings.currentLocationId || state.locations[0]?.id || '1');
+    const [selectedBranch, setSelectedBranch] = useState<string>(() => activeLocationId);
+    const activeBranch = state.locations.find(l => String(l.id) === selectedBranch);
 
     // فلاتر الفترة
     const [preset, setPreset] = useState<PeriodPreset>('today');
@@ -205,10 +210,29 @@ export const StatsPage = () => {
     const kind: 'analytics' | 'report' = view.startsWith('a:') ? 'analytics' : 'report';
     const viewId = view.slice(2);
 
-    // بيانات الفترة (لحظية)
-    const periodInvs = useMemo(() => periodInvoices(state.invoices, period), [state.invoices, period]);
-    const periodRets = useMemo(() => periodReturns(state.returns || [], period), [state.returns, period]);
-    const periodExps = useMemo(() => periodExpenses(state.expenses || [], period), [state.expenses, period]);
+    // تصفية وعزل البيانات بحسب الفرع المستهدف
+    const branchInvoices = useMemo(() => {
+        if (selectedBranch === 'all') return state.invoices;
+        return state.invoices.filter(i => 
+            String(i.locationId || '1') === selectedBranch || 
+            (activeBranch && i.branchName && i.branchName === activeBranch.name)
+        );
+    }, [state.invoices, selectedBranch, activeBranch]);
+
+    const branchReturns = useMemo(() => {
+        if (selectedBranch === 'all') return state.returns || [];
+        return (state.returns || []).filter(r => String(r.locationId || '1') === selectedBranch);
+    }, [state.returns, selectedBranch]);
+
+    const branchExpenses = useMemo(() => {
+        if (selectedBranch === 'all') return state.expenses || [];
+        return (state.expenses || []).filter(e => !e.locationId || String(e.locationId) === selectedBranch);
+    }, [state.expenses, selectedBranch]);
+
+    // بيانات الفترة (لحظية ومفصولة بالكامل بحسب الفرع)
+    const periodInvs = useMemo(() => periodInvoices(branchInvoices, period), [branchInvoices, period]);
+    const periodRets = useMemo(() => periodReturns(branchReturns, period), [branchReturns, period]);
+    const periodExps = useMemo(() => periodExpenses(branchExpenses, period), [branchExpenses, period]);
     const periodResv = useMemo(() => periodReservations(state.reservations || [], period), [state.reservations, period]);
     const periodPays = useMemo(() => periodStaffPayments(state.staffPayments || [], period), [state.staffPayments, period]);
 
@@ -782,6 +806,24 @@ export const StatsPage = () => {
                         )}
 
                         <div className="flex flex-wrap items-end gap-3">
+                            {state.locations.length > 1 && (
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs font-bold text-slate-500">{language === 'ar' ? 'الفرع' : 'Branch'}</label>
+                                    <select
+                                        value={selectedBranch}
+                                        onChange={e => setSelectedBranch(e.target.value)}
+                                        disabled={currentUser?.role !== 'admin'}
+                                        className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-bold focus:ring-2 focus:ring-primary-500 min-w-[140px] cursor-pointer"
+                                    >
+                                        {currentUser?.role === 'admin' && (
+                                            <option value="all">{language === 'ar' ? 'جميع الفروع (مجمّع)' : 'All Branches'}</option>
+                                        )}
+                                        {state.locations.map(loc => (
+                                            <option key={loc.id} value={String(loc.id)}>فرع {loc.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-bold text-slate-500">{t('date_range')}</label>
                                 <select value={preset} onChange={e => setPreset(e.target.value as PeriodPreset)}

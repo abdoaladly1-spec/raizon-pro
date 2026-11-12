@@ -10,7 +10,9 @@ import { validateReturn, reversedPointsFor, commissionReversalPlan } from '../li
 import { round2, PAYMENT_KINDS } from '../lib/payments';
 import {
   pushInvoiceToSupabase, pushCustomerToSupabase, pushBranchToSupabase, deleteBranchFromSupabase,
-  subscribeSupabaseRealtime, pullFromSupabase
+  pushUserToSupabase, deleteUserFromSupabase, pullUsersFromSupabase,
+  subscribeSupabaseRealtime, pullFromSupabase, DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY,
+  getCloudAccount, isCloudAccountConfigured
 } from '../lib/supabaseSync';
 import { toIsoDate } from '../lib/dates';
 import { buildPrintIdentity } from '../lib/printDesign';
@@ -2055,9 +2057,31 @@ export const AppProvider = ({ children }: any) => {
       };
   }, []);
 
-  // اشتراك لحظي في سحابة Supabase لتلقي أي فواتير أو تعديلات من الفروع الأخرى (فقط إذا أعد المستخدم سوبابيس)
+  // اشتراك لحظي في سحابة Supabase لتلقي أي فواتير أو تعديلات ومستخدمين من الفروع الأخرى
   useEffect(() => {
-    if (!state.settings.supabaseUrl) return;
+    const cloudAcc = getCloudAccount();
+    const effectiveUrl = state.settings.supabaseUrl || cloudAcc?.supabaseUrl || DEFAULT_SUPABASE_URL;
+    const effectiveKey = state.settings.supabaseKey || cloudAcc?.supabaseKey || DEFAULT_SUPABASE_ANON_KEY;
+
+    let isMounted = true;
+    
+    // سحب المستخدمين والفروع فور الاتصال
+    pullUsersFromSupabase(effectiveUrl, effectiveKey).then(res => {
+      if (isMounted && res.ok && res.users.length > 0) {
+        setState(prev => {
+          const map = new Map<string, User>(prev.users.map(u => [String(u.id), u]));
+          for (const pu of res.users) {
+            const existing = map.get(String(pu.id));
+            map.set(String(pu.id), existing ? { ...existing, ...pu } : pu);
+          }
+          return {
+            ...prev,
+            users: Array.from(map.values())
+          };
+        });
+      }
+    }).catch(() => {});
+
     const unsub = subscribeSupabaseRealtime({
       onNewInvoice: (inv) => {
         if (!inv || !inv.invoice_number) return;
@@ -2071,6 +2095,7 @@ export const AppProvider = ({ children }: any) => {
             customerId: inv.customer_id || '',
             customerName: inv.customer_name || '',
             branchName: inv.branch_name || '',
+            locationId: inv.branch_id || undefined,
             total: Number(inv.total || 0),
             subtotal: Number(inv.subtotal || 0),
             discountPercent: Number(inv.discount_percent || 0),
@@ -2127,10 +2152,43 @@ export const AppProvider = ({ children }: any) => {
             )
           };
         });
+      },
+      onUserChange: (action, userOrId) => {
+        if (action === 'delete') {
+          const targetId = String(userOrId);
+          setState(prev => ({
+            ...prev,
+            users: prev.users.filter(u => String(u.id) !== targetId)
+          }));
+          if (currentUser && String(currentUser.id) === targetId) {
+            logout();
+            addToast(language === 'ar' ? 'تم حذف حسابك من قبل إدارة الفروع' : 'Your account was deleted by administration', 'error');
+          }
+          return;
+        }
+        const remoteUser = userOrId as User;
+        if (!remoteUser || !remoteUser.id) return;
+        setState(prev => {
+          const exists = prev.users.some(u => String(u.id) === String(remoteUser.id));
+          const updatedList = exists
+            ? prev.users.map(u => String(u.id) === String(remoteUser.id) ? { ...u, ...remoteUser } : u)
+            : [...prev.users, remoteUser];
+          return {
+            ...prev,
+            users: updatedList
+          };
+        });
+        if (currentUser && (String(currentUser.id) === String(remoteUser.id) || currentUser.username.toLowerCase() === remoteUser.username.toLowerCase())) {
+          setCurrentUser(prevUser => prevUser ? { ...prevUser, ...remoteUser } : remoteUser);
+          addToast(language === 'ar' ? `تم تحديث صلاحياتك أو بيانات حسابك من فرع آخر لحظياً` : `Account updated from another branch in realtime`, 'info');
+        }
       }
-    }, state.settings.supabaseUrl, state.settings.supabaseKey);
+    }, effectiveUrl, effectiveKey);
 
-    return () => unsub();
+    return () => {
+      isMounted = false;
+      unsub();
+    };
   }, [state.settings.supabaseUrl, state.settings.supabaseKey]);
 
   // مزامنة دورية مع السيرفر: كل 20 ثانية + عند العودة للاتصال أو إظهار النافذة
@@ -2471,6 +2529,10 @@ export const AppProvider = ({ children }: any) => {
     setState(prev => ({ ...prev, users: prev.users.map(u => u.id === next.id ? next : u) }));
     setCurrentUser(next);
     addAuditLog('Security', `Password changed for ${next.username}`, `تم تغيير كلمة المرور بنجاح للمستخدم "${next.username}"`);
+    const cloudAcc = getCloudAccount();
+    const effectiveUrl = state.settings.supabaseUrl || cloudAcc?.supabaseUrl || DEFAULT_SUPABASE_URL;
+    const effectiveKey = state.settings.supabaseKey || cloudAcc?.supabaseKey || DEFAULT_SUPABASE_ANON_KEY;
+    pushUserToSupabase(next, effectiveUrl, effectiveKey);
     return { ok: true };
   };
 
@@ -2491,6 +2553,10 @@ export const AppProvider = ({ children }: any) => {
     setState(prev => ({ ...prev, users: prev.users.map(u => u.id === next.id ? next : u) }));
     setCurrentUser(next);
     addAuditLog('Security', pin ? `Quick PIN set for ${next.username}` : `Quick PIN cleared for ${next.username}`, pin ? `تعيين رمز دخول سريع (PIN) جديد للمستخدم "${next.username}"` : `إلغاء وحذف رمز الدخول السريع للمستخدم "${next.username}"`);
+    const cloudAcc = getCloudAccount();
+    const effectiveUrl = state.settings.supabaseUrl || cloudAcc?.supabaseUrl || DEFAULT_SUPABASE_URL;
+    const effectiveKey = state.settings.supabaseKey || cloudAcc?.supabaseKey || DEFAULT_SUPABASE_ANON_KEY;
+    pushUserToSupabase(next, effectiveUrl, effectiveKey);
     return { ok: true };
   };
 
@@ -3454,6 +3520,10 @@ export const AppProvider = ({ children }: any) => {
       `Added user: ${user.username}`,
       `إضافة مستخدم جديد للنظام: "${user.username}" (الاسم: ${user.name}، الدور: ${user.role === 'admin' ? 'مدير' : 'كاشير'})`
     );
+    const cloudAcc = getCloudAccount();
+    const effectiveUrl = state.settings.supabaseUrl || cloudAcc?.supabaseUrl || DEFAULT_SUPABASE_URL;
+    const effectiveKey = state.settings.supabaseKey || cloudAcc?.supabaseKey || DEFAULT_SUPABASE_ANON_KEY;
+    pushUserToSupabase(user, effectiveUrl, effectiveKey);
   };
 
   const updateUser = (user: User) => {
@@ -3469,6 +3539,10 @@ export const AppProvider = ({ children }: any) => {
       `Updated user: ${user.username}`,
       `تحديث بيانات وصلاحيات المستخدم: "${user.username}"`
     );
+    const cloudAcc = getCloudAccount();
+    const effectiveUrl = state.settings.supabaseUrl || cloudAcc?.supabaseUrl || DEFAULT_SUPABASE_URL;
+    const effectiveKey = state.settings.supabaseKey || cloudAcc?.supabaseKey || DEFAULT_SUPABASE_ANON_KEY;
+    pushUserToSupabase(user, effectiveUrl, effectiveKey);
   };
 
   const deleteUser = (id: string) => {
@@ -3482,6 +3556,10 @@ export const AppProvider = ({ children }: any) => {
       `Deleted user #${id}`,
       `حذف المستخدم "${u?.username || id}" من النظام`
     );
+    const cloudAcc = getCloudAccount();
+    const effectiveUrl = state.settings.supabaseUrl || cloudAcc?.supabaseUrl || DEFAULT_SUPABASE_URL;
+    const effectiveKey = state.settings.supabaseKey || cloudAcc?.supabaseKey || DEFAULT_SUPABASE_ANON_KEY;
+    deleteUserFromSupabase(id, effectiveUrl, effectiveKey);
   };
 
   const updateSettings = (settings: Partial<AppState['settings']> | AppState['settings']) => {

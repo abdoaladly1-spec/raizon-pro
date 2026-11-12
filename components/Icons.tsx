@@ -26,6 +26,12 @@ const IconWrapper = ({ children, className, size = 24, strokeWidth = 2, style }:
   </svg>
 );
 
+export const Cloud = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /></IconWrapper>
+);
+export const ShieldAlert = ({ className, size, strokeWidth }: IconProps) => (
+  <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></IconWrapper>
+);
 export const LayoutDashboard = ({ className, size, strokeWidth }: IconProps) => (
   <IconWrapper className={className} size={size} strokeWidth={strokeWidth}><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></IconWrapper>
 );
