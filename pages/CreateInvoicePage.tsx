@@ -1572,8 +1572,8 @@ export const CreateInvoice = ({ onClose }: any) => {
              </Card>
         </div>
         
-        <div className="lg:col-span-1 h-full">
-            <Card className="h-full flex flex-col border-2 border-primary-500/20">
+        <div className="lg:col-span-1 self-start sticky top-4">
+            <Card className="flex flex-col border-2 border-primary-500/25 shadow-lg bg-white dark:bg-slate-900 rounded-2xl transition-all">
                 <div className="flex justify-between items-center mb-3 border-b border-slate-200 dark:border-slate-700 pb-3">
                     <div className="flex items-center gap-2">
                         <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -1602,14 +1602,14 @@ export const CreateInvoice = ({ onClose }: any) => {
                         </span>
                     </div>
                 </div>
-                <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-1.5 min-h-[180px]">
+                <div className="overflow-y-auto space-y-2 custom-scrollbar pr-1 max-h-[360px] xl:max-h-[440px] transition-all">
                     {selectedItems.length === 0 ? (
-                        <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-center py-10 text-slate-400">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800/80 flex items-center justify-center text-slate-400 mb-2">
-                                <Package size={26} className="opacity-50" />
+                        <div className="flex flex-col items-center justify-center text-center py-7 text-slate-400">
+                            <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800/80 flex items-center justify-center text-slate-400 mb-2 border border-slate-200/60 dark:border-slate-700/60">
+                                <Package size={22} className="opacity-60" />
                             </div>
-                            <p className="font-bold text-sm text-slate-600 dark:text-slate-300">{t('no_items')}</p>
-                            <p className="text-xs text-slate-400 mt-1 max-w-[200px]">
+                            <p className="font-bold text-xs text-slate-600 dark:text-slate-300">{t('no_items')}</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5 max-w-[190px]">
                                 {language === 'ar' ? 'اختر العناصر من القائمة لإضافتها إلى الفاتورة' : 'Select items to add to this invoice'}
                             </p>
                         </div>
@@ -1702,9 +1702,29 @@ export const CreateInvoice = ({ onClose }: any) => {
                         })
                     )}
                 </div>
-                <div className="border-t border-slate-200 dark:border-slate-700/80 pt-4 space-y-3.5">
-                    <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-primary-500/10 border border-emerald-400/30 dark:border-emerald-600/30 flex items-center justify-between">
-                        <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{t('total')}</span>
+                <div className="border-t border-slate-200 dark:border-slate-800 pt-3 mt-2 space-y-2.5">
+                    {(discountAmount > 0 || taxAmount > 0) && (
+                        <div className="space-y-1 text-xs text-slate-500 dark:text-slate-400 px-1 font-bold">
+                            <div className="flex justify-between">
+                                <span>المجموع الفرعي:</span>
+                                <span className="font-mono">{formatNumber(subtotal)} {t('egp')}</span>
+                            </div>
+                            {discountAmount > 0 && (
+                                <div className="flex justify-between text-rose-500 font-bold">
+                                    <span>الخصم ({effectiveDiscountPercent}%):</span>
+                                    <span className="font-mono">-{formatNumber(discountAmount)} {t('egp')}</span>
+                                </div>
+                            )}
+                            {taxAmount > 0 && (
+                                <div className="flex justify-between text-sky-500 font-bold">
+                                    <span>الضريبة ({taxPercent}%):</span>
+                                    <span className="font-mono">+{formatNumber(taxAmount)} {t('egp')}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-primary-500/10 border border-emerald-400/30 dark:border-emerald-600/30 flex items-center justify-between shadow-2xs">
+                        <span className="text-xs sm:text-sm font-black text-slate-700 dark:text-slate-200">{t('total')}</span>
                         <div className="flex items-baseline gap-1.5">
                             <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400 tracking-tight">
                                 {total.toLocaleString('en-US')}
@@ -1723,7 +1743,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                  className="px-3.5 py-3 cursor-pointer relative rounded-xl border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-amber-600 dark:text-amber-400 active:scale-95 transition-all" 
                                  title={language === 'ar' ? 'تعليق الفاتورة أو فتح المعلقة (⏸️)' : 'Hold Invoice or View Held (⏸️)'}
                              >
-                                 <PauseCircle size={20}/>
+                                 <PauseCircle size={18}/>
                                  {state.heldInvoices.length > 0 && (
                                      <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800 animate-pulse">
                                          {state.heldInvoices.length}
@@ -1733,9 +1753,11 @@ export const CreateInvoice = ({ onClose }: any) => {
                          </div>
                          <Button 
                              onClick={handleSave} 
-                             className="flex-1 justify-center py-3 font-black text-sm rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md active:scale-95 transition-all"
+                             disabled={selectedItems.length === 0}
+                             className="flex-1 justify-center py-3 font-black text-sm rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                          >
-                             {t('save')}
+                             <span>{t('save')}</span>
+                             <span className="text-xs font-normal opacity-85">(Enter ↵)</span>
                          </Button>
                          <Button 
                              onClick={onClose} 
@@ -1743,7 +1765,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                              className="px-3.5 py-3 rounded-xl active:scale-95 transition-all"
                              title={t('clear_all')}
                          >
-                             <Trash2 size={20}/>
+                             <Trash2 size={18}/>
                          </Button>
                     </div>
                 </div>
