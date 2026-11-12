@@ -190,34 +190,36 @@ export const SupabaseOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSu
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in" dir="rtl">
       <div className="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl relative text-right text-slate-200">
         
-        {/* زر الإغلاق الهادئ */}
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-5 start-5 p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            title="إغلاق"
-          >
-            <X size={18} />
-          </button>
-        )}
-
-        {/* رأس النافذة البسيط والأنيق */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-1">
+        {/* رأس النافذة المنظم بدون أي تداخل */}
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div className="flex-1 min-w-0">
             <h2 className="text-lg font-bold text-white tracking-tight">
               ربط الفرع والحساب
             </h2>
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold">
-              <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : isConnected === false ? 'bg-rose-500' : 'bg-amber-400'}`} />
+            <p className="text-xs text-slate-400 mt-1">
+              تحديد حساب المنشأة وفرع هذا الجهاز لمزامنة البيانات.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700">
+              <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : isConnected === false ? 'bg-rose-500' : 'bg-amber-400 animate-pulse'}`} />
               <span className={isConnected ? 'text-emerald-400' : 'text-slate-400'}>
                 {isConnected ? 'متصل' : isConnected === false ? 'غير متصل' : 'جاري الفحص...'}
               </span>
             </div>
+
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                title="إغلاق"
+              >
+                <X size={18} />
+              </button>
+            )}
           </div>
-          <p className="text-xs text-slate-400">
-            تحديد حساب المنشأة وفرع هذا الجهاز لمزامنة البيانات.
-          </p>
         </div>
 
         {/* نموذج الإدخال الهادئ */}

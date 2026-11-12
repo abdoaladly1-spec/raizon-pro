@@ -304,7 +304,8 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
             <button
               type="button"
               onClick={() => setShowLogoutModal(false)}
-              className="absolute top-4 start-4 p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="absolute top-4 left-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              title="إغلاق"
             >
               <X size={16} />
             </button>
