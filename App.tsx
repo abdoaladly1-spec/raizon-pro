@@ -140,7 +140,7 @@ const PageLoader = () => (
 );
 
 // --- Avatar Styling Utility: Gold for Admin, Distinct Harmonious Colors for Staff/Cashiers ---
-export const getUserAvatarStyle = (user?: { role?: string; username?: string; name?: string } | null) => {
+const getUserAvatarStyle = (user?: { role?: string; username?: string; name?: string } | null) => {
   const role = (user?.role || '').toLowerCase();
   const username = (user?.username || '').toLowerCase();
 
@@ -240,7 +240,7 @@ export const getUserAvatarStyle = (user?: { role?: string; username?: string; na
  * تنسيق مدة آخر مزامنة بصيغة نسبية مختصرة وواضحة:
  * 30د: دقائق | 1س: ساعات | 5 اسبوع: أسابيع | 1ش: شهور | 1ع: أعوام
  */
-export const formatSyncRelativeTime = (timestamp?: number | null, nowMs: number = Date.now(), lang: string = 'ar'): string => {
+const formatSyncRelativeTime = (timestamp?: number | null, nowMs: number = Date.now(), lang: string = 'ar'): string => {
   if (!timestamp || timestamp <= 0) return '';
   const diffSec = Math.max(0, Math.floor((nowMs - timestamp) / 1000));
   const diffMin = Math.floor(diffSec / 60);
