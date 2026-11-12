@@ -397,14 +397,21 @@ const MainContent = () => {
   }, [addToast, t]);
 
   useEffect(() => {
-      const handleStatus = () => setIsOnline(navigator.onLine);
-      window.addEventListener('online', handleStatus);
-      window.addEventListener('offline', handleStatus);
-      return () => {
-          window.removeEventListener('online', handleStatus);
-          window.removeEventListener('offline', handleStatus);
+      const handleOnline = () => {
+          setIsOnline(true);
+          addToast(language === 'ar' ? 'تمت استعادة الاتصال بالإنترنت بنجاح! النظام متزامن.' : 'Internet connection restored!', 'success');
       };
-  }, []);
+      const handleOffline = () => {
+          setIsOnline(false);
+          addToast(language === 'ar' ? 'أنت تعمل الآن في وضع عدم الاتصال (Offline Mode) - العمليات محفوظة محلياً.' : 'Working in Offline Mode - Data saved locally.', 'warning');
+      };
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      return () => {
+          window.removeEventListener('online', handleOnline);
+          window.removeEventListener('offline', handleOffline);
+      };
+  }, [language, addToast]);
 
   // Shortcuts
   useEffect(() => {

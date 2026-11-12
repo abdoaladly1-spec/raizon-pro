@@ -126,6 +126,27 @@ export const CreateInvoice = ({ onClose }: any) => {
     });
   };
 
+  const setItemDirectQuantity = (id: string, targetQty: number) => {
+    setSelectedItems((prev: any[]) => {
+      return prev.map(i => {
+        if (i.item.id === id) {
+          const clamped = Math.max(1, targetQty);
+          if (i.item.type === 'product' && i.item.trackStock) {
+            const stockItem = state.items.find(si => si.id === id);
+            const curBranchId = state.settings.currentLocationId || '1';
+            const maxAvailable = stockItem ? getStockForBranch(stockItem, curBranchId) : getStockForBranch(i.item, curBranchId);
+            if (clamped > maxAvailable) {
+              addToast(language === 'ar' ? `الكمية بالمخزن (${maxAvailable}) فقط` : `Stock limit reached (${maxAvailable})`, 'error');
+              return { ...i, qty: maxAvailable };
+            }
+          }
+          return { ...i, qty: clamped };
+        }
+        return i;
+      });
+    });
+  };
+
   // Quick Add Customer State
   const [isQuickAddingCustomer, setIsQuickAddingCustomer] = useState(false);
   const [quickCustomerForm, setQuickCustomerForm] = useState({ name: '', phone: '' });
@@ -400,11 +421,13 @@ export const CreateInvoice = ({ onClose }: any) => {
   };
 
   const displayedItems = useMemo(() => {
+    const q = itemSearch.toLowerCase().trim();
     return state.items.filter(item => {
-      const q = itemSearch.toLowerCase().trim();
       const matchesSearch = !q || 
         (item.nameAr && item.nameAr.toLowerCase().includes(q)) || 
-        (item.nameEn && item.nameEn.toLowerCase().includes(q));
+        (item.nameEn && item.nameEn.toLowerCase().includes(q)) ||
+        (item.barcode && item.barcode.toLowerCase().includes(q)) ||
+        (item.sku && item.sku.toLowerCase().includes(q));
       
       if (!matchesSearch) return false;
 
@@ -1518,9 +1541,14 @@ export const CreateInvoice = ({ onClose }: any) => {
                                                 >
                                                     -
                                                 </button>
-                                                <span className="min-w-[24px] px-1 text-center font-bold font-mono text-xs text-slate-900 dark:text-slate-100 tabular-nums">
-                                                    {item.qty}
-                                                </span>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={item.qty}
+                                                    onChange={(e) => setItemDirectQuantity(item.item.id, parseInt(e.target.value) || 1)}
+                                                    className="w-10 text-center font-bold font-mono text-xs bg-white dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600 py-0.5 outline-none focus:ring-1 focus:ring-primary-500 tabular-nums"
+                                                    title={language === 'ar' ? 'تعديل الكمية مباشرة' : 'Direct Quantity'}
+                                                />
                                                 <button
                                                     type="button"
                                                     onClick={() => updateItemQuantity(item.item.id, 1)}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { LogOut, Printer, Award, Clock, Wallet, Plus, Trash2, AlertCircle, ArrowUp, ArrowDown, Check, RefreshCw, FileText, History } from '../components/Icons';
 import { ClosingReport } from '../types';
@@ -241,6 +241,27 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
     const [formError, setFormError] = useState('');
     const [showClosingConfirm, setShowClosingConfirm] = useState(false);
     const [movementToDelete, setMovementToDelete] = useState<string | null>(null);
+    const [remoteCloseNotice, setRemoteCloseNotice] = useState<string | null>(null);
+
+    // آلية منع تضارب الإقفال بين كاشيرين أو نوافذ متزامنة (BroadcastChannel API Lock Guard)
+    useEffect(() => {
+        if (typeof BroadcastChannel === 'undefined') return;
+        try {
+            const bc = new BroadcastChannel('raizon_closing_events');
+            bc.onmessage = (ev) => {
+                if (ev.data?.type === 'SHIFT_CLOSED' && String(ev.data?.locationId) === String(activeLocationId)) {
+                    const msg = language === 'ar'
+                        ? `⚠️ تنبيه فوري: تم إقفال الوردية الحالية للتو في نافذة أو جهاز آخر بواسطة «${ev.data.performedBy}». تجنباً للتضارب، يرجى تحديث الصفحة لمتابعة الوردية الجديدة.`
+                        : `Shift was just closed by ${ev.data.performedBy} in another session. Please reload to avoid conflict.`;
+                    setRemoteCloseNotice(msg);
+                    addToast(msg, 'warning');
+                }
+            };
+            return () => {
+                bc.close();
+            };
+        } catch {}
+    }, [activeLocationId, language, addToast]);
 
     // تعديل الرصيد الافتتاحي
     const [editingOpening, setEditingOpening] = useState(false);
@@ -387,6 +408,20 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
         addClosingReport(newReport);
         setReport(newReport);
         setShowClosingConfirm(false);
+
+        // إشعار فوري لجميع النوافذ والأجهزة المتصلة لمنع التضارب
+        if (typeof BroadcastChannel !== 'undefined') {
+            try {
+                const bc = new BroadcastChannel('raizon_closing_events');
+                bc.postMessage({
+                    type: 'SHIFT_CLOSED',
+                    locationId: activeLocationId,
+                    performedBy: currentUser?.name || 'الكاشير',
+                    timestamp: Date.now()
+                });
+                bc.close();
+            } catch {}
+        }
 
         // تحديث إعدادات النظام ليظل رصيد الدرج ثابتاً كما هو للوردية القادمة طالما لم يتم سحبه
         updateSettings({
@@ -542,6 +577,23 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
     // =========================================================================
     return (
         <div className="max-w-6xl mx-auto space-y-6 animate-fade-in pb-20">
+            {/* تنبيه تضارب الوردية اللحظي */}
+            {remoteCloseNotice && (
+                <div className="p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-500/50 text-amber-600 dark:text-amber-300 flex items-center justify-between gap-3 shadow-md animate-scale-in">
+                    <div className="flex items-center gap-2.5">
+                        <span className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold text-sm shrink-0">⚠️</span>
+                        <p className="text-xs font-bold leading-relaxed">{remoteCloseNotice}</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs transition-all cursor-pointer shrink-0"
+                    >
+                        {language === 'ar' ? 'تحديث الآن ↻' : 'Reload'}
+                    </button>
+                </div>
+            )}
+
             {/* الشريط العلوي للعنوان والمعلومات */}
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
