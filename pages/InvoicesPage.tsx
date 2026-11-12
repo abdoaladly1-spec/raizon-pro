@@ -3,7 +3,7 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Building, MessageSquare } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from '../types';
-import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, EmptyState, useSound, useLiveTick } from '../components/ui';
+import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, EmptyState, useSound, useLiveTick, ConfirmModal } from '../components/ui';
 import { FilterModal } from '../components/FilterModal';
 import { paymentOf, round2 } from '../lib/payments';
 import { canReprint } from '../lib/printDesign';
@@ -18,13 +18,14 @@ import { AdminUsers } from './AdminUsersPage';
 import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, type SyncStatus } from '../lib/serverSync';
 
 export const InvoicesList = () => {
-    const { state, t, language, currentUser, addToast } = useApp();
+    const { state, t, language, currentUser, addToast, voidInvoice } = useApp();
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [activeFilters, setActiveFilters] = useState({ search: '', startDate: '', endDate: '', staffId: '', branchName: '' });
     // إعادة طباعة فاتورة سابقة بهويتها التاريخية (لوحة معاينة مستقلة)
     const [printInvoice, setPrintInvoice] = useState(null as Invoice | null);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
+    const [invoiceToVoid, setInvoiceToVoid] = useState<Invoice | null>(null);
 
     useEffect(() => {
         const handleOutsideClick = () => setActiveMenuId(null);
@@ -334,6 +335,20 @@ export const InvoicesList = () => {
                                                                 <MessageSquare size={16} className="shrink-0" />
                                                                 <span>{language === 'ar' ? 'مشاركة واتس اب' : 'WhatsApp'}</span>
                                                             </button>
+
+                                                            {currentUser?.role === 'admin' && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setActiveMenuId(null);
+                                                                        setInvoiceToVoid(invoice);
+                                                                    }}
+                                                                    className="w-full px-3 py-2 text-right hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 text-rose-600 dark:text-rose-400 cursor-pointer border-t border-slate-100 dark:border-slate-700/80 text-xs font-bold"
+                                                                >
+                                                                    <Trash2 size={14} className="shrink-0 text-rose-500" />
+                                                                    <span>{language === 'ar' ? 'إلغاء الفاتورة واستعادة المخزون' : 'Void & Restock'}</span>
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -375,6 +390,27 @@ export const InvoicesList = () => {
                         </div>
                 </ModalShell>
             )}
+
+            <ConfirmModal
+                isOpen={!!invoiceToVoid}
+                title={language === 'ar' ? 'تأكيد إلغاء الفاتورة واستعادة المخزون' : 'Confirm Void Invoice'}
+                message={invoiceToVoid ? (
+                    language === 'ar' 
+                        ? `هل أنت متأكد من إلغاء الفاتورة #${invoiceToVoid.id} بقيمة ${invoiceToVoid.total} ج.م؟\nسيتم استرجاع كميات جميع الأصناف المباعة إلى المخزون تلقائياً وعكس مديونية العميل.`
+                        : `Are you sure you want to void invoice #${invoiceToVoid.id}? Stock will be restored automatically.`
+                ) : ''}
+                confirmText={language === 'ar' ? 'نعم، إلغاء الفاتورة' : 'Void Invoice'}
+                cancelText={t('cancel')}
+                variant="danger"
+                onConfirm={() => {
+                    if (invoiceToVoid) {
+                        voidInvoice(invoiceToVoid.id);
+                        addToast(language === 'ar' ? `تم إلغاء الفاتورة #${invoiceToVoid.id} واستعادة الكميات للمخزون بنجاح` : `Invoice #${invoiceToVoid.id} voided and restocked`, 'info');
+                        setInvoiceToVoid(null);
+                    }
+                }}
+                onCancel={() => setInvoiceToVoid(null)}
+            />
         </div>
     )
 }

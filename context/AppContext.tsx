@@ -38,6 +38,7 @@ interface AppContextType {
   deleteHeldInvoice: (id: number) => void;
   addInvoice: (invoice: Omit<Invoice, 'id'>) => void;
   updateInvoice: (invoice: Invoice) => void;
+  voidInvoice: (id: number) => boolean;
   // Returns (المرتجعات الجزئية/الكاملة)
   createReturn: (input: {
     invoice: Invoice;
@@ -2865,6 +2866,64 @@ export const AppProvider = ({ children }: any) => {
     );
   };
 
+  const voidInvoice = (id: number): boolean => {
+    const target = state.invoices.find(i => i.id === id);
+    if (!target) return false;
+
+    setState(prev => {
+      // 1) Restore inventory stock
+      const updatedItems = prev.items.map(item => {
+        const invItem = target.items.find(ii => ii.itemId === item.id);
+        if (invItem && item.trackStock) {
+          return { ...item, quantity: (Number(item.quantity) || 0) + (Number(invItem.quantity) || 0) };
+        }
+        return item;
+      });
+
+      // 2) Remove sales inventory history
+      const updatedHistory = prev.inventoryHistory.filter(h => h.invoiceId !== target.uid && h.id !== `sale:${target.uid}`);
+
+      // 3) Restore customer balance & loyalty
+      const updatedCustomers = prev.customers.map(c => {
+        if (c.id === target.customerId) {
+          const creditPart = round2(
+            (target.paymentParts || [])
+              .filter((p: any) => p.method === 'credit')
+              .reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0)
+          );
+          const earnedPts = Math.floor((target.total || 0) * (prev.settings.loyaltyPointsAward || 0));
+          return {
+            ...c,
+            totalSpent: Math.max(0, (Number(c.totalSpent) || 0) - (Number(target.total) || 0)),
+            balance: Math.max(0, (Number(c.balance) || 0) - creditPart),
+            loyaltyPoints: Math.max(0, (Number(c.loyaltyPoints) || 0) - earnedPts)
+          };
+        }
+        return c;
+      });
+
+      // 4) Remove staff commission payments linked to this invoice
+      const updatedStaffPayments = (prev.staffPayments || []).filter(sp => sp.invoiceUid !== target.uid);
+
+      // 5) Remove invoice
+      return {
+        ...prev,
+        items: updatedItems,
+        inventoryHistory: updatedHistory,
+        customers: updatedCustomers,
+        staffPayments: updatedStaffPayments,
+        invoices: prev.invoices.filter(i => i.id !== id)
+      };
+    });
+
+    addAuditLog(
+      'Invoice',
+      `Voided invoice #${id}`,
+      `إلغاء والتراجع عن فاتورة المبيعات #${id} واستعادة الكميات للسلة والمخزون`
+    );
+    return true;
+  };
+
   // ============================================================
   // المرتجعات: تُطبَّق الآثار (مخزون/نقاط/عمولة) مرة واحدة فقط
   // عند الاعتماد — سجل pending لا يلمس المخزون ولا يصرف مبلغاً.
@@ -3598,7 +3657,7 @@ export const AppProvider = ({ children }: any) => {
   return (
     <AppContext.Provider value={{
       language, toggleLanguage, currentUser, login, loginWithPin, logout, changeOwnPassword, setQuickPin, state,
-      addInvoice, updateInvoice, createReturn, cancelReturn, addCustomer, updateCustomer, deleteCustomer,
+      addInvoice, updateInvoice, voidInvoice, createReturn, cancelReturn, addCustomer, updateCustomer, deleteCustomer,
       holdInvoice, restoreInvoice, deleteHeldInvoice,
       addItem, updateItem, deleteItem,
       addCategory, updateCategory, deleteCategory,

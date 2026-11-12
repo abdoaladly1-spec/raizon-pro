@@ -36,7 +36,7 @@ const getInitialInvoiceDraft = () => {
 };
 
 export const CreateInvoice = ({ onClose }: any) => {
-  const { state, addInvoice, holdInvoice, restoreInvoice, deleteHeldInvoice, t, addToast, addCustomer, updateSettings, language, addItem, formatNumber, formatDate, formatTime, formatDateTime, triggerOpenCashDrawer } = useApp();
+  const { state, addInvoice, updateInvoice, voidInvoice, holdInvoice, restoreInvoice, deleteHeldInvoice, t, addToast, addCustomer, updateSettings, language, addItem, formatNumber, formatDate, formatTime, formatDateTime, triggerOpenCashDrawer } = useApp();
   const isMain = isMainBranch(state.settings.currentLocationId, state.locations);
   const activeBranch = getActiveBranch(state.settings.currentLocationId, state.locations);
   const { playBeep } = useSound();
@@ -776,11 +776,83 @@ export const CreateInvoice = ({ onClose }: any) => {
       setPointsRedeemed(0); // Reset after save
   };
 
+  const handleUndoSale = () => {
+      if (!createdInvoice) return;
+      const ok = voidInvoice(createdInvoice.id);
+      if (ok) {
+          // Re-populate the cart so cashier can edit or fix the items
+          setSelectedItems(createdInvoice.items.map((it: any) => ({
+              item: state.items.find(si => si.id === it.itemId) || {
+                  id: it.itemId,
+                  nameAr: it.nameAr || it.name,
+                  nameEn: it.nameEn || it.name,
+                  price: it.price,
+                  quantity: 999,
+                  type: it.type || 'product',
+                  trackStock: false
+              },
+              qty: it.quantity,
+              price: it.price,
+              discount: it.discount || 0
+          })));
+          setCustomerName(createdInvoice.customerName || '');
+          setPhone((createdInvoice as any).phone || '');
+          setNotes(createdInvoice.notes || '');
+          setSelectedStaffId(createdInvoice.staffId || '');
+          setDiscountPercent(createdInvoice.discountPercent || 0);
+          setShowPreview(false);
+          setCreatedInvoice(null);
+          addToast(language === 'ar' ? 'تم التراجع عن الفاتورة بنجاح واستعادة الأصناف للسلة للتعديل!' : 'Sale undone successfully! Cart restored for editing.', 'info');
+      }
+  };
+
   if (showPreview && createdInvoice) {
       return (
         <div className="animate-fade-in space-y-4 max-w-xl mx-auto py-4">
+             {/* شريط الإجراءات والتحكم بعد البيع مع ميزة التراجع الفوري */}
+             <div className="no-print p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 shadow-sm flex items-center justify-between flex-wrap gap-3">
+                 <div className="flex items-center gap-2.5">
+                     <span className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold">✓</span>
+                     <div>
+                         <span className="font-extrabold text-sm text-slate-800 dark:text-slate-100 block">
+                             {language === 'ar' ? `تم إصدار الفاتورة #${createdInvoice.id} بنجاح` : `Invoice #${createdInvoice.id} Created`}
+                         </span>
+                         <span className="text-[11px] text-slate-400">
+                             {language === 'ar' ? 'يمكنك الطباعة، البدء بفاتورة جديدة، أو التراجع والتعديل' : 'Print, start new invoice, or undo sale'}
+                         </span>
+                     </div>
+                 </div>
+
+                 <div className="flex items-center gap-2">
+                     <button
+                         type="button"
+                         onClick={handleUndoSale}
+                         className="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 font-bold text-xs border border-rose-200 dark:border-rose-800/50 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                         title={language === 'ar' ? 'إلغاء الفاتورة واستعادة الأصناف للسلة للتعديل' : 'Undo sale and restore cart'}
+                     >
+                         <span>↩️</span>
+                         <span>{language === 'ar' ? 'تراجع وتعديل' : 'Undo & Edit'}</span>
+                     </button>
+                     <Button 
+                         onClick={() => {
+                             setShowPreview(false);
+                             setCreatedInvoice(null);
+                             setSelectedItems([]);
+                             setCustomerName('');
+                             setPhone('');
+                             setCustomerIdInput('');
+                             setNotes('');
+                         }} 
+                         variant="primary"
+                         className="text-xs font-bold py-2 px-4 shadow-sm"
+                     >
+                         <span>+ {language === 'ar' ? 'فاتورة جديدة' : 'New Invoice'}</span>
+                     </Button>
+                 </div>
+             </div>
+
              <InvoiceReceipt invoice={createdInvoice} />
-             <div className="no-print flex gap-4 justify-end">
+             <div className="no-print flex gap-4 justify-between items-center pt-2">
                  <PrintActions invoice={createdInvoice} />
                  <Button onClick={onClose} variant="secondary">{t('back')}</Button>
              </div>
