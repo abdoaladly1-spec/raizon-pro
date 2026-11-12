@@ -3,7 +3,7 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from '../types';
-import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, useSound, useLiveTick, EmptyState } from '../components/ui';
+import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, useSound, useLiveTick, EmptyState, ConfirmModal } from '../components/ui';
 import { FilterModal } from '../components/FilterModal';
 import { isCashExpense, round2 } from '../lib/payments';
 import { getDrawerOpeningBalance, isAfterClosing } from '../lib/analytics';
@@ -60,18 +60,26 @@ export const ExpensesPage = () => {
         });
     };
 
-    const handleDelete = (id: string) => {
-        const expenseToDelete = state.expenses.find(e => e.id === id);
-        deleteExpense(id);
-        addToast(t('expense_deleted'), 'success', {
-            label: t('undo_action'),
-            onClick: () => {
-                if (expenseToDelete) {
-                    addExpense(expenseToDelete);
+    const [expenseToDeleteTarget, setExpenseToDeleteTarget] = useState<Expense | null>(null);
+
+    const handleConfirmDelete = () => {
+        if (!expenseToDeleteTarget) return;
+        const exp = expenseToDeleteTarget;
+        deleteExpense(exp.id);
+        addToast(
+            language === 'ar'
+                ? `تم حذف مصروف «${exp.title}» (${exp.amount.toLocaleString('en-US')} ج.م) وتم إشعار المدير فوراً`
+                : `Expense "${exp.title}" deleted and manager notified`,
+            'info',
+            {
+                label: t('undo_action'),
+                onClick: () => {
+                    addExpense(exp);
                     addToast(t('expense_restored'), 'success');
                 }
             }
-        });
+        );
+        setExpenseToDeleteTarget(null);
     };
 
     const activeLocationId = String(state.settings.currentLocationId || state.locations[0]?.id || '1');
@@ -395,8 +403,9 @@ export const ExpensesPage = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <button 
-                                                onClick={() => handleDelete(expense.id)}
-                                                className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors"
+                                                onClick={() => setExpenseToDeleteTarget(expense)}
+                                                className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors cursor-pointer"
+                                                title={language === 'ar' ? 'حذف المصروف' : 'Delete Expense'}
                                             >
                                                 <Trash2 size={18} />
                                             </button>
@@ -483,6 +492,20 @@ export const ExpensesPage = () => {
                         </div>
                 </ModalShell>
             )}
+
+            {/* نافذة تأكيد حذف المصروف وإشعار الإدارة */}
+            <ConfirmModal
+                isOpen={!!expenseToDeleteTarget}
+                title={language === 'ar' ? 'تأكيد حذف المصروف' : 'Confirm Delete Expense'}
+                message={expenseToDeleteTarget ? (language === 'ar'
+                    ? `هل أنت متأكد من حذف مصروف «${expenseToDeleteTarget.title}» بقيمة ${expenseToDeleteTarget.amount.toLocaleString('en-US')} ج.م؟\nسيتم تسجيل عملية الحذف هذه وإرسال إشعار فوري لمدير النظام.`
+                    : `Are you sure you want to delete expense "${expenseToDeleteTarget.title}" for ${expenseToDeleteTarget.amount} EGP? This action will be logged and notified to the manager immediately.`) : ''}
+                confirmText={language === 'ar' ? 'نعم، حذف المصروف' : 'Delete Expense'}
+                cancelText={language === 'ar' ? 'إلغاء' : 'Cancel'}
+                variant="danger"
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setExpenseToDeleteTarget(null)}
+            />
         </div>
     );
 };

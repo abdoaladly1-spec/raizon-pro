@@ -89,6 +89,7 @@ const SuppliersPage = lazyWithRetry(() => import('./pages/SuppliersPage').then(m
 const PurchaseOrdersPage = lazyWithRetry(() => import('./pages/PurchaseOrdersPage').then(m => ({ default: m.PurchaseOrdersPage })));
 const InventoryHistoryPage = lazyWithRetry(() => import('./pages/InventoryHistoryPage').then(m => ({ default: m.InventoryHistoryPage })));
 const ClosingHistoryPage = lazyWithRetry(() => import('./pages/ClosingHistoryPage').then(m => ({ default: m.ClosingHistoryPage })));
+const NotificationsPage = lazyWithRetry(() => import('./pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
 
 // --- Hooks ---
 const ScreenSaver = ({ onActive }: { onActive: () => void }) => {
@@ -316,7 +317,7 @@ const MainContent = () => {
     setPendingNavigation(null);
     if (next) setActiveTab(next as any);
   };
-  const [activeTab, setActiveTab] = useState('dashboard' as 'dashboard' | 'create_invoice' | 'invoices' | 'returns' | 'inventory' | 'categories' | 'locations' | 'suppliers' | 'purchase_orders' | 'inventory_history' | 'clients' | 'debts' | 'reservations' | 'stats' | 'settings' | 'expenses' | 'staff' | 'closing' | 'closing_history' | 'notes' | 'users' | 'audit_logs');
+  const [activeTab, setActiveTab] = useState('dashboard' as 'dashboard' | 'create_invoice' | 'invoices' | 'returns' | 'inventory' | 'categories' | 'locations' | 'suppliers' | 'purchase_orders' | 'inventory_history' | 'clients' | 'debts' | 'reservations' | 'stats' | 'settings' | 'expenses' | 'notifications' | 'staff' | 'closing' | 'closing_history' | 'notes' | 'users' | 'audit_logs');
   const [showStats, setShowStats] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -331,6 +332,26 @@ const MainContent = () => {
     return (state.reservations || []).filter(r => r.date === todayIso && r.status !== 'completed' && r.status !== 'cancelled');
   }, [state.reservations, todayIso]);
   const totalNotifications = lowStockItems.length + (heldCount > 0 ? 1 : 0) + upcomingReservations.length;
+
+  // عداد الإشعارات الإدارية ونواقص المخزون المتزامن (بدون فواتير المبيعات العادية)
+  const lastSeenNotifs = useMemo(() => {
+    if (activeTab === 'notifications') return Date.now();
+    try {
+      const val = localStorage.getItem('procashier_last_seen_notifications');
+      return val ? parseInt(val, 10) || 0 : 0;
+    } catch {
+      return 0;
+    }
+  }, [activeTab, state.auditLogs]);
+
+  const unreadAdminNotificationsCount = useMemo(() => {
+    if (activeTab === 'notifications') return 0;
+    const stockCount = state.items.filter(i => i.trackStock && (i.quantity ?? 0) <= (i.alertThreshold ?? 3)).length;
+    const adminLogsCount = (state.auditLogs || []).filter(l => 
+      l.timestamp > lastSeenNotifs && (l.action !== 'Invoice' || l.details.toLowerCase().includes('void'))
+    ).length;
+    return stockCount + adminLogsCount;
+  }, [state.items, state.auditLogs, lastSeenNotifs, activeTab]);
   const { playBeep } = useSound();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncStatus, setSyncStatus] = useState({ pending: 0, lastSyncAt: null as number | null, lastError: null as string | null, syncing: false } as SyncStatus);
@@ -440,6 +461,7 @@ const MainContent = () => {
       { id: 'invoices', icon: FileText, label: t('invoices'), group: t('nav_group_daily') },
       { id: 'returns', icon: RefreshCw, label: t('returns'), group: t('nav_group_daily') },
       { id: 'expenses', icon: TrendingUp, label: t('expenses'), group: t('nav_group_daily') },
+      { id: 'notifications', icon: Bell, label: language === 'ar' ? 'الإشعارات' : 'Notifications', group: t('nav_group_daily'), badge: unreadAdminNotificationsCount > 0 ? unreadAdminNotificationsCount : undefined },
       { id: 'closing', icon: Wallet, label: t('closing'), group: t('nav_group_daily') },
       { id: 'closing_history', icon: History, label: language === 'ar' ? 'سجل الإقفال' : 'Closing Records', group: t('nav_group_daily') },
       { id: 'clients', icon: Users, label: t('clients'), group: t('nav_group_daily') },
@@ -476,6 +498,7 @@ const MainContent = () => {
           case 'purchase_orders': return <PurchaseOrdersPage />;
           case 'inventory_history': return <InventoryHistoryPage />;
           case 'expenses': return <ExpensesPage />;
+          case 'notifications': return <NotificationsPage onNavigate={(tab) => handleNavigate(tab as any)} />;
           case 'staff': return <StaffPage />;
           case 'clients': return <Clients />;
           case 'debts': return <DebtsPage />;
@@ -559,6 +582,14 @@ const MainContent = () => {
                             >
                                 <item.icon size={21} className={`transition-transform duration-200 group-hover:scale-110 shrink-0 ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 group-hover:text-primary-600 dark:group-hover:text-primary-300'}`} />
                                 {!sidebarCollapsed && <span className="text-sm truncate leading-none">{item.label}</span>}
+                                {Boolean((item as any).badge) && !sidebarCollapsed && (
+                                    <span className="ms-auto flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-rose-500 text-white text-[10px] font-mono font-bold shadow-xs">
+                                        {(item as any).badge > 99 ? '99+' : (item as any).badge}
+                                    </span>
+                                )}
+                                {Boolean((item as any).badge) && sidebarCollapsed && (
+                                    <span className="absolute top-1.5 end-1.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900"></span>
+                                )}
                                 {isActive && (
                                     <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-primary-600 dark:bg-primary-400 rounded-e-full shadow-sm"></div>
                                 )}
@@ -641,17 +672,31 @@ const MainContent = () => {
                         
                         {/* Left: Quick Actions & Status Controls */}
                         <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                             {/* ساعة وتوقيت جهاز الكمبيوتر الحية */}
-                             <div
-                                 title={language === 'ar' ? 'ساعة النظام متزامنة لحظياً مع جهاز الكمبيوتر' : 'Live System Clock (Synced with Computer)'}
-                                 className="flex items-center gap-2 h-9 px-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-mono text-slate-700 dark:text-slate-300 shadow-xs cursor-default select-none"
+                             {/* زر الإشعارات والعمليات الإدارية ونواقص المخزون مكان الساعة مع عداد رسائل */}
+                             <button
+                                 type="button"
+                                 onClick={() => { setActiveTab('notifications'); playBeep(); }}
+                                 title={language === 'ar' ? `مركز الإشعارات والعمليات الإدارية (${unreadAdminNotificationsCount} غير مقروء)` : `Notifications (${unreadAdminNotificationsCount} unread)`}
+                                 className={`relative flex items-center gap-2 h-9 px-3 rounded-xl border transition-all cursor-pointer ${
+                                     activeTab === 'notifications'
+                                         ? 'bg-primary-600 text-white border-primary-500 shadow-sm'
+                                         : unreadAdminNotificationsCount > 0
+                                         ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 shadow-xs'
+                                         : 'bg-slate-100/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 shadow-xs'
+                                 }`}
                              >
-                                 <Clock size={13} className="text-slate-500 dark:text-slate-400 shrink-0" />
-                                 <span className="font-semibold tracking-wider text-slate-800 dark:text-slate-200" dir="ltr">
-                                     {systemClockFormatted}
+                                 <Bell size={15} className={unreadAdminNotificationsCount > 0 ? 'animate-bounce' : ''} />
+                                 <span className="text-xs font-bold hidden sm:inline">
+                                     {language === 'ar' ? 'الإشعارات' : 'Notifications'}
                                  </span>
-                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title={language === 'ar' ? 'متزامن مع ساعة الكمبيوتر' : 'Synced with PC'}></span>
-                             </div>
+                                 {unreadAdminNotificationsCount > 0 ? (
+                                     <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-rose-500 text-white text-[10px] font-mono font-bold shadow-xs">
+                                         {unreadAdminNotificationsCount > 99 ? '99+' : unreadAdminNotificationsCount}
+                                     </span>
+                                 ) : (
+                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title={language === 'ar' ? 'لا توجد تنبيهات جديدة' : 'All clear'}></span>
+                                 )}
+                             </button>
 
                              {syncStatus.pending > 0 && (
                                 <button

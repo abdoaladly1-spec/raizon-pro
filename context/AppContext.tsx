@@ -3699,11 +3699,18 @@ export const AppProvider = ({ children }: any) => {
   };
 
   const deleteExpense = (id: string) => {
+      const exp = state.expenses.find(e => e.id === id);
       setState(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== id) }));
+      const detailsEn = exp 
+        ? `CRITICAL ADMIN ACTION: Deleted expense "${exp.title}" (${exp.amount} EGP, Category: ${exp.category}) by ${currentUser?.name || 'Admin'}` 
+        : `CRITICAL ADMIN ACTION: Deleted expense #${id}`;
+      const detailsAr = exp 
+        ? `إشعار إداري عاجل: تم حذف مصروف «${exp.title}» بقيمة ${exp.amount} ج.م (تصنيف: ${exp.category}) بواسطة: ${currentUser?.name || 'المدير'}` 
+        : `إشعار إداري عاجل: تم حذف بند مصروف تشغيلي برقم المعرف #${id}`;
       addAuditLog(
-        'Expense',
-        `Deleted expense #${id}`,
-        `حذف بند مصروف تشغيلي برقم المعرف #${id}`
+        'ExpenseDelete',
+        detailsEn,
+        detailsAr
       );
   };
 
