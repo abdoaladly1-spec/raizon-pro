@@ -1549,7 +1549,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                          )}
                          <div className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 flex items-baseline gap-1.5">
                              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('subtotal')}:</span>
-                             <span className="font-mono font-black text-slate-900 dark:text-white text-sm">
+                             <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">
                                  {subtotal.toLocaleString('en-US')}
                              </span>
                              <span className="text-[11px] font-bold text-slate-400">{t('egp')}</span>
@@ -1779,7 +1779,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                         <div className="space-y-1 text-xs text-slate-500 dark:text-slate-400 px-1 font-bold">
                             <div className="flex justify-between">
                                 <span>المجموع الفرعي:</span>
-                                <span className="font-mono">{formatNumber(subtotal)} {t('egp')}</span>
+                                <span><span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{formatNumber(subtotal)}</span> {t('egp')}</span>
                             </div>
                             {discountAmount > 0 && (
                                 <div className="flex justify-between text-rose-500 font-bold">
