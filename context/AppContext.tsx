@@ -116,7 +116,7 @@ interface AppContextType {
   setSettingsDirty: (dirty: boolean) => void;
   saveSettingsHandlerRef: React.MutableRefObject<(() => Promise<void> | void) | null>;
   discardSettingsHandlerRef: React.MutableRefObject<(() => void) | null>;
-  triggerOpenCashDrawer: (silent?: boolean) => void;
+  triggerOpenCashDrawer: (silent?: boolean, customReason?: string) => void;
 }
 
 const translations = {
@@ -3714,11 +3714,14 @@ export const AppProvider = ({ children }: any) => {
       );
   };
 
-  const triggerOpenCashDrawer = (silent: boolean = false) => {
+  const triggerOpenCashDrawer = (silent: boolean = false, customReason?: string) => {
     openCashDrawerDevice();
-    addAuditLog('Drawer', 'Cash drawer opened (F7 / Direct Button)', `فتح درج النقدية بواسطة: ${currentUser?.name || 'كاشير'}`);
+    const reasonText = customReason 
+      ? `فتح درج النقدية (${customReason}) بواسطة: ${currentUser?.name || 'كاشير'}` 
+      : `فتح درج النقدية بواسطة: ${currentUser?.name || 'كاشير'}`;
+    addAuditLog('Drawer', customReason ? `Cash drawer opened: ${customReason}` : 'Cash drawer opened (F7 / Direct Button)', reasonText);
     if (!silent) {
-      addToast('تم إرسال أمر فتح درج النقدية (F7) 💰', 'success');
+      addToast(customReason ? `تم فتح درج النقدية تلقائياً 💰` : 'تم إرسال أمر فتح درج النقدية (F7) 💰', 'success');
     }
   };
 

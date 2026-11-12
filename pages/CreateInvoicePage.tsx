@@ -948,6 +948,8 @@ export const CreateInvoice = ({ onClose }: any) => {
       setCreatedInvoice({ ...invoiceData, id: state.invoices.length + 1, printSnapshot: buildPrintIdentity(state.settings) });
       setShowPreview(true);
       setPointsRedeemed(0); // Reset after save
+      // فتح درج النقدية تلقائياً عند الضغط على زر حفظ
+      triggerOpenCashDrawer(false, language === 'ar' ? 'حفظ الفاتورة' : 'Save Invoice');
   };
 
   const handleUndoSale = () => {
