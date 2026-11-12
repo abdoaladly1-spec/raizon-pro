@@ -1318,7 +1318,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                         }`}
                     >
-                        <span>{t('all')}</span>
+                        <span>{t('all') || (language === 'ar' ? 'الكل' : 'All')}</span>
                         <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${selectedCategory === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200/70 dark:bg-slate-600 text-slate-500 dark:text-slate-300'}`}>
                             {itemCounts.total}
                         </span>
@@ -1333,7 +1333,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                         }`}
                     >
                         <Scissors size={12} />
-                        <span>{t('services')}</span>
+                        <span>{t('services') || (language === 'ar' ? 'الخدمات' : 'Services')}</span>
                         <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${selectedCategory === 'services' ? 'bg-white/20 text-white' : 'bg-purple-200/70 dark:bg-purple-800 text-purple-700 dark:text-purple-300'}`}>
                             {itemCounts.services}
                         </span>
@@ -1348,7 +1348,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                         }`}
                     >
                         <Package size={12} />
-                        <span>{t('products')}</span>
+                        <span>{t('products') || (language === 'ar' ? 'المنتجات' : 'Products')}</span>
                         <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${selectedCategory === 'products' ? 'bg-white/20 text-white' : 'bg-blue-200/70 dark:bg-blue-800 text-blue-700 dark:text-blue-300'}`}>
                             {itemCounts.products}
                         </span>
