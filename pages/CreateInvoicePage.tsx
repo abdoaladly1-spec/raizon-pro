@@ -1138,7 +1138,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                             <button 
                                 type="button" 
                                 onClick={() => setShowHeldInvoices(true)} 
-                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-xs font-bold transition-all active:scale-95 cursor-pointer"
                             >
                                 <PauseCircle size={14}/> {state.heldInvoices.length} {t('held')}
                             </button>
@@ -1814,12 +1814,12 @@ export const CreateInvoice = ({ onClose }: any) => {
                                  type="button" 
                                  onClick={handleHold} 
                                  variant="secondary" 
-                                 className="px-3.5 py-3 cursor-pointer relative rounded-xl border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-amber-600 dark:text-amber-400 active:scale-95 transition-all" 
+                                 className="px-3.5 py-3 cursor-pointer relative rounded-xl border-blue-400/60 dark:border-blue-600/70 bg-blue-50/50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 active:scale-95 transition-all shadow-2xs" 
                                  title={language === 'ar' ? 'تعليق الفاتورة أو فتح المعلقة (⏸️)' : 'Hold Invoice or View Held (⏸️)'}
                              >
-                                 <PauseCircle size={18}/>
+                                 <PauseCircle size={18} className="text-blue-600 dark:text-blue-400" />
                                  {state.heldInvoices.length > 0 && (
-                                     <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800 animate-pulse">
+                                     <span className="absolute -top-1.5 -right-1.5 bg-blue-600 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800 animate-pulse">
                                          {state.heldInvoices.length}
                                      </span>
                                  )}
@@ -2317,7 +2317,7 @@ export const CreateInvoice = ({ onClose }: any) => {
 
                     {state.heldInvoices.length === 0 ? (
                         <div className="text-center py-10 text-slate-400 text-xs">
-                            <PauseCircle size={36} className="mx-auto mb-2 opacity-40 text-amber-500" />
+                            <PauseCircle size={36} className="mx-auto mb-2 opacity-40 text-blue-500" />
                             <p className="font-bold">{language === 'ar' ? 'لا توجد أي فواتير معلقة حالياً.' : 'No held invoices.'}</p>
                             <p className="mt-1 text-slate-500">{language === 'ar' ? 'يمكنك تعليق أي فاتورة في أي وقت بالضغط على زر ⏸️ أسفل السلة.' : 'You can hold any cart by clicking ⏸️ below.'}</p>
                         </div>
