@@ -20,6 +20,7 @@ import { PatcherModal } from './components/PatcherModal';
 import { UnsavedChangesModal } from './components/UnsavedChangesModal';
 import { UpdateModal, type UpdateInfo } from './components/UpdateModal';
 import { WhatsNewModal } from './components/WhatsNewModal';
+import { TourGuideModal } from './components/TourGuideModal';
 import { RAIZON_LOGO_URI } from './lib/logoData';
 import { isMainBranch } from './lib/branchUtils';
 /**
@@ -320,6 +321,7 @@ const MainContent = () => {
   const [showStats, setShowStats] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showTourGuide, setShowTourGuide] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -461,7 +463,7 @@ const MainContent = () => {
           case 'categories': return <CategoriesPage />;
           case 'locations': {
               if (currentUser?.role !== 'admin') {
-                  return <Dashboard onNavigate={setActiveTab} showStats={showStats} />;
+                  return <Dashboard onNavigate={setActiveTab} showStats={showStats} onOpenTour={() => setShowTourGuide(true)} />;
               }
               return <LocationsPage />;
           }
@@ -482,7 +484,7 @@ const MainContent = () => {
           case 'audit_logs': return <AuditLogs />;
           case 'dashboard': 
           default:
-              return <Dashboard onNavigate={handleNavigate} showStats={showStats} />;
+              return <Dashboard onNavigate={handleNavigate} showStats={showStats} onOpenTour={() => setShowTourGuide(true)} />;
       }
   };
 
@@ -616,7 +618,7 @@ const MainContent = () => {
                         </div>
 
                         {/* Center: Search & Navigation Palette */}
-                        <div className="flex-1 max-w-md mx-3 lg:mx-6 hidden md:flex items-center justify-center">
+                        <div className="flex-1 max-w-md mx-3 lg:mx-6 hidden md:flex items-center justify-center gap-2">
                             <button
                                 type="button"
                                 onClick={() => setShowSearch(true)}
@@ -629,6 +631,16 @@ const MainContent = () => {
                                     <span className="truncate xl:hidden">{language === 'ar' ? 'بحث سريع...' : 'Search...'}</span>
                                 </div>
                                 <kbd className="px-2 py-0.5 rounded-md bg-white dark:bg-primary-900/40 text-[10px] font-mono text-slate-700 dark:text-primary-200 border border-primary-200 dark:border-primary-500/30 shadow-2xs font-extrabold shrink-0">Ctrl K</kbd>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowTourGuide(true)}
+                                className="h-10 px-3 rounded-xl border border-primary-200/80 dark:border-primary-500/25 bg-white/70 hover:bg-white dark:bg-primary-950/25 dark:hover:bg-primary-950/45 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-inner flex items-center gap-1.5 cursor-pointer shrink-0"
+                                title={language === 'ar' ? 'الجولة الإرشادية للنظام' : 'System Tour'}
+                            >
+                                <Sparkles size={14} className="text-amber-400 animate-pulse" />
+                                <span className="hidden xl:inline">{language === 'ar' ? 'جولة النظام' : 'Tour'}</span>
                             </button>
                         </div>
                         
@@ -975,11 +987,22 @@ const MainContent = () => {
                     </div>
                   </div>
 
-                  <div className="pt-2 text-center">
+                  <div className="pt-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowShortcuts(false);
+                        setShowTourGuide(true);
+                      }}
+                      className="flex-1 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Sparkles size={14} />
+                      <span>{language === 'ar' ? 'بدء جولة إرشادية' : 'Start Tour'}</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => setShowShortcuts(false)}
-                      className="w-full py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-black text-xs shadow-md transition-all cursor-pointer active:scale-95"
+                      className="flex-1 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-black text-xs shadow-md transition-all cursor-pointer active:scale-95"
                     >
                       {language === 'ar' ? 'فهمت ذلك، إغلاق' : 'Got it, Close'}
                     </button>
@@ -987,6 +1010,13 @@ const MainContent = () => {
                 </div>
               </div>
             )}
+
+            {/* الجولة الإرشادية التفاعلية الفاخرة */}
+            <TourGuideModal
+                isOpen={showTourGuide}
+                onClose={() => setShowTourGuide(false)}
+                onNavigateToTab={(tab) => handleNavigate(tab as any)}
+            />
 
 
             {/* نافذة توضيح وإدارة مزامنة السيرفر */}
