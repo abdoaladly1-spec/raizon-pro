@@ -217,83 +217,104 @@ export const ExpensesPage = () => {
             </div>
 
             {/* Stats Cards Elevated */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 ">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('total_expenses')}</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">إجمالي</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
+                {/* 1. إجمالي المصاريف */}
+                <div className="bg-white dark:bg-slate-800/95 p-4 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 overflow-hidden flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-9 h-9 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                                <DollarSign size={18} />
+                            </div>
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">{t('total_expenses')}</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">إجمالي</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 rounded-2xl flex items-center justify-center shrink-0 shadow-xs">
-                            <DollarSign size={22} />
+                    <div className="mt-1 min-w-0">
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                            <h3 className="text-xl sm:text-2xl font-bold font-mono text-rose-500 tracking-tight">{totalExpenses.toLocaleString('en-US')}</h3>
+                            <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                         </div>
-                        <div>
-                            <h3 className="text-2xl font-bold font-mono text-rose-500 tracking-tight">{totalExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 ">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('sold_today')} ({t('expenses')})</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">اليوم</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 rounded-2xl flex items-center justify-center shrink-0 shadow-xs">
-                            <Calendar size={22} />
-                        </div>
-                        <div>
-                            <h3 className="text-2xl font-bold font-mono text-rose-500 tracking-tight">{todayExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
-                        </div>
+                        <p className="text-[10px] text-slate-400 mt-1 truncate">المصروفات المسجلة</p>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 ">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('cash_expenses_today')}</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">من الدرج</span>
+                {/* 2. مبيعات اليوم (المصروفات) */}
+                <div className="bg-white dark:bg-slate-800/95 p-4 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 overflow-hidden flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-9 h-9 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                                <Calendar size={18} />
+                            </div>
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">{t('sold_today')} ({t('expenses')})</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">اليوم</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 rounded-2xl flex items-center justify-center shrink-0 shadow-xs">
-                            <Wallet size={22} />
+                    <div className="mt-1 min-w-0">
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                            <h3 className="text-xl sm:text-2xl font-bold font-mono text-rose-500 tracking-tight">{todayExpenses.toLocaleString('en-US')}</h3>
+                            <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                         </div>
-                        <div>
-                            <h3 className="text-2xl font-bold font-mono text-rose-500 tracking-tight">{todayCashExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
-                        </div>
-                    </div>
-                </div>
-
-                {/* بطاقة المبلغ المتوقع في الدرج */}
-                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-emerald-500/30">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">المبلغ المتوقع في الدرج</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">لحظي</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 rounded-2xl flex items-center justify-center shrink-0 shadow-xs">
-                            <Banknote size={22} />
-                        </div>
-                        <div>
-                            <h3 className="text-2xl font-bold font-mono text-emerald-500 tracking-tight">{expectedDrawerCash.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
-                            <p className="text-[10px] text-slate-400 mt-0.5">النقد الفعلي المفترض تواجده بالدرج</p>
-                        </div>
+                        <p className="text-[10px] text-slate-400 mt-1 truncate">كافة طرق الدفع اليوم</p>
                     </div>
                 </div>
 
-                {/* بطاقة الرصيد الافتتاحي */}
-                <div className="bg-white dark:bg-slate-800/95 p-5 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-primary-500/30">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">الرصيد الافتتاحي</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-500/20">بداية اليوم</span>
+                {/* 3. مصروفات نقدية اليوم (من الدرج) */}
+                <div className="bg-white dark:bg-slate-800/95 p-4 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 overflow-hidden flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-9 h-9 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                                <Wallet size={18} />
+                            </div>
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">{t('cash_expenses_today')}</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">من الدرج</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-200/60 dark:border-primary-800/60 rounded-2xl flex items-center justify-center shrink-0 shadow-xs">
-                            <Wallet size={22} />
+                    <div className="mt-1 min-w-0">
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                            <h3 className="text-xl sm:text-2xl font-bold font-mono text-rose-500 tracking-tight">{todayCashExpenses.toLocaleString('en-US')}</h3>
+                            <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                         </div>
-                        <div>
-                            <h3 className="text-2xl font-bold font-mono text-primary-600 dark:text-primary-400 tracking-tight">{drawerOpeningBalance.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span></h3>
-                            <p className="text-[10px] text-slate-400 mt-0.5">رصيد عهدة الدرج المعتمد</p>
+                        <p className="text-[10px] text-slate-400 mt-1 truncate">المدفوعة نقداً اليوم</p>
+                    </div>
+                </div>
+
+                {/* 4. بطاقة المبلغ المتوقع في الدرج */}
+                <div className="bg-white dark:bg-slate-800/95 p-4 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-emerald-500/30 overflow-hidden flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-9 h-9 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                                <Banknote size={18} />
+                            </div>
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">المبلغ المتوقع في الدرج</span>
                         </div>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">لحظي</span>
+                    </div>
+                    <div className="mt-1 min-w-0">
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                            <h3 className="text-xl sm:text-2xl font-bold font-mono text-emerald-500 tracking-tight">{expectedDrawerCash.toLocaleString('en-US')}</h3>
+                            <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-1 truncate">النقد الفعلي المفترض تواجده بالدرج</p>
+                    </div>
+                </div>
+
+                {/* 5. بطاقة الرصيد الافتتاحي */}
+                <div className="bg-white dark:bg-slate-800/95 p-4 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-primary-500/30 overflow-hidden flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-9 h-9 bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-200/60 dark:border-primary-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                                <Wallet size={18} />
+                            </div>
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">الرصيد الافتتاحي</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-500/20 shrink-0">بداية اليوم</span>
+                    </div>
+                    <div className="mt-1 min-w-0">
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                            <h3 className="text-xl sm:text-2xl font-bold font-mono text-primary-600 dark:text-primary-400 tracking-tight">{drawerOpeningBalance.toLocaleString('en-US')}</h3>
+                            <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-1 truncate">رصيد عهدة الدرج المعتمد</p>
                     </div>
                 </div>
             </div>
