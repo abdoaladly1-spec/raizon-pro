@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Tag, Plus, Settings, Trash2, Package, Check } from '../components/Icons';
-import { Card, Button, Input, ModalShell } from '../components/ui';
+import { Card, Button, Input, ModalShell, EmptyState, ConfirmModal } from '../components/ui';
 import type { Category } from '../types';
 
 export const CategoriesPage = () => {
@@ -10,6 +10,7 @@ export const CategoriesPage = () => {
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [form, setForm] = useState({ id: '', nameAr: '', nameEn: '', color: '#3b82f6' } as Category);
+    const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
 
     const categoryStats = useMemo(() => {
         const total = state.categories.length;
@@ -89,55 +90,67 @@ export const CategoriesPage = () => {
                 </div>
             </div>
 
-            {/* شبكة التصنيفات */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {state.categories.map(cat => {
-                    const count = getCategoryItemCount(cat.id);
-                    return (
-                        <div 
-                            key={cat.id} 
-                            className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-5 border border-slate-200 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between"
-                            style={{ borderTopWidth: '4px', borderTopColor: cat.color || '#3b82f6' }}
-                        >
-                            <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <span 
-                                        className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs" 
-                                        style={{ backgroundColor: cat.color || '#3b82f6' }}
-                                    />
-                                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                                        {count} {language === 'ar' ? 'أصناف' : 'items'}
-                                    </span>
+            {/* شبكة التصنيفات أو حالة فارغة */}
+            {state.categories.length === 0 ? (
+                <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-8 shadow-xs">
+                    <EmptyState
+                        icon={Tag}
+                        title={language === 'ar' ? 'لا توجد تصنيفات معرفة حتى الآن' : 'No Categories Defined Yet'}
+                        description={language === 'ar' ? 'ابدأ بإضافة أول تصنيف لتنظيم منتجاتك وخدماتك وتسهيل التصفية في شاشة الكاشير والمخزون.' : 'Add your first category to organize products and filter items easily in POS and Inventory.'}
+                        actionLabel={language === 'ar' ? '+ إضافة أول تصنيف' : '+ Add First Category'}
+                        onAction={() => { setIsEditing(false); setForm({ id: '', nameAr: '', nameEn: '', color: '#3b82f6' }); setShowModal(true); }}
+                    />
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {state.categories.map(cat => {
+                        const count = getCategoryItemCount(cat.id);
+                        return (
+                            <div 
+                                key={cat.id} 
+                                className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800/90 p-5 border border-slate-200 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group flex flex-col justify-between"
+                                style={{ borderTopWidth: '4px', borderTopColor: cat.color || '#3b82f6' }}
+                            >
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span 
+                                            className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs" 
+                                            style={{ backgroundColor: cat.color || '#3b82f6' }}
+                                        />
+                                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                            {count} {language === 'ar' ? 'أصناف' : 'items'}
+                                        </span>
+                                    </div>
+                                    <h3 className="font-extrabold text-base text-slate-800 dark:text-slate-100">
+                                        {language === 'ar' ? cat.nameAr : (cat.nameEn || cat.nameAr)}
+                                    </h3>
+                                    {cat.nameEn && language === 'ar' && (
+                                        <p className="text-xs text-slate-400 mt-0.5 font-sans">{cat.nameEn}</p>
+                                    )}
                                 </div>
-                                <h3 className="font-extrabold text-base text-slate-800 dark:text-slate-100">
-                                    {language === 'ar' ? cat.nameAr : (cat.nameEn || cat.nameAr)}
-                                </h3>
-                                {cat.nameEn && language === 'ar' && (
-                                    <p className="text-xs text-slate-400 mt-0.5 font-sans">{cat.nameEn}</p>
-                                )}
-                            </div>
 
-                            <div className="flex items-center justify-end gap-1.5 pt-4 mt-3 border-t border-slate-100 dark:border-slate-700/60">
-                                <button 
-                                    onClick={() => { setForm(cat); setIsEditing(true); setShowModal(true); }} 
-                                    className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
-                                    title={t('edit')}
-                                >
-                                    <Settings size={13}/>
-                                    <span>{t('edit')}</span>
-                                </button>
-                                <button 
-                                    onClick={() => { if(confirm(t('confirm_delete'))) deleteCategory(cat.id); }} 
-                                    className="p-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 text-xs transition-all cursor-pointer"
-                                    title={t('delete')}
-                                >
-                                    <Trash2 size={14}/>
-                                </button>
+                                <div className="flex items-center justify-end gap-1.5 pt-4 mt-3 border-t border-slate-100 dark:border-slate-700/60">
+                                    <button 
+                                        onClick={() => { setForm(cat); setIsEditing(true); setShowModal(true); }} 
+                                        className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                                        title={t('edit')}
+                                    >
+                                        <Settings size={13}/>
+                                        <span>{t('edit')}</span>
+                                    </button>
+                                    <button 
+                                        onClick={() => setCategoryToDelete(cat)} 
+                                        className="p-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 text-xs transition-all cursor-pointer"
+                                        title={t('delete')}
+                                    >
+                                        <Trash2 size={14}/>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    );
-                })}
-            </div>
+                        );
+                    })}
+                </div>
+            )}
 
             {showModal && (
                 <ModalShell
@@ -162,6 +175,22 @@ export const CategoriesPage = () => {
                     </form>
                 </ModalShell>
             )}
+
+            <ConfirmModal
+                isOpen={!!categoryToDelete}
+                title={language === 'ar' ? 'تأكيد حذف التصنيف' : 'Confirm Delete Category'}
+                message={categoryToDelete ? (language === 'ar' ? `هل أنت متأكد من حذف تصنيف «${categoryToDelete.nameAr}»؟ لن يتم حذف المنتجات التابعة له ولكنها ستصبح غير مصنفة.` : `Are you sure you want to delete category "${categoryToDelete.nameEn || categoryToDelete.nameAr}"?`) : ''}
+                confirmText={language === 'ar' ? 'نعم، احذف التصنيف' : 'Delete Category'}
+                cancelText={t('cancel')}
+                variant="danger"
+                onConfirm={() => {
+                    if (categoryToDelete) {
+                        deleteCategory(categoryToDelete.id);
+                        setCategoryToDelete(null);
+                    }
+                }}
+                onCancel={() => setCategoryToDelete(null)}
+            />
         </div>
     );
 };

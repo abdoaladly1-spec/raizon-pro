@@ -3,7 +3,7 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from '../types';
-import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, useSound, useLiveTick } from '../components/ui';
+import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, useSound, useLiveTick, EmptyState } from '../components/ui';
 import { FilterModal } from '../components/FilterModal';
 import { isCashExpense, round2 } from '../lib/payments';
 import { getDrawerOpeningBalance, isAfterClosing } from '../lib/analytics';
@@ -14,7 +14,7 @@ import { AdminUsers } from './AdminUsersPage';
 import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, type SyncStatus } from '../lib/serverSync';
 
 export const ExpensesPage = () => {
-    const { state, addExpense, deleteExpense, t, addToast, currentUser } = useApp();
+    const { state, addExpense, deleteExpense, t, addToast, currentUser, language } = useApp();
     const [showAddModal, setShowAddModal] = useState(false);
     useLiveTick();
     const [searchFilter, setSearchFilter] = useState('');
@@ -331,7 +331,22 @@ export const ExpensesPage = () => {
                         <tbody>
                             {branchExpenses.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-8 text-slate-500">{t('no_data')}</td>
+                                    <td colSpan={7} className="p-0 py-8">
+                                        <EmptyState
+                                            icon={TrendingUp}
+                                            title={language === 'ar' ? 'سجل المصروفات فارغ' : 'No expenses recorded'}
+                                            description={language === 'ar' ? 'لم تقم بتسجيل أي مصروفات تشغيلية لهذا الفرع بعد.' : 'No operational expenses recorded for this branch yet.'}
+                                            action={
+                                                <Button 
+                                                    variant="primary" 
+                                                    onClick={() => setShowAddModal(true)}
+                                                    className="text-xs py-2 px-5 shadow-sm font-bold"
+                                                >
+                                                    <Plus size={15} /> {language === 'ar' ? 'تسجيل أول مصروف' : 'Add First Expense'}
+                                                </Button>
+                                            }
+                                        />
+                                    </td>
                                 </tr>
                             ) : (
                                 branchExpenses.slice().reverse().map((expense) => (

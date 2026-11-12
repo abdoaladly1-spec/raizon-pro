@@ -3404,11 +3404,9 @@ export const AppProvider = ({ children }: any) => {
   };
 
   const resetSystem = () => {
-    if (window.confirm(t('confirm_reset'))) {
-      localStorage.removeItem('appState');
-      // نحذف نسخة IndexedDB أيضاً حتى لا تُستعاد الحالة القديمة بعد إعادة التشغيل
-      idbRemove('appState').finally(() => window.location.reload());
-    }
+    localStorage.removeItem('appState');
+    // نحذف نسخة IndexedDB أيضاً حتى لا تُستعاد الحالة القديمة بعد إعادة التشغيل
+    idbRemove('appState').finally(() => window.location.reload());
   };
 
   // استعادة الحالة كاملة (من ملف خارجي أو نسخة سحابية/محلية) مع دمج وحماية شاملة

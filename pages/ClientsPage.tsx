@@ -9,7 +9,7 @@ import {
     WhatsAppIcon, StatementIcon, CustomEditIcon, CustomTrashIcon, CustomPrinterIcon, TimeIcon
 } from '../components/Icons';
 import { Customer, CustomerPayment } from '../types';
-import { Card, Button, Input, ModalShell } from '../components/ui';
+import { Card, Button, Input, ModalShell, EmptyState, ConfirmModal } from '../components/ui';
 import { exportToCSV } from '../lib/exportUtils';
 
 const getNowDateTimeLocal = () => {
@@ -47,6 +47,7 @@ export const Clients = () => {
     
     // Payment Modal State (سند قبض / سداد دفعة)
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
     const [paymentForm, setPaymentForm] = useState({
         amount: '',
         paymentMethod: 'cash' as 'cash' | 'card' | 'wallet',
@@ -506,9 +507,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        if (confirm(t('confirm_delete'))) deleteCustomer(c.id);
-                                                    }}
+                                                    onClick={() => setCustomerToDelete(c)}
                                                     className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                                                     title={t('delete')}
                                                 >
@@ -521,8 +520,25 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                             })}
                             {filtered.length === 0 && (
                                 <tr>
-                                    <td colSpan={8} className="py-10 text-center text-slate-500 text-xs">
-                                        {t('no_data')}
+                                    <td colSpan={8} className="py-8 p-0">
+                                        <EmptyState
+                                            icon={Users}
+                                            title={language === 'ar' ? 'سجل العملاء فارغ' : 'No customers found'}
+                                            description={language === 'ar' ? 'لم يتم تسجيل أي عملاء بعد، أضف أول عميل لإدارة الحسابات والديون ونقاط الولاء.' : 'No customers registered yet. Add your first customer to manage loyalty points and debts.'}
+                                            action={
+                                                <Button 
+                                                    variant="primary" 
+                                                    onClick={() => { 
+                                                        setIsEditing(false); 
+                                                        setForm({ id: 0, name: '', phone: '', isVip: false, creditLimit: 0, balance: 0, notes: '' }); 
+                                                        setShowModal(true); 
+                                                    }}
+                                                    className="text-xs py-2 px-5 shadow-sm font-bold"
+                                                >
+                                                    <Plus size={15} /> {language === 'ar' ? 'إضافة أول عميل' : 'Add First Customer'}
+                                                </Button>
+                                            }
+                                        />
                                     </td>
                                 </tr>
                             )}
@@ -793,6 +809,23 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                     </form>
                 </ModalShell>
             )}
+
+            <ConfirmModal
+                isOpen={!!customerToDelete}
+                title={language === 'ar' ? 'تأكيد حذف العميل' : 'Confirm Delete Customer'}
+                message={customerToDelete ? (language === 'ar' ? `هل أنت متأكد من حذف حساب العميل «${customerToDelete.name}»؟ لن يتم حذف فواتيره السابقة ولكن سيتم إزالة حسابه من الدليل.` : `Are you sure you want to delete customer "${customerToDelete.name}"?`) : ''}
+                confirmText={language === 'ar' ? 'نعم، احذف العميل' : 'Delete Customer'}
+                cancelText={t('cancel')}
+                variant="danger"
+                onConfirm={() => {
+                    if (customerToDelete) {
+                        deleteCustomer(customerToDelete.id);
+                        setCustomerToDelete(null);
+                        addToast(language === 'ar' ? 'تم حذف العميل' : 'Customer deleted', 'info');
+                    }
+                }}
+                onCancel={() => setCustomerToDelete(null)}
+            />
         </div>
     );
 };

@@ -11,7 +11,7 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { ChevronDown, LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Smartphone } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from '../types';
-import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, useSound, useLiveTick } from '../components/ui';
+import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, useSound, useLiveTick, ConfirmModal } from '../components/ui';
 import { FilterModal } from '../components/FilterModal';
 import { AuditLogs } from './AuditLogsPage';
 import { AdminUsers } from './AdminUsersPage';
@@ -54,6 +54,8 @@ export const CreateInvoice = ({ onClose }: any) => {
   const [holdNoteInput, setHoldNoteInput] = useState('');
   const [itemSearch, setItemSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [heldInvoiceToDelete, setHeldInvoiceToDelete] = useState<number | null>(null);
 
   // ماسح الباركود العام: يعمل في أي مكان بالصفحة عند استخدام جهاز الباركود USB أو البلوتوث
   useBarcodeScanner((scannedCode) => {
@@ -787,22 +789,26 @@ export const CreateInvoice = ({ onClose }: any) => {
   }
 
   const clearInvoice = () => {
-        if (confirm(t('confirm_delete') || (language === 'ar' ? 'هل أنت متأكد من مسح الفاتورة الحالية؟' : 'Clear current invoice?'))) {
-            setSelectedItems([]);
-            setCustomerName('');
-            setPhone('');
-            setCustomerIdInput('');
-            setNotes('');
-            setSelectedStaffId('');
-            setDiscountPercent(0);
-            setDiscountFixedAmount(0);
-            setDiscountReason('خصم عام');
-            setCustomDiscountReason('');
-            setDiscountType('percentage');
-            setTaxPercent(0);
-            localStorage.removeItem(DRAFT_KEY);
-        }
-    };
+    if (selectedItems.length === 0 && !customerName && !phone) return;
+    setShowClearConfirm(true);
+  };
+
+  const executeClearInvoice = () => {
+    setSelectedItems([]);
+    setCustomerName('');
+    setPhone('');
+    setCustomerIdInput('');
+    setNotes('');
+    setSelectedStaffId('');
+    setDiscountPercent(0);
+    setDiscountFixedAmount(0);
+    setDiscountReason('خصم عام');
+    setCustomDiscountReason('');
+    setDiscountType('percentage');
+    setTaxPercent(0);
+    localStorage.removeItem(DRAFT_KEY);
+    setShowClearConfirm(false);
+  };
 
     return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full relative">
@@ -1962,11 +1968,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => {
-                                                if (confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذه الفاتورة المعلقة؟' : 'Delete this held invoice?')) {
-                                                    deleteHeldInvoice(inv.id);
-                                                }
-                                            }}
+                                            onClick={() => setHeldInvoiceToDelete(inv.id)}
                                             className="p-2 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs cursor-pointer transition-colors"
                                             title={t('delete')}
                                         >
@@ -2144,6 +2146,33 @@ export const CreateInvoice = ({ onClose }: any) => {
                     </form>
             </ModalShell>
         )}
+
+        <ConfirmModal
+            isOpen={showClearConfirm}
+            title={language === 'ar' ? 'مسح الفاتورة الحالية' : 'Clear Current Invoice'}
+            message={language === 'ar' ? 'هل أنت متأكد من مسح جميع الأصناف والبيانات المدخلة في الفاتورة الحالية والبدء من جديد؟' : 'Are you sure you want to clear the current invoice?'}
+            confirmText={language === 'ar' ? 'نعم، امسح الفاتورة' : 'Clear Invoice'}
+            cancelText={t('cancel')}
+            variant="warning"
+            onConfirm={executeClearInvoice}
+            onCancel={() => setShowClearConfirm(false)}
+        />
+
+        <ConfirmModal
+            isOpen={!!heldInvoiceToDelete}
+            title={language === 'ar' ? 'حذف الفاتورة المعلقة' : 'Delete Held Invoice'}
+            message={language === 'ar' ? 'هل أنت متأكد من حذف هذه الفاتورة المعلقة نهائياً؟' : 'Are you sure you want to delete this held invoice permanently?'}
+            confirmText={language === 'ar' ? 'نعم، احذف الفاتورة' : 'Delete'}
+            cancelText={t('cancel')}
+            variant="danger"
+            onConfirm={() => {
+                if (heldInvoiceToDelete) {
+                    deleteHeldInvoice(heldInvoiceToDelete);
+                    setHeldInvoiceToDelete(null);
+                }
+            }}
+            onCancel={() => setHeldInvoiceToDelete(null)}
+        />
     </div>
   );
 };

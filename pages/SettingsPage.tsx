@@ -46,6 +46,8 @@ export const SettingsPage = () => {
     const [showCustomizeNotificationsModal, setShowCustomizeNotificationsModal] = useState(false);
     const [showVisibilityModal, setShowVisibilityModal] = useState(false);
     const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
+    const [showResetLoyaltyConfirm, setShowResetLoyaltyConfirm] = useState(false);
+    const [customTemplateToDelete, setCustomTemplateToDelete] = useState<{ id: string; name: string } | null>(null);
     const [restoreConfirmData, setRestoreConfirmData] = useState<{
         actualState: any;
         filename: string;
@@ -1629,11 +1631,7 @@ export const SettingsPage = () => {
                 <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
                     <Button 
                         variant="danger" 
-                        onClick={() => {
-                            if (confirm(t('confirm_reset_loyalty'))) {
-                                resetLoyaltyPoints();
-                            }
-                        }}
+                        onClick={() => setShowResetLoyaltyConfirm(true)}
                         className="text-xs"
                     >
                         <Trash2 size={16} /> {t('reset_loyalty_btn')}
@@ -2206,10 +2204,12 @@ export const SettingsPage = () => {
     };
 
     const handleDeleteCustomTemplate = (tplId: string, name: string) => {
-        if (!window.confirm(language === 'ar' ? `هل أنت متأكد من حذف قالب "${name}"؟` : `Delete template "${name}"?`)) {
-            return;
-        }
+        setCustomTemplateToDelete({ id: tplId, name });
+    };
 
+    const confirmDeleteCustomTemplate = () => {
+        if (!customTemplateToDelete) return;
+        const { id: tplId, name } = customTemplateToDelete;
         const updated = (form.customReceiptTemplates || []).filter(t => t.id !== tplId);
         const wasActive = form.activeTemplateId === tplId;
 
@@ -2227,6 +2227,7 @@ export const SettingsPage = () => {
         }));
 
         addToast(language === 'ar' ? `تم حذف قالب "${name}" بنجاح` : 'Template deleted', 'info');
+        setCustomTemplateToDelete(null);
     };
 
     const handleApplyTemplate = (tplId: string) => {
@@ -3394,6 +3395,33 @@ export const SettingsPage = () => {
                     resetSystem();
                 }}
                 onCancel={() => setShowResetConfirmModal(false)}
+            />
+
+            {/* نافذة تأكيد تصفير نقاط ولاء العملاء */}
+            <ConfirmModal
+                isOpen={showResetLoyaltyConfirm}
+                title={language === 'ar' ? 'تصفير نقاط ولاء العملاء' : 'Reset Loyalty Points'}
+                message={language === 'ar' ? 'هل أنت متأكد من تصفير كافة نقاط الولاء لجميع العملاء؟ لا يمكن التراجع عن هذه الخطوة.' : 'Are you sure you want to reset all loyalty points for all customers? This action cannot be undone.'}
+                confirmText={language === 'ar' ? 'نعم، صفر النقاط' : 'Reset Points'}
+                cancelText={t('cancel')}
+                variant="danger"
+                onConfirm={() => {
+                    resetLoyaltyPoints();
+                    setShowResetLoyaltyConfirm(false);
+                }}
+                onCancel={() => setShowResetLoyaltyConfirm(false)}
+            />
+
+            {/* نافذة تأكيد حذف قالب الفاتورة المخصص */}
+            <ConfirmModal
+                isOpen={!!customTemplateToDelete}
+                title={language === 'ar' ? 'تأكيد حذف قالب الفاتورة' : 'Confirm Delete Template'}
+                message={customTemplateToDelete ? (language === 'ar' ? `هل أنت متأكد من حذف قالب الفاتورة «${customTemplateToDelete.name}»؟` : `Are you sure you want to delete template "${customTemplateToDelete.name}"?`) : ''}
+                confirmText={language === 'ar' ? 'نعم، احذف القالب' : 'Delete'}
+                cancelText={t('cancel')}
+                variant="danger"
+                onConfirm={confirmDeleteCustomTemplate}
+                onCancel={() => setCustomTemplateToDelete(null)}
             />
 
 </div>

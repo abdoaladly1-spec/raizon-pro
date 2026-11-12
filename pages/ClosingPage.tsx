@@ -6,7 +6,7 @@ import { cashOfInvoice, isCashExpense, paymentOf } from '../lib/payments';
 import { getDrawerOpeningBalance, isAfterClosing, countableInvoice } from '../lib/analytics';
 import { toIsoDate, localIsoToday } from '../lib/dates';
 import { cashReturnsFor } from '../lib/returns';
-import { Card } from '../components/ui';
+import { Card, ConfirmModal } from '../components/ui';
 import { printClosingReportThermal } from '../lib/thermalPrinter';
 
 interface ClosingPageProps {
@@ -239,6 +239,8 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
     const [movementAmount, setMovementAmount] = useState('');
     const [movementReason, setMovementReason] = useState('');
     const [formError, setFormError] = useState('');
+    const [showClosingConfirm, setShowClosingConfirm] = useState(false);
+    const [movementToDelete, setMovementToDelete] = useState<string | null>(null);
 
     // تعديل الرصيد الافتتاحي
     const [editingOpening, setEditingOpening] = useState(false);
@@ -352,9 +354,10 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
             addToast(language === 'ar' ? 'يرجى إدخال المبلغ الفعلي الموجود في الدرج' : 'Please enter actual cash', 'error');
             return;
         }
-        if (alreadyClosedToday && !confirm(t('already_closed_confirm'))) return;
-        if (!confirm(t('confirm_closing'))) return;
+        setShowClosingConfirm(true);
+    };
 
+    const executeClose = () => {
         const newReport: ClosingReport = {
             id: crypto.randomUUID(),
             locationId: activeLocationId,
@@ -383,6 +386,7 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
 
         addClosingReport(newReport);
         setReport(newReport);
+        setShowClosingConfirm(false);
 
         // تحديث إعدادات النظام ليظل رصيد الدرج ثابتاً كما هو للوردية القادمة طالما لم يتم سحبه
         updateSettings({
@@ -1051,8 +1055,8 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
                                         <div className="flex items-center gap-2">
                                             <span className="text-[10px] text-slate-500 font-mono">{formatTime(m.timestamp)}</span>
                                             <button
-                                                onClick={() => { if (confirm(t('confirm_delete'))) deleteDrawerMovement(m.id); }}
-                                                className="text-slate-500 hover:text-rose-400 cursor-pointer"
+                                                onClick={() => setMovementToDelete(m.id)}
+                                                className="text-slate-500 hover:text-rose-400 cursor-pointer p-1"
                                                 title={t('delete')}
                                             >
                                                 <Trash2 size={12} />
@@ -1239,6 +1243,38 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
                     </div>
                 </Card>
             </div>
+
+            {/* نافذة تأكيد إقفال الوردية الفاخرة */}
+            <ConfirmModal
+                isOpen={showClosingConfirm}
+                title={alreadyClosedToday ? (language === 'ar' ? 'تأكيد إقفال وردية جديدة اليوم' : 'Confirm Additional Closing Today') : (language === 'ar' ? 'تأكيد إقفال الوردية اليومية' : 'Confirm Daily Shift Closing')}
+                message={language === 'ar'
+                    ? `${alreadyClosedToday ? '⚠️ تم تسجيل تقرير إقفال مسبقاً لهذا اليوم. هل تريد إنشاء إقفال إضافي للوردية الحالية؟\n\n' : ''}• مبيعات اليوم: ${totalSales.toLocaleString('en-US')} ج.م\n• النقدية الفعلية بالدرج: ${actualCashNum.toLocaleString('en-US')} ج.م\n• الفارق (عجز/زيادة): ${diff === 0 ? 'مطابق تماماً ✓' : `${diff > 0 ? '+' : ''}${diff.toLocaleString('en-US')} ج.م`}\n\nهل ترغب بالتأكيد وحفظ الإقفال؟`
+                    : `Confirm closing shift with actual cash: ${actualCashNum.toLocaleString('en-US')} EGP?`}
+                confirmText={language === 'ar' ? 'نعم، إقفال الوردية' : 'Close Shift'}
+                cancelText={t('cancel')}
+                variant={diff < 0 ? 'warning' : 'primary'}
+                onConfirm={executeClose}
+                onCancel={() => setShowClosingConfirm(false)}
+            />
+
+            {/* نافذة تأكيد حذف حركة الدرج */}
+            <ConfirmModal
+                isOpen={!!movementToDelete}
+                title={language === 'ar' ? 'حذف حركة درج' : 'Delete Drawer Movement'}
+                message={language === 'ar' ? 'هل أنت متأكد من حذف حركة السحب/الإيداع هذه من سجل الدرج؟' : 'Are you sure you want to delete this drawer movement?'}
+                confirmText={language === 'ar' ? 'نعم، احذف الحركة' : 'Delete'}
+                cancelText={t('cancel')}
+                variant="danger"
+                onConfirm={() => {
+                    if (movementToDelete) {
+                        deleteDrawerMovement(movementToDelete);
+                        setMovementToDelete(null);
+                        addToast(language === 'ar' ? 'تم حذف حركة الدرج' : 'Movement deleted', 'info');
+                    }
+                }}
+                onCancel={() => setMovementToDelete(null)}
+            />
         </div>
     );
 };

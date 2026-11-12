@@ -15,7 +15,7 @@ import {
     Scissors, Tag, MapPin, Users, Activity, Check, Edit
 } from '../components/Icons';
 import { Item } from '../types';
-import { Card, Button } from '../components/ui';
+import { Card, Button, EmptyState } from '../components/ui';
 import { CategoriesPage } from './CategoriesPage';
 import { LocationsPage } from './LocationsPage';
 import { SuppliersPage } from './SuppliersPage';
@@ -632,16 +632,21 @@ export const Inventory = () => {
                     {/* Stock Cards Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filtered.length === 0 ? (
-                            <div className="col-span-full py-16 text-center text-slate-400 text-sm bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                                <Package size={40} className="mx-auto mb-2 text-slate-300 dark:text-slate-600" />
-                                <p className="font-semibold">{t('no_items') || 'لا توجد أصناف مطابقة للبحث'}</p>
-                                <Button 
-                                    variant="primary" 
-                                    onClick={() => handleOpenAddModal('product')}
-                                    className="mt-3 text-xs py-1.5 px-4"
-                                >
-                                    <Plus size={14} /> {language === 'ar' ? 'إضافة صنف جديد الآن' : 'Add Item Now'}
-                                </Button>
+                            <div className="col-span-full">
+                                <EmptyState 
+                                    icon={Package}
+                                    title={t('no_items') || (language === 'ar' ? 'المخزون فارغ حالياً' : 'No items found')}
+                                    description={language === 'ar' ? 'لم تقم بإضافة أي أصناف أو منتجات بعد. أضف أول منتج للبدء بالبيع عبر الكاشير.' : 'You have not added any items yet. Add your first item to start selling.'}
+                                    action={
+                                        <Button 
+                                            variant="primary" 
+                                            onClick={() => handleOpenAddModal('product')}
+                                            className="text-xs py-2 px-5 shadow-sm font-bold"
+                                        >
+                                            <Plus size={15} /> {language === 'ar' ? 'إضافة أول صنف بالمخزون' : 'Add First Item'}
+                                        </Button>
+                                    }
+                                />
                             </div>
                         ) : (
                             filtered.map(item => {

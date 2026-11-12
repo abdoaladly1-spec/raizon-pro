@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import { Plus, Trash2, Globe, Clock, Check, Info, MapPin, Sparkles, Building, Users, FileText } from '../components/Icons';
 import { Location } from '../types';
 import { isMainBranch } from '../lib/branchUtils';
-import { Card, Button, Input, ModalShell } from '../components/ui';
+import { Card, Button, Input, ModalShell, ConfirmModal } from '../components/ui';
 import { testSupabaseConnection, pullFromSupabase, pushBranchToSupabase, DEFAULT_SUPABASE_URL } from '../lib/supabaseSync';
 
 export const LocationsPage = () => {
@@ -13,6 +13,7 @@ export const LocationsPage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [form, setForm] = useState({ id: '', name: '', address: '', phone: '', active: true } as Location);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [locationToDelete, setLocationToDelete] = useState<Location | null>(null);
 
     // تحديث وتزامن تلقائي للفروع بمجرد فتح الصفحة
     useEffect(() => {
@@ -126,16 +127,21 @@ export const LocationsPage = () => {
             addToast(language === 'ar' ? 'لا يمكن حذف الفرع الوحيد في النظام!' : 'Cannot delete the only branch!', 'error');
             return;
         }
-        if (confirm(language === 'ar' ? `هل أنت متأكد من حذف فرع «${loc.name}»؟` : `Delete branch ${loc.name}?`)) {
-            deleteLocation(loc.id);
-            if (activeLocationId === loc.id) {
-                const remaining = state.locations.filter(l => l.id !== loc.id);
-                if (remaining.length > 0) {
-                    updateSettings({ currentLocationId: remaining[0].id });
-                }
+        setLocationToDelete(loc);
+    };
+
+    const confirmDeleteBranch = () => {
+        if (!locationToDelete) return;
+        const loc = locationToDelete;
+        deleteLocation(loc.id);
+        if (activeLocationId === loc.id) {
+            const remaining = state.locations.filter(l => l.id !== loc.id);
+            if (remaining.length > 0) {
+                updateSettings({ currentLocationId: remaining[0].id });
             }
-            addToast(language === 'ar' ? 'تم حذف الفرع' : 'Branch deleted', 'info');
         }
+        addToast(language === 'ar' ? 'تم حذف الفرع' : 'Branch deleted', 'info');
+        setLocationToDelete(null);
     };
 
     return (
@@ -393,6 +399,17 @@ export const LocationsPage = () => {
                     </form>
                 </ModalShell>
             )}
+
+            <ConfirmModal
+                isOpen={!!locationToDelete}
+                title={language === 'ar' ? 'تأكيد حذف الفرع' : 'Confirm Delete Branch'}
+                message={locationToDelete ? (language === 'ar' ? `هل أنت متأكد من حذف فرع «${locationToDelete.name}»؟ سيتم إزالته من قائمة الفروع المتاحة.` : `Are you sure you want to delete branch "${locationToDelete.name}"?`) : ''}
+                confirmText={language === 'ar' ? 'نعم، احذف الفرع' : 'Delete Branch'}
+                cancelText={t('cancel')}
+                variant="danger"
+                onConfirm={confirmDeleteBranch}
+                onCancel={() => setLocationToDelete(null)}
+            />
         </div>
     );
 };

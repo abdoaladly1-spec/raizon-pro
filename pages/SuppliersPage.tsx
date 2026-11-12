@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Plus, Search, Settings, Trash2, Package, Truck, Phone, MessageSquare } from '../components/Icons';
-import { Card, Button, Input, ModalShell } from '../components/ui';
+import { Card, Button, Input, ModalShell, EmptyState, ConfirmModal } from '../components/ui';
 import type { Supplier } from '../types';
 
 export const SuppliersPage = () => {
@@ -10,6 +10,7 @@ export const SuppliersPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState({ id: '', name: '', contact: '', email: '', phone: '', address: '', category: '', paymentTerms: 'دفع فوري', isActive: true } as Supplier);
+  const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -106,9 +107,17 @@ export const SuppliersPage = () => {
         </div>
       </div>
 
-      {/* شبكة الموردين */}
+      {/* شبكة الموردين أو حالة فارغة */}
       {filtered.length === 0 ? (
-        <Card className="text-center py-12 text-slate-400">{t('no_suppliers')}</Card>
+        <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-8 shadow-xs">
+          <EmptyState
+            icon={Truck}
+            title={search ? (language === 'ar' ? 'لا يوجد موردين يطابقون البحث' : 'No Suppliers Matching Search') : (language === 'ar' ? 'لا يوجد موردين مسجلين حتى الآن' : 'No Suppliers Registered Yet')}
+            description={search ? (language === 'ar' ? 'جرب البحث بكلمة أخرى أو مسح حقل البحث' : 'Try searching with another keyword') : (language === 'ar' ? 'سجل شركات التوريد وبيانات التواصل لمتابعة المشتريات وأوامر التوريد بسهولة.' : 'Add your suppliers and their contact details to manage purchase orders efficiently.')}
+            actionLabel={search ? undefined : (language === 'ar' ? '+ إضافة أول مورد' : '+ Add First Supplier')}
+            onAction={search ? undefined : () => { setIsEditing(false); setForm({ id: '', name: '', contact: '', email: '', phone: '', address: '', category: '', paymentTerms: 'دفع فوري', isActive: true }); setShowModal(true); }}
+          />
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(s => {
@@ -184,7 +193,7 @@ export const SuppliersPage = () => {
                   <Button variant="secondary" className="flex-1 justify-center text-xs py-1.5" onClick={() => { setForm(s); setIsEditing(true); setShowModal(true); }}>
                     <Settings size={13} /> {t('edit')}
                   </Button>
-                  <Button variant="danger" className="flex-1 justify-center text-xs py-1.5" onClick={() => { if (confirm(t('confirm_delete'))) deleteSupplier(s.id); }}>
+                  <Button variant="danger" className="flex-1 justify-center text-xs py-1.5" onClick={() => setSupplierToDelete(s)}>
                     <Trash2 size={13} /> {t('delete')}
                   </Button>
                 </div>
@@ -219,6 +228,22 @@ export const SuppliersPage = () => {
           </form>
         </ModalShell>
       )}
+
+      <ConfirmModal
+        isOpen={!!supplierToDelete}
+        title={language === 'ar' ? 'تأكيد حذف المورد' : 'Confirm Delete Supplier'}
+        message={supplierToDelete ? (language === 'ar' ? `هل أنت متأكد من حذف المورد «${supplierToDelete.name}»؟ لن يتم حذف فواتير وأوامر الشراء المسجلة باسمه سابقاً.` : `Are you sure you want to delete supplier "${supplierToDelete.name}"?`) : ''}
+        confirmText={language === 'ar' ? 'نعم، احذف المورد' : 'Delete Supplier'}
+        cancelText={t('cancel')}
+        variant="danger"
+        onConfirm={() => {
+          if (supplierToDelete) {
+            deleteSupplier(supplierToDelete.id);
+            setSupplierToDelete(null);
+          }
+        }}
+        onCancel={() => setSupplierToDelete(null)}
+      />
     </div>
   );
 };

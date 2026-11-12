@@ -2,7 +2,7 @@ import { printPurchaseOrderThermal } from '../lib/thermalPrinter';
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { Plus, Search, Package, Check, X, Printer, Eye } from '../components/Icons';
-import { Card, Button, Input, ModalShell } from '../components/ui';
+import { Card, Button, Input, ModalShell, EmptyState } from '../components/ui';
 import type { PurchaseOrder } from '../types';
 
 const STATUS_LABELS: Record<string, string> = { draft: 'draft', ordered: 'ordered', received: 'received', cancelled: 'cancelled' };
@@ -166,7 +166,18 @@ export const PurchaseOrdersPage = () => {
       </div>
 
       {filtered.length === 0 ? (
-        <Card className="text-center py-12 text-slate-400">{t('no_orders')}</Card>
+        <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-8 shadow-xs">
+          <EmptyState
+            icon={Package}
+            title={search || statusFilter ? 'لا توجد أوامر شراء مطابقة للبحث' : 'لا توجد أوامر شراء حتى الآن'}
+            description={search || statusFilter ? 'جرب تغيير شروط البحث أو الفلتر المطبق' : 'قم بإنشاء أمر شراء جديد وتحديد المورد والأصناف والكميات المطلوبة.'}
+            actionLabel={search || statusFilter ? undefined : '+ إنشاء أمر شراء'}
+            onAction={search || statusFilter ? undefined : () => {
+              setForm({ id: '', supplierId: state.suppliers[0]?.id || '', items: [], expectedDelivery: '', notes: '', status: 'draft' });
+              setShowModal(true);
+            }}
+          />
+        </div>
       ) : (
         <div className="space-y-3">
           {filtered.map(po => (

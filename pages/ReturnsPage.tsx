@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Search, Printer, X, Check, Info, AlertCircle, RefreshCw, Plus, ShoppingCart, Filter, Tag } from '../components/Icons';
-import { Card, Button, ModalShell } from '../components/ui';
+import { Card, Button, ModalShell, EmptyState } from '../components/ui';
 import { Invoice, PaymentPart, ReturnRecord } from '../types';
 import { remainingRefundable, validateReturn, paidForMethod, refundedForMethod, buildReturnItems, type RemainingItem } from '../lib/returns';
 import { round2 } from '../lib/payments';
@@ -700,7 +700,11 @@ export const ReturnsPage = () => {
                 )}
 
                 {logRows.length === 0 ? (
-                    <div className="text-sm text-slate-500 dark:text-slate-400">{t('return_no_returns')}</div>
+                    <EmptyState
+                        icon={RefreshCw}
+                        title={language === 'ar' ? 'سجل المرتجعات نظيف تماماً' : 'No returns found'}
+                        description={language === 'ar' ? 'لم يتم تسجيل أي عمليات استرجاع أو استبدال فواتير حتى الآن.' : 'No return or refund operations have been recorded yet.'}
+                    />
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">

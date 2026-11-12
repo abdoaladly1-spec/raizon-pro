@@ -318,7 +318,21 @@ export const ConfirmModal = ({
 };
 
 // --- EmptyState Component ---
-export const EmptyState = ({ icon: Icon, title, description, action }: { icon?: any; title: string; description?: string; action?: React.ReactNode }) => (
+export const EmptyState = ({ 
+  icon: Icon, 
+  title, 
+  description, 
+  action,
+  actionLabel,
+  onAction
+}: { 
+  icon?: any; 
+  title: string; 
+  description?: string; 
+  action?: React.ReactNode;
+  actionLabel?: string;
+  onAction?: () => void;
+}) => (
   <div className="flex flex-col items-center justify-center py-16 px-4 text-center animate-fade-in">
     {Icon && (
       <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200/60 dark:from-slate-800 dark:to-slate-700/50 border border-slate-200 dark:border-slate-700/80 flex items-center justify-center text-slate-400 dark:text-slate-400 mb-3.5 shadow-xs">
@@ -327,7 +341,15 @@ export const EmptyState = ({ icon: Icon, title, description, action }: { icon?: 
     )}
     <h4 className="text-slate-800 dark:text-slate-100 font-extrabold text-base mb-1">{title}</h4>
     {description && <p className="text-slate-500 dark:text-slate-400 text-xs max-w-sm leading-relaxed">{description}</p>}
-    {action && <div className="mt-4">{action}</div>}
+    {action ? (
+      <div className="mt-4">{action}</div>
+    ) : actionLabel && onAction ? (
+      <div className="mt-4">
+        <Button variant="primary" onClick={onAction} className="text-xs font-bold py-2 px-4 shadow-sm cursor-pointer">
+          {actionLabel}
+        </Button>
+      </div>
+    ) : null}
   </div>
 );
 

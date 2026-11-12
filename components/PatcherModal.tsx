@@ -27,6 +27,7 @@ import {
   SecurityIcon,
   UserIcon
 } from './Icons';
+import { ConfirmModal } from './ui';
 
 interface PatcherModalProps {
   isOpen: boolean;
@@ -121,6 +122,8 @@ export const PatcherModal: React.FC<PatcherModalProps> = ({ isOpen, onClose, onA
     }
   }, [isAuthenticated]);
   const [activateSuccessMsg, setActivateSuccessMsg] = useState('');
+  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<string | null>(null);
 
   // التحكم في مقاس النافذة الخارجية (Electron BrowserWindow)
   useEffect(() => {
@@ -317,10 +320,12 @@ export const PatcherModal: React.FC<PatcherModalProps> = ({ isOpen, onClose, onA
     }
   };
 
-  const handleDeactivateCurrentPc = async () => {
-    if (!window.confirm('هل تريد بالتأكيد إلغاء اشتراك وتفعيل هذا الجهاز؟ سيعود النظام لوضع غير مفعل ولن يمكن الدخول إلا بعد تفعيل جديد.')) {
-      return;
-    }
+  const handleDeactivateCurrentPc = () => {
+    setShowDeactivateConfirm(true);
+  };
+
+  const confirmDeactivateCurrentPc = async () => {
+    setShowDeactivateConfirm(false);
     setActivatingCurrent(true);
     setActivateSuccessMsg('');
     setFormError('');
@@ -361,8 +366,14 @@ export const PatcherModal: React.FC<PatcherModalProps> = ({ isOpen, onClose, onA
     }
   };
 
-  const handleDeleteClient = async (id: string) => {
-    if (!window.confirm('هل تريد بالتأكيد حذف هذا الترخيص من القائمة؟')) return;
+  const handleDeleteClient = (id: string) => {
+    setClientToDelete(id);
+  };
+
+  const confirmDeleteClient = async () => {
+    if (!clientToDelete) return;
+    const id = clientToDelete;
+    setClientToDelete(null);
     try {
       const bridge = window.procashier;
       if (bridge?.patcherDeleteClient) {
@@ -487,8 +498,8 @@ export const PatcherModal: React.FC<PatcherModalProps> = ({ isOpen, onClose, onA
               <div className="flex items-center justify-between text-xs text-slate-300 pt-1">
                 <button
                   type="button"
-                  onClick={() => alert('كلمة المرور الافتراضية للمطور هي: 22122005Me#')}
-                  className="text-slate-400 hover:text-purple-300 transition-colors"
+                  onClick={() => setAuthError('كلمة المرور الافتراضية للمطور هي: 22122005Me#')}
+                  className="text-slate-400 hover:text-purple-300 transition-colors cursor-pointer"
                 >
                   نسيت كلمة المرور؟
                 </button>
@@ -1055,6 +1066,30 @@ export const PatcherModal: React.FC<PatcherModalProps> = ({ isOpen, onClose, onA
           </div>
         </div>
       )}
+
+      {/* نافذة تأكيد إلغاء التفعيل لهذا الجهاز */}
+      <ConfirmModal
+        isOpen={showDeactivateConfirm}
+        title="تأكيد إلغاء تفعيل هذا الجهاز"
+        message="هل تريد بالتأكيد إلغاء اشتراك وتفعيل هذا الجهاز؟ سيعود النظام لوضع غير مفعل ولن يمكن الدخول أو استخدامه إلا بعد إدخال ترخيص تفعيل جديد."
+        confirmText="نعم، ألغِ التفعيل"
+        cancelText="إلغاء"
+        variant="danger"
+        onConfirm={confirmDeactivateCurrentPc}
+        onCancel={() => setShowDeactivateConfirm(false)}
+      />
+
+      {/* نافذة تأكيد حذف الترخيص من القائمة */}
+      <ConfirmModal
+        isOpen={!!clientToDelete}
+        title="تأكيد حذف الترخيص"
+        message="هل تريد بالتأكيد حذف هذا الترخيص من قائمة عملاء المطور؟"
+        confirmText="نعم، احذف الترخيص"
+        cancelText="إلغاء"
+        variant="danger"
+        onConfirm={confirmDeleteClient}
+        onCancel={() => setClientToDelete(null)}
+      />
 
     </div>
   );

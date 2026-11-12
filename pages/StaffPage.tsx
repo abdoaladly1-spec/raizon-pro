@@ -11,7 +11,7 @@ import {
     CustomTrashIcon, CustomPrinterIcon
 } from '../components/Icons';
 import { Staff, StaffPayment } from '../types';
-import { Card, Button, Input, ModalShell, ConfirmModal } from '../components/ui';
+import { Card, Button, Input, ModalShell, ConfirmModal, EmptyState } from '../components/ui';
 
 // قائمة المسميات الوظيفية الشائعة لتسهيل وتنسيق الاختيار
 const PRESET_ROLES = [
@@ -1468,21 +1468,21 @@ export const StaffPage = () => {
                         })}
 
                         {filteredStaff.length === 0 && (
-                            <div className="col-span-full py-16 text-center text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-                                <Users size={36} className="mx-auto mb-2 text-slate-300 dark:text-slate-600" />
-                                <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
-                                    {isAr ? 'لا توجد نتائج تطابق معايير البحث الحالية' : 'No staff found matching current filter'}
-                                </p>
-                                <p className="text-xs text-slate-400 mt-1">
-                                    {isAr ? 'يمكنك تعديل البحث أو الضغط على "إضافة موظف جديد".' : 'Try adjusting your search query or add a new staff member.'}
-                                </p>
-                                <button
-                                    type="button"
-                                    onClick={handleOpenAddModal}
-                                    className="mt-4 px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white hover:bg-purple-500 transition-all cursor-pointer shadow-xs"
-                                >
-                                    + {isAr ? 'إضافة موظف جديد الآن' : 'Add Staff Now'}
-                                </button>
+                            <div className="col-span-full">
+                                <EmptyState
+                                    icon={Users}
+                                    title={isAr ? 'قائمة الموظفين فارغة' : 'No staff found'}
+                                    description={isAr ? 'لم تقم بتسجيل أي موظفين بعد. أضف أعضاء فريق العمل لتتبع المبيعات والعمولات والرواتب.' : 'No staff members added yet. Add team members to track commissions and payroll.'}
+                                    action={
+                                        <button
+                                            type="button"
+                                            onClick={handleOpenAddModal}
+                                            className="px-5 py-2.5 rounded-xl text-xs font-black bg-primary-600 hover:bg-primary-500 text-white transition-all cursor-pointer shadow-sm active:scale-95"
+                                        >
+                                            + {isAr ? 'إضافة أول موظف' : 'Add First Staff'}
+                                        </button>
+                                    }
+                                />
                             </div>
                         )}
                     </div>
