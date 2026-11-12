@@ -655,7 +655,7 @@ const translations = {
     // UI Labels
     no_closing_reports: 'لا توجد تقارير إغلاق',
     no_held_invoices: 'لا توجد فواتير معلقة',
-    select_barber_alert: 'يرجى اختيار الموظف أو مقدم الخدمة',
+    select_barber_alert: 'يرجى اختيار الحلاق',
     cannot_redeem_less_50: 'لا يمكن استرداد أقل من 50 نقطة',
     payment_added: 'تمت إضافة الدفعة بنجاح',
     action_successful: 'تم بنجاح',
@@ -690,7 +690,7 @@ const translations = {
     today_reservations: 'حجوزات اليوم',
     receptionist: 'موظف الاستقبال',
     manager: 'مدير',
-    barber: 'الموظف / مقدم الخدمة',
+    barber: 'حلاق',
     total_sales: 'إجمالي المبيعات',
     total_expenses: 'إجمالي المصاريف',
     print: 'طباعة',
