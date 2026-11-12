@@ -2539,7 +2539,24 @@ export const SettingsPage = () => {
                             {language === 'ar' ? 'إعدادات الورق والطباعة' : 'Paper Setup'}
                         </h3>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                {language === 'ar' ? 'طابعة الإيصالات' : 'Receipt Printer'}
+                            </label>
+                            <select
+                                className={selectCls}
+                                value={form.printerName || 'Default'}
+                                onChange={(e) => setForm({ ...form, printerName: e.target.value })}
+                            >
+                                <option value="Default">{language === 'ar' ? 'الطابعة الافتراضية للنظام (Default)' : 'Default System Printer'}</option>
+                                {printers.map((p) => (
+                                    <option key={p.name} value={p.name}>
+                                        {p.displayName || p.name} {p.isDefault ? `(${language === 'ar' ? 'افتراضية' : 'Default'})` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                         <div>
                             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                                 {language === 'ar' ? 'مقاس الورق' : 'Page Size'}
