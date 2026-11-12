@@ -644,7 +644,7 @@ export const StaffPage = () => {
                             <button
                                 type="button"
                                 onClick={() => handleOpenPaymentModal(selectedStaff.id, 'salary')}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer transition-all shadow-2xs"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer transition-all shadow-xs"
                             >
                                 <Wallet size={15} />
                                 <span>{isAr ? 'صرف راتب / دفعة' : 'Pay Salary'}</span>
@@ -653,39 +653,40 @@ export const StaffPage = () => {
                             <button
                                 type="button"
                                 onClick={() => handleOpenAdvanceModal(selectedStaff.id)}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500/10 hover:bg-amber-600 text-amber-600 hover:text-white border border-amber-500/30 cursor-pointer transition-all shadow-2xs"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-amber-500/10 dark:hover:bg-amber-500/15 text-slate-700 dark:text-slate-200 hover:text-amber-500 border border-slate-200 dark:border-slate-700 hover:border-amber-500/30 cursor-pointer transition-all"
                             >
-                                <Banknote size={15} />
-                                <span>{isAr ? 'سحب سلفة' : 'Draw Advance'}</span>
+                                <Banknote size={15} className="text-amber-500" />
+                                <span>{isAr ? 'سلفة' : 'Advance'}</span>
                             </button>
 
                             <button
                                 type="button"
                                 onClick={() => handleOpenDeductionModal(selectedStaff.id)}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-500/30 cursor-pointer transition-all shadow-2xs"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-rose-500/10 dark:hover:bg-rose-500/15 text-slate-700 dark:text-slate-200 hover:text-rose-500 border border-slate-200 dark:border-slate-700 hover:border-rose-500/30 cursor-pointer transition-all"
                             >
-                                <AlertCircle size={15} />
-                                <span>{isAr ? 'تسجيل جزاء / خصم' : 'Record Penalty'}</span>
+                                <AlertCircle size={15} className="text-rose-500" />
+                                <span>{isAr ? 'خصم / جزاء' : 'Penalty'}</span>
                             </button>
 
                             {currentStaffFin && currentStaffFin.netDue > 0 && (
                                 <button
                                     type="button"
                                     onClick={() => handleOpenPaymentModal(selectedStaff.id, 'commission', currentStaffFin.netDue)}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs cursor-pointer transition-all"
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500/15 hover:bg-emerald-600 text-emerald-600 hover:text-white border border-emerald-500/30 cursor-pointer transition-all shadow-xs"
                                     title={isAr ? 'صرف وتصفية كامل المبلغ الصافي المستحق للموظف' : 'Settle remaining due balance'}
                                 >
-                                    <Check size={15} />
-                                    <span>{isAr ? `تصفية المستحق (${formatNumber(currentStaffFin.netDue)} ج.م)` : `Settle (${currentStaffFin.netDue} EGP)`}</span>
+                                    <Check size={14} />
+                                    <span>{isAr ? `تصفية المستحق (${formatNumber(currentStaffFin.netDue)} ج.م)` : `Settle (${currentStaffFin.netDue})`}</span>
                                 </button>
                             )}
 
                             <button
                                 type="button"
                                 onClick={() => handleOpenStatement(selectedStaff.id)}
-                                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all shadow-2xs"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all"
+                                title={isAr ? 'كشف حساب' : 'Statement'}
                             >
-                                <StatementIcon size={18} />
+                                <StatementIcon size={16} />
                                 <span>{isAr ? 'كشف حساب' : 'Statement'}</span>
                             </button>
 
@@ -695,136 +696,176 @@ export const StaffPage = () => {
                                 className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer transition-all"
                                 title={isAr ? 'تعديل بيانات الموظف' : 'Edit staff'}
                             >
-                                <CustomEditIcon size={18} />
+                                <CustomEditIcon size={16} />
                             </button>
                         </div>
                     </div>
 
-                    {/* البطاقات المالية لحساب الموظف */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
-                            <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
-                                <span>{isAr ? 'مبيعات الموظف' : 'Sales Revenue'}</span>
-                                <DollarSign size={16} className="text-blue-500" />
+                    {/* لوحة الملخص المالي الموحدة (تصميم هادئ وبسيط بدون تشتيت) */}
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                            
+                            {/* الرصيد المستحق (Hero Highlight) */}
+                            <div className="flex items-center gap-4">
+                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
+                                    currentStaffFin && currentStaffFin.netDue > 0
+                                        ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30'
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                                }`}>
+                                    <Wallet size={26} />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                                            {isAr ? 'صافي المستحق للصرف' : 'Net Due Balance'}
+                                        </span>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                            currentStaffFin && currentStaffFin.netDue > 0
+                                                ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
+                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700'
+                                        }`}>
+                                            {currentStaffFin && currentStaffFin.netDue > 0
+                                                ? (isAr ? 'مستحق للسداد' : 'Payable')
+                                                : (isAr ? 'الحساب مسوّى ✓' : 'Settled')}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-baseline gap-1.5 mt-1">
+                                        <span className={`text-3xl font-extrabold font-mono tracking-tight ${
+                                            currentStaffFin && currentStaffFin.netDue > 0
+                                                ? 'text-emerald-500'
+                                                : 'text-slate-800 dark:text-slate-200'
+                                        }`}>
+                                            {formatNumber(currentStaffFin?.netDue || 0)}
+                                        </span>
+                                        <span className="text-xs font-bold text-slate-400">ج.م</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="mt-2 flex items-baseline gap-1">
-                                <span className="text-2xl font-bold font-mono text-slate-900 dark:text-slate-100">
-                                    {formatNumber(currentStaffFin?.invoicesTotal || 0)}
-                                </span>
-                                <span className="text-xs text-slate-400">ج.م</span>
-                            </div>
-                            <p className="text-[11px] text-slate-400 mt-1">
-                                {isAr ? `من إجمالي ${currentStaffFin?.invoicesCount || 0} فاتورة تم تنفيذها` : `${currentStaffFin?.invoicesCount || 0} invoices completed`}
-                            </p>
-                        </Card>
 
-                        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
-                            <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
-                                <span>{isAr ? 'إجمالي العمولات' : 'Commissions'}</span>
-                                <Award size={16} className="text-purple-500" />
-                            </div>
-                            <div className="mt-2 flex items-baseline gap-1">
-                                <span className="text-2xl font-bold font-mono text-emerald-500">
-                                    {formatNumber(currentStaffFin?.totalCommissions || 0)}
-                                </span>
-                                <span className="text-xs text-slate-400">ج.م</span>
-                            </div>
-                            <p className="text-[11px] text-slate-400 mt-1">
-                                {isAr ? 'عمولات مكتسبة محسوبة تلقائياً' : 'Earned on sales invoices'}
-                            </p>
-                        </Card>
+                            {/* شبكة المؤشرات المالية المصغرة (4 مقاييس واضحة ونظيفة) */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 lg:gap-8 pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-r border-slate-100 dark:border-slate-800 lg:pr-8">
+                                {/* مبيعات الموظف */}
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+                                        <DollarSign size={13} className="text-blue-500" />
+                                        <span>{isAr ? 'المبيعات' : 'Sales'}</span>
+                                    </div>
+                                    <div className="font-mono text-base font-bold text-slate-800 dark:text-slate-200">
+                                        {formatNumber(currentStaffFin?.invoicesTotal || 0)} <span className="text-[11px] font-normal text-slate-400">ج.م</span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-400 font-mono">
+                                        {currentStaffFin?.invoicesCount || 0} {isAr ? 'فاتورة' : 'inv'}
+                                    </div>
+                                </div>
 
-                        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
-                            <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
-                                <span>{isAr ? 'إجمالي السلف' : 'Total Advances'}</span>
-                                <Banknote size={16} className="text-amber-500" />
-                            </div>
-                            <div className="mt-2 flex items-baseline gap-1">
-                                <span className="text-2xl font-bold font-mono text-amber-500">
-                                    {formatNumber(currentStaffFin?.totalAdvances || 0)}
-                                </span>
-                                <span className="text-xs text-slate-400">ج.م</span>
-                            </div>
-                            <p className="text-[11px] text-slate-400 mt-1">
-                                {isAr ? 'سلف نقدية مسحوبة' : 'Deducted from balance'}
-                            </p>
-                        </Card>
+                                {/* إجمالي العمولات */}
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+                                        <Award size={13} className="text-purple-500" />
+                                        <span>{isAr ? 'العمولات' : 'Commissions'}</span>
+                                    </div>
+                                    <div className="font-mono text-base font-bold text-emerald-500">
+                                        {formatNumber(currentStaffFin?.totalCommissions || 0)} <span className="text-[11px] font-normal text-slate-400">ج.م</span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-400">
+                                        {isAr ? 'مكتسبة' : 'earned'}
+                                    </div>
+                                </div>
 
-                        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
-                            <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
-                                <span>{isAr ? 'إجمالي الجزاءات' : 'Penalties'}</span>
-                                <AlertTriangle size={16} className="text-rose-500" />
-                            </div>
-                            <div className="mt-2 flex items-baseline gap-1">
-                                <span className="text-2xl font-bold font-mono text-rose-500">
-                                    {formatNumber(currentStaffFin?.totalDeductions || 0)}
-                                </span>
-                                <span className="text-xs text-slate-400">ج.م</span>
-                            </div>
-                            <p className="text-[11px] text-slate-400 mt-1">
-                                {isAr ? 'خصومات وجزاءات إدارية' : 'Administrative deductions'}
-                            </p>
-                        </Card>
+                                {/* إجمالي السلف */}
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+                                        <Banknote size={13} className="text-amber-500" />
+                                        <span>{isAr ? 'السلف' : 'Advances'}</span>
+                                    </div>
+                                    <div className="font-mono text-base font-bold text-amber-500">
+                                        {formatNumber(currentStaffFin?.totalAdvances || 0)} <span className="text-[11px] font-normal text-slate-400">ج.م</span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-400">
+                                        {isAr ? 'مسحوبة' : 'drawn'}
+                                    </div>
+                                </div>
 
-                        <Card className={`border p-4 ${currentStaffFin && currentStaffFin.netDue > 0 ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'}`}>
-                            <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                                <span>{isAr ? 'صافي المستحق للصرف' : 'Net Due Balance'}</span>
-                                <Wallet size={16} className={currentStaffFin && currentStaffFin.netDue > 0 ? 'text-emerald-500' : 'text-slate-400'} />
+                                {/* إجمالي الجزاءات */}
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-1.5 text-slate-400 text-xs">
+                                        <AlertTriangle size={13} className="text-rose-500" />
+                                        <span>{isAr ? 'الجزاءات' : 'Penalties'}</span>
+                                    </div>
+                                    <div className="font-mono text-base font-bold text-rose-500">
+                                        {formatNumber(currentStaffFin?.totalDeductions || 0)} <span className="text-[11px] font-normal text-slate-400">ج.م</span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-400">
+                                        {isAr ? 'خصومات' : 'deductions'}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="mt-2 flex items-baseline gap-1">
-                                <span className={`text-2xl font-bold font-mono ${currentStaffFin && currentStaffFin.netDue > 0 ? 'text-emerald-500' : 'text-slate-400'}`}>
-                                    {formatNumber(currentStaffFin?.netDue || 0)}
-                                </span>
-                                <span className="text-xs text-slate-400">ج.م</span>
-                            </div>
-                            <p className="text-[11px] text-slate-400 mt-1">
-                                {currentStaffFin && currentStaffFin.netDue > 0
-                                    ? (isAr ? 'المبلغ المتبقي واجب السداد للموظف' : 'Outstanding amount to pay')
-                                    : (isAr ? 'الحساب مسوى بالكامل (لا توجد مديونية)' : 'Account fully settled')}
-                            </p>
-                        </Card>
+
+                        </div>
                     </div>
 
-                    {/* أزرار التبويبات الداخلية */}
-                    <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+                    {/* أزرار التبويبات الداخلية الهادئة */}
+                    <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl w-fit border border-slate-200/70 dark:border-slate-700/60">
                         <button
                             type="button"
                             onClick={() => setProfileTab('payroll')}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-2 ${profileTab === 'payroll' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-2 ${
+                                profileTab === 'payroll'
+                                    ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                            }`}
                         >
-                            <Wallet size={15} />
+                            <Wallet size={14} />
                             <span>{isAr ? 'سجل المدفوعات والسلف' : 'Payroll & Advances'}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/20 font-mono">{staffPaymentsList.length}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-800 font-mono font-normal">
+                                {staffPaymentsList.length}
+                            </span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setProfileTab('invoices')}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-2 ${profileTab === 'invoices' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-2 ${
+                                profileTab === 'invoices'
+                                    ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                            }`}
                         >
-                            <FileText size={15} />
+                            <FileText size={14} />
                             <span>{isAr ? 'فواتير ومبيعات الموظف' : 'Invoices & Sales'}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/20 font-mono">{staffInvoicesList.length}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-800 font-mono font-normal">
+                                {staffInvoicesList.length}
+                            </span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setProfileTab('reservations')}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-2 ${profileTab === 'reservations' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-2 ${
+                                profileTab === 'reservations'
+                                    ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                            }`}
                         >
-                            <Calendar size={15} />
+                            <Calendar size={14} />
                             <span>{isAr ? 'الحجوزات والمهام' : 'Reservations'}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/20 font-mono">{staffReservationsList.length}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-800 font-mono font-normal">
+                                {staffReservationsList.length}
+                            </span>
                         </button>
 
                         <button
                             type="button"
                             onClick={() => setProfileTab('custody')}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-2 ${profileTab === 'custody' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center gap-2 ${
+                                profileTab === 'custody'
+                                    ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-xs'
+                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                            }`}
                         >
-                            <Package size={15} />
+                            <Package size={14} />
                             <span>{isAr ? 'العهدة والأدوات' : 'Custody & Tools'}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/20 font-mono">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-800 font-mono font-normal">
                                 {staffTools.filter(t => t.staffId === selectedStaff.id).length}
                             </span>
                         </button>
@@ -1087,10 +1128,10 @@ export const StaffPage = () => {
                     {/* 4. تبويب العهدة والأدوات */}
                     {profileTab === 'custody' && (
                         <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-                            <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
                                 <div>
-                                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                                        {isAr ? 'عهدة الأدوات والمعدات المسلمة للموظف' : 'Staff Custody & Equipment'}
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                        {isAr ? 'الأدوات والعهدة المسلمة' : 'Staff Custody & Equipment'}
                                     </h3>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                                         {isAr ? 'تتبع الأجهزة والأدوات المسلمة في حوزة الموظف' : 'Track equipment assigned to this staff member'}
@@ -1099,7 +1140,7 @@ export const StaffPage = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowToolsModal(true)}
-                                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white cursor-pointer transition-all shadow-xs flex items-center gap-1.5"
+                                    className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer transition-all shadow-xs flex items-center gap-1.5"
                                 >
                                     <Plus size={14} />
                                     <span>{isAr ? 'تسليم عهدة جديدة' : 'Assign Tool'}</span>
@@ -1126,8 +1167,16 @@ export const StaffPage = () => {
                                     </div>
                                 ))}
                                 {staffTools.filter(t => t.staffId === selectedStaff.id).length === 0 && (
-                                    <div className="col-span-full py-8 text-center text-slate-400 text-xs">
-                                        {isAr ? 'لم يتم تسليم أي عهدة أو أدوات لهذا الموظف.' : 'No custody items assigned yet.'}
+                                    <div className="col-span-full py-10 text-center">
+                                        <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                                            <Package size={22} />
+                                        </div>
+                                        <p className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                                            {isAr ? 'لا توجد أي عهدة أو أدوات مسجلة لهذا الموظف حالياً' : 'No custody items assigned yet.'}
+                                        </p>
+                                        <p className="text-[11px] text-slate-400 mt-0.5">
+                                            {isAr ? 'يمكنك تسليم عهدة عبر زر "تسليم عهدة جديدة"' : 'Use "Assign Tool" above to record custody items'}
+                                        </p>
                                     </div>
                                 )}
                             </div>
