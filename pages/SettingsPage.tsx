@@ -3392,6 +3392,7 @@ export const SettingsPage = () => {
                     downloadAnchorNode.click();
                     downloadAnchorNode.remove();
                     setShowResetConfirmModal(false);
+                    try { localStorage.removeItem('procashier_active_invoice_draft_v1'); } catch {}
                     resetSystem();
                 }}
                 onCancel={() => setShowResetConfirmModal(false)}

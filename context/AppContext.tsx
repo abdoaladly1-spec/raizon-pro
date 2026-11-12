@@ -3468,6 +3468,21 @@ export const AppProvider = ({ children }: any) => {
     localStorage.removeItem('procashier_sync_queue');
     localStorage.removeItem('procashier_returns_queue');
     localStorage.removeItem('raizon_closing_events');
+    localStorage.removeItem('procashier_active_invoice_draft_v1');
+    localStorage.removeItem('pro_staff_tools_v1');
+    localStorage.removeItem('closing_include_debts');
+    localStorage.removeItem('report_print_size');
+
+    // مسح شامل لأي مفاتيح مسودات أو فواتير مؤقتة متبقية في المتصفح
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('procashier_') || k.startsWith('raizon_') || k === 'appState')) {
+          localStorage.removeItem(k);
+        }
+      }
+    } catch {}
+
     // نحذف نسخة IndexedDB أيضاً حتى لا تُستعاد الحالة القديمة بعد إعادة التشغيل
     idbRemove('appState').finally(() => window.location.reload());
   };
@@ -3477,6 +3492,11 @@ export const AppProvider = ({ children }: any) => {
     if (!rawInput || typeof rawInput !== 'object') return;
     const raw = rawInput.state || rawInput.appState || rawInput.data || rawInput;
     if (!raw || typeof raw !== 'object') return;
+
+    // مسح أي مسودة فاتورة حالية لضمان تفريغ السلة وعدم تعليق أصناف قديمة
+    try {
+      localStorage.removeItem('procashier_active_invoice_draft_v1');
+    } catch {}
 
     const parsed = normalizeInvoiceDates(raw);
 

@@ -42,7 +42,24 @@ export const CreateInvoice = ({ onClose }: any) => {
   const { playBeep } = useSound();
   
   // استرجاع المسودة المحفوظة تلقائياً إذا وجدت حتى لا تضيع عند مغادرة الصفحة
-  const initialDraft = useMemo(() => getInitialInvoiceDraft(), []);
+  const initialDraft = useMemo(() => {
+    const draft = getInitialInvoiceDraft();
+    if (!draft) return null;
+    // إذا كان المخزون فارغاً (حالة المتجر النظيف أو بعد إعادة التعيين) يتم تفريغ ومسح المسودة فوراً
+    if (!state.items || state.items.length === 0) {
+      try { localStorage.removeItem(DRAFT_KEY); } catch {}
+      return null;
+    }
+    // تصفية واستبعاد أي عناصر بالمسودة لم تعد موجودة في المخزون
+    const validItems = (draft.selectedItems || []).filter((si: any) =>
+      state.items.some(i => i.id === si.item?.id)
+    );
+    if (validItems.length === 0 && !draft.customerName && !draft.phone && !draft.notes) {
+      try { localStorage.removeItem(DRAFT_KEY); } catch {}
+      return null;
+    }
+    return { ...draft, selectedItems: validItems };
+  }, [state.items]);
   
   const [phone, setPhone] = useState(initialDraft?.phone || '');
   const [customerName, setCustomerName] = useState(initialDraft?.customerName || '');
