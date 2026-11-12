@@ -640,8 +640,17 @@ export const StaffPage = () => {
                         <div className="flex flex-wrap items-center gap-2">
                             <button
                                 type="button"
+                                onClick={() => handleOpenPaymentModal(selectedStaff.id, 'salary')}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer transition-all shadow-2xs"
+                            >
+                                <Wallet size={15} />
+                                <span>{isAr ? 'صرف راتب / دفعة' : 'Pay Salary'}</span>
+                            </button>
+
+                            <button
+                                type="button"
                                 onClick={() => handleOpenAdvanceModal(selectedStaff.id)}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-500/30 cursor-pointer transition-all shadow-2xs"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500/10 hover:bg-amber-600 text-amber-600 hover:text-white border border-amber-500/30 cursor-pointer transition-all shadow-2xs"
                             >
                                 <Banknote size={15} />
                                 <span>{isAr ? 'سحب سلفة' : 'Draw Advance'}</span>
@@ -649,11 +658,11 @@ export const StaffPage = () => {
 
                             <button
                                 type="button"
-                                onClick={() => handleOpenPaymentModal(selectedStaff.id, 'salary')}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer transition-all shadow-2xs"
+                                onClick={() => handleOpenDeductionModal(selectedStaff.id)}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-500/30 cursor-pointer transition-all shadow-2xs"
                             >
-                                <Wallet size={15} />
-                                <span>{isAr ? 'صرف راتب / دفعة' : 'Pay Salary'}</span>
+                                <AlertCircle size={15} />
+                                <span>{isAr ? 'تسجيل جزاء / خصم' : 'Record Penalty'}</span>
                             </button>
 
                             {currentStaffFin && currentStaffFin.netDue > 0 && (
@@ -834,6 +843,13 @@ export const StaffPage = () => {
                                 <div className="flex items-center gap-2">
                                     <button
                                         type="button"
+                                        onClick={() => handleOpenPaymentModal(selectedStaff.id, 'salary')}
+                                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-500 cursor-pointer transition-all shadow-xs"
+                                    >
+                                        + {isAr ? 'صرف راتب / دفعة' : 'Add Payment'}
+                                    </button>
+                                    <button
+                                        type="button"
                                         onClick={() => handleOpenAdvanceModal(selectedStaff.id)}
                                         className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30 hover:bg-amber-500/20 cursor-pointer transition-all"
                                     >
@@ -841,10 +857,10 @@ export const StaffPage = () => {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => handleOpenPaymentModal(selectedStaff.id, 'salary')}
-                                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-600 text-white hover:bg-purple-500 cursor-pointer transition-all shadow-xs"
+                                        onClick={() => handleOpenDeductionModal(selectedStaff.id)}
+                                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/30 hover:bg-rose-500/20 cursor-pointer transition-all"
                                     >
-                                        + {isAr ? 'تسجيل صرف دفعة' : 'Add Payment'}
+                                        + {isAr ? 'تسجيل جزاء / خصم' : 'Add Penalty'}
                                     </button>
                                 </div>
                             </div>
@@ -1153,10 +1169,21 @@ export const StaffPage = () => {
                                 type="button"
                                 onClick={() => handleOpenAdvanceModal()}
                                 disabled={(state.staff || []).length === 0}
-                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-500/30 cursor-pointer transition-all shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-amber-500/10 hover:bg-amber-600 text-amber-600 hover:text-white border border-amber-500/30 cursor-pointer transition-all shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Banknote size={16} />
                                 <span>{isAr ? 'سحب سلفة سريعة' : 'Quick Advance'}</span>
+                            </button>
+
+                            {/* زر تسجيل جزاء / خصم سريع */}
+                            <button
+                                type="button"
+                                onClick={() => handleOpenDeductionModal()}
+                                disabled={(state.staff || []).length === 0}
+                                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-500/30 cursor-pointer transition-all shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <AlertCircle size={16} />
+                                <span>{isAr ? 'تسجيل جزاء / خصم' : 'Quick Penalty'}</span>
                             </button>
 
                             {/* زر إضافة موظف جديد */}
@@ -1311,156 +1338,184 @@ export const StaffPage = () => {
                             return (
                                 <div
                                     key={staff.id}
-                                    className={`rounded-2xl p-5 border transition-all duration-200 flex flex-col justify-between ${
+                                    className={`rounded-2xl p-4 sm:p-5 border transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md ${
                                         staff.active
-                                            ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-purple-500/40 hover:shadow-md'
-                                            : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/50 opacity-75'
+                                            ? 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 hover:border-purple-500/40'
+                                            : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/50 opacity-80'
                                     }`}
                                 >
-                                    {/* رأس الكارت: الأفاتار، الاسم، المسمى، والحالة */}
                                     <div>
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-300 font-bold text-lg flex items-center justify-center shrink-0">
+                                        {/* رأس الكارت: الأفاتار، الاسم، المسمى، وأدوات الإدارة السريعة */}
+                                        <div className="flex items-start justify-between gap-2.5">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600/20 to-indigo-600/10 border border-purple-500/30 text-purple-600 dark:text-purple-300 font-black text-lg flex items-center justify-center shrink-0 shadow-xs">
                                                     {staff.name.charAt(0).toUpperCase()}
                                                 </div>
 
-                                                <div>
+                                                <div className="min-w-0">
                                                     <h3
                                                         onClick={() => { setSelectedStaffId(staff.id); setView('profile'); }}
-                                                        className="text-base font-bold text-slate-900 dark:text-slate-100 hover:text-purple-600 transition-colors cursor-pointer"
+                                                        className="text-base font-black text-slate-900 dark:text-slate-100 hover:text-purple-600 transition-colors cursor-pointer truncate"
+                                                        title={staff.name}
                                                     >
                                                         {staff.name}
                                                     </h3>
                                                     <div className="flex items-center gap-1.5 mt-1">
-                                                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${getRoleColor(staff.role)}`}>
+                                                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border tracking-wide ${getRoleColor(staff.role)}`}>
                                                             {getRoleLabel(staff.role)}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            {/* زر تبديل الحالة بنقرة واحدة */}
-                                            <button
-                                                type="button"
-                                                onClick={() => handleToggleActive(staff)}
-                                                className={`px-2.5 py-1 rounded-full text-[11px] font-bold border cursor-pointer transition-all ${
-                                                    staff.active
-                                                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/20'
-                                                        : 'bg-slate-200 dark:bg-slate-800 text-slate-500 border-slate-300 dark:border-slate-700 hover:bg-slate-300'
-                                                }`}
-                                                title={isAr ? 'انقر لتغيير الحالة (نشط / غير نشط)' : 'Click to toggle active status'}
-                                            >
-                                                {staff.active ? (isAr ? 'نشط' : 'Active') : (isAr ? 'إجازة' : 'Inactive')}
-                                            </button>
+                                            {/* أدوات الإدارة والحالة بأعلى الكارت */}
+                                            <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleToggleActive(staff)}
+                                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border cursor-pointer transition-all flex items-center gap-1 ${
+                                                        staff.active
+                                                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                                                            : 'bg-slate-200 dark:bg-slate-800 text-slate-500 border-slate-300 dark:border-slate-700 hover:bg-slate-300'
+                                                    }`}
+                                                    title={isAr ? 'انقر لتغيير الحالة (نشط / إجازة)' : 'Toggle active status'}
+                                                >
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${staff.active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                                                    <span>{staff.active ? (isAr ? 'نشط' : 'Active') : (isAr ? 'إجازة' : 'Inactive')}</span>
+                                                </button>
+
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleOpenStatement(staff.id)}
+                                                        className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                                                        title={isAr ? 'طباعة كشف حساب' : 'Print Statement'}
+                                                    >
+                                                        <Printer size={13} />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleOpenEditModal(staff)}
+                                                        className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                                                        title={isAr ? 'تعديل البيانات والعمولة' : 'Edit staff'}
+                                                    >
+                                                        <Scissors size={13} />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteStaff(staff)}
+                                                        className="p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/30 text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                                        title={isAr ? 'حذف الموظف' : 'Delete staff'}
+                                                    >
+                                                        <Trash2 size={13} />
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         {/* بيانات الاتصال والعمولة */}
-                                        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-1.5 text-xs">
-                                            {staff.phone && (
-                                                <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-mono">
-                                                    <Phone size={13} className="text-slate-400 shrink-0" />
+                                        <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                                            {staff.phone ? (
+                                                <div className="flex items-center gap-1 font-mono font-bold">
+                                                    <Phone size={12} className="text-slate-400 shrink-0" />
                                                     <span>{staff.phone}</span>
                                                 </div>
+                                            ) : (
+                                                <span className="text-slate-400 text-[10px]">-</span>
                                             )}
 
-                                            <div className="flex items-center gap-1.5 text-[11px]">
-                                                <span className="text-slate-400">{isAr ? 'العمولة:' : 'Commission:'}</span>
+                                            <div className="flex items-center gap-1 font-bold">
+                                                <span className="text-slate-400 text-[10px]">{isAr ? 'العمولة:' : 'Comm:'}</span>
                                                 {commVal > 0 ? (
-                                                    <span className="font-bold text-emerald-500">
+                                                    <span className="text-emerald-500 font-mono">
                                                         {staff.commissionType === 'fixed'
-                                                            ? `${commVal} ج.م / فاتورة`
-                                                            : `${commVal}% على الفاتورة`}
+                                                            ? `${commVal} ج.م`
+                                                            : `${commVal}%`}
                                                     </span>
                                                 ) : (
-                                                    <span className="text-slate-400 italic">
-                                                        {isAr ? 'بدون عمولة مبيعات' : 'No Commission'}
+                                                    <span className="text-slate-400 font-normal italic text-[10px]">
+                                                        {isAr ? 'بدون عمولة' : 'None'}
                                                     </span>
                                                 )}
                                             </div>
                                         </div>
 
-                                        {/* صندوق الأرقام المالية للموظف */}
-                                        <div className="mt-3.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 grid grid-cols-3 gap-2 text-center">
-                                            <div>
-                                                <p className="text-[10px] text-slate-400 font-bold">{isAr ? 'العمولات' : 'Commissions'}</p>
-                                                <p className="text-xs font-bold font-mono text-emerald-500 mt-0.5">
+                                        {/* صندوق الأرقام المالية للموظف (4 أعمدة متكاملة) */}
+                                        <div className="mt-3 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 grid grid-cols-4 gap-1.5 text-center">
+                                            <div className="border-l border-slate-200/50 dark:border-slate-700/50 pl-1">
+                                                <p className="text-[10px] text-slate-400 font-bold truncate">{isAr ? 'العمولات' : 'Comm.'}</p>
+                                                <p className="text-xs font-black font-mono text-emerald-500 mt-0.5 truncate">
                                                     {formatNumber(fin?.totalCommissions || 0)}
                                                 </p>
                                             </div>
 
-                                            <div>
-                                                <p className="text-[10px] text-slate-400 font-bold">{isAr ? 'السلف' : 'Advances'}</p>
-                                                <p className="text-xs font-bold font-mono text-amber-500 mt-0.5">
+                                            <div className="border-l border-slate-200/50 dark:border-slate-700/50 pl-1">
+                                                <p className="text-[10px] text-slate-400 font-bold truncate">{isAr ? 'السلف' : 'Adv.'}</p>
+                                                <p className="text-xs font-black font-mono text-amber-500 mt-0.5 truncate">
                                                     {formatNumber(fin?.totalAdvances || 0)}
                                                 </p>
                                             </div>
 
+                                            <div className="border-l border-slate-200/50 dark:border-slate-700/50 pl-1">
+                                                <p className="text-[10px] text-slate-400 font-bold truncate">{isAr ? 'الجزاءات' : 'Penalties'}</p>
+                                                <p className="text-xs font-black font-mono text-rose-500 mt-0.5 truncate">
+                                                    {formatNumber(fin?.totalDeductions || 0)}
+                                                </p>
+                                            </div>
+
                                             <div>
-                                                <p className="text-[10px] text-slate-400 font-bold">{isAr ? 'المستحق' : 'Net Due'}</p>
-                                                <p className={`text-xs font-bold font-mono mt-0.5 ${(fin?.netDue || 0) > 0 ? 'text-emerald-500 font-extrabold' : 'text-slate-400'}`}>
+                                                <p className="text-[10px] text-slate-400 font-bold truncate">{isAr ? 'المستحق' : 'Due'}</p>
+                                                <p className={`text-xs font-black font-mono mt-0.5 truncate ${(fin?.netDue || 0) > 0 ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400'}`}>
                                                     {formatNumber(fin?.netDue || 0)}
                                                 </p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* أزرار الإجراءات السفلية */}
-                                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center gap-2">
+                                    {/* أزرار الإجراءات السفلية المنظمة بشكل احترافي */}
+                                    <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
+                                        {/* الصف الأول: الحركات المالية الثلاث (صرف - سلفة - خصم/جزاء) */}
+                                        <div className="grid grid-cols-3 gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleOpenPaymentModal(staff.id, 'salary')}
+                                                className="py-2 px-1 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs cursor-pointer transition-all flex items-center justify-center gap-1 active:scale-95"
+                                                title={isAr ? 'صرف راتب أو دفعة مالية' : 'Pay Salary'}
+                                            >
+                                                <Wallet size={13} />
+                                                <span>{isAr ? 'صرف' : 'Pay'}</span>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => handleOpenAdvanceModal(staff.id)}
+                                                className="py-2 px-1 rounded-xl text-xs font-black bg-amber-500/10 hover:bg-amber-600 text-amber-600 hover:text-white dark:text-amber-400 dark:hover:text-white border border-amber-500/30 cursor-pointer transition-all flex items-center justify-center gap-1 active:scale-95"
+                                                title={isAr ? 'تسجيل سلفة نقدية' : 'Draw Advance'}
+                                            >
+                                                <Banknote size={13} />
+                                                <span>{isAr ? 'سلفة' : 'Advance'}</span>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => handleOpenDeductionModal(staff.id)}
+                                                className="py-2 px-1 rounded-xl text-xs font-black bg-rose-500/10 hover:bg-rose-600 text-rose-600 hover:text-white dark:text-rose-400 dark:hover:text-white border border-rose-500/30 cursor-pointer transition-all flex items-center justify-center gap-1 active:scale-95"
+                                                title={isAr ? 'تسجيل خصم أو جزاء إداري' : 'Record Deduction / Penalty'}
+                                            >
+                                                <AlertCircle size={13} />
+                                                <span>{isAr ? 'خصم/جزاء' : 'Penalty'}</span>
+                                            </button>
+                                        </div>
+
+                                        {/* الصف الثاني: فتح كشف الحساب والملف الشامل */}
                                         <button
                                             type="button"
                                             onClick={() => { setSelectedStaffId(staff.id); setView('profile'); }}
-                                            className="flex-1 min-w-[100px] py-2 rounded-xl text-xs font-bold bg-purple-600/10 hover:bg-purple-600 text-purple-600 hover:text-white dark:text-purple-300 dark:hover:text-white border border-purple-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                            className="w-full py-2.5 px-3 rounded-xl text-xs font-black bg-purple-600/10 hover:bg-purple-600 text-purple-600 hover:text-white dark:text-purple-300 dark:hover:text-white border border-purple-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs active:scale-98"
                                         >
                                             <User size={14} />
-                                            <span>{isAr ? 'الملف والحسابات' : 'Profile & Ledger'}</span>
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleOpenAdvanceModal(staff.id)}
-                                            className="px-2.5 py-2 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-500/25 transition-all cursor-pointer flex items-center gap-1"
-                                            title={isAr ? 'سحب سلفة لهذا الموظف' : 'Draw Advance'}
-                                        >
-                                            <Banknote size={14} />
-                                            <span>{isAr ? 'سلفة' : 'Advance'}</span>
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleOpenPaymentModal(staff.id, 'salary')}
-                                            className="px-2.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all cursor-pointer flex items-center gap-1"
-                                            title={isAr ? 'صرف راتب أو دفعة' : 'Pay Salary'}
-                                        >
-                                            <Wallet size={14} />
-                                            <span>{isAr ? 'صرف' : 'Pay'}</span>
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleOpenStatement(staff.id)}
-                                            className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-                                            title={isAr ? 'كشف حساب' : 'Statement'}
-                                        >
-                                            <Printer size={14} />
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleOpenEditModal(staff)}
-                                            className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-                                            title={isAr ? 'تعديل البيانات والعمولة' : 'Edit staff'}
-                                        >
-                                            <Scissors size={14} />
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDeleteStaff(staff)}
-                                            className="p-2 rounded-xl border border-rose-200 dark:border-rose-900/30 text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                                            title={isAr ? 'حذف الموظف' : 'Delete staff'}
-                                        >
-                                            <Trash2 size={14} />
+                                            <span>{isAr ? 'الملف والحسابات الشاملة' : 'Full Profile & Ledger'}</span>
+                                            <span className="text-[11px] font-normal opacity-70">←</span>
                                         </button>
                                     </div>
                                 </div>
