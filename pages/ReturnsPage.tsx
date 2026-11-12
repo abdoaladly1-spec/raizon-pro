@@ -1,11 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Search, Printer, X, Check, Info, AlertCircle, RefreshCw, Plus, ShoppingCart, Filter, Tag } from '../components/Icons';
+import { Search, Printer, X, Check, Info, AlertCircle, RefreshCw, Plus, ShoppingCart, Filter, Tag, FileText, Smartphone } from '../components/Icons';
 import { Card, Button, ModalShell, EmptyState } from '../components/ui';
 import { Invoice, PaymentPart, ReturnRecord } from '../types';
 import { remainingRefundable, validateReturn, paidForMethod, refundedForMethod, buildReturnItems, type RemainingItem } from '../lib/returns';
 import { round2 } from '../lib/payments';
 import { escapeHtml } from '../lib/escapeHtml';
+import { ReturnReceipt, openReturnWhatsApp } from '../components/ReturnReceipt';
+import { printReceipt as printBridgeReceipt, saveReceiptPdf } from '../lib/printBridge';
+import { normalizePrintDesign } from '../lib/printDesign';
 
 const METHODS: PaymentPart['method'][] = ['cash', 'card', 'wallet', 'instapay'];
 
@@ -232,7 +235,7 @@ export const ReturnsPage = () => {
         const rec = res.record!;
         const target = invoice;
         closeModal();
-        printReceipt(rec, target);
+        setPrintTarget({ rec, inv: target });
     };
 
     // تأكيد إلغاء المرتجع وإعادة الأصناف لفاتورة العميل
@@ -256,53 +259,45 @@ export const ReturnsPage = () => {
         setSuggestionToDelete(null);
     };
 
-    const printReceipt = (rec: ReturnRecord, inv?: Invoice) => {
-        const win = window.open('', '', 'width=760,height=640');
-        if (!win) return;
-        const rows = (rec.items || []).map(it => `
-            <tr>
-                <td>${escapeHtml(it.name)}</td>
-                <td>${escapeHtml(it.quantity)}</td>
-                <td>${round2(it.price)}</td>
-                <td>${round2(it.discountAmount)}</td>
-                <td>${round2(it.taxAmount)}</td>
-                <td><b>${round2(it.refundAmount)}</b></td>
-            </tr>`).join('');
-        const partRows = (rec.refundParts || []).map(p => `<div>${escapeHtml(t(p.method))}: <b>${round2(p.amount)}</b> ${escapeHtml(t('egp'))}</div>`).join('');
-        const html = `
-            <html dir="${language === 'ar' ? 'rtl' : 'ltr'}">
-            <head><meta charset="utf-8"><title>${escapeHtml(t('return_receipt'))}</title>
-            <style>
-                body{font-family:system-ui,-apple-system,sans-serif;padding:24px;color:#111}
-                h1{font-size:18px;margin:0 0 4px} .muted{color:#555;font-size:13px}
-                table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}
-                th,td{border:1px solid #ccc;padding:6px 8px;text-align:${language === 'ar' ? 'right' : 'left'}}
-                th{background:#f3f4f6}
-                .total{margin-top:14px;font-size:15px}
-                .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef;font-size:12px}
-            </style></head>
-            <body>
-                <h1>${escapeHtml(t('return_receipt'))} <span class="badge">${escapeHtml(t(`return_status_${rec.status}`))}</span></h1>
-                <div class="muted">${escapeHtml(t('return_invoice_no'))}${escapeHtml(inv?.id ?? rec.invoiceId)} · ${escapeHtml(rec.date)} · ${escapeHtml(rec.type === 'full' ? t('return_full') : t('return_partial'))}</div>
-                <div class="muted">${escapeHtml(t('created_by'))}: ${escapeHtml(rec.staffName || rec.createdBy || '-')} ${rec.reason ? `· ${escapeHtml(t('return_reason'))}: ${escapeHtml(rec.reason)}` : ''}</div>
-                <table>
-                    <thead><tr>
-                        <th>${escapeHtml(t('items'))}</th><th>${escapeHtml(t('quantity'))}</th><th>${escapeHtml(t('price'))}</th>
-                        <th>${escapeHtml(t('discount'))}</th><th>${escapeHtml(t('tax'))}</th><th>${escapeHtml(t('return_refund_amount'))}</th>
-                    </tr></thead>
-                    <tbody>${rows}</tbody>
-                </table>
-                <div class="total">
-                    <div>${escapeHtml(t('return_refund_amount'))}: <b>${round2(rec.refundAmount)} ${escapeHtml(t('egp'))}</b></div>
-                    ${partRows}
-                    <div>${escapeHtml(t('cash_refunds'))}: <b>${round2(rec.cashRefund)} ${escapeHtml(t('egp'))}</b></div>
-                    ${rec.pointsReversed ? `<div>${escapeHtml(t('return_points'))}: ${escapeHtml(rec.pointsReversed)}</div>` : ''}
-                    ${rec.commissionReversed ? `<div>${escapeHtml(t('return_commission'))}: ${round2(rec.commissionReversed)} ${escapeHtml(t('egp'))}</div>` : ''}
-                </div>
-            </body></html>`;
-        win.document.write(html);
-        win.document.close();
-        win.onload = () => { win.print(); };
+    const [printTarget, setPrintTarget] = useState<{ rec: ReturnRecord; inv?: Invoice } | null>(null);
+
+    const handlePrintReceipt = async () => {
+        if (!printTarget) return;
+        const design = normalizePrintDesign(state.settings.printDesign);
+        const printerName = state.settings.printerName || 'Default';
+        try {
+            const res = await printBridgeReceipt(design, printerName);
+            if (res.success) {
+                addToast(language === 'ar' ? 'تم إرسال إيصال المرتجع إلى الطابعة بنجاح' : 'Receipt sent to printer', 'success');
+            } else if (res.errorReason) {
+                addToast(res.errorReason, 'error');
+            }
+        } catch (e: any) {
+            addToast(e?.message || (language === 'ar' ? 'خطأ أثناء الطباعة' : 'Print error'), 'error');
+        }
+    };
+
+    const handleSavePdf = async () => {
+        try {
+            const res = await saveReceiptPdf();
+            if (res.ok && res.filePath) {
+                addToast(`${language === 'ar' ? 'تم حفظ ملف PDF بنجاح' : 'PDF saved'}: ${res.filePath}`, 'success');
+            } else if (res.fallback) {
+                window.print();
+            }
+        } catch (e: any) {
+            addToast(e?.message || (language === 'ar' ? 'خطأ أثناء تصدير PDF' : 'PDF export error'), 'error');
+        }
+    };
+
+    const handleWhatsApp = () => {
+        if (!printTarget) return;
+        const customerPhone = customerPhones.get(printTarget.rec.customerId || 0)?.phone || '';
+        openReturnWhatsApp(printTarget.rec, customerPhone, {
+            shopName: state.settings.shopName,
+            phone: state.settings.phone,
+            address: state.settings.address,
+        });
     };
 
     const selectedCustPhone = invoice ? (customerPhones.get(invoice.customerId)?.phone || '') : '';
@@ -748,7 +743,7 @@ export const ReturnsPage = () => {
                                             <td className="px-3.5 py-3 text-center">
                                                 <div className="flex items-center justify-center gap-1.5 flex-wrap">
                                                     <button
-                                                        onClick={e => { e.stopPropagation(); printReceipt(rec, state.invoices.find(i => i.uid === rec.invoiceUid)); }}
+                                                        onClick={e => { e.stopPropagation(); setPrintTarget({ rec, inv: state.invoices.find(i => i.uid === rec.invoiceUid) }); }}
                                                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-xs font-bold transition cursor-pointer"
                                                         title={t('return_receipt')}
                                                     >
@@ -925,6 +920,48 @@ export const ReturnsPage = () => {
                                 <span>{language === 'ar' ? 'إلغاء' : 'Cancel'}</span>
                             </Button>
                         </div>
+                    </div>
+                </ModalShell>
+            )}
+
+            {/* نافذة معاينة وطباعة إيصال المرتجع الحراري الاحترافي */}
+            {printTarget && (
+                <ModalShell
+                    title={`${t('return_receipt')} #RET-${printTarget.rec.id}`}
+                    onClose={() => setPrintTarget(null)}
+                    maxWidth="max-w-2xl"
+                >
+                    <div className="overflow-auto flex justify-center p-6 bg-slate-900 rounded-2xl">
+                        <ReturnReceipt record={printTarget.rec} invoice={printTarget.inv} />
+                    </div>
+                    <div className="no-print flex flex-wrap gap-2.5 justify-end px-4 py-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-b-2xl">
+                        <button
+                            type="button"
+                            onClick={handlePrintReceipt}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer active:scale-95"
+                        >
+                            <Printer size={15} />
+                            <span>{language === 'ar' ? 'طباعة حراري' : 'Print Thermal'}</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSavePdf}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs shadow-sm transition-all cursor-pointer active:scale-95"
+                        >
+                            <FileText size={15} />
+                            <span>{language === 'ar' ? 'حفظ PDF' : 'Save PDF'}</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleWhatsApp}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer active:scale-95"
+                        >
+                            <Smartphone size={15} />
+                            <span>{language === 'ar' ? 'واتساب' : 'WhatsApp'}</span>
+                        </button>
+                        <Button variant="secondary" onClick={() => setPrintTarget(null)}>
+                            {t('cancel')}
+                        </Button>
                     </div>
                 </ModalShell>
             )}
