@@ -36,7 +36,7 @@ const getInitialInvoiceDraft = () => {
 };
 
 export const CreateInvoice = ({ onClose }: any) => {
-  const { state, addInvoice, updateInvoice, voidInvoice, holdInvoice, restoreInvoice, deleteHeldInvoice, t, addToast, addCustomer, updateSettings, language, addItem, formatNumber, formatDate, formatTime, formatDateTime, triggerOpenCashDrawer } = useApp();
+  const { state, addInvoice, updateInvoice, voidInvoice, holdInvoice, restoreInvoice, deleteHeldInvoice, t, addToast, addCustomer, addStaff, updateSettings, language, addItem, formatNumber, formatDate, formatTime, formatDateTime, triggerOpenCashDrawer } = useApp();
   const isMain = isMainBranch(state.settings.currentLocationId, state.locations);
   const activeBranch = getActiveBranch(state.settings.currentLocationId, state.locations);
   const { playBeep } = useSound();
@@ -49,6 +49,39 @@ export const CreateInvoice = ({ onClose }: any) => {
   const [customerIdInput, setCustomerIdInput] = useState(initialDraft?.customerIdInput || '');
   const [notes, setNotes] = useState(initialDraft?.notes || '');
   const [selectedStaffId, setSelectedStaffId] = useState(initialDraft?.selectedStaffId || '');
+  const [showQuickAddBarberModal, setShowQuickAddBarberModal] = useState(false);
+  const [newBarberName, setNewBarberName] = useState('');
+  const [newBarberPhone, setNewBarberPhone] = useState('');
+  const [newBarberCommissionType, setNewBarberCommissionType] = useState<'percent' | 'fixed'>('percent');
+  const [newBarberCommissionValue, setNewBarberCommissionValue] = useState<string>('0');
+
+  const handleCreateBarber = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = newBarberName.trim();
+    if (!trimmed) {
+      addToast(language === 'ar' ? 'يرجى كتابة اسم الحلاق' : 'Please enter barber name', 'error');
+      return;
+    }
+    const newId = String(Date.now());
+    const commVal = parseFloat(newBarberCommissionValue) || 0;
+    addStaff({
+      id: newId,
+      name: trimmed,
+      phone: newBarberPhone.trim(),
+      role: 'barber',
+      active: true,
+      locationIds: [state.settings?.currentLocationId || '1'],
+      commissionType: newBarberCommissionType,
+      commissionValue: commVal,
+    });
+    setSelectedStaffId(newId);
+    addToast(language === 'ar' ? `تم إضافة الحلاق "${trimmed}" وتحديده بنجاح` : `Barber "${trimmed}" added and selected`, 'success');
+    setNewBarberName('');
+    setNewBarberPhone('');
+    setNewBarberCommissionValue('0');
+    setShowQuickAddBarberModal(false);
+  };
+
   const [showHeldInvoices, setShowHeldInvoices] = useState(false);
   const [showHoldPromptModal, setShowHoldPromptModal] = useState(false);
   const [holdNoteInput, setHoldNoteInput] = useState('');
@@ -1417,24 +1450,45 @@ export const CreateInvoice = ({ onClose }: any) => {
                     </div>
                 </div>
                 <div className="mt-4">
-                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('barber')}</label>
-                     <select 
-                         className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500" 
-                         value={selectedStaffId} 
-                         onChange={(e) => setSelectedStaffId(e.target.value)}
-                     >
-                         <option value="">{t('select_barber')}</option>
-                         {state.staff.filter(s => s.active).map(s => {
-                             const commText = Number(s.commissionValue) > 0 
-                                 ? (s.commissionType === 'fixed' ? ` [عمولة: ${s.commissionValue} ج.م]` : ` [عمولة: ${s.commissionValue}%]`)
-                                 : '';
-                             return (
-                                 <option key={s.id} value={s.id}>
-                                     {s.name}{commText}
-                                 </option>
-                             );
-                         })}
-                     </select>
+                     <div className="flex items-center justify-between mb-1.5">
+                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">{t('barber')}</label>
+                         <button
+                             type="button"
+                             onClick={() => setShowQuickAddBarberModal(true)}
+                             className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center gap-1 cursor-pointer transition-colors"
+                         >
+                             <Plus size={14} className="stroke-[3]" />
+                             <span>{language === 'ar' ? 'أضف حلاق' : 'Add Barber'}</span>
+                         </button>
+                     </div>
+                     <div className="flex items-center gap-2">
+                         <select 
+                             className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-primary-500 font-bold" 
+                             value={selectedStaffId} 
+                             onChange={(e) => setSelectedStaffId(e.target.value)}
+                         >
+                             <option value="">{t('select_barber')}</option>
+                             {state.staff.filter(s => s.active).map(s => {
+                                 const commText = Number(s.commissionValue) > 0 
+                                     ? (s.commissionType === 'fixed' ? ` [عمولة: ${s.commissionValue} ج.م]` : ` [عمولة: ${s.commissionValue}%]`)
+                                     : '';
+                                 return (
+                                     <option key={s.id} value={s.id}>
+                                         {s.name}{commText}
+                                     </option>
+                                 );
+                             })}
+                         </select>
+                         <button
+                             type="button"
+                             onClick={() => setShowQuickAddBarberModal(true)}
+                             className="px-3.5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95 shrink-0"
+                             title={language === 'ar' ? 'إضافة حلاق جديد سريعاً' : 'Quick Add Barber'}
+                         >
+                             <Plus size={16} className="stroke-[3]" />
+                             <span>{language === 'ar' ? 'أضف حلاق' : 'Add Barber'}</span>
+                         </button>
+                     </div>
                 </div>
                 <div className="mt-4">
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('notes')}</label>
@@ -2244,6 +2298,66 @@ export const CreateInvoice = ({ onClose }: any) => {
                             <Button type="button" variant="secondary" onClick={() => setIsQuickAddingService(false)} className="flex-1 justify-center">{t('cancel')}</Button>
                         </div>
                     </form>
+            </ModalShell>
+        )}
+
+        {/* Quick Add Barber Modal — إضافة حلاق سريعاً واختياره مباشرة في الفاتورة */}
+        {showQuickAddBarberModal && (
+            <ModalShell
+                title={language === 'ar' ? 'إضافة حلاق جديد' : 'Add New Barber'}
+                onClose={() => setShowQuickAddBarberModal(false)}
+                maxWidth="max-w-md"
+            >
+                <form onSubmit={handleCreateBarber} className="space-y-4 text-right" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                    <Input 
+                        label={language === 'ar' ? 'اسم الحلاق (مطلوب)' : 'Barber Name (Required)'} 
+                        value={newBarberName} 
+                        onChange={(e: any) => setNewBarberName(e.target.value)} 
+                        required 
+                        autoFocus 
+                        placeholder={language === 'ar' ? 'مثال: محمد علي' : 'e.g. Mohamed Ali'}
+                    />
+                    <Input 
+                        label={language === 'ar' ? 'رقم الهاتف (اختياري)' : 'Phone Number (Optional)'} 
+                        type="tel"
+                        value={newBarberPhone} 
+                        onChange={(e: any) => setNewBarberPhone(e.target.value)} 
+                        placeholder="01xxxxxxxxx"
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {language === 'ar' ? 'نوع العمولة' : 'Commission Type'}
+                            </label>
+                            <select
+                                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-bold outline-none focus:ring-2 focus:ring-primary-500"
+                                value={newBarberCommissionType}
+                                onChange={(e) => setNewBarberCommissionType(e.target.value as any)}
+                            >
+                                <option value="percent">{language === 'ar' ? 'نسبة مئوية (%)' : 'Percentage (%)'}</option>
+                                <option value="fixed">{language === 'ar' ? 'مبلغ ثابت (ج.م)' : 'Fixed (EGP)'}</option>
+                            </select>
+                        </div>
+                        <Input 
+                            label={newBarberCommissionType === 'percent' ? (language === 'ar' ? 'نسبة العمولة (%)' : 'Commission (%)') : (language === 'ar' ? 'قيمة العمولة (ج.م)' : 'Commission (EGP)')}
+                            type="number" 
+                            min="0"
+                            step="any"
+                            value={newBarberCommissionValue} 
+                            onChange={(e: any) => setNewBarberCommissionValue(e.target.value)} 
+                            placeholder="0"
+                        />
+                    </div>
+                    <div className="flex gap-3 pt-2">
+                        <Button type="submit" variant="success" className="flex-1 justify-center py-2.5 font-bold">
+                            <Plus size={15} />
+                            <span>{language === 'ar' ? 'حفظ واختيار الحلاق' : 'Save & Select'}</span>
+                        </Button>
+                        <Button type="button" variant="secondary" onClick={() => setShowQuickAddBarberModal(false)} className="flex-1 justify-center py-2.5 font-bold">
+                            {t('cancel')}
+                        </Button>
+                    </div>
+                </form>
             </ModalShell>
         )}
 
