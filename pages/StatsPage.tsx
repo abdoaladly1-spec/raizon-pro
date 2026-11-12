@@ -27,6 +27,7 @@ const PERIOD_OPTIONS: { v: PeriodPreset; k: string }[] = [
     { v: 'month', k: 'period_this_month' },
     { v: 'last_month', k: 'period_last_month' },
     { v: 'year', k: 'period_this_year' },
+    { v: 'all', k: 'period_all' },
     { v: 'custom', k: 'period_custom' },
 ];
 
@@ -168,7 +169,7 @@ const StatBox = ({ label, value, sub, icon: Icon, color = 'emerald', valueColor 
 /* --------------------------------- الصفحة --------------------------------- */
 
 export const StatsPage = () => {
-    const { state, t } = useApp();
+    const { state, t, language } = useApp();
     useLiveTick(); // ربط لحظي: يعيد الحساب كل بضع ثوانٍ مع أي فاتورة جديدة
 
     // فلاتر الفترة
@@ -389,10 +390,11 @@ export const StatsPage = () => {
                     title: t('report_payments'), subtitle,
                     headers: [t('payment_method'), t('total_revenue')],
                     rows: [
-                        [t('cash'), money(p.cash)],
-                        [t('card'), money(p.card)],
-                        [t('wallet'), money(p.wallet)],
-                        [t('mixed'), money(round2(p.cash + p.card + p.wallet - sumRevenue(invs) + sumRevenue(invs) - (p.cash + p.card + p.wallet)))],
+                        [t('cash') || 'نقدي', money(p.cash)],
+                        [t('card') || 'بطاقات بنكية', money(p.card)],
+                        [t('wallet') || 'محافظ إلكترونية', money(p.wallet)],
+                        [language === 'ar' ? 'تحويل بنكي (انستاباي)' : 'Bank Transfer (Insta)', money(p.instapay)],
+                        [language === 'ar' ? 'على الحساب (آجل)' : 'On Account (Credit)', money(p.credit)],
                     ],
                     totals: [{ label: t('total_revenue'), value: egp(money(sumRevenue(invs))) }],
                 };
@@ -453,11 +455,12 @@ export const StatsPage = () => {
                         <Card>
                             <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><DollarSign className="text-emerald-500" /> {t('total_revenue')}</h3>
                             <div className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-4">{money(profit.revenue)} <span className="text-base font-normal text-slate-400">{t('egp')}</span></div>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3"><div className="text-slate-500 text-xs">{t('cash')}</div><b className="text-emerald-600">{money(paySplit.cash)}</b></div>
-                                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3"><div className="text-slate-500 text-xs">{t('non_cash')}</div><b className="text-blue-600">{money(round2(paySplit.card + paySplit.wallet))}</b></div>
-                                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3"><div className="text-slate-500 text-xs">{t('returns_total')}</div><b className="text-red-500">{money(profit.returns)}</b></div>
-                                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3"><div className="text-slate-500 text-xs">{t('net_sales')}</div><b>{money(round2(profit.revenue - profit.returns))}</b></div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3"><div className="text-slate-500 text-xs">{t('cash')}</div><b className="text-emerald-600 font-mono text-sm">{money(paySplit.cash)}</b></div>
+                                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3"><div className="text-slate-500 text-xs">{language === 'ar' ? 'إلكتروني (بطاقة/محفظة/انستا)' : 'Card/Wallet/Insta'}</div><b className="text-blue-600 font-mono text-sm">{money(round2(paySplit.card + paySplit.wallet + paySplit.instapay))}</b></div>
+                                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3"><div className="text-slate-500 text-xs">{language === 'ar' ? 'على الحساب (آجل)' : 'Credit (On Account)'}</div><b className="text-amber-600 font-mono text-sm">{money(paySplit.credit)}</b></div>
+                                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3"><div className="text-slate-500 text-xs">{t('returns_total')}</div><b className="text-red-500 font-mono text-sm">{money(profit.returns)}</b></div>
+                                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3 col-span-2 sm:col-span-2"><div className="text-slate-500 text-xs">{t('net_sales')}</div><b className="font-mono text-sm">{money(round2(profit.revenue - profit.returns))}</b></div>
                             </div>
                         </Card>
                         <Card>
@@ -657,6 +660,7 @@ export const StatsPage = () => {
                     { key: 'period_this_week', p: 'week' },
                     { key: 'period_this_month', p: 'month' },
                     { key: 'period_this_year', p: 'year' },
+                    { key: 'period_all', p: 'all' },
                 ];
                 return (
                     <Card>
@@ -730,11 +734,58 @@ export const StatsPage = () => {
                 <div className="flex-1 min-w-0 space-y-6 w-full">
                     {/* فلاتر الفترة + الفلاتر الإضافية */}
                     <Card className="!p-4">
+                        {/* أزرار الفترات السريعة مع زر (المدة الكاملة منذ البداية) */}
+                        <div className="flex flex-wrap items-center gap-1.5 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60">
+                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 me-1">
+                                <Calendar size={14} className="text-primary-500" />
+                                <span>{t('date_range')}:</span>
+                            </span>
+                            {PERIOD_OPTIONS.map(o => {
+                                const isAll = o.v === 'all';
+                                const active = preset === o.v;
+                                return (
+                                    <button
+                                        key={o.v}
+                                        type="button"
+                                        onClick={() => setPreset(o.v)}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                            active
+                                                ? isAll
+                                                    ? 'bg-purple-600 text-white shadow-md shadow-purple-600/25 ring-2 ring-purple-500/20'
+                                                    : 'bg-primary-600 text-white shadow-sm ring-2 ring-primary-500/20'
+                                                : isAll
+                                                    ? 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60'
+                                                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/60'
+                                        }`}
+                                    >
+                                        {isAll && <span>♾️</span>}
+                                        <span>{t(o.k)}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {preset === 'all' && (
+                            <div className="p-3 bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/50 rounded-xl text-xs text-purple-800 dark:text-purple-200 flex flex-wrap items-center justify-between gap-2 mb-3 animate-fade-in">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-base">♾️</span>
+                                    <span className="font-bold">
+                                        {language === 'ar'
+                                            ? 'عرض المدة الكاملة: يتم احتساب كافة العمليات والبيانات الحسابية منذ بداية تفعيل النظام وحتى اللحظة بدون أي استثناء أو انقطاع.'
+                                            : 'All-Time Mode: Full lifetime calculations since the system was initialized.'}
+                                    </span>
+                                </div>
+                                <span className="font-mono font-bold px-2 py-0.5 rounded-lg bg-purple-200/60 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 text-[11px]">
+                                    {invoices.length} {language === 'ar' ? 'فاتورة كلية' : 'total invoices'}
+                                </span>
+                            </div>
+                        )}
+
                         <div className="flex flex-wrap items-end gap-3">
                             <div className="flex flex-col gap-1">
                                 <label className="text-xs font-bold text-slate-500">{t('date_range')}</label>
                                 <select value={preset} onChange={e => setPreset(e.target.value as PeriodPreset)}
-                                    className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-bold focus:ring-2 focus:ring-primary-500 min-w-[140px]">
+                                    className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-bold focus:ring-2 focus:ring-primary-500 min-w-[140px] cursor-pointer">
                                     {PERIOD_OPTIONS.map(o => <option key={o.v} value={o.v}>{t(o.k)}</option>)}
                                 </select>
                             </div>
@@ -778,6 +829,8 @@ export const StatsPage = () => {
                                     <option value="cash">{t('cash')}</option>
                                     <option value="card">{t('card')}</option>
                                     <option value="wallet">{t('wallet')}</option>
+                                    <option value="instapay">{language === 'ar' ? 'تحويل بنكي (انستاباي)' : 'Instapay'}</option>
+                                    <option value="credit">{language === 'ar' ? 'على الحساب (آجل)' : 'Credit (On Account)'}</option>
                                 </select>
                             </div>
                             <div className="flex flex-col gap-1">

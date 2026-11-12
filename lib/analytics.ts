@@ -176,27 +176,41 @@ export const byCustomer = (invoices: Invoice[], customers: Customer[]): {
     return Object.values(map).map(r => ({ ...r, spent: round2(r.spent) }));
 };
 
-/** تحليل طرق الدفع من الفواتير (يدفع الفعلي لا التصنيف الظاهر فقط) */
-export const byPaymentMethod = (invoices: Invoice[]): { cash: number; card: number; wallet: number } => {
-    let cash = 0, card = 0, wallet = 0;
+/** تحليل طرق الدفع من الفواتير (يدفع الفعلي لا التصنيف الظاهر فقط وبدقة متناهية تشمل انستاباي والآجل) */
+export const byPaymentMethod = (invoices: Invoice[]): { cash: number; card: number; wallet: number; instapay: number; credit: number } => {
+    let cash = 0, card = 0, wallet = 0, instapay = 0, credit = 0;
     (invoices || []).forEach(inv => {
         const p = paymentOf(inv);
         cash += p.cashPaid || 0;
         card += p.parts.filter(x => x.method === 'card').reduce((s, x) => s + x.amount, 0);
         wallet += p.parts.filter(x => x.method === 'wallet').reduce((s, x) => s + x.amount, 0);
+        instapay += p.parts.filter(x => x.method === 'instapay').reduce((s, x) => s + x.amount, 0);
+        credit += p.creditPaid || 0;
     });
-    return { cash: round2(cash), card: round2(card), wallet: round2(wallet) };
+    return { 
+        cash: round2(cash), 
+        card: round2(card), 
+        wallet: round2(wallet), 
+        instapay: round2(instapay), 
+        credit: round2(credit) 
+    };
 };
 
-/** إيرادات كل يوم داخل فترة (للرسوم البيانية) */
+/** إيرادات كل يوم داخل فترة (للرسوم البيانية مع حماية التداخل عبر السنوات) */
 export const revenueByDay = (invoices: Invoice[], p: Period): { label: string; value: number }[] => {
     const map: Record<string, { label: string; value: number }> = {};
+    const isMultiYear = p.to - p.from > 366 * 24 * 60 * 60 * 1000;
     (invoices || []).forEach(inv => {
         const t = tsOf(inv.timestamp || inv.date);
         if (!t) return;
         const d = new Date(t);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        if (!map[key]) map[key] = { label: key.slice(5), value: 0 };
+        if (!map[key]) {
+            map[key] = { 
+                label: isMultiYear ? `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}` : `${d.getMonth() + 1}/${d.getDate()}`, 
+                value: 0 
+            };
+        }
         map[key].value += inv.total || 0;
     });
     return Object.keys(map).sort().map(k => ({ label: map[k].label, value: round2(map[k].value) }));
