@@ -321,19 +321,35 @@ export const InvoicesList = () => {
                                                             </button>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => {
+                                                                onClick={async () => {
                                                                     setActiveMenuId(null);
                                                                     const customer = (state.customers || []).find(c => c.id === invoice.customerId);
-                                                                    openInvoiceWhatsApp(invoice, customer?.phone || '', {
-                                                                        shopName: state.settings.shopName,
-                                                                        phone: state.settings.phone,
-                                                                        address: state.settings.address
-                                                                    });
+                                                                    addToast(language === 'ar' ? 'جاري تجهيز وتنزيل ملف الفاتورة PDF للواتساب...' : 'Preparing invoice PDF for WhatsApp...', 'info');
+                                                                    try {
+                                                                        const res = await openInvoiceWhatsApp(invoice, customer?.phone || (invoice as any).phone || '', {
+                                                                            shopName: state.settings.shopName,
+                                                                            phone: state.settings.phone,
+                                                                            address: state.settings.address,
+                                                                            branchName: invoice.branchName
+                                                                        });
+                                                                        if (res.sharedVia === 'native_share') {
+                                                                            addToast(language === 'ar' ? 'تمت مشاركة الفاتورة PDF بنجاح!' : 'Invoice PDF shared successfully!', 'success');
+                                                                        } else {
+                                                                            addToast(
+                                                                                language === 'ar'
+                                                                                    ? `تم تحميل ملف الفاتورة PDF (${res.fileName}) وفتح الواتساب! يمكنك الآن إرفاق الـ PDF في المحادثة مباشرة 📎`
+                                                                                    : `Downloaded ${res.fileName} and opened WhatsApp. You can now attach the PDF!`,
+                                                                                'success'
+                                                                            );
+                                                                        }
+                                                                    } catch {
+                                                                        addToast(language === 'ar' ? 'حدث خطأ أثناء إنشاء ملف الـ PDF' : 'Error generating PDF', 'error');
+                                                                    }
                                                                 }}
                                                                 className="w-full px-3 py-2 text-right hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 text-emerald-600 dark:text-emerald-400 cursor-pointer"
                                                             >
                                                                 <MessageSquare size={16} className="shrink-0" />
-                                                                <span>{language === 'ar' ? 'مشاركة واتس اب' : 'WhatsApp'}</span>
+                                                                <span>{language === 'ar' ? 'إرسال PDF واتساب' : 'WhatsApp PDF'}</span>
                                                             </button>
 
                                                             {currentUser?.role === 'admin' && (

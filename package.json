@@ -75,6 +75,7 @@
     "@supabase/supabase-js": "^2.119.0",
     "astral-regex": "^2.0.0",
     "electron-updater": "^6.8.11",
+    "jspdf": "^4.2.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },

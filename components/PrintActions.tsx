@@ -7,12 +7,9 @@ import type { Invoice } from '../types';
 import { normalizePrintDesign, resolvePrintDesign, printAuditInfo } from '../lib/printDesign';
 import { printReceipt, saveReceiptPdf } from '../lib/printBridge';
 import { isMainBranch, getMainBranch, getActiveBranch, verifyAdminPassword } from '../lib/branchUtils';
+import { sendInvoicePdfToWhatsApp, downloadInvoicePdf, type ShopContactInfo } from '../lib/invoicePdf';
 
-export interface ShopContactInfo {
-  shopName?: string;
-  phone?: string;
-  address?: string;
-}
+export type { ShopContactInfo };
 
 const buildInvoiceWhatsAppMessage = (
   invoice: Invoice, 
@@ -107,21 +104,12 @@ ${receivedLine}${changeLine}${notesLine}
 شكراً لزيارتكم، نسعد دائماً بخدمتكم.${addressLine}${phoneLine}`;
 };
 
-export const openInvoiceWhatsApp = (
+export const openInvoiceWhatsApp = async (
   invoice: Invoice, 
   targetPhone: string = '', 
   shopInfo?: string | ShopContactInfo
 ) => {
-  const text = buildInvoiceWhatsAppMessage(invoice, shopInfo);
-  let cleanPhone = (targetPhone || '').replace(/\D/g, '');
-  if (cleanPhone.startsWith('01') && cleanPhone.length === 11) {
-    cleanPhone = '2' + cleanPhone; // Egypt country code
-  }
-  const url = cleanPhone
-    ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`
-    : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-
-  window.open(url, '_blank');
+  return await sendInvoicePdfToWhatsApp(invoice, targetPhone, shopInfo);
 };
 
 export const PrintActions = ({ invoice }: { invoice: Invoice }) => {
@@ -162,13 +150,19 @@ export const PrintActions = ({ invoice }: { invoice: Invoice }) => {
       return;
     }
     if (res.canceled) return;
-    if (res.fallback) {
+    try {
+      const fileName = await downloadInvoicePdf(invoice, {
+        shopName: state.settings.shopName,
+        phone: state.settings.phone,
+        address: state.settings.address,
+        branchName: invoice.branchName
+      });
       const info = printAuditInfo('pdf', invoice.id);
       addAuditLog(info.action, info.details);
+      addToast(language === 'ar' ? `تم حفظ ملف الفاتورة PDF: ${fileName}` : `Saved PDF: ${fileName}`, 'success');
+    } catch {
       window.print();
-      return;
     }
-    addToast(`${t('pdf_failed')}${res.error ? `: ${res.error}` : ''}`, 'error');
   };
 
   const handlePrint = async () => {
@@ -246,28 +240,43 @@ export const PrintActions = ({ invoice }: { invoice: Invoice }) => {
     }
   };
 
-  const handleWhatsApp = () => {
+  const handleWhatsApp = async () => {
     const customer = (state.customers || []).find(c => c.id === invoice.customerId);
-    let phone = customer?.phone || '';
+    let phone = customer?.phone || (invoice as any).phone || '';
     if (!phone) {
       const input = window.prompt(
-        language === 'ar' ? 'أدخل رقم واتساب العميل (أو اتركه فارغاً لفتح قائمة المحادثات):' : 'Enter WhatsApp phone:'
+        language === 'ar' ? 'أدخل رقم واتساب العميل لإرسال الفاتورة PDF (أو اتركه فارغاً لفتح قائمة المحادثات):' : 'Enter WhatsApp phone to send PDF:'
       );
       if (input !== null) {
         phone = input.trim();
       }
     }
-    openInvoiceWhatsApp(invoice, phone, {
-      shopName: state.settings.shopName,
-      phone: state.settings.phone,
-      address: state.settings.address
-    });
-    addAuditLog(
-      'WhatsApp',
-      `Shared invoice #${invoice.id} via WhatsApp`,
-      `مشاركة إيصال الفاتورة رقم #${invoice.id} عبر واتساب${phone ? ` مع العميل (${phone})` : ''}`
-    );
-    addToast(language === 'ar' ? 'جاري فتح واتساب لمشاركة الفاتورة...' : 'Opening WhatsApp...', 'success');
+    addToast(language === 'ar' ? 'جاري تجهيز وتوليد ملف الفاتورة PDF للواتساب...' : 'Generating invoice PDF for WhatsApp...', 'info');
+    try {
+      const res = await openInvoiceWhatsApp(invoice, phone, {
+        shopName: state.settings.shopName,
+        phone: state.settings.phone,
+        address: state.settings.address,
+        branchName: invoice.branchName
+      });
+      addAuditLog(
+        'WhatsApp',
+        `Shared invoice #${invoice.id} PDF via WhatsApp`,
+        `مشاركة الفاتورة PDF رقم #${invoice.id} عبر واتساب${phone ? ` مع العميل (${phone})` : ''}`
+      );
+      if (res.sharedVia === 'native_share') {
+        addToast(language === 'ar' ? 'تمت مشاركة ملف الفاتورة PDF بنجاح!' : 'Invoice PDF shared successfully!', 'success');
+      } else {
+        addToast(
+          language === 'ar'
+            ? `تم تحميل ملف الفاتورة PDF (${res.fileName}) وفتح الواتساب! يمكنك الآن إرفاق الـ PDF في المحادثة مباشرة 📎`
+            : `Downloaded ${res.fileName} and opened WhatsApp. You can now attach the PDF!`,
+          'success'
+        );
+      }
+    } catch {
+      addToast(language === 'ar' ? 'حدث خطأ أثناء إنشاء ملف الـ PDF' : 'Error generating PDF', 'error');
+    }
   };
 
   return (
@@ -284,7 +293,7 @@ export const PrintActions = ({ invoice }: { invoice: Invoice }) => {
           className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-sm"
         >
           <WhatsAppIcon size={16} />
-          <span>{language === 'ar' ? 'مشاركة واتساب' : 'WhatsApp'}</span>
+          <span>{language === 'ar' ? 'إرسال PDF واتساب' : 'WhatsApp PDF'}</span>
         </Button>
       </div>
 
