@@ -278,32 +278,67 @@ export const CreateInvoice = ({ onClose }: any) => {
     }
   };
 
-  // Quick Add Service State
-  const [isQuickAddingService, setIsQuickAddingService] = useState(false);
-  const [quickServiceForm, setQuickServiceForm] = useState({ nameAr: '', nameEn: '', price: '' });
+  // Quick Add Item / Service State
+  const [isQuickAddingItem, setIsQuickAddingItem] = useState(false);
+  const [quickItemForm, setQuickItemForm] = useState({
+    nameAr: '',
+    nameEn: '',
+    price: '',
+    costPrice: '',
+    type: 'product' as 'product' | 'service',
+    categoryId: '',
+    quantity: '10',
+    barcode: '',
+    trackStock: true
+  });
 
-  const handleQuickAddService = (e: any) => {
+  const handleQuickAddItem = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quickServiceForm.nameAr || !quickServiceForm.price) return;
-    
-    const newService: Item = {
+    const nameAr = quickItemForm.nameAr.trim();
+    if (!nameAr || !quickItemForm.price) {
+      addToast(language === 'ar' ? 'يرجى إدخال اسم وسعر العنصر' : 'Please enter item name and price', 'error');
+      return;
+    }
+
+    const price = parseFloat(quickItemForm.price) || 0;
+    const costPrice = parseFloat(quickItemForm.costPrice) || 0;
+    const qty = quickItemForm.type === 'product' && quickItemForm.trackStock ? (parseInt(quickItemForm.quantity) || 0) : 0;
+    const isService = quickItemForm.type === 'service';
+
+    const newItem: Item = {
       id: crypto.randomUUID(),
-      nameAr: quickServiceForm.nameAr,
-      nameEn: quickServiceForm.nameEn || quickServiceForm.nameAr,
-      categoryId: '',
-      price: parseFloat(quickServiceForm.price),
-      trackStock: false,
-      quantity: 0,
-      alertThreshold: 0,
+      nameAr,
+      nameEn: quickItemForm.nameEn.trim() || nameAr,
+      categoryId: quickItemForm.categoryId || (state.categories[0]?.id || ''),
+      price,
+      costPrice,
+      cost: costPrice,
+      stock: qty,
+      quantity: qty,
+      trackStock: !isService && quickItemForm.trackStock,
+      alertThreshold: 3,
       variants: [],
       modifiers: [],
-      type: 'service'
+      type: quickItemForm.type,
+      barcode: quickItemForm.barcode.trim() || undefined,
+      returnable: !isService
     };
-    
-    addItem(newService);
-    addToast(t('item_added'), 'success');
-    setIsQuickAddingService(false);
-    setQuickServiceForm({ nameAr: '', nameEn: '', price: '' });
+
+    addItem(newItem);
+    addToInvoice(newItem);
+    addToast(language === 'ar' ? `تم إضافة "${nameAr}" وإدراجه في الفاتورة بنجاح` : `Item "${nameAr}" added to invoice`, 'success');
+    setIsQuickAddingItem(false);
+    setQuickItemForm({
+      nameAr: '',
+      nameEn: '',
+      price: '',
+      costPrice: '',
+      type: 'product',
+      categoryId: '',
+      quantity: '10',
+      barcode: '',
+      trackStock: true
+    });
   };
 
   // Auto-detect customer
@@ -1202,6 +1237,15 @@ export const CreateInvoice = ({ onClose }: any) => {
                         <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold border border-slate-200 dark:border-slate-700 font-mono">
                             {displayedItems.length} {language === 'ar' ? 'عنصر' : 'items'}
                         </span>
+                        <button
+                            type="button"
+                            onClick={() => setIsQuickAddingItem(true)}
+                            className="ms-1 px-3 py-1.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
+                            title={language === 'ar' ? 'إضافة صنف أو خدمة جديدة' : 'Add New Item / Service'}
+                        >
+                            <Plus size={15} className="stroke-[3]" />
+                            <span>{language === 'ar' ? 'أضف عنصر' : 'Add Item'}</span>
+                        </button>
                     </div>
                     <div className="relative w-full sm:w-72 md:w-80">
                         <Search className={`absolute ${language === 'ar' ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none`} size={16} />
@@ -1318,15 +1362,23 @@ export const CreateInvoice = ({ onClose }: any) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3.5 max-h-[520px] overflow-y-auto p-1.5 custom-scrollbar">
                     {displayedItems.length === 0 ? (
                         <div className="col-span-full py-12 flex flex-col items-center justify-center text-center">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-2">
-                                <Package size={24} />
+                            <div className="w-14 h-14 rounded-2xl bg-primary-500/10 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 flex items-center justify-center mb-3 border border-primary-500/20">
+                                <Package size={28} />
                             </div>
-                            <p className="text-sm font-bold text-slate-600 dark:text-slate-300">{t('no_items')}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">
+                            <p className="text-base font-bold text-slate-700 dark:text-slate-200">{t('no_items')}</p>
+                            <p className="text-xs text-slate-400 mt-1 mb-4">
                                 {itemSearch 
                                     ? (language === 'ar' ? 'لا توجد نتائج مطابقة لبحثك' : 'No items match your search')
                                     : (language === 'ar' ? 'لا توجد عناصر مسجلة في هذا القسم' : 'No items found in this section')}
                             </p>
+                            <button
+                                type="button"
+                                onClick={() => setIsQuickAddingItem(true)}
+                                className="px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer active:scale-95"
+                            >
+                                <Plus size={16} className="stroke-[3]" />
+                                <span>{language === 'ar' ? 'أضف عنصر جديد الآن' : 'Add New Item Now'}</span>
+                            </button>
                         </div>
                     ) : (
                         displayedItems.map((item) => {
@@ -2264,40 +2316,111 @@ export const CreateInvoice = ({ onClose }: any) => {
         </div>
       )}
 
-      {isQuickAddingService && (
+      {/* Quick Add Item Modal — إضافة صنف أو خدمة سريعة وإدراجها فوراً في الفاتورة */}
+      {isQuickAddingItem && (
             <ModalShell
-                title={t('add_service')}
-                onClose={() => setIsQuickAddingService(false)}
+                title={language === 'ar' ? 'إضافة عنصر جديد (خدمة أو منتج)' : 'Add New Item / Service'}
+                onClose={() => setIsQuickAddingItem(false)}
                 maxWidth="max-w-md"
             >
-                <form onSubmit={handleQuickAddService} className="space-y-4">
+                <form onSubmit={handleQuickAddItem} className="space-y-4 text-right" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                    <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+                        <button
+                            type="button"
+                            onClick={() => setQuickItemForm(prev => ({ ...prev, type: 'product' }))}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${quickItemForm.type === 'product' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'}`}
+                        >
+                            📦 {language === 'ar' ? 'منتج / بضاعة' : 'Product'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setQuickItemForm(prev => ({ ...prev, type: 'service' }))}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${quickItemForm.type === 'service' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'}`}
+                        >
+                            ✂️ {language === 'ar' ? 'خدمة (بدون مخزون)' : 'Service'}
+                        </button>
+                    </div>
+
+                    <Input 
+                        label={language === 'ar' ? 'اسم العنصر (مطلوب)' : 'Item Name (Required)'} 
+                        value={quickItemForm.nameAr} 
+                        onChange={(e: any) => setQuickItemForm(prev => ({ ...prev, nameAr: e.target.value }))} 
+                        required 
+                        autoFocus 
+                        placeholder={quickItemForm.type === 'service' ? (language === 'ar' ? 'مثال: حلاقة شعر + سشوار' : 'e.g. Haircut') : (language === 'ar' ? 'مثال: كريم شعر / شامبو' : 'e.g. Shampoo')}
+                    />
+
+                    <div className="grid grid-cols-2 gap-3">
                         <Input 
-                            label={t('name_ar')} 
-                            value={quickServiceForm.nameAr} 
-                            onChange={(e:any) => setQuickServiceForm({...quickServiceForm, nameAr: e.target.value})} 
-                            required 
-                            autoFocus 
-                            placeholder={t('ph_service_ar')}
-                        />
-                        <Input 
-                            label={t('name_en')} 
-                            value={quickServiceForm.nameEn} 
-                            onChange={(e:any) => setQuickServiceForm({...quickServiceForm, nameEn: e.target.value})} 
-                            placeholder={t('ph_service_en')}
-                        />
-                        <Input 
-                            label={t('price')} 
+                            label={language === 'ar' ? 'سعر البيع (ج.م) *' : 'Selling Price (EGP) *'} 
                             type="number" 
-                            value={quickServiceForm.price} 
-                            onChange={(e:any) => setQuickServiceForm({...quickServiceForm, price: e.target.value})} 
+                            min="0"
+                            step="any"
+                            value={quickItemForm.price} 
+                            onChange={(e: any) => setQuickItemForm(prev => ({ ...prev, price: e.target.value }))} 
                             required 
                             placeholder="0.00"
                         />
-                        <div className="flex gap-3 pt-2">
-                            <Button variant="success" className="flex-1 justify-center">{t('save')}</Button>
-                            <Button type="button" variant="secondary" onClick={() => setIsQuickAddingService(false)} className="flex-1 justify-center">{t('cancel')}</Button>
+                        <Input 
+                            label={language === 'ar' ? 'سعر التكلفة (ج.م)' : 'Cost Price (EGP)'} 
+                            type="number" 
+                            min="0"
+                            step="any"
+                            value={quickItemForm.costPrice} 
+                            onChange={(e: any) => setQuickItemForm(prev => ({ ...prev, costPrice: e.target.value }))} 
+                            placeholder="0.00"
+                        />
+                    </div>
+
+                    {quickItemForm.type === 'product' && (
+                        <div className="grid grid-cols-2 gap-3">
+                            <Input 
+                                label={language === 'ar' ? 'الكمية الابتدائية بالمخزون' : 'Initial Stock Quantity'} 
+                                type="number" 
+                                min="0"
+                                value={quickItemForm.quantity} 
+                                onChange={(e: any) => setQuickItemForm(prev => ({ ...prev, quantity: e.target.value }))} 
+                                placeholder="10"
+                            />
+                            <Input 
+                                label={language === 'ar' ? 'الباركود (اختياري)' : 'Barcode (Optional)'} 
+                                value={quickItemForm.barcode} 
+                                onChange={(e: any) => setQuickItemForm(prev => ({ ...prev, barcode: e.target.value }))} 
+                                placeholder="Barcode / SKU"
+                            />
                         </div>
-                    </form>
+                    )}
+
+                    {state.categories.length > 0 && (
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                {language === 'ar' ? 'القسم / التصنيف' : 'Category'}
+                            </label>
+                            <select
+                                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-bold outline-none focus:ring-2 focus:ring-primary-500"
+                                value={quickItemForm.categoryId}
+                                onChange={(e) => setQuickItemForm(prev => ({ ...prev, categoryId: e.target.value }))}
+                            >
+                                <option value="">{language === 'ar' ? 'بدون قسم محدد' : 'Uncategorized'}</option>
+                                {state.categories.map(cat => (
+                                    <option key={cat.id} value={cat.id}>
+                                        {language === 'ar' ? cat.nameAr : (cat.nameEn || cat.nameAr)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    <div className="flex gap-3 pt-2">
+                        <Button type="submit" variant="success" className="flex-1 justify-center py-2.5 font-bold">
+                            <Plus size={15} />
+                            <span>{language === 'ar' ? 'حفظ وإدراج في الفاتورة' : 'Save & Add to Cart'}</span>
+                        </Button>
+                        <Button type="button" variant="secondary" onClick={() => setIsQuickAddingItem(false)} className="flex-1 justify-center py-2.5 font-bold">
+                            {t('cancel')}
+                        </Button>
+                    </div>
+                </form>
             </ModalShell>
         )}
 
