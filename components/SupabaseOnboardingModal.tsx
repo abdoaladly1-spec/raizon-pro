@@ -1,5 +1,6 @@
 /* نافذة إعداد وربط الحساب السحابي والفروع (Supabase Cloud Setup) */
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
 import { 
   DEFAULT_SUPABASE_URL, 
@@ -186,9 +187,9 @@ export const SupabaseOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSu
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in" dir="rtl">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl relative text-right text-slate-200">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-fade-in" dir="rtl">
+      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl relative text-right text-slate-200 max-h-[90vh] overflow-y-auto">
         
         {/* رأس النافذة المنظم بدون أي تداخل */}
         <div className="flex items-start justify-between gap-4 mb-6">
@@ -361,4 +362,6 @@ export const SupabaseOnboardingModal: React.FC<Props> = ({ isOpen, onClose, onSu
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

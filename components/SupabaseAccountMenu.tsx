@@ -1,5 +1,6 @@
 /* زر وملف الحساب السحابي ونافذة الخروج الآمنة بكلمة المرور (Supabase Cloud Account Menu) */
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../context/AppContext';
 import { 
   getCloudAccount, 
@@ -296,10 +297,10 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
         </div>
       )}
 
-      {/* نافذة تأكيد وتسجيل الخروج بكلمة المرور */}
-      {showLogoutModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in" dir="rtl">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative text-right text-slate-200">
+      {/* نافذة تأكيد وتسجيل الخروج بكلمة المرور من خلال Portal لتظهر كاملة في منتصف الشاشة دون أن تتأثر بحدود الشريط العلوي */}
+      {showLogoutModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-fade-in" dir="rtl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative text-right text-slate-200 max-h-[90vh] overflow-y-auto">
             
             <button
               type="button"
@@ -403,7 +404,8 @@ export const SupabaseAccountMenu: React.FC<Props> = ({ onOpenOnboarding }) => {
             )}
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
