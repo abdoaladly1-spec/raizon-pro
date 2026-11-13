@@ -1345,11 +1345,12 @@ export const SettingsPage = () => {
 
                     <div>
                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">{t('theme_color')}</label>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             {[
-                                { id: 'forest', color: '#10b981', nameAr: 'أسود فحمي + زمردي (افتراضي)', descAr: 'Dark Emerald (Default)' },
-                                { id: 'luxury', color: '#CA8A04', nameAr: 'ذهبي فاخر + كحلي', descAr: 'Premium Gold & Navy' },
-                                { id: 'ocean', color: '#0284c7', nameAr: 'أزرق محيطي + فضي', descAr: 'Ocean Corporate' },
+                                { id: 'ocean', color: '#4f46e5', nameAr: 'أزرق قرمزي', descAr: 'Crimson Blue' },
+                                { id: 'purple', color: '#9333ea', nameAr: 'بنفسجي ملكي', descAr: 'Royal Purple' },
+                                { id: 'forest', color: '#10b981', nameAr: 'أخضر زمردي', descAr: 'Dark Emerald' },
+                                { id: 'luxury', color: '#CA8A04', nameAr: 'ذهبي فاخر', descAr: 'Luxury Gold' },
                             ].map(theme => (
                                 <button 
                                     key={theme.id}
@@ -1366,8 +1367,8 @@ export const SettingsPage = () => {
                                         {form.themeColor === theme.id ? <Check size={16} className="text-white drop-shadow-xs stroke-[3]" /> : <Sparkles size={14} className="text-white/80" />}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <div className="text-xs font-black text-slate-800 dark:text-slate-100 truncate">{theme.nameAr}</div>
-                                        <div className="text-[10px] text-slate-400 font-medium truncate">{theme.descAr}</div>
+                                        <div className="text-xs font-black text-slate-800 dark:text-slate-100 leading-snug">{theme.nameAr}</div>
+                                        <div className="text-[10px] text-slate-400 font-medium leading-none mt-0.5">{theme.descAr}</div>
                                     </div>
                                 </button>
                             ))}

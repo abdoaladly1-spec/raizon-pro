@@ -514,7 +514,7 @@ export interface AppState {
     enableSound: boolean;
     enableScreenSaver: boolean;
     touchMode: boolean;
-    themeColor: 'blue' | 'ocean' | 'sunset' | 'forest' | 'midnight' | 'luxury';
+    themeColor: 'blue' | 'ocean' | 'sunset' | 'forest' | 'midnight' | 'luxury' | 'purple';
     loyaltyEnabled: boolean;
     loyaltyMinSpend: number;
     loyaltyPointsAward: number;

@@ -2655,18 +2655,22 @@ export const AppProvider = ({ children }: any) => {
   }, [state.users]);
 
   useEffect(() => {
-    // توحيد الألوان وحصرها في 3 ثيمات فاخرة: زمردي أخضر (forest - الافتراضي)، ذهبي فاخر (luxury)، أزرق محيطي (ocean)
-    let normalizedTheme = state.settings.themeColor || 'forest';
+    // ثيمات النظام: أزرق قرمزي (ocean)، بنفسجي ملكي (purple)، أخضر زمردي (forest)، ذهبي فاخر (luxury)
+    let normalizedTheme = state.settings.themeColor || 'ocean';
     if (normalizedTheme === 'blue' || normalizedTheme === 'ocean') {
       normalizedTheme = 'ocean';
     } else if (normalizedTheme === 'luxury') {
       normalizedTheme = 'luxury';
+    } else if (normalizedTheme === 'purple' || normalizedTheme === 'midnight') {
+      normalizedTheme = 'purple';
+    } else if (normalizedTheme === 'forest') {
+      normalizedTheme = 'forest';
     } else {
-      normalizedTheme = 'forest'; // الافتراضي: الثيم الأخضر الزمردي
+      normalizedTheme = 'ocean'; // أزرق قرمزي
     }
     const classList = document.documentElement.classList;
     // إزالة أي ثيمات قديمة
-    classList.remove('theme-ocean', 'theme-sunset', 'theme-forest', 'theme-midnight', 'theme-luxury');
+    classList.remove('theme-ocean', 'theme-sunset', 'theme-forest', 'theme-midnight', 'theme-luxury', 'theme-purple');
     classList.add(`theme-${normalizedTheme}`);
     
     // Apply Touch Mode
