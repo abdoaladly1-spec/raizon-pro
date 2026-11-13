@@ -1753,127 +1753,105 @@ export const SettingsPage = () => {
     // =========================================================================
     const renderSecurity = () => (
         <div className="space-y-6 animate-fade-in">
-            {/* بطاقة مركز النسخ الاحتياطي الذكي (محلي + سحابي) */}
+            {/* بطاقة مركز النسخ الاحتياطي - تصميم هادئ ومختصر وواضح */}
             <Card className="border border-slate-700/80 bg-slate-900/60 dark:bg-slate-900/80 backdrop-blur-md">
-                <div className="flex flex-wrap justify-between items-start gap-3 mb-5 pb-4 border-b border-slate-700/60">
+                {/* الرأس: عنوان مختصر + زر نسخ فوري وزر تحديث */}
+                <div className="flex flex-wrap justify-between items-center gap-3 mb-4 pb-3 border-b border-slate-700/60">
                     <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-center shadow-sm shrink-0">
-                            <BackupIcon size={22} className="text-slate-200" />
+                        <div className="w-10 h-10 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-center shadow-sm shrink-0">
+                            <BackupIcon size={20} className="text-slate-200" />
                         </div>
                         <div>
-                            <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                                <span>{language === 'ar' ? 'مركز النسخ الاحتياطي (محلي + سحابي على الإيميل)' : 'Smart Cloud & Local Backup Center'}</span>
-                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
-                                    {language === 'ar' ? 'مجلد Backup نشط ومحمي' : 'Backup Folder Active'}
+                            <h3 className="text-base font-bold text-white flex items-center gap-2">
+                                <span>{language === 'ar' ? 'النسخ الاحتياطي' : 'Backups'}</span>
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-950/70 text-emerald-400 border border-emerald-500/30">
+                                    {language === 'ar' ? 'نشط' : 'Active'}
                                 </span>
                             </h3>
-                            <p className="text-xs text-slate-400 mt-0.5">
+                            <p className="text-xs text-slate-400">
                                 {language === 'ar'
-                                    ? 'يتم تخزين كامل بيانات وفواتير المحل تلقائياً في مجلد Backup، وإرسال ملف النسخة مباشرة لإيميل المدير على Gmail كنسخة سحابية مضمونة.'
-                                    : 'All shop data and invoices are automatically saved in the Backup folder, and attached directly to the manager Gmail.'}
+                                    ? `حفظ بيانات المتجر في مجلد Backup وإرسالها إلى ${emailConfig.emailTo || 'البريد'}`
+                                    : 'Save shop data to Backup folder and manager email'}
                             </p>
                         </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={fetchBackupFiles}
-                        disabled={isLoadingBackups}
-                        className="px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm hover:border-slate-600"
-                    >
-                        <RefreshCw size={14} className={isLoadingBackups ? 'animate-spin' : ''} />
-                        <span>{language === 'ar' ? 'تحديث القائمة' : 'Refresh'}</span>
-                    </button>
-                </div>
-
-                {/* الزر الرئيسي للنسخ الاحتياطي المزدوج */}
-                <div className="p-4 rounded-xl bg-slate-800/80 dark:bg-slate-800/90 border border-slate-700 shadow-sm mb-5 flex flex-wrap items-center justify-between gap-4">
-                    <div className="space-y-1">
-                        <div className="text-sm font-bold text-white flex items-center gap-2">
-                            <BackupIcon size={16} className="text-slate-300 shrink-0" />
-                            <span className="text-slate-100">{language === 'ar' ? 'النسخ الفوري الشامل بضغطة واحدة:' : 'One-Click Full Backup:'}</span>
-                        </div>
-                        <p className="text-xs text-slate-300 dark:text-slate-300">
-                            {language === 'ar'
-                                ? `يقوم بتوليد ملف JSON في مجلد Backup، وإرساله مرفقاً في إيميل رسمي فاخر إلى ${emailConfig.emailTo || 'إيميل المدير'}.`
-                                : 'Generates a JSON file in the Backup folder and emails it as an attachment to the manager.'}
-                        </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={handleCreateBackupNow}
+                            disabled={backupBusy}
+                            className="px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-bold text-xs shadow-sm transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                        >
+                            <Save size={14} className="shrink-0" />
+                            <span>{backupBusy ? (language === 'ar' ? 'جارٍ النسخ...' : 'Backing up...') : (language === 'ar' ? 'نسخ احتياطي الآن' : 'Backup Now')}</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={fetchBackupFiles}
+                            disabled={isLoadingBackups}
+                            className="p-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer"
+                            title={language === 'ar' ? 'تحديث القائمة' : 'Refresh'}
+                        >
+                            <RefreshCw size={14} className={isLoadingBackups ? 'animate-spin' : ''} />
+                        </button>
                     </div>
-
-                    <button
-                        type="button"
-                        onClick={handleCreateBackupNow}
-                        disabled={backupBusy}
-                        className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs border border-slate-700 hover:border-slate-600 shadow-sm transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center gap-2"
-                    >
-                        <Save size={15} className="text-slate-300 shrink-0" />
-                        <span>{backupBusy ? (language === 'ar' ? 'جارٍ الحفظ والإرسال...' : 'Backing up...') : (language === 'ar' ? 'إنشاء نسخة احتياطية الآن (محلي + سحابي)' : 'Backup Now (Local + Cloud)')}</span>
-                    </button>
                 </div>
 
-                {/* خيار النسخ الاحتياطي التلقائي المجدول (سحابي بالبريد 12:00 منتصف الليل + محلي كل 6 ساعات) */}
-                <div className="p-4 rounded-xl border border-slate-700/80 bg-slate-800/60 mb-3">
-                    <label className="flex items-start gap-3 cursor-pointer">
+                {/* خيارات النسخ التلقائي - سطرين أنيقين وموجزين */}
+                <div className="space-y-2 mb-4">
+                    <label className="flex items-center justify-between p-3 rounded-xl border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800/60 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                            <Clock size={16} className="text-slate-400 shrink-0" />
+                            <div>
+                                <div className="text-xs font-bold text-white">
+                                    {language === 'ar' ? 'نسخ تلقائي مجدول (يومياً 12:00 ليلاً ومحلياً كل 6 ساعات)' : 'Scheduled Backup (Daily 12:00 AM + 6h local)'}
+                                </div>
+                                <div className="text-[11px] text-slate-400">
+                                    {language === 'ar' ? 'إرسال نسخة للبريد وحفظ محلي مع الاحتفاظ بآخر نسختين' : 'Email & local backup keeping latest 2 copies'}
+                                    {state.settings?.lastLocalBackupTime && (
+                                        <span className="ms-2 text-slate-500 font-mono">
+                                            (آخر نسخة: {new Date(state.settings.lastLocalBackupTime).toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })})
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                         <input
                             type="checkbox"
                             checked={form.autoBackupEnabled ?? true}
                             onChange={(e) => {
                                 setForm(prev => ({ ...prev, autoBackupEnabled: e.target.checked }));
                             }}
-                            className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer accent-purple-600 mt-0.5"
+                            className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 cursor-pointer accent-primary-600 shrink-0"
                         />
-                        <div className="space-y-1">
-                            <div className="text-xs font-bold text-slate-100 flex flex-wrap items-center gap-2">
-                                <Clock size={15} className="text-slate-400 shrink-0" />
-                                <span>{language === 'ar' ? 'النسخ الاحتياطي التلقائي المجدول (بريد 12:00 ليلاً + محلي كل 6 ساعات)' : 'Scheduled Auto Backup (12:00 AM Email + 6h Local)'}</span>
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-700/50 text-slate-300 border border-slate-600/40">
-                                    {language === 'ar' ? 'توفير المساحة: الاحتفاظ بآخر نسختين فقط' : 'Keep latest 2 only'}
-                                </span>
-                            </div>
-                            <p className="text-[11px] text-slate-300 leading-relaxed">
-                                {language === 'ar'
-                                    ? 'يتم إرسال نسخة احتياطية كاملة إلى بريد المدير يومياً الساعة 12 منتصف الليل، وتخزين نسخة محلياً في مجلد Backup كل 6 ساعات مع الاحتفاظ بآخر نسختين فقط وحذف ما قبلهما تلقائياً لمنع زيادة حجم الذاكرة وتوفير مساحة الجهاز.'
-                                    : 'Sends backup to manager email daily at midnight (12:00 AM), and saves local backup every 6 hours keeping only latest 2 files to save disk space.'}
-                            </p>
-                            {state.settings?.lastLocalBackupTime && (
-                                <div className="text-[10px] text-slate-400 pt-0.5 flex flex-wrap items-center gap-2">
-                                    <span>{language === 'ar' ? 'آخر نسخة محلية:' : 'Last local:'} {new Date(state.settings.lastLocalBackupTime).toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-                                    {state.settings?.lastEmailBackupDate && (
-                                        <span>• {language === 'ar' ? 'آخر إرسال بالبريد:' : 'Last email:'} {state.settings.lastEmailBackupDate}</span>
-                                    )}
-                                </div>
-                            )}
-                        </div>
                     </label>
-                </div>
 
-                {/* خيار النسخ التلقائي عند التقفيل */}
-                <div className="p-3.5 rounded-xl border border-slate-700/80 bg-slate-800/60 dark:bg-slate-800/70 mb-5">
-                    <label className="flex items-center gap-3 cursor-pointer">
+                    <label className="flex items-center justify-between p-3 rounded-xl border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800/60 transition-colors cursor-pointer">
+                        <div className="flex items-center gap-3">
+                            <Lock size={16} className="text-slate-400 shrink-0" />
+                            <div>
+                                <div className="text-xs font-bold text-white">
+                                    {language === 'ar' ? 'نسخ تلقائي عند إقفال الوردية' : 'Backup on Shift Closing'}
+                                </div>
+                                <div className="text-[11px] text-slate-400">
+                                    {language === 'ar' ? 'حفظ نسخة وإرسالها للمدير مع تقرير اليومية' : 'Save and email backup with the closing report'}
+                                </div>
+                            </div>
+                        </div>
                         <input
                             type="checkbox"
                             checked={form.autoBackupOnClosing ?? true}
                             onChange={(e) => {
                                 setForm(prev => ({ ...prev, autoBackupOnClosing: e.target.checked }));
                             }}
-                            className="w-4 h-4 rounded text-primary-500 focus:ring-primary-500 cursor-pointer accent-primary-600"
+                            className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 cursor-pointer accent-primary-600 shrink-0"
                         />
-                        <div className="space-y-0.5">
-                            <div className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
-                                <Lock size={16} className="text-slate-400 shrink-0" />
-                                <span>{language === 'ar' ? 'نسخ احتياطي تلقائي سحابي ومحلي عند كل إقفال وردية (Closing Z-Report)' : 'Auto Cloud & Local Backup on Shift Closing'}</span>
-                            </div>
-                            <p className="text-[11px] text-slate-400">
-                                {language === 'ar'
-                                    ? 'يقوم النظام بحفظ نسخة جديدة تلقائياً في مجلد Backup وإرسالها فوراً لبريد المدير مع تقرير إغلاق اليومية بدون أي تدخل يدوي.'
-                                    : 'Automatically creates a backup in Backup folder and emails it to the manager with the daily closing report.'}
-                            </p>
-                        </div>
                     </label>
                 </div>
 
-                {/* أدوات إضافية: تنزيل واستعادة يدوية */}
-                <div className="flex flex-wrap items-center gap-2.5 pt-4 border-t border-slate-700/60">
+                {/* أزرار الإجراءات اليدوية السريعة */}
+                <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-700/60 text-xs">
                     <button
                         type="button"
                         onClick={() => {
@@ -1905,10 +1883,10 @@ export const SettingsPage = () => {
                             downloadAnchorNode.remove();
                             addToast(t('backup_created'), 'success');
                         }}
-                        className="px-4 py-2.5 border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm hover:border-slate-600"
+                        className="px-3 py-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                     >
-                        <FileText size={15} className="text-primary-400" />
-                        <span>{language === 'ar' ? 'تحميل كملف JSON للمتصفح' : 'Download JSON file'}</span>
+                        <FileText size={14} className="text-slate-400" />
+                        <span>{language === 'ar' ? 'تنزيل ملف JSON' : 'Download JSON'}</span>
                     </button>
 
                     <input
@@ -1922,20 +1900,20 @@ export const SettingsPage = () => {
                     <button
                         type="button"
                         onClick={handleTriggerFileRestore}
-                        className="px-4 py-2.5 border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm hover:border-slate-600"
+                        className="px-3 py-2 border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                     >
-                        <Package size={16} className="text-slate-400 shrink-0" />
-                        <span>{language === 'ar' ? 'استعادة من ملف خارجي (.json)' : 'Restore from external file'}</span>
+                        <Package size={14} className="text-slate-400 shrink-0" />
+                        <span>{language === 'ar' ? 'استعادة ملف' : 'Restore File'}</span>
                     </button>
 
                     <button
                         type="button"
                         onClick={() => setShowResetConfirmModal(true)}
-                        className="px-4 py-2 border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 rounded-xl hover:bg-red-100 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs mr-auto"
-                        title={language === 'ar' ? 'إعادة تعيين وبدء متجر نظيف تماماً (بدون مخزون، بدون عملاء، وبدون موظفين)' : 'Reset to default clean system'}
+                        className="px-3 py-2 border border-red-900/60 bg-red-950/25 text-red-400 hover:bg-red-950/40 rounded-xl font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ms-auto"
+                        title={language === 'ar' ? 'إعادة ضبط وبدء متجر نظيف' : 'Reset defaults'}
                     >
-                        <AlertCircle size={15} />
-                        <span>{language === 'ar' ? 'استعادة الإعدادات الافتراضية (بدء متجر نظيف)' : t('restore_defaults')}</span>
+                        <AlertCircle size={14} />
+                        <span>{language === 'ar' ? 'استعادة الافتراضيات' : t('restore_defaults')}</span>
                     </button>
                 </div>
             </Card>
