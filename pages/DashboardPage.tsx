@@ -46,6 +46,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
     const [activeModal, setActiveModal] = useState<DetailModalType>(null);
     // إمكانية تبديل فترة أفضل موظف من داخل النافذة
     const [staffModalRange, setStaffModalRange] = useState<DashboardRange>('day');
+    // معيار ترتيب الموظفين (إجمالي المبيعات / عدد الفواتير / إجمالي الخدمات)
+    const [staffSortCriteria, setStaffSortCriteria] = useState<'revenue' | 'invoices' | 'services'>('revenue');
     // نمط العرض التنفيذي الفاخر أو التفصيلي الكامل
     const [executiveView, setExecutiveView] = useState(true);
     // تخصيص بطاقات العرض المباشر (الافتراضي: إجمالي الإيرادات - صافي الأرباح - المصروفات - العملاء والنشاط)
@@ -259,8 +261,17 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
     }, [state.invoices, staffModalPeriod]);
 
     const staffModalRows = useMemo(() => {
-        return byStaff(staffModalInvoices, t('unknown_staff'));
-    }, [staffModalInvoices, t]);
+        const rows = byStaff(staffModalInvoices, t('unknown_staff'));
+        return [...rows].sort((a, b) => {
+            if (staffSortCriteria === 'invoices') {
+                return (b.invoices - a.invoices) || (b.revenue - a.revenue);
+            }
+            if (staffSortCriteria === 'services') {
+                return (b.services - a.services) || (b.revenue - a.revenue);
+            }
+            return (b.revenue - a.revenue) || (b.invoices - a.invoices);
+        });
+    }, [staffModalInvoices, staffSortCriteria, t]);
 
     // =========================================================================
     // حسابات حركة الدرج اليومية والمبلغ المتوقع والرصيد الافتتاحي بدقة 100%
@@ -628,9 +639,10 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                 staffModalRange === 'week' ? 'أسبوع' :
                 staffModalRange === 'month' ? 'شهر' :
                 staffModalRange === 'year' ? 'سنة' : 'المدة الكاملة';
+            const criteriaTitle = staffSortCriteria === 'invoices' ? 'عدد الفواتير' : staffSortCriteria === 'services' ? 'إجمالي الخدمات' : 'إجمالي المبيعات';
             const totalStaffRev = staffModalRows.reduce((s, r) => s + r.revenue, 0);
             const doc: ReportDoc = {
-                title: `كشف أداء وإنتاجية الموظفين - ${pTitle}`,
+                title: `كشف أداء وإنتاجية الموظفين - ${pTitle} (ترتيب بحسب ${criteriaTitle})`,
                 subtitle: `تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')}`,
                 headers: ['الترتيب', 'اسم الموظف', 'عدد الفواتير', 'الخدمات المنفذة', 'إجمالي المبيعات (ج.م)', 'النسبة'],
                 rows: staffModalRows.map((st, idx) => [
@@ -642,6 +654,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                     totalStaffRev > 0 ? `${round2((st.revenue / totalStaffRev) * 100)}%` : '0%'
                 ]),
                 totals: [
+                    { label: 'معيار الترتيب', value: criteriaTitle },
                     { label: 'عدد الموظفين المشاركين', value: `${staffModalRows.length}` },
                     { label: 'إجمالي مبيعات الموظفين', value: `${totalStaffRev.toLocaleString('en-US')} ج.م` }
                 ]
@@ -2223,16 +2236,89 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                             </div>
                         </div>
 
+                        {/* فلتر معيار الترتيب (إجمالي المبيعات / عدد الفواتير / إجمالي الخدمات) */}
+                        <div className="flex items-center justify-between p-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl gap-2 flex-wrap">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200">
+                                <Filter size={14} className="text-primary-500" />
+                                <span>ترتيب وتصنيف الموظفين بحسب:</span>
+                            </div>
+                            <div className="inline-flex bg-white dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 gap-1 flex-wrap">
+                                <button
+                                    type="button"
+                                    onClick={() => setStaffSortCriteria('revenue')}
+                                    className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                        staffSortCriteria === 'revenue'
+                                            ? 'bg-emerald-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                                    }`}
+                                >
+                                    <DollarSign size={13} />
+                                    <span>إجمالي المبيعات</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setStaffSortCriteria('invoices')}
+                                    className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                        staffSortCriteria === 'invoices'
+                                            ? 'bg-emerald-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                                    }`}
+                                >
+                                    <FileText size={13} />
+                                    <span>عدد الفواتير</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setStaffSortCriteria('services')}
+                                    className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                        staffSortCriteria === 'services'
+                                            ? 'bg-emerald-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                                    }`}
+                                >
+                                    <Package size={13} />
+                                    <span>إجمالي الخدمات</span>
+                                </button>
+                            </div>
+                        </div>
+
                         {/* جدول ترتيب الموظفين */}
                         <div className="max-h-64 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-xl">
                             <table className="w-full text-xs text-right">
-                                <thead className="bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300 sticky top-0">
+                                <thead className="bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300 sticky top-0 select-none">
                                     <tr>
                                         <th className="p-2.5">الترتيب</th>
                                         <th className="p-2.5">اسم الموظف</th>
-                                        <th className="p-2.5">عدد الفواتير</th>
-                                        <th className="p-2.5">الخدمات</th>
-                                        <th className="p-2.5 text-left">إجمالي المبيعات</th>
+                                        <th 
+                                            onClick={() => setStaffSortCriteria('invoices')}
+                                            className={`p-2.5 cursor-pointer transition-colors ${staffSortCriteria === 'invoices' ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' : 'hover:text-slate-900 dark:hover:text-white'}`}
+                                            title="انقر للترتيب بحسب عدد الفواتير"
+                                        >
+                                            <div className="flex items-center gap-1">
+                                                <span>عدد الفواتير</span>
+                                                {staffSortCriteria === 'invoices' && <ArrowDown size={12} className="text-emerald-600 dark:text-emerald-400" />}
+                                            </div>
+                                        </th>
+                                        <th 
+                                            onClick={() => setStaffSortCriteria('services')}
+                                            className={`p-2.5 cursor-pointer transition-colors ${staffSortCriteria === 'services' ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' : 'hover:text-slate-900 dark:hover:text-white'}`}
+                                            title="انقر للترتيب بحسب إجمالي الخدمات"
+                                        >
+                                            <div className="flex items-center gap-1">
+                                                <span>الخدمات</span>
+                                                {staffSortCriteria === 'services' && <ArrowDown size={12} className="text-emerald-600 dark:text-emerald-400" />}
+                                            </div>
+                                        </th>
+                                        <th 
+                                            onClick={() => setStaffSortCriteria('revenue')}
+                                            className={`p-2.5 text-left cursor-pointer transition-colors ${staffSortCriteria === 'revenue' ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' : 'hover:text-slate-900 dark:hover:text-white'}`}
+                                            title="انقر للترتيب بحسب إجمالي المبيعات"
+                                        >
+                                            <div className="flex items-center justify-end gap-1">
+                                                {staffSortCriteria === 'revenue' && <ArrowDown size={12} className="text-emerald-600 dark:text-emerald-400" />}
+                                                <span>إجمالي المبيعات</span>
+                                            </div>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -2253,9 +2339,13 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                                     </span>
                                                 </td>
                                                 <td className="p-2.5 font-bold text-slate-800 dark:text-slate-200">{st.name}</td>
-                                                <td className="p-2.5 font-mono text-slate-600 dark:text-slate-400">{st.invoices} فاتورة</td>
-                                                <td className="p-2.5 font-mono text-slate-600 dark:text-slate-400">{st.services} خدمة</td>
-                                                <td className="p-2.5 font-bold font-mono text-emerald-600 text-left">
+                                                <td className={`p-2.5 font-mono ${staffSortCriteria === 'invoices' ? 'font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/5' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                    {st.invoices} فاتورة
+                                                </td>
+                                                <td className={`p-2.5 font-mono ${staffSortCriteria === 'services' ? 'font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/5' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                    {st.services} خدمة
+                                                </td>
+                                                <td className={`p-2.5 font-bold font-mono text-left ${staffSortCriteria === 'revenue' ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/5' : 'text-slate-700 dark:text-slate-300'}`}>
                                                     {st.revenue.toLocaleString('en-US')} ج.م
                                                 </td>
                                             </tr>
