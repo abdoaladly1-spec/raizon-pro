@@ -1075,7 +1075,16 @@ export const CreateInvoice = ({ onClose }: any) => {
     setCustomDiscountReason('');
     setDiscountType('percentage');
     setTaxPercent(0);
-    localStorage.removeItem(DRAFT_KEY);
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        customerName,
+        phone,
+        customerIdInput,
+        selectedStaffId,
+        selectedItems: [],
+        notes: ''
+      }));
+    } catch {}
     setShowClearConfirm(false);
     addToast(language === 'ar' ? 'تم حذف محتوى الفاتورة مع الاحتفاظ بالعميل والحلاق' : 'Invoice items cleared (customer and staff kept)', 'info');
   };
@@ -1857,13 +1866,15 @@ export const CreateInvoice = ({ onClose }: any) => {
                              <span className="text-xs font-normal opacity-85">(Enter ↵)</span>
                          </Button>
                          <Button 
-                             onClick={onClose} 
-                             variant="danger" 
-                             className="px-3.5 py-3 rounded-xl active:scale-95 transition-all"
-                             title={t('clear_all')}
-                         >
-                             <Trash2 size={18}/>
-                         </Button>
+                              type="button"
+                              onClick={clearInvoice} 
+                              variant="danger" 
+                              disabled={selectedItems.length === 0}
+                              className="px-3.5 py-3 rounded-xl active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                              title={language === 'ar' ? 'حذف عناصر وخدمات الفاتورة مع الاحتفاظ بالعميل والحلاق' : 'Clear invoice items'}
+                          >
+                              <Trash2 size={18}/>
+                          </Button>
                     </div>
                 </div>
             </Card>
