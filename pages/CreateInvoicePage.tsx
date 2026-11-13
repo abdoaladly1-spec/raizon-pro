@@ -1,4 +1,4 @@
-const getStockForBranch = (item: Item, locId?: string): number => {
+﻿const getStockForBranch = (item: Item, locId?: string): number => {
     if (!item) return 0;
     if (locId && item.locationQuantities && typeof item.locationQuantities[locId] === 'number') {
         return item.locationQuantities[locId];
@@ -65,7 +65,7 @@ export const CreateInvoice = ({ onClose }: any) => {
   const [customerName, setCustomerName] = useState(initialDraft?.customerName || '');
   const [customerIdInput, setCustomerIdInput] = useState(initialDraft?.customerIdInput || '');
   const [notes, setNotes] = useState(initialDraft?.notes || '');
-  const [selectedStaffId, setSelectedStaffId] = useState(initialDraft?.selectedStaffId || state.staff.find(s => s.active)?.id || '');
+  const [selectedStaffId, setSelectedStaffId] = useState(initialDraft?.selectedStaffId || '');
   const [showQuickAddBarberModal, setShowQuickAddBarberModal] = useState(false);
   const [newBarberName, setNewBarberName] = useState('');
   const [newBarberPhone, setNewBarberPhone] = useState('');
@@ -433,13 +433,11 @@ export const CreateInvoice = ({ onClose }: any) => {
     }
   }, [phone, customerName, customerIdInput, notes, selectedStaffId, selectedItems, discountPercent, discountType, discountFixedAmount, discountReason, customDiscountReason, taxPercent]);
 
-  // مزامنة اختيار الحلاق الافتراضي تلقائياً في حال عدم تحديده
+  // التأكد من أن الحلاق المختار ما زال نشطاً دون إجبار النظام على اختيار أي حلاق تلقائياً
   useEffect(() => {
     const activeStaff = state.staff.filter(s => s.active);
-    if (activeStaff.length > 0) {
-      if (!selectedStaffId || !activeStaff.some(s => s.id === selectedStaffId)) {
-        setSelectedStaffId(activeStaff[0].id);
-      }
+    if (selectedStaffId && !activeStaff.some(s => s.id === selectedStaffId)) {
+      setSelectedStaffId('');
     }
   }, [state.staff, selectedStaffId]);
   
@@ -464,11 +462,15 @@ export const CreateInvoice = ({ onClose }: any) => {
       }
       if (e.key === 'F8') {
         e.preventDefault();
-        if (selectedItems.length > 0) {
-          setShowPaymentModal(true);
-        } else {
+        if (selectedItems.length === 0) {
           addToast(language === 'ar' ? 'السلة فارغة، يرجى إضافة أصناف أولاً' : 'Cart is empty', 'warning');
+          return;
         }
+        if (!selectedStaffId) {
+          addToast(language === 'ar' ? 'يرجى اختيار الحلاق المسئول عن الفاتورة أولاً للمتابعة' : 'Please select the barber before proceeding', 'error');
+          return;
+        }
+        setShowPaymentModal(true);
         return;
       }
       if (e.key === 'F9') {
@@ -861,6 +863,11 @@ export const CreateInvoice = ({ onClose }: any) => {
           addToast(t('fill_all_fields'), 'error');
           return;
       }
+
+      if (!selectedStaffId) {
+          addToast(language === 'ar' ? 'يرجى اختيار الحلاق المسئول عن الفاتورة أولاً للمتابعة' : 'Please select the barber before proceeding', 'error');
+          return;
+      }
       
       if (!isCashWalkIn && !phoneRegex.test(phone)) {
           addToast(t('invalid_phone_format'), 'error');
@@ -877,7 +884,7 @@ export const CreateInvoice = ({ onClose }: any) => {
 
   const confirmSave = () => {
       if (!selectedStaffId) {
-          addToast(t('select_barber_alert'), 'error');
+          addToast(language === 'ar' ? 'يرجى اختيار الحلاق المسئول عن الفاتورة أولاً للمتابعة' : 'Please select the barber before proceeding', 'error');
           return;
       }
       const creditPartAmount = num(partCredit);
@@ -1018,6 +1025,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                              setPhone('');
                              setCustomerIdInput('');
                              setNotes('');
+                              setSelectedStaffId('');
                          }} 
                          variant="primary"
                          className="text-xs font-bold py-2 px-4 shadow-sm"
@@ -1608,19 +1616,22 @@ export const CreateInvoice = ({ onClose }: any) => {
                      </div>
                      <div className="relative">
                          <select 
-                             className="w-full px-3.5 py-2.5 pe-10 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer transition-all shadow-2xs appearance-none" 
+                             className={`w-full px-3.5 py-2.5 pe-10 rounded-xl border text-sm font-bold outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer transition-all shadow-2xs appearance-none ${
+                               !selectedStaffId 
+                                 ? 'border-amber-400 dark:border-amber-500/70 bg-amber-50/40 dark:bg-amber-950/20 text-slate-800 dark:text-slate-200 ring-2 ring-amber-400/20' 
+                                 : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100'
+                             }`} 
                              value={selectedStaffId} 
                              onChange={(e) => setSelectedStaffId(e.target.value)}
                          >
-                             {state.staff.filter(s => s.active).length === 0 ? (
-                                 <option value="">{language === 'ar' ? 'لا يوجد حلاقين متاحين - اضغط أضف حلاق' : 'No staff available'}</option>
-                             ) : (
-                                 state.staff.filter(s => s.active).map(s => (
-                                     <option key={s.id} value={s.id}>
-                                         {s.name}
-                                     </option>
-                                 ))
-                             )}
+                             <option value="">
+                                 {language === 'ar' ? '-- اضغط لاختيار الحلاق المسئول عن الفاتورة --' : '-- Select Barber / Stylist --'}
+                             </option>
+                             {state.staff.filter(s => s.active).map(s => (
+                                 <option key={s.id} value={s.id}>
+                                     {s.name}
+                                 </option>
+                             ))}
                          </select>
                          <div className="absolute inset-y-0 end-0 pe-3 flex items-center pointer-events-none text-slate-400">
                              <ChevronDown size={16} />
