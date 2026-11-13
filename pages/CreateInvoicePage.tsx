@@ -40,6 +40,7 @@ export const CreateInvoice = ({ onClose }: any) => {
   const isMain = isMainBranch(state.settings.currentLocationId, state.locations);
   const activeBranch = getActiveBranch(state.settings.currentLocationId, state.locations);
   const { playBeep } = useSound();
+  const currentTick = useLiveTick(1000);
   
   // استرجاع المسودة المحفوظة تلقائياً إذا وجدت حتى لا تضيع عند مغادرة الصفحة
   const initialDraft = useMemo(() => {
@@ -1682,22 +1683,20 @@ export const CreateInvoice = ({ onClose }: any) => {
         
         <div className="lg:col-span-1 self-start sticky top-4">
             <Card className="flex flex-col border-2 border-primary-500/25 shadow-lg bg-white dark:bg-slate-900 rounded-2xl transition-all">
-                <div className="flex justify-between items-center mb-3 border-b border-slate-200 dark:border-slate-700 pb-3">
-                    <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-1.5">
+                <div className="flex justify-between items-center mb-3 border-b border-slate-200 dark:border-slate-700 pb-3 gap-2">
+                    <div className="flex items-center gap-2 min-w-0 shrink-0">
+                        <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-1.5 whitespace-nowrap">
                             <span>{t('invoice')} #{state.invoices.length + 1}</span>
                         </h3>
                         {selectedItems.length > 0 && (
-                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-800 font-mono">
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-800 font-mono whitespace-nowrap shrink-0">
                                 {selectedItems.reduce((acc: number, cur: any) => acc + (cur.qty || 1), 0)} {language === 'ar' ? 'عنصر' : 'items'}
                             </span>
                         )}
                     </div>
-                    <div className="flex items-center gap-2">
-                         <span className="text-xs text-slate-400 font-mono flex items-center gap-1.5" title={language === 'ar' ? 'ساعة وتاريخ النظام متزامنة مع الكمبيوتر' : 'Synced with system clock'}>
-                            <Clock size={12} className="text-slate-400" />
-                            <span>{formatDateTime(new Date())}</span>
-                        </span>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono whitespace-nowrap shrink-0" title={formatDateTime(currentTick)}>
+                        <Clock size={13} className="text-slate-400 shrink-0" />
+                        <span>{formatTime(currentTick)}</span>
                     </div>
                 </div>
                 <div className="overflow-y-auto space-y-2 custom-scrollbar pr-1 max-h-[360px] xl:max-h-[440px] transition-all">
