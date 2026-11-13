@@ -636,12 +636,13 @@ export const CreateInvoice = ({ onClose }: any) => {
 
   const openPaymentModal = () => {
       setPaymentMode('normal');
-      // افتراضي: كل المبلغ كاش والمستلم = الإجمالي (كاشير واحد بلمسة)
-      setPartCash(String(round2(total)));
+      setPaymentMethodTab('cash');
+      const full = String(round2(total));
+      setPartCash(full);
       setPartCard('0');
       setPartWallet('0');
       setPartCredit('0');
-      setCashReceived(String(round2(total)));
+      setCashReceived(full);
       setShowPaymentModal(true);
   };
 
@@ -660,14 +661,28 @@ export const CreateInvoice = ({ onClose }: any) => {
       if (kind === 'cash') setCashReceived(String(rest));
   };
 
-  /** سداد المبلغ بالكامل بطريقة واحدة بنقرة واحدة */
+  /** سداد المبلغ بالكامل بطريقة واحدة بنقرة واحدة مع تعيين المبلغ المستلم كاملاً */
   const payAllWith = (kind: 'cash' | 'card' | 'wallet' | 'credit') => {
-      setPartCash(kind === 'cash' ? String(round2(total)) : '0');
-      setPartCard(kind === 'card' ? String(round2(total)) : '0');
-      setPartWallet(kind === 'wallet' ? String(round2(total)) : '0');
-      setPartCredit(kind === 'credit' ? String(round2(total)) : '0');
-      setCashReceived(kind === 'cash' ? String(round2(total)) : '0');
+      setPaymentMethodTab(kind);
+      const full = String(round2(total));
+      setPartCash(kind === 'cash' ? full : '0');
+      setPartCard(kind === 'card' ? full : '0');
+      setPartWallet(kind === 'wallet' ? full : '0');
+      setPartCredit(kind === 'credit' ? full : '0');
+      setCashReceived(full);
   };
+
+  // مزامنة المبلغ المستلم عند فتح نافذة الدفع
+  useEffect(() => {
+    if (showPaymentModal) {
+      const full = String(round2(total));
+      setCashReceived(full);
+      if (paymentMethodTab === 'cash') setPartCash(full);
+      else if (paymentMethodTab === 'card') setPartCard(full);
+      else if (paymentMethodTab === 'wallet') setPartWallet(full);
+      else if (paymentMethodTab === 'credit') setPartCredit(full);
+    }
+  }, [showPaymentModal, total]);
 
   // Loyalty Redemption Logic
   const redeemPoints = () => {
@@ -1910,7 +1925,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 onClick={() => payAllWith('cash')}
                                 className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                                     paymentMethodTab === 'cash'
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-500/20'
                                         : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                                 }`}
                             >
@@ -1923,7 +1938,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 onClick={() => payAllWith('card')}
                                 className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                                     paymentMethodTab === 'card'
-                                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-500/20'
                                         : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                                 }`}
                             >
@@ -1936,7 +1951,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 onClick={() => payAllWith('wallet')}
                                 className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                                     paymentMethodTab === 'wallet'
-                                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-500/20'
                                         : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                                 }`}
                             >
@@ -1949,7 +1964,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 onClick={() => payAllWith('credit')}
                                 className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                                     paymentMethodTab === 'credit'
-                                        ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-500/20'
                                         : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                                 }`}
                             >
