@@ -330,7 +330,7 @@ export const fetchBackup = async (
 
 // ------------------------------------------------------------------ المزامنة التنازلية (سيرفر → تطبيق)
 const VALID_STATUS = ['paid', 'pending', 'void', 'refunded', 'held'];
-const VALID_PAYMENT = ['cash', 'card', 'split', 'loyalty', 'wallet', 'mixed', 'visa'];
+const VALID_PAYMENT = ['cash', 'card', 'split', 'loyalty', 'wallet', 'mixed', 'visa', 'credit', 'instapay'];
 
 /** يحوّل صف فاتورة من السيرفر إلى شكل الفاتورة المحلي */
 export const mapServerInvoice = (row: any): any | null => {

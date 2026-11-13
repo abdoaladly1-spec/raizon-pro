@@ -1092,12 +1092,12 @@ export const CreateInvoice = ({ onClose }: any) => {
                       <button
                           type="button"
                           onClick={() => triggerOpenCashDrawer()}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-2xs"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-2xs"
                           title={language === 'ar' ? 'فتح درج النقدية يدوياً (F7)' : 'Open Cash Drawer (F7)'}
                       >
-                          <Wallet size={14} className="text-amber-600 dark:text-amber-400" />
+                          <Wallet size={14} className="text-slate-500 dark:text-slate-400" />
                           <span>{language === 'ar' ? 'فتح الدرج' : 'Open Drawer'}</span>
-                          <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 text-[10px] font-mono border border-amber-500/40">F7</kbd>
+                          <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[10px] font-mono border border-slate-300 dark:border-slate-600">F7</kbd>
                       </button>
                       {/* زر حذف الفاتورة بجانب زر فتح الدرج */}
                       <button
@@ -1159,18 +1159,18 @@ export const CreateInvoice = ({ onClose }: any) => {
                         <button
                             type="button"
                             onClick={applyCashCustomer}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
                             title={language === 'ar' ? 'تسجيل عميل نقدي ترتيبي (عميل نقدي 1، 2، 3...)' : 'Quick sequential cash customer'}
                         >
-                            <User size={13} />
+                            <User size={13} className="text-slate-500" />
                             <span>{language === 'ar' ? 'عميل نقدي' : 'Cash Client'}</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setIsQuickAddingCustomer(true)}
-                            className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-600 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-xs"
                         >
-                            <Plus size={14}/> {language === 'ar' ? 'عميل جديد' : 'New Client'}
+                            <Plus size={14} className="text-white"/> {language === 'ar' ? 'عميل جديد' : 'New Client'}
                         </button>
                         {state.heldInvoices.length > 0 && (
                             <button 

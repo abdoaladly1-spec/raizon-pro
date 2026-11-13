@@ -203,6 +203,9 @@ class ReturnIn(BaseModel):
     deleted: int = 0
 
 
+ALLOWED_PAYMENT_METHODS = ("cash", "card", "wallet", "instapay", "credit", "visa")
+
+
 def _validate_payment(data: Dict[str, Any]) -> None:
     """يتحقق من الدفع المختلط قبل الحفظ (مبالغ موجبة + مجموع == الإجمالي + مستلم كافٍ)."""
     parts = data.get("payment_parts")
@@ -216,7 +219,7 @@ def _validate_payment(data: Dict[str, Any]) -> None:
         if not isinstance(part, dict):
             raise HTTPException(status_code=400, detail="payment_invalid_part")
         method = str(part.get("method") or "").strip().lower()
-        if method not in ("cash", "card", "wallet"):
+        if method not in ALLOWED_PAYMENT_METHODS:
             raise HTTPException(status_code=400, detail="payment_invalid_part")
         try:
             amount = float(part.get("amount") or 0)
@@ -232,7 +235,7 @@ def _validate_payment(data: Dict[str, Any]) -> None:
         raise HTTPException(status_code=400, detail="payment_sum_mismatch")
     cash_part = round(sum(amount for method, amount in cleaned if method == "cash"), 2)
     received = data.get("received")
-    if received is not None:
+    if received is not None and str(received).strip() != "":
         try:
             received_amount = round(float(received), 2)
         except (TypeError, ValueError) as exc:

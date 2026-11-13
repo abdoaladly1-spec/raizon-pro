@@ -177,7 +177,7 @@ def _now() -> str:
 # الدفع المختلط: حفذ JSON ذري واحد (payment_json) لتفاصيل الدفع بالفواتير
 # ---------------------------------------------------------------------------
 
-_PART_METHODS = ("cash", "card", "wallet")
+_PART_METHODS = ("cash", "card", "wallet", "instapay", "credit", "visa")
 
 
 def _clean_parts(value: Any) -> List[Dict[str, Any]]:
@@ -423,6 +423,10 @@ def _legacy_paid_method(payment_method: Any) -> str:
     m = str(payment_method or "cash").strip().lower()
     if m == "wallet":
         return "wallet"
+    if m == "instapay":
+        return "instapay"
+    if m in ("credit", "آجل", "on_account"):
+        return "credit"
     if m in ("card", "visa", "split", "loyalty"):
         return "card"
     return "cash"
@@ -441,12 +445,14 @@ def _invoice_for_return(row: sqlite3.Row) -> Dict[str, Any]:
 def _paid_by_method(inv: Dict[str, Any]) -> Dict[str, float]:
     """ما دُفع فعلياً لكل طريقة (من أجزاء الدفع أو من الطريقة القديمة)."""
     parts = inv.get("payment_parts")
-    paid: Dict[str, float] = {"cash": 0.0, "card": 0.0, "wallet": 0.0}
+    paid: Dict[str, float] = {"cash": 0.0, "card": 0.0, "wallet": 0.0, "instapay": 0.0, "credit": 0.0}
     if isinstance(parts, list) and parts:
         for p in parts:
             if not isinstance(p, dict):
                 continue
             method = str(p.get("method") or "").lower()
+            if method == "visa":
+                method = "card"
             if method in paid:
                 paid[method] = round(paid[method] + _round2(p.get("amount")), 2)
         return paid
@@ -542,7 +548,7 @@ def create_return(payload: Dict[str, Any]) -> Dict[str, Any]:
                 (inv_key,),
             ).fetchall()
             returned_qty: Dict[str, int] = {}
-            prior_refunded: Dict[str, float] = {"cash": 0.0, "card": 0.0, "wallet": 0.0}
+            prior_refunded: Dict[str, float] = {"cash": 0.0, "card": 0.0, "wallet": 0.0, "instapay": 0.0, "credit": 0.0}
             for prev in prev_rows:
                 try:
                     prev_items = json.loads(prev["items_json"] or "[]")
@@ -626,7 +632,7 @@ def create_return(payload: Dict[str, Any]) -> Dict[str, Any]:
                 if not isinstance(part, dict):
                     raise ReturnError("return_parts_mismatch", 400)
                 method = str(part.get("method") or "").strip().lower()
-                if method not in ("cash", "card", "wallet"):
+                if method not in _PART_METHODS:
                     raise ReturnError("return_parts_mismatch", 400)
                 amount = _round2(part.get("amount"))
                 if amount < 0:
