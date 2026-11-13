@@ -1423,9 +1423,9 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                             <FileText size={20} />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <h3 className="text-lg sm:text-xl font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${totalInvoicesCount.toLocaleString('en-US')} ${t('invoices')}`}>
+                                            <h3 className="text-lg sm:text-xl font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${totalInvoicesCount.toLocaleString('en-US')} ${language === 'ar' ? 'عدد' : t('invoices')}`}>
                                                 <span className="truncate">{totalInvoicesCount.toLocaleString('en-US')}</span>
-                                                <span className="text-xs font-bold text-slate-400 shrink-0">{t('invoices')}</span>
+                                                <span className="text-xs font-bold text-slate-400 shrink-0">{language === 'ar' ? 'عدد' : 'Count'}</span>
                                             </h3>
                                             <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
                                                 <span className="truncate">فواتير نقدية وآجلة</span>
