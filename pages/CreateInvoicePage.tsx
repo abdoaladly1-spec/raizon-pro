@@ -1061,13 +1061,16 @@ export const CreateInvoice = ({ onClose }: any) => {
   }
 
   const clearInvoice = () => {
-    if (selectedItems.length === 0) return;
+    if (selectedItems.length === 0 && !customerName && !phone && !selectedStaffId) return;
     setShowClearConfirm(true);
   };
 
   const executeClearInvoice = () => {
     setSelectedItems([]);
-    // لا يتم حذف اسم العميل ولا الموظف المحدد بناءً على طلب المستخدم
+    setCustomerName('');
+    setPhone('');
+    setCustomerIdInput('');
+    setSelectedStaffId('');
     setNotes('');
     setDiscountPercent(0);
     setDiscountFixedAmount(0);
@@ -1076,17 +1079,10 @@ export const CreateInvoice = ({ onClose }: any) => {
     setDiscountType('percentage');
     setTaxPercent(0);
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({
-        customerName,
-        phone,
-        customerIdInput,
-        selectedStaffId,
-        selectedItems: [],
-        notes: ''
-      }));
+      localStorage.removeItem(DRAFT_KEY);
     } catch {}
     setShowClearConfirm(false);
-    addToast(language === 'ar' ? 'تم حذف محتوى الفاتورة مع الاحتفاظ بالعميل والحلاق' : 'Invoice items cleared (customer and staff kept)', 'info');
+    addToast(language === 'ar' ? 'تم حذف الفاتورة بالكامل والعميل والحلاق بنجاح' : 'Invoice, customer, and staff cleared completely', 'info');
   };
 
     return (
@@ -1113,9 +1109,9 @@ export const CreateInvoice = ({ onClose }: any) => {
                       <button
                           type="button"
                           onClick={clearInvoice}
-                          disabled={selectedItems.length === 0}
+                          disabled={selectedItems.length === 0 && !customerName && !phone && !selectedStaffId}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
-                          title={language === 'ar' ? 'حذف عناصر وخدمات الفاتورة مع الاحتفاظ بالعميل والحلاق' : 'Clear invoice items'}
+                          title={language === 'ar' ? 'حذف الفاتورة بالكامل والعميل والحلاق المحدد' : 'Clear entire invoice'}
                       >
                           <Trash2 size={14} className="text-rose-600 dark:text-rose-400" />
                           <span>{language === 'ar' ? 'حذف الفاتورة' : 'Clear Invoice'}</span>
@@ -1869,9 +1865,9 @@ export const CreateInvoice = ({ onClose }: any) => {
                               type="button"
                               onClick={clearInvoice} 
                               variant="danger" 
-                              disabled={selectedItems.length === 0}
+                              disabled={selectedItems.length === 0 && !customerName && !phone && !selectedStaffId}
                               className="px-3.5 py-3 rounded-xl active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                              title={language === 'ar' ? 'حذف عناصر وخدمات الفاتورة مع الاحتفاظ بالعميل والحلاق' : 'Clear invoice items'}
+                              title={language === 'ar' ? 'حذف الفاتورة بالكامل والعميل والحلاق المحدد' : 'Clear entire invoice'}
                           >
                               <Trash2 size={18}/>
                           </Button>
@@ -2777,11 +2773,11 @@ export const CreateInvoice = ({ onClose }: any) => {
 
         <ConfirmModal
             isOpen={showClearConfirm}
-            title={language === 'ar' ? 'حذف محتوى الفاتورة' : 'Clear Invoice Content'}
-            message={language === 'ar' ? 'هل أنت متأكد من حذف المنتجات والخدمات من الفاتورة؟ (سيتم الاحتفاظ بالعميل والحلاق المحدد)' : 'Are you sure you want to clear products and services from this invoice? (Customer and staff will be kept)'}
-            confirmText={language === 'ar' ? 'نعم، احذف المحتوى' : 'Clear Items'}
+            title={language === 'ar' ? 'حذف الفاتورة بالكامل' : 'Clear Entire Invoice'}
+            message={language === 'ar' ? 'هل أنت متأكد من حذف الفاتورة بالكامل بما في ذلك الأصناف والعميل والحلاق المحدد؟' : 'Are you sure you want to clear the entire invoice including items, customer, and selected staff?'}
+            confirmText={language === 'ar' ? 'نعم، احذف الكل' : 'Clear All'}
             cancelText={t('cancel')}
-            variant="warning"
+            variant="danger"
             onConfirm={executeClearInvoice}
             onCancel={() => setShowClearConfirm(false)}
         />
