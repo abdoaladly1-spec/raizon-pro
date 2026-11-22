@@ -269,7 +269,7 @@ export const PrintActions = ({ invoice }: { invoice: Invoice }) => {
       } else {
         addToast(
           language === 'ar'
-            ? `تم تحميل ملف الفاتورة PDF (${res.fileName}) وفتح الواتساب! يمكنك الآن إرفاق الـ PDF في المحادثة مباشرة 📎`
+            ? `تم تحميل ملف الفاتورة PDF (${res.fileName}) وفتح الواتساب! يمكنك الآن إرفاق الـ PDF في المحادثة مباشرة`
             : `Downloaded ${res.fileName} and opened WhatsApp. You can now attach the PDF!`,
           'success'
         );

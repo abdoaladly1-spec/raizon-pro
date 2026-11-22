@@ -27,7 +27,7 @@ export const executeBackup = async (
     notifyOnClosing: true,
     notifyOnReturn: true,
     notifyOnExpense: true,
-    smtpUser: 'rizon.pro.app@gmail.com'
+    smtpUser: state.settings?.emailConfig?.smtpUser || ''
   };
 
   const backupPayload = {

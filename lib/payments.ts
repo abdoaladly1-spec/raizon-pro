@@ -41,6 +41,42 @@ export const round2 = (n: number): number => {
 /** مقارنة مبلغين بسماحية خانتين (للتقريب) */
 export const moneyEq = (a: number, b: number, epsilon = 0.01): boolean => Math.abs(round2(a) - round2(b)) <= epsilon;
 
+/**
+ * دالة ذكية لتصغير حجم خط الأرقام والمبالغ تلقائياً كلما زاد عدد الأرقام والمنازل
+ * تضمن عرض الأرقام الكبيرة بوضوح تام دون اقتطاع أو تشويه حتى عند بلوغ الملايين
+ */
+export const getAutoShrinkNumberClass = (
+    val: string | number | null | undefined, 
+    preset: 'kpi-card' | 'kpi-exec' | 'total' = 'kpi-card'
+): string => {
+    if (val === null || val === undefined) return preset === 'kpi-exec' ? 'text-xl sm:text-2xl' : preset === 'total' ? 'text-2xl sm:text-3xl' : 'text-lg sm:text-xl';
+    
+    const rawStr = typeof val === 'number' ? val.toLocaleString('en-US') : String(val).trim();
+    const len = rawStr.length;
+
+    if (preset === 'total') {
+        if (len >= 13) return 'text-lg sm:text-xl';
+        if (len >= 10) return 'text-xl sm:text-2xl';
+        if (len >= 8)  return 'text-2xl sm:text-3xl';
+        return 'text-3xl sm:text-4xl';
+    }
+
+    if (preset === 'kpi-exec') {
+        if (len >= 14) return 'text-xs sm:text-sm';
+        if (len >= 11) return 'text-sm sm:text-base';
+        if (len >= 8)  return 'text-base sm:text-lg';
+        if (len >= 6)  return 'text-lg sm:text-xl';
+        return 'text-xl sm:text-2xl';
+    }
+
+    // preset: 'kpi-card' لشبكة الـ 10 بطاقات في 5 أعمدة
+    if (len >= 14) return 'text-[11px] sm:text-xs';
+    if (len >= 11) return 'text-xs sm:text-sm';
+    if (len >= 8)  return 'text-sm sm:text-base';
+    if (len >= 6)  return 'text-base sm:text-lg';
+    return 'text-lg sm:text-xl';
+};
+
 export const sumParts = (parts: PaymentPart[]): number =>
     round2((parts || []).reduce((acc, p) => acc + round2(p?.amount || 0), 0));
 

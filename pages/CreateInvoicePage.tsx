@@ -6,10 +6,11 @@
     return item.quantity;
 };
 import { normalizeBarcode, useBarcodeScanner } from '../lib/barcode';
+import { normalizePhone, isValidPhone } from '../lib/phoneUtils';
 /* تم فصل هذا الملف من App.tsx (نظام ProCashier) */
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { ChevronDown, LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Smartphone } from '../components/Icons';
+import { ChevronDown, LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ArrowRight, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Smartphone, Lock, Shield, Edit } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from '../types';
 import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, useSound, useLiveTick, ConfirmModal } from '../components/ui';
 import { FilterModal } from '../components/FilterModal';
@@ -17,11 +18,12 @@ import { AuditLogs } from './AuditLogsPage';
 import { AdminUsers } from './AdminUsersPage';
 import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, type SyncStatus } from '../lib/serverSync';
 import { localIsoToday, parseInvoiceDate } from '../lib/dates';
-import { round2, validatePayment, paymentOf, type PaymentPart } from '../lib/payments';
+import { round2, validatePayment, paymentOf, type PaymentPart, getAutoShrinkNumberClass } from '../lib/payments';
 import { buildPrintIdentity } from '../lib/printDesign';
 import { InvoiceReceipt } from '../components/InvoiceReceipt';
 import { PrintActions, openInvoiceWhatsApp } from '../components/PrintActions';
 import { isMainBranch, getActiveBranch } from '../lib/branchUtils';
+import { AdminApprovalModal } from '../components/AdminApprovalModal';
 
 const DRAFT_KEY = 'procashier_active_invoice_draft_v1';
 
@@ -36,10 +38,10 @@ const getInitialInvoiceDraft = () => {
 };
 
 export const CreateInvoice = ({ onClose }: any) => {
-  const { state, addInvoice, updateInvoice, voidInvoice, holdInvoice, restoreInvoice, deleteHeldInvoice, t, addToast, addCustomer, addStaff, updateSettings, language, addItem, formatNumber, formatDate, formatTime, formatDateTime, triggerOpenCashDrawer } = useApp();
+  const { state, addInvoice, updateInvoice, voidInvoice, holdInvoice, restoreInvoice, deleteHeldInvoice, t, addToast, addCustomer, updateCustomer, addCustomerPayment, addStaff, updateSettings, language, addItem, formatNumber, formatDate, formatTime, formatDateTime, triggerOpenCashDrawer, currentUser } = useApp();
   const isMain = isMainBranch(state.settings.currentLocationId, state.locations);
   const activeBranch = getActiveBranch(state.settings.currentLocationId, state.locations);
-  const { playBeep } = useSound();
+  const { playBeep, playCashChime, playScan } = useSound();
   const currentTick = useLiveTick(1000);
   
   // استرجاع المسودة المحفوظة تلقائياً إذا وجدت حتى لا تضيع عند مغادرة الصفحة
@@ -132,17 +134,45 @@ export const CreateInvoice = ({ onClose }: any) => {
   });
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const customerDropdownRef = useRef<HTMLDivElement>(null);
+  const [showBarberDropdown, setShowBarberDropdown] = useState(false);
+  const [barberSearchQuery, setBarberSearchQuery] = useState('');
+  const barberDropdownRef = useRef<HTMLDivElement>(null);
 
-  // إغلاق قائمة العملاء التلقائية عند النقر خارجها
+  // إغلاق القوائم المنسدلة التلقائية للعملاء والحلاقين عند النقر خارجها
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (customerDropdownRef.current && !customerDropdownRef.current.contains(e.target as Node)) {
         setShowCustomerDropdown(false);
       }
+      if (barberDropdownRef.current && !barberDropdownRef.current.contains(e.target as Node)) {
+        setShowBarberDropdown(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowBarberDropdown(false);
+        setShowCustomerDropdown(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
+
+  const activeBarbers = useMemo(() => state.staff.filter(s => s.active), [state.staff]);
+  const selectedBarber = useMemo(() => activeBarbers.find(s => s.id === selectedStaffId), [activeBarbers, selectedStaffId]);
+  const filteredBarbers = useMemo(() => {
+    if (!barberSearchQuery.trim()) return activeBarbers;
+    const q = barberSearchQuery.trim().toLowerCase();
+    return activeBarbers.filter(s => 
+      (s.name && s.name.toLowerCase().includes(q)) || 
+      (s.phone && s.phone.includes(q)) ||
+      (s.role && s.role.toLowerCase().includes(q))
+    );
+  }, [activeBarbers, barberSearchQuery]);
 
   const filteredCustomerSuggestions = useMemo(() => {
     const qPhone = (phone || '').trim().toLowerCase();
@@ -243,33 +273,15 @@ export const CreateInvoice = ({ onClose }: any) => {
       return;
     }
 
-    // تحويل الأرقام العربية الهندية إلى أرقام إنجليزية وتجريد أي رموز إضافية
-    let cleanPhone = rawPhone
-      .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
-      .replace(/[^\d]/g, '');
+    // تنظيف وتوحيد رقم الهاتف (تحويل الأرقام العربية، إزالة المسافات، معالجة كود الدولة)
+    let cleanPhone = normalizePhone(rawPhone);
 
-    // استبعاد كود الدولة لمصر (20) إن وُجد مثل 2010... ليصبح 010...
-    if (cleanPhone.startsWith('201') && cleanPhone.length === 12) {
-      cleanPhone = cleanPhone.slice(1);
-    }
-
-    // شرط: رقم الهاتف يجب أن يتكون من 11 رقماً بالضبط
-    if (cleanPhone.length !== 11) {
+    // التحقق من صحة الرقم (11 رقماً تبدأ بـ 01 أو رقم دولي معتمد)
+    if (!isValidPhone(cleanPhone)) {
       addToast(
         language === 'ar'
-          ? `شرط: رقم الهاتف يجب أن يتكون من 11 رقماً بالضبط (أدخلت ${cleanPhone.length} أرقام)`
-          : `Phone number must be exactly 11 digits (entered ${cleanPhone.length})`,
-        'error'
-      );
-      return;
-    }
-
-    // التحقق من أنه رقم محمول مصري سليم يبدأ بـ 01
-    if (!cleanPhone.startsWith('01')) {
-      addToast(
-        language === 'ar'
-          ? 'شرط: رقم الهاتف المحمول يجب أن يبدأ بـ 01 (مثال: 010, 011, 012, 015)'
-          : 'Phone number must start with 01',
+          ? 'شرط: رقم الهاتف المحمول يجب أن يبدأ بـ 01 ويتكون من 11 رقماً (مثال: 01012345678)'
+          : 'Phone number must start with 01 and be 11 digits',
         'error'
       );
       return;
@@ -361,22 +373,30 @@ export const CreateInvoice = ({ onClose }: any) => {
     });
   };
 
-  // Auto-detect customer
-  const existingCustomer = useMemo(() => state.customers.find(c => c.phone === phone), [state.customers, phone]);
+  // Auto-detect customer (فقط عند وجود رقم هاتف فعلي لتجنب مطابقة السجلات الفارغة)
+  const existingCustomer = useMemo(() => {
+    if (!phone || phone === '--' || phone.trim() === '') return undefined;
+    return state.customers.find(c => c.phone && c.phone.trim() === phone.trim());
+  }, [state.customers, phone]);
+
   useEffect(() => {
     if (existingCustomer) {
-      setCustomerName(existingCustomer.name);
-      setCustomerIdInput(existingCustomer.id.toString());
+      if (customerName !== existingCustomer.name) {
+        setCustomerName(existingCustomer.name);
+      }
+      const idStr = existingCustomer.id.toString();
+      if (customerIdInput !== idStr) {
+        setCustomerIdInput(idStr);
+      }
     }
   }, [existingCustomer]);
 
   // Lookup by ID (فقط للعملاء المسجلين برقم هاتف فعلي لتجنب التعارض مع ترقيم العميل النقدي)
   useEffect(() => {
       if (customerIdInput && phone !== '--') {
-          const c = state.customers.find(c => c.id.toString() === customerIdInput);
-          if (c) {
+          const c = state.customers.find(c => c.id.toString() === customerIdInput.trim());
+          if (c && c.phone && c.phone !== phone) {
               setPhone(c.phone);
-              // Name will be set by existingCustomer effect since phone changes
           }
       }
   }, [customerIdInput, state.customers, phone]);
@@ -386,9 +406,96 @@ export const CreateInvoice = ({ onClose }: any) => {
     const match = (customerName || '').trim().match(/^عميل نقدي(?:\s+(\d+))?$/i) || (customerName || '').trim().match(/^cash customer(?:\s+(\d+))?$/i);
     if (match) {
       const num = match[1] || '1';
-      setCustomerIdInput(num);
+      if (customerIdInput !== num) {
+        setCustomerIdInput(num);
+      }
     }
-  }, [customerName]);
+  }, [customerName, customerIdInput]);
+
+  // إدارة سداد وتعديل بيانات العميل من بطاقة العميل
+  const [showCustomerPaymentModal, setShowCustomerPaymentModal] = useState(false);
+  const [customerPaymentForm, setCustomerPaymentForm] = useState({
+    amount: '',
+    paymentMethod: 'cash' as 'cash' | 'card' | 'wallet' | 'instapay',
+    notes: ''
+  });
+
+  const [showCustomerEditModal, setShowCustomerEditModal] = useState(false);
+  const [customerEditForm, setCustomerEditForm] = useState({
+    name: '',
+    phone: '',
+    creditLimit: 0,
+    notes: '',
+    isVip: false
+  });
+
+  const openEditCustomerModal = () => {
+    if (!existingCustomer) return;
+    setCustomerEditForm({
+      name: existingCustomer.name || '',
+      phone: existingCustomer.phone || '',
+      creditLimit: existingCustomer.creditLimit || 0,
+      notes: existingCustomer.notes || '',
+      isVip: existingCustomer.tier === 'Gold' || existingCustomer.tier === 'VIP'
+    });
+    setShowCustomerEditModal(true);
+  };
+
+  const handleSettleCustomerDebt = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!existingCustomer) return;
+    const amountNum = parseFloat(customerPaymentForm.amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      addToast(language === 'ar' ? 'يرجى إدخال مبلغ سداد صحيح أكبر من الصفر' : 'Please enter a valid amount', 'error');
+      return;
+    }
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+    addCustomerPayment({
+      customerId: existingCustomer.id,
+      customerName: existingCustomer.name,
+      amount: amountNum,
+      date: dateStr,
+      timestamp: Date.now(),
+      paymentMethod: customerPaymentForm.paymentMethod,
+      notes: customerPaymentForm.notes.trim(),
+      locationId: state.settings.currentLocationId
+    });
+
+    addToast(language === 'ar' ? `تم تسجيل سداد مبلغ ${amountNum.toLocaleString('en-US')} ج.م بنجاح` : `Recorded payment of ${amountNum} EGP successfully`, 'success');
+    setShowCustomerPaymentModal(false);
+  };
+
+  const handleSaveCustomerEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!existingCustomer) return;
+    const trimmedName = customerEditForm.name.trim();
+    const trimmedPhone = customerEditForm.phone.trim();
+    if (!trimmedName) {
+      addToast(language === 'ar' ? 'يرجى إدخال اسم العميل' : 'Please enter customer name', 'error');
+      return;
+    }
+    if (!trimmedPhone) {
+      addToast(language === 'ar' ? 'يرجى إدخال رقم هاتف العميل' : 'Please enter customer phone', 'error');
+      return;
+    }
+
+    updateCustomer({
+      ...existingCustomer,
+      name: trimmedName,
+      phone: trimmedPhone,
+      creditLimit: Math.max(0, parseFloat(String(customerEditForm.creditLimit)) || 0),
+      notes: customerEditForm.notes.trim(),
+      tier: customerEditForm.isVip ? 'Gold' : (existingCustomer.tier === 'Gold' ? 'Bronze' : existingCustomer.tier)
+    });
+
+    setCustomerName(trimmedName);
+    setPhone(trimmedPhone);
+    addToast(language === 'ar' ? 'تم حفظ وتحديث بيانات العميل بنجاح' : 'Customer updated successfully', 'success');
+    setShowCustomerEditModal(false);
+  };
 
   const [selectedItems, setSelectedItems] = useState((initialDraft?.selectedItems || []) as any);
   const [showPreview, setShowPreview] = useState(false);
@@ -411,6 +518,32 @@ export const CreateInvoice = ({ onClose }: any) => {
   const [taxPercent, setTaxPercent] = useState(
     initialDraft?.taxPercent !== undefined ? initialDraft.taxPercent : (state.settings.autoApplyTax ? state.settings.defaultTaxPercent : 0)
   );
+
+  // تحميل بيانات الحجز القادم من شاشة الحجوزات فورياً في الفاتورة
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('pending_pos_reservation');
+      if (raw) {
+        sessionStorage.removeItem('pending_pos_reservation');
+        const res = JSON.parse(raw);
+        if (res.customerName) setCustomerName(res.customerName);
+        if (res.phone) setPhone(res.phone);
+        if (res.staffId) setSelectedStaffId(String(res.staffId));
+        if (res.notes) setNotes(res.notes);
+        if (res.serviceName) {
+          const sName = res.serviceName.trim().toLowerCase();
+          const match = state.items.find(it => 
+            it.nameAr.toLowerCase().includes(sName) || 
+            (it.nameEn && it.nameEn.toLowerCase().includes(sName))
+          );
+          if (match) {
+            setSelectedItems([{ item: match, qty: 1 }]);
+          }
+        }
+        addToast(language === 'ar' ? `تم تحميل بيانات الحجز (${res.customerName}) في الفاتورة بنجاح` : `Reservation loaded: ${res.customerName}`, 'success');
+      }
+    } catch(e) {}
+  }, []);
 
   // حفظ مسودة الفاتورة تلقائياً عند أي تعديل لتبقى موجودة عند الخروج والرجوع
   useEffect(() => {
@@ -453,54 +586,9 @@ export const CreateInvoice = ({ onClose }: any) => {
   const [partCredit, setPartCredit] = useState('');
   const [cashReceived, setCashReceived] = useState('');
 
-  // Effects
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'F7') {
-        e.preventDefault();
-        triggerOpenCashDrawer();
-        return;
-      }
-      if (e.key === 'F8') {
-        e.preventDefault();
-        if (selectedItems.length === 0) {
-          addToast(language === 'ar' ? 'السلة فارغة، يرجى إضافة أصناف أولاً' : 'Cart is empty', 'warning');
-          return;
-        }
-        if (!selectedStaffId) {
-          addToast(language === 'ar' ? 'يرجى اختيار الحلاق المسئول عن الفاتورة أولاً للمتابعة' : 'Please select the barber before proceeding', 'error');
-          return;
-        }
-        setShowPaymentModal(true);
-        return;
-      }
-      if (e.key === 'F9') {
-        e.preventDefault();
-        const discInput = document.getElementById('pos-quick-discount-input');
-        if (discInput) {
-          discInput.focus();
-        }
-        return;
-      }
-      if (showPaymentModal) {
-          if (e.key === 'Escape') setShowPaymentModal(false);
-          return;
-      }
-      if (e.ctrlKey && e.key.toLowerCase() === 'p') {
-          e.preventDefault();
-          if (isMain) {
-              window.print();
-          } else {
-              addToast(language === 'ar' ? 'هذا ليس الفرع الرئيسي يرجي الحذر لعدم تداخل الفواتير (يلزم تأكيد المدير للطباعة)' : 'This is not the main branch. Manager confirmation required to print.', 'warning');
-          }
-      }
-      if (e.ctrlKey && e.key.toLowerCase() === 's') { e.preventDefault(); handleSave(); }
-      if (e.key === 'Escape') { e.preventDefault(); onClose(); }
-      if (e.ctrlKey && e.key.toLowerCase() === 'n') { e.preventDefault(); setSelectedItems([]); setPhone(''); setCustomerName(''); setNotes(''); setShowPreview(false); setCreatedInvoice(null); localStorage.removeItem(DRAFT_KEY); }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [showPaymentModal, selectedItems]);
+  // حالة موافقة المدير على نسبة خصم تتجاوز صلاحية الكاشير
+  const [showDiscountApprovalModal, setShowDiscountApprovalModal] = useState(false);
+  const [isDiscountApprovedByAdmin, setIsDiscountApprovedByAdmin] = useState(false);
 
   const addToInvoice = (item: Item) => {
     const isProduct = item.type === 'product';
@@ -517,6 +605,7 @@ export const CreateInvoice = ({ onClose }: any) => {
         return;
     }
 
+    playScan();
     setSelectedItems(prev => {
         const exists = prev.find(i => i.item.id === item.id);
         if(exists) {
@@ -529,6 +618,50 @@ export const CreateInvoice = ({ onClose }: any) => {
   const removeFromInvoice = (id: string) => {
     setSelectedItems(prev => prev.filter(i => i.item.id !== id));
   };
+
+  // محرك قراءة الباركود التلقائي والسريع بنقاط البيع (POS Rapid Barcode Scanner Engine)
+  useEffect(() => {
+    let buffer = '';
+    let lastKeyTime = Date.now();
+
+    const handleBarcodeScan = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+      const now = Date.now();
+      const elapsed = now - lastKeyTime;
+      lastKeyTime = now;
+
+      if (e.key === 'Enter') {
+        if (buffer.length >= 3) {
+          const barcode = buffer.trim();
+          const matched = state.items.find(it => 
+            (it.barcode && it.barcode.trim() === barcode) ||
+            (it.sku && it.sku.trim() === barcode)
+          );
+          if (matched) {
+            e.preventDefault();
+            addToInvoice(matched);
+            addToast(language === 'ar' ? `تم مسح الباركود بنجاح: ${matched.nameAr}` : `Barcode scanned: ${matched.nameEn || matched.nameAr}`, 'success');
+            buffer = '';
+            return;
+          }
+        }
+        buffer = '';
+        return;
+      }
+
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (elapsed > 120 && !isInput) {
+          buffer = e.key;
+        } else {
+          buffer += e.key;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleBarcodeScan);
+    return () => window.removeEventListener('keydown', handleBarcodeScan);
+  }, [state.items, addToInvoice, language, addToast]);
 
   const displayedItems = useMemo(() => {
     const q = itemSearch.toLowerCase().trim();
@@ -547,6 +680,11 @@ export const CreateInvoice = ({ onClose }: any) => {
       return item.categoryId === selectedCategory;
     });
   }, [state.items, itemSearch, selectedCategory]);
+
+  const [visibleLimit, setVisibleLimit] = useState(60);
+  useEffect(() => {
+    setVisibleLimit(60);
+  }, [itemSearch, selectedCategory]);
 
   const itemCounts = useMemo(() => {
     const total = state.items.length;
@@ -866,32 +1004,81 @@ export const CreateInvoice = ({ onClose }: any) => {
       setShowHoldPromptModal(false);
       setHoldNoteInput('');
       localStorage.removeItem(DRAFT_KEY);
-      addToast(language === 'ar' ? `تم تعليق الفاتورة «${finalHoldName}» بنجاح ⏸️` : `Invoice "${finalHoldName}" held successfully`, 'success');
+      addToast(language === 'ar' ? `تم تعليق الفاتورة «${finalHoldName}» بنجاح` : `Invoice "${finalHoldName}" held successfully`, 'success');
   };
 
-  const handleSave = () => {
-      // Validation
-      const phoneRegex = /^01\d{9}$/;
+  const handleSave = (overridePhone?: string, overrideName?: string) => {
+      // 1. فحص وجود أصناف أو خدمات في السلة أولاً
+      if (selectedItems.length === 0) {
+          addToast(language === 'ar' ? 'يرجى إضافة أصناف أو خدمات إلى الفاتورة أولاً' : 'Please add items or services to the invoice first', 'error');
+          return;
+      }
+
+      // 2. اختيار تلقائي للحلاق إذا وُجد حلاق نشط وحيد فقط
+      let staffId = selectedStaffId;
+      if (!staffId) {
+          const activeStaff = state.staff.filter(s => s.active);
+          if (activeStaff.length === 1) {
+              staffId = activeStaff[0].id;
+              setSelectedStaffId(staffId);
+          } else {
+              addToast(language === 'ar' ? 'يرجى اختيار الحلاق المسئول عن الفاتورة أولاً للمتابعة' : 'Please select the barber before proceeding', 'error');
+              return;
+          }
+      }
+
+      // 3. التحقق الذكي من بيانات العميل
+      let rawPhone = overridePhone !== undefined ? overridePhone : phone;
+      let effName = (overrideName !== undefined ? overrideName : customerName).trim();
+
+      // إذا ترك الكاشير الاسم ورقم الهاتف فارغين، يتم اعتباره عميلاً نقدياً سريعاً تلقائياً
+      if (!effName && (!rawPhone || !rawPhone.trim() || rawPhone === '--')) {
+          const nextNum = getNextCashCustomerNum();
+          const nextName = language === 'ar' ? `عميل نقدي ${nextNum}` : `Cash Customer ${nextNum}`;
+          effName = nextName;
+          rawPhone = '--';
+          setCustomerName(nextName);
+          setPhone('--');
+          setCustomerIdInput(String(nextNum));
+          setShowCustomerDropdown(false);
+      } else if (!effName) {
+          addToast(language === 'ar' ? 'يرجى كتابة اسم العميل أولاً' : 'Please enter customer name', 'error');
+          return;
+      }
+
+      let cleanPhone = normalizePhone(rawPhone);
+
+      // إذا تم إدخال اسم العميل ولكن لم يتم إدخال الهاتف: نجعله '--' تلقائياً لعمليات البيع النقدي
+      if (!cleanPhone && effName) {
+          cleanPhone = '--';
+          rawPhone = '--';
+          setPhone('--');
+      }
+
       const nameRegex = /^(\S+)\s+(\S+)\s+(\S+).*$/; // At least 3 parts
-      const isCashWalkIn = phone === '--' || phone === '01000000000' || isCashCustomerName(customerName);
+      const isCashWalkIn = cleanPhone === '--' || cleanPhone === '01000000000' || isCashCustomerName(effName);
 
-      if (!phone || !customerName || selectedItems.length === 0) {
-          addToast(t('fill_all_fields'), 'error');
-          return;
-      }
-
-      if (!selectedStaffId) {
-          addToast(language === 'ar' ? 'يرجى اختيار الحلاق المسئول عن الفاتورة أولاً للمتابعة' : 'Please select the barber before proceeding', 'error');
-          return;
-      }
-      
-      if (!isCashWalkIn && !phoneRegex.test(phone)) {
+      if (!isCashWalkIn && !isValidPhone(cleanPhone)) {
           addToast(t('invalid_phone_format'), 'error');
           return;
       }
+
+      // توحيد وتحديث رقم الهاتف إن كان يحتوي على أرقام عربية أو مسافات
+      if (cleanPhone !== phone && phone !== '--') {
+          setPhone(cleanPhone);
+      }
+
       // Only validate name if it's a new customer or name is manually entered (to enforce 3 parts)
-      if (!isCashWalkIn && !existingCustomer && !nameRegex.test(customerName.trim())) {
+      if (!isCashWalkIn && !existingCustomer && !nameRegex.test(effName)) {
           addToast(t('invalid_name_format'), 'error');
+          return;
+      }
+
+      // التحقق من صلاحية الخصم: إذا كان المستخدم كاشير والخصم يتجاوز الحد المسموح
+      const maxAllowedDiscount = state.settings?.maxCashierDiscountPercent ?? 10;
+      const isCashier = currentUser?.role !== 'admin';
+      if (isCashier && effectiveDiscountPercent > maxAllowedDiscount && !isDiscountApprovedByAdmin) {
+          setShowDiscountApprovalModal(true);
           return;
       }
 
@@ -919,11 +1106,12 @@ export const CreateInvoice = ({ onClose }: any) => {
       }
 
       setShowPaymentModal(false);
-      const isCash = phone === '--' || phone === '01000000000' || isCashCustomerName(customerName);
-      const existing = (phone !== '--' && phone) ? state.customers.find(c => c.phone === phone) : null;
+      const cleanPhone = normalizePhone(phone);
+      const isCash = cleanPhone === '--' || cleanPhone === '01000000000' || isCashCustomerName(customerName);
+      const existing = (cleanPhone !== '--' && cleanPhone) ? state.customers.find(c => normalizePhone(c.phone) === cleanPhone) : null;
       const customerId = existing ? existing.id : (isCash ? (parseInt(customerIdInput, 10) || undefined) : addCustomer({ 
         name: customerName, 
-        phone: phone === '--' ? '' : phone 
+        phone: cleanPhone === '--' ? '' : cleanPhone 
       } as any));
 
       if (!existing && !isCash) {
@@ -939,6 +1127,7 @@ export const CreateInvoice = ({ onClose }: any) => {
       const invoiceData = {
           customerId,
           customerName,
+          phone: cleanPhone === '--' ? '' : cleanPhone,
           branchName: activeBranch?.name || state.settings.shopName || '',
           items: selectedItems.map(i => ({ 
               itemId: i.item.id, 
@@ -971,7 +1160,8 @@ export const CreateInvoice = ({ onClose }: any) => {
       setCreatedInvoice({ ...invoiceData, id: state.invoices.length + 1, printSnapshot: buildPrintIdentity(state.settings) });
       setShowPreview(true);
       setPointsRedeemed(0); // Reset after save
-      // فتح درج النقدية تلقائياً عند الضغط على زر حفظ
+      // فتح درج النقدية ونغمة نجاح الفاتورة تلقائياً عند الضغط على زر حفظ
+      playCashChime();
       triggerOpenCashDrawer(false, language === 'ar' ? 'حفظ الفاتورة' : 'Save Invoice');
   };
 
@@ -1011,7 +1201,7 @@ export const CreateInvoice = ({ onClose }: any) => {
              {/* شريط الإجراءات والتحكم بعد البيع مع ميزة التراجع الفوري */}
              <div className="no-print p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 shadow-sm flex items-center justify-between flex-wrap gap-3">
                  <div className="flex items-center gap-2.5">
-                     <span className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold">✓</span>
+                     <span className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold"><Check size={18} /></span>
                      <div>
                          <span className="font-extrabold text-sm text-slate-800 dark:text-slate-100 block">
                              {language === 'ar' ? `تم إصدار الفاتورة #${createdInvoice.id} بنجاح` : `Invoice #${createdInvoice.id} Created`}
@@ -1029,7 +1219,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                          className="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 font-bold text-xs border border-rose-200 dark:border-rose-800/50 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                          title={language === 'ar' ? 'إلغاء الفاتورة واستعادة الأصناف للسلة للتعديل' : 'Undo sale and restore cart'}
                      >
-                         <span>↩️</span>
+                         <RefreshCw size={13} />
                          <span>{language === 'ar' ? 'تراجع وتعديل' : 'Undo & Edit'}</span>
                      </button>
                      <Button 
@@ -1085,48 +1275,190 @@ export const CreateInvoice = ({ onClose }: any) => {
     addToast(language === 'ar' ? 'تم حذف الفاتورة بالكامل والعميل والحلاق بنجاح' : 'Invoice, customer, and staff cleared completely', 'info');
   };
 
+  // --- اختصارات نقاط البيع الكيبورد (POS Keyboard Shortcuts) ---
+  const focusItemSearch = () => {
+    const el = document.getElementById('pos-item-search-input') as HTMLInputElement | null;
+    if (el) {
+      el.focus();
+      el.select();
+    }
+  };
+
+  const focusCustomerInput = () => {
+    const el = document.getElementById('pos-customer-phone-input') as HTMLInputElement | null;
+    if (el) {
+      el.focus();
+      el.select();
+    }
+  };
+
+  const kickCashDrawer = () => {
+    triggerOpenCashDrawer(false, 'مفتاح الاختصار F1 / شاشة الكاشير');
+  };
+
+  const handleQuickCheckout = () => {
+    if (showPaymentModal) {
+      confirmSave();
+      return;
+    }
+    if (selectedItems.length === 0) {
+      addToast(language === 'ar' ? 'السلة فارغة، يرجى إضافة أصناف أولاً' : 'Cart is empty', 'warning');
+      return;
+    }
+    // اختيار تلقائي للحلاق إذا كان متاحاً حلاق واحد نشط فقط ولم يتم اختياره
+    let staffIdToUse = selectedStaffId;
+    if (!staffIdToUse) {
+      const activeStaff = state.staff.filter(s => s.active);
+      if (activeStaff.length === 1) {
+        staffIdToUse = activeStaff[0].id;
+        setSelectedStaffId(staffIdToUse);
+      } else {
+        addToast(language === 'ar' ? 'يرجى اختيار الحلاق المسئول عن الفاتورة أولاً للمتابعة' : 'Please select the barber before proceeding', 'error');
+        return;
+      }
+    }
+    let curPhone = phone;
+    let curName = customerName;
+    if (!curName.trim() && !curPhone.trim()) {
+      const nextNum = getNextCashCustomerNum();
+      const nextName = language === 'ar' ? `عميل نقدي ${nextNum}` : `Cash Customer ${nextNum}`;
+      curPhone = '--';
+      curName = nextName;
+      setCustomerName(nextName);
+      setPhone('--');
+      setCustomerIdInput(String(nextNum));
+      setShowCustomerDropdown(false);
+    }
+    handleSave(curPhone, curName);
+  };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // الاختصارات الخاصة بنقاط البيع F1..F9
+      if (e.key === 'F1') {
+        e.preventDefault();
+        kickCashDrawer();
+        return;
+      }
+      if (e.key === 'F2') {
+        e.preventDefault();
+        focusItemSearch();
+        return;
+      }
+      if (e.key === 'F3') {
+        e.preventDefault();
+        focusCustomerInput();
+        return;
+      }
+      if (e.key === 'F4') {
+        e.preventDefault();
+        handleHold();
+        return;
+      }
+      if (e.key === 'F7' || e.key === 'F9') {
+        e.preventDefault();
+        kickCashDrawer();
+        return;
+      }
+      if (e.key === 'F8') {
+        e.preventDefault();
+        handleSave();
+        return;
+      }
+      if (showPaymentModal) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setShowPaymentModal(false);
+        }
+        return;
+      }
+      if (showHeldInvoices) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setShowHeldInvoices(false);
+        }
+        return;
+      }
+      if (showHoldPromptModal) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setShowHoldPromptModal(false);
+        }
+        return;
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        if (isMain) {
+          window.print();
+        } else {
+          addToast(language === 'ar' ? 'هذا ليس الفرع الرئيسي يرجي الحذر لعدم تداخل الفواتير (يلزم تأكيد المدير للطباعة)' : 'This is not the main branch. Manager confirmation required to print.', 'warning');
+        }
+        return;
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === 's') { 
+        e.preventDefault(); 
+        handleSave(); 
+        return;
+      }
+      if (e.key === 'Escape') { 
+        e.preventDefault(); 
+        if (onClose) onClose(); 
+        return;
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === 'n') { 
+        e.preventDefault(); 
+        executeClearInvoice(); 
+        return;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showPaymentModal, showHeldInvoices, showHoldPromptModal, selectedItems, selectedStaffId, customerName, phone, isDiscountApprovedByAdmin, effectiveDiscountPercent, state.staff, state.heldInvoices]);
+
     return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full relative">
         <div className="lg:col-span-2 space-y-6">
              {/* شريط الإجراءات السريعة واختصارات لوحة المفاتيح الهوت كي (Quick Actions Bar) */}
              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 shadow-xs">
-                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
+                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-300">
                      <Keyboard size={16} className="text-primary-500" />
-                     <span className="hidden sm:inline">{language === 'ar' ? 'اختصارات الكاشير السريعة:' : 'POS Hotkeys:'}</span>
+                     <span className="font-extrabold">{language === 'ar' ? 'اختصارات الكاشير (POS):' : 'POS Hotkeys:'}</span>
                  </div>
-                 <div className="flex flex-wrap items-center gap-2">
+                 <div className="flex flex-wrap items-center gap-1.5">
+                      {/* F1: فتح الدرج */}
                       <button
                           type="button"
-                          onClick={() => triggerOpenCashDrawer()}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-2xs"
-                          title={language === 'ar' ? 'فتح درج النقدية يدوياً (F7)' : 'Open Cash Drawer (F7)'}
+                          onClick={kickCashDrawer}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all active:scale-95 cursor-pointer shadow-xs"
+                          title={language === 'ar' ? 'فتح درج النقدية يدوياً (F1)' : 'Open Cash Drawer (F1)'}
                       >
-                          <Wallet size={14} className="text-slate-500 dark:text-slate-400" />
+                          <Wallet size={14} className="stroke-[2.5]" />
                           <span>{language === 'ar' ? 'فتح الدرج' : 'Open Drawer'}</span>
-                          <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[10px] font-mono border border-slate-300 dark:border-slate-600">F7</kbd>
+                          <kbd className="px-1.5 py-0.5 rounded bg-emerald-800/50 text-[10px] font-mono border border-emerald-400/30 text-white">F1</kbd>
                       </button>
-                      {/* زر حذف الفاتورة بجانب زر فتح الدرج */}
+
+                      {/* عميل نقدي سريع */}
+                      <button
+                          type="button"
+                          onClick={applyCashCustomer}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                          title={language === 'ar' ? 'تعبئة سريعة لعميل نقدي' : 'Cash Client'}
+                      >
+                          <User size={13} className="text-slate-500" />
+                          <span>{language === 'ar' ? 'عميل نقدي' : 'Cash Client'}</span>
+                      </button>
+
+                      {/* زر حذف الفاتورة */}
                       <button
                           type="button"
                           onClick={clearInvoice}
                           disabled={selectedItems.length === 0 && !customerName && !phone && !selectedStaffId}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
                           title={language === 'ar' ? 'حذف الفاتورة بالكامل والعميل والحلاق المحدد' : 'Clear entire invoice'}
                       >
-                          <Trash2 size={14} className="text-rose-600 dark:text-rose-400" />
-                          <span>{language === 'ar' ? 'حذف الفاتورة' : 'Clear Invoice'}</span>
+                          <Trash2 size={13} className="text-rose-600 dark:text-rose-400" />
+                          <span>{language === 'ar' ? 'حذف' : 'Clear'}</span>
                       </button>
-
-
-                     <button
-                         type="button"
-                         onClick={applyCashCustomer}
-                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-bold transition-all active:scale-95 cursor-pointer"
-                         title="تعبئة سريعة لعميل نقدي"
-                     >
-                         <User size={13} className="text-slate-500" />
-                         <span>{language === 'ar' ? 'عميل نقدي سريع' : 'Cash Client'}</span>
-                     </button>
                  </div>
              </div>
 
@@ -1174,7 +1506,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                         <button
                             type="button"
                             onClick={() => setIsQuickAddingCustomer(true)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-600 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white border border-primary-600 text-xs font-black transition-all active:scale-95 cursor-pointer shadow-xs"
                         >
                             <Plus size={14} className="text-white"/> {language === 'ar' ? 'عميل جديد' : 'New Client'}
                         </button>
@@ -1201,18 +1533,21 @@ export const CreateInvoice = ({ onClose }: any) => {
                             data-lpignore="true"
                         />
                         <Input 
+                            id="pos-customer-phone-input"
                             containerClassName="mb-0"
                             label={t('phone')} 
                             value={phone} 
                             autoComplete="off"
                             data-lpignore="true"
                             onChange={(e: any) => {
-                                setPhone(e.target.value);
+                                const val = e.target.value;
+                                const normalized = val === '--' ? '--' : normalizePhone(val);
+                                setPhone(normalized);
                                 setShowCustomerDropdown(true);
                             }} 
                             onFocus={() => setShowCustomerDropdown(true)}
                             placeholder={t('ph_phone')} 
-                            validationRegex={phone === '--' || !phone ? undefined : /^01\d{9}$/}
+                            validationRegex={phone === '--' || !phone || phone.length < 11 ? undefined : /^(01\d{9}|[1-9]\d{8,14})$/}
                             error={t('invalid_phone_format')}
                             onEnter={() => {
                                 setShowCustomerDropdown(false);
@@ -1303,7 +1638,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                     )}
                 </div>
                 {existingCustomer && (
-                    <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl flex items-center justify-between animate-fade-in">
+                    <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl flex items-center justify-between gap-3 flex-wrap animate-fade-in">
                         <div className="flex items-center gap-3">
                              <div className="bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 p-2 rounded-xl border border-primary-200/50 dark:border-primary-800/50"><Award size={18}/></div>
                              <div>
@@ -1312,12 +1647,41 @@ export const CreateInvoice = ({ onClose }: any) => {
                                      <span className={`font-black ${((existingCustomer.balance || 0) > 0) ? 'text-rose-500' : 'text-emerald-500'}`}>
                                          {Number(existingCustomer.balance || 0).toLocaleString('en-US')} {t('egp')}
                                      </span>
-
                                  </p>
                                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('last_visit')}: {formatDate(new Date(existingCustomer.lastVisit))}</p>
                              </div>
                         </div>
 
+                        <div className="flex items-center gap-2">
+                            {(existingCustomer.balance || 0) > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setCustomerPaymentForm({
+                                            amount: String(existingCustomer.balance || ''),
+                                            paymentMethod: 'cash',
+                                            notes: ''
+                                        });
+                                        setShowCustomerPaymentModal(true);
+                                    }}
+                                    className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
+                                    title={language === 'ar' ? 'سداد المديونية المستحقة على العميل' : 'Pay Debt'}
+                                >
+                                    <CreditCard size={14} className="stroke-[2.5]" />
+                                    <span>{language === 'ar' ? 'سداد' : 'Pay Debt'}</span>
+                                </button>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={openEditCustomerModal}
+                                className="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 border border-slate-300 dark:border-slate-600 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                                title={language === 'ar' ? 'تعديل اسم أو بيانات العميل' : 'Edit Customer'}
+                            >
+                                <Edit size={14} />
+                                <span>{language === 'ar' ? 'تعديل' : 'Edit'}</span>
+                            </button>
+                        </div>
                     </div>
                 )}
              </Card>
@@ -1341,6 +1705,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                     <div className="relative w-full sm:w-72 md:w-80">
                         <Search className={`absolute ${language === 'ar' ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none`} size={16} />
                         <input
+                            id="pos-item-search-input"
                             type="text"
                             placeholder={language === 'ar' ? 'بحث بالاسم أو الباركود (Enter للإضافة)...' : 'Search name or barcode (Enter to add)...'}
                             value={itemSearch}
@@ -1388,7 +1753,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                         onClick={() => setSelectedCategory('all')}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                             selectedCategory === 'all' 
-                                ? 'bg-primary-600 text-white shadow-sm ring-2 ring-primary-500/20' 
+                                ? 'bg-primary-600 text-white shadow-sm ring-1 ring-primary-500/20' 
                                 : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                         }`}
                     >
@@ -1402,13 +1767,13 @@ export const CreateInvoice = ({ onClose }: any) => {
                         onClick={() => setSelectedCategory('services')}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                             selectedCategory === 'services' 
-                                ? 'bg-purple-600 text-white shadow-sm ring-2 ring-purple-500/20' 
-                                : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50'
+                                ? 'bg-primary-600 text-white shadow-sm ring-1 ring-primary-500/20' 
+                                : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
                         }`}
                     >
                         <Scissors size={12} />
                         <span>{t('services') || (language === 'ar' ? 'الخدمات' : 'Services')}</span>
-                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${selectedCategory === 'services' ? 'bg-white/20 text-white' : 'bg-purple-200/70 dark:bg-purple-800 text-purple-700 dark:text-purple-300'}`}>
+                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${selectedCategory === 'services' ? 'bg-white/20 text-white' : 'bg-emerald-200/70 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-200'}`}>
                             {itemCounts.services}
                         </span>
                     </button>
@@ -1417,7 +1782,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                         onClick={() => setSelectedCategory('products')}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                             selectedCategory === 'products' 
-                                ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/20' 
+                                ? 'bg-primary-600 text-white shadow-sm ring-1 ring-primary-500/20' 
                                 : 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50'
                         }`}
                     >
@@ -1436,12 +1801,12 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 onClick={() => setSelectedCategory(cat.id)}
                                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                                     selectedCategory === cat.id 
-                                        ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 shadow-sm' 
+                                        ? 'bg-primary-600 text-white shadow-sm ring-1 ring-primary-500/20' 
                                         : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                                 }`}
                             >
                                 <span>{language === 'ar' ? cat.nameAr : cat.nameEn}</span>
-                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${selectedCategory === cat.id ? 'bg-white/20 dark:bg-slate-900/20 text-current' : 'bg-slate-200/70 dark:bg-slate-600 text-slate-500 dark:text-slate-300'}`}>
+                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${selectedCategory === cat.id ? 'bg-white/20 text-white' : 'bg-slate-200/70 dark:bg-slate-600 text-slate-500 dark:text-slate-300'}`}>
                                     {countInCat}
                                 </span>
                             </button>
@@ -1472,7 +1837,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                             </button>
                         </div>
                     ) : (
-                        displayedItems.map((item) => {
+                        displayedItems.slice(0, visibleLimit).map((item) => {
                             const isService = item.type === 'service';
                             const isOutOfStock = !isService && item.trackStock && item.quantity <= 0;
                             const isLowStock = !isService && item.trackStock && item.quantity > 0 && item.quantity <= (item.alertThreshold || 3);
@@ -1503,7 +1868,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                     <div className="w-full flex items-center justify-between gap-1.5 mb-2.5">
                                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold ${
                                             isService 
-                                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60' 
+                                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60' 
                                                 : 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800/60'
                                         }`}>
                                             {isService ? <Scissors size={12} className="shrink-0" /> : <Package size={12} className="shrink-0" />}
@@ -1528,7 +1893,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                                 )}
                                             </span>
                                         ) : (
-                                            <span className="text-xs text-purple-500/80 dark:text-purple-400/80 font-semibold">
+                                            <span className="text-xs text-emerald-600/80 dark:text-emerald-400/80 font-semibold">
                                                 {isService ? (language === 'ar' ? 'خدمة فورية' : 'Service') : ''}
                                             </span>
                                         )}
@@ -1559,6 +1924,17 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 </button>
                             );
                         })
+                    )}
+                    {displayedItems.length > visibleLimit && (
+                        <div className="col-span-full py-2 text-center">
+                            <button
+                                type="button"
+                                onClick={() => setVisibleLimit(v => v + 60)}
+                                className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                            >
+                                {language === 'ar' ? `عرض المزيد من الأصناف (${visibleLimit} من ${displayedItems.length})` : `Show More (${visibleLimit} of ${displayedItems.length})`}
+                            </button>
+                        </div>
                     )}
                 </div>
              </Card>
@@ -1599,19 +1975,65 @@ export const CreateInvoice = ({ onClose }: any) => {
                  {/* Row 1: Discounts and Tax in 2 Clean Columns */} 
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-4">
                      <div>
-                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                             {t('discount_percent')} (%)
-                         </label>
-                         <input
-                             id="pos-quick-discount-input"
-                             type="number"
-                             min="0"
-                             max="100"
-                             value={discountPercent || ''}
-                             onChange={(e) => setDiscountPercent(parseFloat(e.target.value) || 0)}
-                             placeholder="0"
-                             className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/60 text-slate-900 dark:text-slate-100 font-mono font-bold text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
-                         />
+                          <div className="flex items-center justify-between mb-1.5">
+                              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                                  {t('discount_percent')} (%)
+                              </label>
+                              {currentUser?.role !== 'admin' && effectiveDiscountPercent > (state.settings?.maxCashierDiscountPercent ?? 10) && (
+                                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                      isDiscountApprovedByAdmin 
+                                          ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                                          : 'bg-amber-500/10 text-amber-500 border border-amber-500/20 animate-pulse'
+                                  }`}>
+                                      <Lock size={10} />
+                                      {isDiscountApprovedByAdmin ? (language === 'ar' ? 'معتمد من المدير' : 'Approved') : (language === 'ar' ? `يتطلب PIN المدير (> ${state.settings?.maxCashierDiscountPercent ?? 10}%)` : `Needs Admin PIN (> ${state.settings?.maxCashierDiscountPercent ?? 10}%)`)}
+                                  </span>
+                              )}
+                          </div>
+                          <input
+                              id="pos-quick-discount-input"
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={discountPercent || ''}
+                              onChange={(e) => {
+                                  setDiscountPercent(parseFloat(e.target.value) || 0);
+                                  setIsDiscountApprovedByAdmin(false);
+                              }}
+                              placeholder="0"
+                              className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/60 text-slate-900 dark:text-slate-100 font-mono font-bold text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
+                          />
+                          {/* شرائح الخصم السريع بنقرة واحدة */}
+                          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                              {[5, 10, 15, 20].map(pct => (
+                                  <button
+                                      key={pct}
+                                      type="button"
+                                      onClick={() => {
+                                          setDiscountPercent(pct);
+                                          setIsDiscountApprovedByAdmin(false);
+                                      }}
+                                      className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                                          discountPercent === pct
+                                              ? 'bg-primary-600 text-white shadow-2xs'
+                                              : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
+                                      }`}
+                                  >
+                                      {pct}%
+                                  </button>
+                              ))}
+                              {discountPercent > 0 && (
+                                  <button
+                                      type="button"
+                                      onClick={() => {
+                                          setDiscountPercent(0);
+                                          setIsDiscountApprovedByAdmin(false);
+                                      }}
+                                      className="px-1.5 py-0.5 rounded-md text-[10px] text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer"
+                                      title={language === 'ar' ? 'إلغاء الخصم' : 'Clear'}
+                                  ><X size={11} /></button>
+                              )}
+                          </div>
                      </div>
                      <div>
                          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -1628,16 +2050,20 @@ export const CreateInvoice = ({ onClose }: any) => {
                      </div>
                  </div>
 
-                 {/* Row 2: Staff Selection with prominent green Add button */} 
-                 <div className="mb-4">
+                 {/* Row 2: Custom Barber / Stylist Selector */} 
+                 <div className="mb-4" ref={barberDropdownRef}>
                      <div className="flex items-center justify-between mb-1.5">
                          <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
-                             <User size={14} className="text-emerald-500" />
-                             <span>{language === 'ar' ? 'الحلاق' : 'Barber'}</span>
+                             <Scissors size={14} className="text-emerald-500" />
+                             <span>{language === 'ar' ? 'الحلاق / مصفف الشعر المسئول' : 'Barber / Stylist'}</span>
+                             <span className="text-rose-500 font-black">*</span>
                          </label>
                          <button
                              type="button"
-                             onClick={() => setShowQuickAddBarberModal(true)}
+                             onClick={() => {
+                                 setShowBarberDropdown(false);
+                                 setShowQuickAddBarberModal(true);
+                             }}
                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
                              title={language === 'ar' ? 'إضافة حلاق جديد سريعاً' : 'Add New Barber'}
                          >
@@ -1645,28 +2071,207 @@ export const CreateInvoice = ({ onClose }: any) => {
                              <span>{language === 'ar' ? 'أضف حلاق' : 'Add Barber'}</span>
                          </button>
                      </div>
+
                      <div className="relative">
-                         <select 
-                             className={`w-full px-3.5 py-2.5 pe-10 rounded-xl border text-sm font-bold outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer transition-all shadow-2xs appearance-none ${
-                               !selectedStaffId 
-                                 ? 'border-amber-400 dark:border-amber-500/70 bg-amber-50/40 dark:bg-amber-950/20 text-slate-800 dark:text-slate-200 ring-2 ring-amber-400/20' 
-                                 : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100'
-                             }`} 
-                             value={selectedStaffId} 
-                             onChange={(e) => setSelectedStaffId(e.target.value)}
+                         {/* Trigger Button */}
+                         <button
+                             type="button"
+                             onClick={() => setShowBarberDropdown(prev => !prev)}
+                             className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-bold flex items-center justify-between cursor-pointer transition-all shadow-2xs text-start ${
+                                 !selectedBarber
+                                     ? 'border-amber-400/80 dark:border-amber-500/70 bg-amber-50/50 dark:bg-amber-950/25 hover:bg-amber-50/80 dark:hover:bg-amber-950/40 text-amber-900 dark:text-amber-200 ring-2 ring-amber-400/20'
+                                     : 'border-emerald-500/60 dark:border-emerald-500/60 bg-white dark:bg-slate-800 hover:border-emerald-400 dark:hover:border-emerald-400 text-slate-900 dark:text-slate-100 shadow-sm'
+                             }`}
                          >
-                             <option value="">
-                                 {language === 'ar' ? '-- اضغط لاختيار الحلاق المسئول عن الفاتورة --' : '-- Select Barber / Stylist --'}
-                             </option>
-                             {state.staff.filter(s => s.active).map(s => (
-                                 <option key={s.id} value={s.id}>
-                                     {s.name}
-                                 </option>
-                             ))}
-                         </select>
-                         <div className="absolute inset-y-0 end-0 pe-3 flex items-center pointer-events-none text-slate-400">
-                             <ChevronDown size={16} />
-                         </div>
+                             <div className="flex items-center gap-2.5 min-w-0">
+                                 {selectedBarber ? (
+                                     <>
+                                         <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
+                                             {selectedBarber.name ? selectedBarber.name.trim().charAt(0) : 'ح'}
+                                         </div>
+                                         <div className="min-w-0">
+                                             <span className="block truncate text-slate-900 dark:text-white font-black text-sm">
+                                                 {selectedBarber.name}
+                                             </span>
+                                             <span className="block text-[11px] font-medium text-emerald-600 dark:text-emerald-400 leading-tight">
+                                                 {selectedBarber.role || (language === 'ar' ? 'حلاق نشط' : 'Active Barber')}
+                                                 {selectedBarber.phone ? ` • ${selectedBarber.phone}` : ''}
+                                             </span>
+                                         </div>
+                                     </>
+                                 ) : (
+                                     <>
+                                         <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                             <Scissors size={15} />
+                                         </div>
+                                         <span className="text-slate-600 dark:text-slate-300 font-semibold text-xs sm:text-sm truncate">
+                                             {language === 'ar' ? '-- اضغط لاختيار الحلاق المسئول عن الفاتورة --' : '-- Select Barber / Stylist --'}
+                                         </span>
+                                     </>
+                                 )}
+                             </div>
+
+                             <div className="flex items-center gap-1.5 shrink-0 ms-2 text-slate-400">
+                                 {selectedBarber && (
+                                     <span 
+                                         role="button"
+                                         title={language === 'ar' ? 'إلغاء التحديد' : 'Clear selection'}
+                                         onClick={(e) => {
+                                             e.stopPropagation();
+                                             setSelectedStaffId('');
+                                         }}
+                                         className="p-1 rounded-md hover:bg-rose-500/15 hover:text-rose-500 transition-colors cursor-pointer"
+                                     >
+                                         <X size={14} />
+                                     </span>
+                                 )}
+                                 <ChevronDown size={16} className={`transition-transform duration-200 ${showBarberDropdown ? 'rotate-180 text-emerald-500' : ''}`} />
+                             </div>
+                         </button>
+
+                         {/* Custom Glassmorphic Floating Menu */}
+                         {showBarberDropdown && (
+                             <div className="absolute top-full mt-2 inset-x-0 z-[70] bg-white dark:bg-slate-900 border-2 border-emerald-500/40 dark:border-emerald-500/50 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl animate-scale-in">
+                                 {/* Search Bar inside Dropdown if more than 3 barbers */}
+                                 {activeBarbers.length > 3 && (
+                                     <div className="p-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50">
+                                         <div className="relative">
+                                             <input
+                                                 type="text"
+                                                 autoFocus
+                                                 value={barberSearchQuery}
+                                                 onChange={(e) => setBarberSearchQuery(e.target.value)}
+                                                 placeholder={language === 'ar' ? 'بحث عن حلاق بالاسم أو الهاتف...' : 'Search barber...'}
+                                                 className="w-full ps-8 pe-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-500"
+                                             />
+                                             <div className="absolute inset-y-0 start-0 ps-2.5 flex items-center pointer-events-none text-slate-400">
+                                                 <Search size={13} />
+                                             </div>
+                                             {barberSearchQuery && (
+                                                 <button
+                                                     type="button"
+                                                     onClick={() => setBarberSearchQuery('')}
+                                                     className="absolute inset-y-0 end-0 pe-2.5 flex items-center text-slate-400 hover:text-slate-600"
+                                                 >
+                                                     <X size={13} />
+                                                 </button>
+                                             )}
+                                         </div>
+                                     </div>
+                                 )}
+
+                                 {/* Barbers List */}
+                                 <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 p-1.5">
+                                     {filteredBarbers.length === 0 ? (
+                                         <div className="p-4 text-center">
+                                             <p className="text-xs text-slate-400 mb-2">
+                                                 {activeBarbers.length === 0 
+                                                     ? (language === 'ar' ? 'لا يوجد حلاقين مسجلين حالياً' : 'No active barbers found') 
+                                                     : (language === 'ar' ? 'لا يوجد نتائج مطابقة للبحث' : 'No matching barbers')}
+                                             </p>
+                                             <button
+                                                 type="button"
+                                                 onClick={() => {
+                                                     setShowBarberDropdown(false);
+                                                     setShowQuickAddBarberModal(true);
+                                                 }}
+                                                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                                             >
+                                                 <Plus size={13} />
+                                                 <span>{language === 'ar' ? 'إضافة حلاق جديد' : 'Add New Barber'}</span>
+                                             </button>
+                                         </div>
+                                     ) : (
+                                         filteredBarbers.map(s => {
+                                             const isSelected = s.id === selectedStaffId;
+                                             return (
+                                                 <div
+                                                     key={s.id}
+                                                     onClick={() => {
+                                                         setSelectedStaffId(s.id);
+                                                         setShowBarberDropdown(false);
+                                                         setBarberSearchQuery('');
+                                                     }}
+                                                     className={`p-2.5 px-3 rounded-xl cursor-pointer flex items-center justify-between transition-all group ${
+                                                         isSelected 
+                                                             ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-950 dark:text-emerald-200' 
+                                                             : 'hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200'
+                                                     }`}
+                                                 >
+                                                     <div className="flex items-center gap-2.5 min-w-0">
+                                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 shadow-xs ${
+                                                             isSelected 
+                                                                 ? 'bg-gradient-to-tr from-emerald-600 to-teal-500 text-white ring-2 ring-emerald-400/40' 
+                                                                 : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 group-hover:bg-emerald-500 group-hover:text-white transition-colors'
+                                                         }`}>
+                                                             {s.name ? s.name.trim().charAt(0) : 'ح'}
+                                                         </div>
+                                                         <div className="min-w-0 text-start">
+                                                             <p className={`text-sm font-bold truncate ${
+                                                                 isSelected 
+                                                                     ? 'text-emerald-700 dark:text-emerald-300 font-black' 
+                                                                     : 'text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors'
+                                                             }`}>
+                                                                 {s.name}
+                                                             </p>
+                                                             <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                                                 <span>{s.role || (language === 'ar' ? 'حلاق' : 'Barber')}</span>
+                                                                 {s.phone && (
+                                                                     <>
+                                                                         <span className="opacity-40">•</span>
+                                                                         <span className="font-mono">{s.phone}</span>
+                                                                     </>
+                                                                 )}
+                                                             </p>
+                                                         </div>
+                                                     </div>
+
+                                                     <div className="flex items-center gap-2 shrink-0 ms-2">
+                                                         {isSelected ? (
+                                                             <span className="inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow-xs">
+                                                                 <Check size={12} className="stroke-[3]" />
+                                                                 <span>{language === 'ar' ? 'المختار' : 'Selected'}</span>
+                                                             </span>
+                                                         ) : (
+                                                             <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                 {language === 'ar' ? 'اختيار ↵' : 'Select ↵'}
+                                                             </span>
+                                                         )}
+                                                     </div>
+                                                 </div>
+                                             );
+                                         })
+                                     )}
+                                 </div>
+
+                                 {/* Dropdown Bottom Quick Actions */}
+                                 <div className="p-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between text-xs">
+                                     <button
+                                         type="button"
+                                         onClick={() => {
+                                             setShowBarberDropdown(false);
+                                             setShowQuickAddBarberModal(true);
+                                         }}
+                                         className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 hover:underline px-2 py-1 cursor-pointer"
+                                     >
+                                         <Plus size={13} className="stroke-[3]" />
+                                         <span>{language === 'ar' ? 'إضافة حلاق جديد' : 'Add New Barber'}</span>
+                                     </button>
+                                     {selectedStaffId && (
+                                         <button
+                                             type="button"
+                                             onClick={() => {
+                                                 setSelectedStaffId('');
+                                                 setShowBarberDropdown(false);
+                                             }}
+                                             className="font-bold text-slate-400 hover:text-rose-500 transition-colors px-2 py-1 cursor-pointer"
+                                         >
+                                             {language === 'ar' ? 'إلغاء التحديد' : 'Clear'}
+                                         </button>
+                                     )}
+                                 </div>
+                             </div>
+                         )}
                      </div>
                  </div>
 
@@ -1691,7 +2296,8 @@ export const CreateInvoice = ({ onClose }: any) => {
                 <div className="flex justify-between items-center mb-3 border-b border-slate-200 dark:border-slate-700 pb-3 gap-2">
                     <div className="flex items-center gap-2 min-w-0 shrink-0">
                         <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-1.5 whitespace-nowrap">
-                            <span>{t('invoice')} #{state.invoices.length + 1}</span>
+                            <span>{t('invoice')}</span>
+                            <span className="text-amber-500 dark:text-yellow-400 font-black font-mono">#{state.invoices.length + 1}</span>
                         </h3>
                         {selectedItems.length > 0 && (
                             <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-800 font-mono whitespace-nowrap shrink-0">
@@ -1732,7 +2338,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                         <div className="flex items-center gap-2 min-w-0 flex-1">
                                             <span className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${
                                                 isService 
-                                                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' 
+                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' 
                                                     : 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300'
                                             }`}>
                                                 {isService ? <Scissors size={12} /> : <Package size={12} />}
@@ -1803,6 +2409,17 @@ export const CreateInvoice = ({ onClose }: any) => {
                             );
                         })
                     )}
+                    {displayedItems.length > visibleLimit && (
+                        <div className="col-span-full py-2 text-center">
+                            <button
+                                type="button"
+                                onClick={() => setVisibleLimit(v => v + 60)}
+                                className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                            >
+                                {language === 'ar' ? `عرض المزيد من الأصناف (${visibleLimit} من ${displayedItems.length})` : `Show More (${visibleLimit} of ${displayedItems.length})`}
+                            </button>
+                        </div>
+                    )}
                 </div>
                 <div className="border-t border-slate-200 dark:border-slate-800 pt-3 mt-2 space-y-2.5">
                     {(discountAmount > 0 || taxAmount > 0) && (
@@ -1828,7 +2445,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                     <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between shadow-2xs">
                         <span className="text-xs sm:text-sm font-black text-slate-700 dark:text-slate-200">{t('total')}</span>
                         <div className="flex items-baseline gap-1.5">
-                            <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400 tracking-tight">
+                            <span className={`${getAutoShrinkNumberClass(total, 'total')} font-black font-mono text-emerald-600 dark:text-emerald-400 tracking-tight shrink-0`}>
                                 {total.toLocaleString('en-US')}
                             </span>
                             <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
@@ -1843,7 +2460,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                  onClick={handleHold} 
                                  variant="secondary" 
                                  className="px-3.5 py-3 cursor-pointer relative rounded-xl border-blue-400/60 dark:border-blue-600/70 bg-blue-50/50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 active:scale-95 transition-all shadow-2xs" 
-                                 title={language === 'ar' ? 'تعليق الفاتورة أو فتح المعلقة (⏸️)' : 'Hold Invoice or View Held (⏸️)'}
+                                 title={language === 'ar' ? 'تعليق الفاتورة أو فتح المعلقة ' : 'Hold Invoice or View Held '}
                              >
                                  <PauseCircle size={18} className="text-blue-600 dark:text-blue-400" />
                                  {state.heldInvoices.length > 0 && (
@@ -1856,7 +2473,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                          <Button 
                              onClick={handleSave} 
                              disabled={selectedItems.length === 0}
-                             className="flex-1 justify-center py-3 font-black text-sm rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                             className="flex-1 justify-center py-3 font-black text-sm rounded-xl bg-primary-600 hover:bg-primary-500 text-white shadow-md shadow-primary-600/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                          >
                              <span>{t('save')}</span>
                              <span className="text-xs font-normal opacity-85">(Enter ↵)</span>
@@ -1890,7 +2507,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                             {language === 'ar' ? 'المبلغ المطلوب سداده' : t('total')}
                         </span>
                         <div className="flex items-baseline justify-center gap-1.5 font-mono">
-                            <span className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                            <span className={`${getAutoShrinkNumberClass(round2(total), 'total')} font-black text-slate-900 dark:text-white tracking-tight shrink-0`}>
                                 {round2(total).toLocaleString('en-US')}
                             </span>
                             <span className="text-sm font-bold text-slate-500 dark:text-slate-400">{t('egp')}</span>
@@ -1920,8 +2537,8 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 }`}
                             >
                                 {paymentMethodTab === 'split' 
-                                    ? (language === 'ar' ? '✓ سداد مجزأ مفعّل' : 'Split Active')
-                                    : (language === 'ar' ? '🔀 تقسيم الدفع بين عدة طرق' : 'Split Payment')}
+                                    ? (language === 'ar' ? 'سداد مجزأ مفعّل' : 'Split Active')
+                                    : (language === 'ar' ? 'تقسيم الدفع بين عدة طرق' : 'Split Payment')}
                             </button>
                         </div>
 
@@ -1931,7 +2548,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 onClick={() => payAllWith('cash')}
                                 className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                                     paymentMethodTab === 'cash'
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-500/20'
+                                        ? 'bg-primary-600 text-white border-primary-600 shadow-xs ring-2 ring-primary-500/20'
                                         : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                                 }`}
                             >
@@ -1944,7 +2561,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 onClick={() => payAllWith('card')}
                                 className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                                     paymentMethodTab === 'card'
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-500/20'
+                                        ? 'bg-primary-600 text-white border-primary-600 shadow-xs ring-2 ring-primary-500/20'
                                         : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                                 }`}
                             >
@@ -1957,7 +2574,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 onClick={() => payAllWith('wallet')}
                                 className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                                     paymentMethodTab === 'wallet'
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-500/20'
+                                        ? 'bg-primary-600 text-white border-primary-600 shadow-xs ring-2 ring-primary-500/20'
                                         : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                                 }`}
                             >
@@ -1970,7 +2587,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 onClick={() => payAllWith('credit')}
                                 className={`flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                                     paymentMethodTab === 'credit'
-                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-500/20'
+                                        ? 'bg-primary-600 text-white border-primary-600 shadow-xs ring-2 ring-primary-500/20'
                                         : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                                 }`}
                             >
@@ -2030,7 +2647,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                     <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
                                         {language === 'ar' ? 'الباقي واجب إرجاعه للعميل:' : t('change_due')}
                                     </span>
-                                    <div className="font-mono font-black text-2xl text-emerald-600 dark:text-emerald-400">
+                                    <div className={`font-mono font-black ${getAutoShrinkNumberClass(paymentChange, 'kpi-exec')} text-emerald-600 dark:text-emerald-400`}>
                                         {paymentChange.toLocaleString('en-US')} <span className="text-xs font-bold">{t('egp')}</span>
                                     </div>
                                 </div>
@@ -2063,8 +2680,8 @@ export const CreateInvoice = ({ onClose }: any) => {
 
                     {/* 3. محفظة إلكترونية */}
                     {paymentMethodTab === 'wallet' && (
-                        <div className="bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900/50 rounded-2xl p-4 text-center space-y-1">
-                            <Smartphone size={26} className="mx-auto text-purple-500 mb-1" />
+                        <div className="bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900/50 rounded-2xl p-4 text-center space-y-1">
+                            <Smartphone size={26} className="mx-auto text-sky-500 mb-1" />
                             <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">
                                 {language === 'ar' ? 'سداد عبر محفظة إلكترونية' : 'Digital Wallet'}
                             </h4>
@@ -2103,7 +2720,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                             </div>
                             {(!customerName.trim() || customerName.trim() === 'عميل نقدي' || customerName.trim().startsWith('عميل نقدي')) && (
                                 <p className="text-[11px] font-bold text-rose-500 pt-1">
-                                    {language === 'ar' ? '⚠️ تنبيه: يرجى كتابة اسم العميل لتسجيل المديونية عليه.' : 'Please enter customer name.'}
+                                    {language === 'ar' ? 'تنبيه: يرجى كتابة اسم العميل لتسجيل المديونية عليه.' : 'Please enter customer name.'}
                                 </p>
                             )}
                         </div>
@@ -2124,7 +2741,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 {/* كاش */}
                                 <div className="border border-slate-200 dark:border-slate-750 rounded-xl p-2 bg-white dark:bg-slate-900">
                                     <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-1">
-                                        {language === 'ar' ? '💵 نقدي' : 'Cash'}
+                                        {language === 'ar' ? 'نقدي' : 'Cash'}
                                     </span>
                                     <input
                                         type="number"
@@ -2152,7 +2769,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 {/* انستا */}
                                 <div className="border border-slate-200 dark:border-slate-750 rounded-xl p-2 bg-white dark:bg-slate-900">
                                     <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-1">
-                                        {language === 'ar' ? '💳 تحويل بنكي (انستا)' : 'Transfer (Insta)'}
+                                        {language === 'ar' ? 'تحويل بنكي / إنستاباي' : 'Transfer (Insta)'}
                                     </span>
                                     <input
                                         type="number"
@@ -2175,7 +2792,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 {/* محفظة */}
                                 <div className="border border-slate-200 dark:border-slate-750 rounded-xl p-2 bg-white dark:bg-slate-900">
                                     <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-1">
-                                        {language === 'ar' ? '📱 محفظة' : 'Wallet'}
+                                        {language === 'ar' ? 'محفظة إلكترونية' : 'Wallet'}
                                     </span>
                                     <input
                                         type="number"
@@ -2198,7 +2815,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 {/* على الحساب */}
                                 <div className="border border-slate-200 dark:border-slate-750 rounded-xl p-2 bg-white dark:bg-slate-900">
                                     <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block mb-1">
-                                        {language === 'ar' ? '📄 آجل' : 'Account'}
+                                        {language === 'ar' ? 'آجل / مديونية' : 'Account'}
                                     </span>
                                     <input
                                         type="number"
@@ -2340,7 +2957,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 onClick={() => { setShowHeldInvoices(false); handleHold(); }}
                                 className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs"
                             >
-                                ⏸️ {language === 'ar' ? 'تعليق السلة الحالية' : 'Hold Current Cart'}
+                                <PauseCircle size={14} className="inline mr-1" /> {language === 'ar' ? 'تعليق السلة الحالية' : 'Hold Current Cart'}
                             </button>
                         </div>
                     )}
@@ -2349,7 +2966,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                         <div className="text-center py-10 text-slate-400 text-xs">
                             <PauseCircle size={36} className="mx-auto mb-2 opacity-40 text-blue-500" />
                             <p className="font-bold">{language === 'ar' ? 'لا توجد أي فواتير معلقة حالياً.' : 'No held invoices.'}</p>
-                            <p className="mt-1 text-slate-500">{language === 'ar' ? 'يمكنك تعليق أي فاتورة في أي وقت بالضغط على زر ⏸️ أسفل السلة.' : 'You can hold any cart by clicking ⏸️ below.'}</p>
+                            <p className="mt-1 text-slate-500">{language === 'ar' ? 'يمكنك تعليق أي فاتورة في أي وقت بالضغط على زر تعليق السلة.' : 'You can hold any cart by clicking ⏸️ below.'}</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto p-1">
@@ -2358,7 +2975,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                     <div>
                                         <div className="flex items-start justify-between gap-2 mb-1.5">
                                             <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate flex items-center gap-1.5">
-                                                <span className="text-amber-500">⏸️</span>
+                                                <PauseCircle size={15} className="text-amber-500 shrink-0" />
                                                 <span>{inv.customerName || (language === 'ar' ? 'طلب معلق' : 'Held Order')}</span>
                                             </h4>
                                             <span className="font-mono font-black text-sm text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
@@ -2395,7 +3012,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                             onClick={() => handleRestore(inv)}
                                             className="flex-1 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                                         >
-                                            <span>▶️</span>
+                                            <ArrowRight size={14} />
                                             <span>{language === 'ar' ? 'استرجاع للبيع' : 'Resume Order'}</span>
                                         </button>
                                         <button
@@ -2435,8 +3052,8 @@ export const CreateInvoice = ({ onClose }: any) => {
             {(() => {
               const nameParts = (quickCustomerForm.name || '').trim().split(/\s+/).filter(Boolean);
               const isNameValid = nameParts.length >= 3 && nameParts.every(p => p.length >= 2);
-              const cleanPhone = (quickCustomerForm.phone || '').replace(/[^\d]/g, '');
-              const isPhoneValid = cleanPhone.length === 11 && cleanPhone.startsWith('01');
+              const cleanPhone = normalizePhone(quickCustomerForm.phone || '');
+              const isPhoneValid = isValidPhone(cleanPhone);
               return (
                 <form onSubmit={handleQuickAddCustomer} className="p-4 space-y-3.5">
                   <div>
@@ -2502,10 +3119,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                       placeholder="01xxxxxxxxx"
                       value={quickCustomerForm.phone}
                       onChange={(e) => {
-                        const clean = e.target.value
-                          .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
-                          .replace(/[^\d]/g, '')
-                          .slice(0, 11);
+                        const clean = normalizePhone(e.target.value);
                         setQuickCustomerForm(prev => ({ ...prev, phone: clean }));
                       }}
                       className={`w-full px-3 py-2 text-sm rounded-xl border outline-none font-mono text-center tracking-wider transition-all ${
@@ -2556,14 +3170,14 @@ export const CreateInvoice = ({ onClose }: any) => {
                             onClick={() => setQuickItemForm(prev => ({ ...prev, type: 'product' }))}
                             className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${quickItemForm.type === 'product' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'}`}
                         >
-                            📦 {language === 'ar' ? 'منتج / بضاعة' : 'Product'}
+                            <span className="flex items-center justify-center gap-1.5"><Package size={13} /> <span>{language === 'ar' ? 'منتج / بضاعة' : 'Product'}</span></span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setQuickItemForm(prev => ({ ...prev, type: 'service' }))}
-                            className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${quickItemForm.type === 'service' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'}`}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${quickItemForm.type === 'service' ? 'bg-primary-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'}`}
                         >
-                            ✂️ {language === 'ar' ? 'خدمة (بدون مخزون)' : 'Service'}
+                            <span className="flex items-center justify-center gap-1.5"><Scissors size={13} /> <span>{language === 'ar' ? 'خدمة (بدون مخزون)' : 'Service'}</span></span>
                         </button>
                     </div>
 
@@ -2686,7 +3300,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 }}
                                 className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                                     newBarberCommissionType === 'none'
-                                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                                        ? 'bg-primary-600 text-white border-primary-600 shadow-xs'
                                         : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
                                 }`}
                             >
@@ -2698,7 +3312,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 onClick={() => setNewBarberCommissionType('daily')}
                                 className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                                     newBarberCommissionType === 'daily'
-                                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                                        ? 'bg-primary-600 text-white border-primary-600 shadow-xs'
                                         : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
                                 }`}
                             >
@@ -2710,7 +3324,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 onClick={() => setNewBarberCommissionType('percent')}
                                 className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                                     newBarberCommissionType === 'percent'
-                                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                                        ? 'bg-primary-600 text-white border-primary-600 shadow-xs'
                                         : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
                                 }`}
                             >
@@ -2722,7 +3336,7 @@ export const CreateInvoice = ({ onClose }: any) => {
                                 onClick={() => setNewBarberCommissionType('fixed')}
                                 className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                                     newBarberCommissionType === 'fixed'
-                                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                                        ? 'bg-primary-600 text-white border-primary-600 shadow-xs'
                                         : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
                                 }`}
                             >
@@ -2797,6 +3411,204 @@ export const CreateInvoice = ({ onClose }: any) => {
             }}
             onCancel={() => setHeldInvoiceToDelete(null)}
         />
+
+        <AdminApprovalModal
+            isOpen={showDiscountApprovalModal}
+            onClose={() => setShowDiscountApprovalModal(false)}
+            actionTitle={language === 'ar' ? 'موافقة المدير على الخصم' : 'Manager Discount Approval'}
+            actionDescription={language === 'ar' 
+                ? `نسبة الخصم (${effectiveDiscountPercent}%) تتجاوز الحد الأقصى المسموح به للكاشير (${state.settings?.maxCashierDiscountPercent ?? 10}%). يرجى إدخال PIN المدير لاعتماد الخصم.` 
+                : `Requested discount (${effectiveDiscountPercent}%) exceeds cashier limit (${state.settings?.maxCashierDiscountPercent ?? 10}%). Manager PIN required.`}
+            targetDetails={language === 'ar' 
+                ? `إجمالي الفاتورة: ${formatNumber(subtotal)} ج.م | قيمة الخصم: ${formatNumber(discountAmount)} ج.م` 
+                : `Subtotal: ${formatNumber(subtotal)} EGP | Discount: ${formatNumber(discountAmount)} EGP`}
+            onApproved={(adminUser) => {
+                setIsDiscountApprovedByAdmin(true);
+                setShowDiscountApprovalModal(false);
+                addToast(language === 'ar' ? `تم اعتماد الخصم بواسطة المدير (${adminUser.name})` : `Discount approved by manager (${adminUser.name})`, 'success');
+                openPaymentModal();
+            }}
+        />
+
+        {/* نافذة سداد المديونية للعميل */}
+        {showCustomerPaymentModal && existingCustomer && (
+            <ModalShell
+                title={language === 'ar' ? `سداد مديونية العميل: ${existingCustomer.name}` : `Settle Debt: ${existingCustomer.name}`}
+                onClose={() => setShowCustomerPaymentModal(false)}
+                maxWidth="max-w-md"
+            >
+                <form onSubmit={handleSettleCustomerDebt} className="space-y-4">
+                    <div className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 flex items-center justify-between">
+                        <div>
+                            <span className="text-xs text-slate-500 dark:text-slate-400 block">{language === 'ar' ? 'إجمالي المديونية المستحقة:' : 'Current Outstanding Debt:'}</span>
+                            <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold">{existingCustomer.name} ({existingCustomer.phone})</span>
+                        </div>
+                        <span className="font-mono text-xl font-black text-rose-600 dark:text-rose-400">
+                            {Number(existingCustomer.balance || 0).toLocaleString('en-US')} {t('egp')}
+                        </span>
+                    </div>
+
+                    <div>
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                                {language === 'ar' ? 'المبلغ المراد سداده (ج.م) *' : 'Payment Amount (EGP) *'}
+                            </label>
+                            <button
+                                type="button"
+                                onClick={() => setCustomerPaymentForm(prev => ({ ...prev, amount: String(existingCustomer.balance || 0) }))}
+                                className="text-[11px] text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer"
+                            >
+                                {language === 'ar' ? 'سداد كامل المبلغ' : 'Pay Full'}
+                            </button>
+                        </div>
+                        <input
+                            type="number"
+                            step="0.01"
+                            min="0.1"
+                            required
+                            autoFocus
+                            value={customerPaymentForm.amount}
+                            onChange={(e) => setCustomerPaymentForm(prev => ({ ...prev, amount: e.target.value }))}
+                            placeholder="0.00"
+                            className="w-full px-3.5 py-2.5 text-base font-black text-center rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500 font-mono shadow-xs"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            {language === 'ar' ? 'طريقة السداد' : 'Payment Method'}
+                        </label>
+                        <select
+                            value={customerPaymentForm.paymentMethod}
+                            onChange={(e: any) => setCustomerPaymentForm(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-bold outline-none focus:border-blue-500"
+                        >
+                            <option value="cash">{language === 'ar' ? 'النقدية' : 'Cash'}</option>
+                            <option value="instapay">{language === 'ar' ? 'تحويل بنكي / إنستاباي' : 'Bank Transfer / InstaPay'}</option>
+                            <option value="wallet">{language === 'ar' ? 'المحافظ الإلكترونية' : 'E-Wallet'}</option>
+                            <option value="card">{language === 'ar' ? 'بطاقة مصرفية' : 'Card'}</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            {language === 'ar' ? 'ملاحظات (اختياري)' : 'Notes (Optional)'}
+                        </label>
+                        <input
+                            type="text"
+                            value={customerPaymentForm.notes}
+                            onChange={(e) => setCustomerPaymentForm(prev => ({ ...prev, notes: e.target.value }))}
+                            placeholder={language === 'ar' ? 'مثال: سداد دفعة نقدية مع الفاتورة...' : 'Optional notes...'}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs outline-none focus:border-blue-500"
+                        />
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                        <Button type="button" variant="secondary" onClick={() => setShowCustomerPaymentModal(false)} className="flex-1">
+                            {t('cancel')}
+                        </Button>
+                        <button
+                            type="submit"
+                            className="flex-1 py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                            <Check size={15} />
+                            <span>{language === 'ar' ? 'تأكيد السداد' : 'Confirm Payment'}</span>
+                        </button>
+                    </div>
+                </form>
+            </ModalShell>
+        )}
+
+        {/* نافذة تعديل بيانات العميل */}
+        {showCustomerEditModal && existingCustomer && (
+            <ModalShell
+                title={language === 'ar' ? `تعديل بيانات العميل: ${existingCustomer.name}` : `Edit Customer: ${existingCustomer.name}`}
+                onClose={() => setShowCustomerEditModal(false)}
+                maxWidth="max-w-md"
+            >
+                <form onSubmit={handleSaveCustomerEdit} className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            {language === 'ar' ? 'اسم العميل *' : 'Customer Name *'}
+                        </label>
+                        <input
+                            type="text"
+                            required
+                            autoFocus
+                            value={customerEditForm.name}
+                            onChange={(e) => setCustomerEditForm(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full px-3.5 py-2.5 text-sm font-bold rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none focus:border-primary-500"
+                            placeholder={language === 'ar' ? 'أدخل اسم العميل الجديد...' : 'Enter customer name...'}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            {language === 'ar' ? 'رقم الهاتف *' : 'Phone Number *'}
+                        </label>
+                        <input
+                            type="tel"
+                            required
+                            dir="ltr"
+                            value={customerEditForm.phone}
+                            onChange={(e) => setCustomerEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                            className="w-full px-3.5 py-2.5 text-sm font-bold rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none focus:border-primary-500 font-mono text-end"
+                            placeholder="01xxxxxxxxx"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            {language === 'ar' ? 'الحد الائتماني للشراء الآجل (ج.م)' : 'Credit Limit (EGP)'}
+                        </label>
+                        <input
+                            type="number"
+                            min="0"
+                            step="50"
+                            value={customerEditForm.creditLimit}
+                            onChange={(e) => setCustomerEditForm(prev => ({ ...prev, creditLimit: parseFloat(e.target.value) || 0 }))}
+                            className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-mono outline-none focus:border-primary-500"
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                        <input
+                            type="checkbox"
+                            id="edit-customer-vip"
+                            checked={customerEditForm.isVip}
+                            onChange={(e) => setCustomerEditForm(prev => ({ ...prev, isVip: e.target.checked }))}
+                            className="w-4 h-4 rounded text-primary-600 border-slate-300 dark:border-slate-600"
+                        />
+                        <label htmlFor="edit-customer-vip" className="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                            {language === 'ar' ? 'عميل مميز (VIP) - خصومات وترقيات خاصة' : 'VIP Customer'}
+                        </label>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                            {language === 'ar' ? 'ملاحظات العميل' : 'Customer Notes'}
+                        </label>
+                        <textarea
+                            rows={2}
+                            value={customerEditForm.notes}
+                            onChange={(e) => setCustomerEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                            placeholder={language === 'ar' ? 'أي ملاحظات خاصة بذوق العميل أو تفضيلاته...' : 'Special notes or preferences...'}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs outline-none focus:border-primary-500 resize-none"
+                        />
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                        <Button type="button" variant="secondary" onClick={() => setShowCustomerEditModal(false)} className="flex-1">
+                            {t('cancel')}
+                        </Button>
+                        <Button type="submit" variant="primary" className="flex-1 flex items-center justify-center gap-1.5">
+                            <Check size={15} />
+                            <span>{language === 'ar' ? 'حفظ التعديلات' : 'Save Changes'}</span>
+                        </Button>
+                    </div>
+                </form>
+            </ModalShell>
+        )}
     </div>
   );
 };

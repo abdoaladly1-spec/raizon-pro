@@ -1,13 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { LogOut, Printer, Award, Clock, Wallet, Plus, Trash2, AlertCircle, ArrowUp, ArrowDown, Check, RefreshCw, FileText, History } from '../components/Icons';
+import { LogOut, Printer, Award, Clock, Wallet, Plus, Trash2, AlertCircle, AlertTriangle, ArrowUp, ArrowDown, Check, RefreshCw, FileText, History } from '../components/Icons';
 import { ClosingReport } from '../types';
 import { cashOfInvoice, isCashExpense, paymentOf } from '../lib/payments';
 import { getDrawerOpeningBalance, isAfterClosing, countableInvoice } from '../lib/analytics';
 import { toIsoDate, localIsoToday } from '../lib/dates';
 import { cashReturnsFor } from '../lib/returns';
 import { Card, ConfirmModal } from '../components/ui';
-import { printClosingReportThermal } from '../lib/thermalPrinter';
+import { printClosingReportThermal, printXReportThermal } from '../lib/thermalPrinter';
 
 interface ClosingPageProps {
     onNavigate?: (tab: string) => void;
@@ -251,7 +251,7 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
             bc.onmessage = (ev) => {
                 if (ev.data?.type === 'SHIFT_CLOSED' && String(ev.data?.locationId) === String(activeLocationId)) {
                     const msg = language === 'ar'
-                        ? `⚠️ تنبيه فوري: تم إقفال الوردية الحالية للتو في نافذة أو جهاز آخر بواسطة «${ev.data.performedBy}». تجنباً للتضارب، يرجى تحديث الصفحة لمتابعة الوردية الجديدة.`
+                        ? `تنبيه فوري: تم إقفال الوردية الحالية للتو في نافذة أو جهاز آخر بواسطة «${ev.data.performedBy}». تجنباً للتضارب، يرجى تحديث الصفحة لمتابعة الوردية الجديدة.`
                         : `Shift was just closed by ${ev.data.performedBy} in another session. Please reload to avoid conflict.`;
                     setRemoteCloseNotice(msg);
                     addToast(msg, 'warning');
@@ -555,10 +555,10 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
                                     currentUser?.name
                                 );
                             }}
-                            className="flex-1 py-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all"
+                            className="flex-1 py-3.5 rounded-xl border border-emerald-600 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all active:scale-95"
                         >
                             <Printer size={16} />
-                            <span>{language === 'ar' ? 'طباعة تقرير الإقفال' : 'Print Report'}</span>
+                            <span>{language === 'ar' ? 'طباعة بون الوردية الحراري (Z-Report)' : 'Print Z-Report Thermal'}</span>
                         </button>
                         <button
                             onClick={() => setReport(null)}
@@ -581,7 +581,7 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
             {remoteCloseNotice && (
                 <div className="p-4 rounded-2xl bg-amber-500/15 border-2 border-amber-500/50 text-amber-600 dark:text-amber-300 flex items-center justify-between gap-3 shadow-md animate-scale-in">
                     <div className="flex items-center gap-2.5">
-                        <span className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold text-sm shrink-0">⚠️</span>
+                        <span className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold text-sm shrink-0"><AlertTriangle size={16} /></span>
                         <p className="text-xs font-bold leading-relaxed">{remoteCloseNotice}</p>
                     </div>
                     <button
@@ -1205,6 +1205,43 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
 
                         <button
                             type="button"
+                            onClick={() => {
+                                printXReportThermal(
+                                    {
+                                        openingBalance: baseOpeningBalance || 0,
+                                        cashSales: cashSales || 0,
+                                        deposits: deposits || 0,
+                                        withdrawals: withdrawals || 0,
+                                        totalExpenses: totalCashDeductions || 0,
+                                        expectedCash: expectedCash || 0,
+                                        walletSales: walletTotal || 0,
+                                        cardSales: cardTotal || 0,
+                                        creditSales: effectiveCreditForClosing || 0,
+                                        includeDebts: includeDebtsInClosing,
+                                        totalClosingAmount: finalClosingAmount || 0,
+                                        actualCash: actualCashNum || 0,
+                                        difference: diff || 0,
+                                        status: status || 'matched',
+                                        retainedInDrawer: retainedInDrawer,
+                                        transferredToSafe: transferredToSafe,
+                                        cashierName: currentUser?.name,
+                                    },
+                                    {
+                                        shopName: state.settings.shopName,
+                                        phone: state.settings.phone,
+                                        address: state.settings.address,
+                                    },
+                                    currentUser?.name
+                                );
+                            }}
+                            className="w-full py-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
+                        >
+                            <Printer size={15} />
+                            <span>{language === 'ar' ? 'طباعة تقرير جرد مؤقت (X-Report)' : 'Print Mid-Shift X-Report'}</span>
+                        </button>
+
+                        <button
+                            type="button"
                             onClick={handleClose}
                             className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
                         >
@@ -1307,7 +1344,7 @@ export const ClosingPage: React.FC<ClosingPageProps> = ({ onNavigate }) => {
                 isOpen={showClosingConfirm}
                 title={alreadyClosedToday ? (language === 'ar' ? 'تأكيد إقفال وردية جديدة اليوم' : 'Confirm Additional Closing Today') : (language === 'ar' ? 'تأكيد إقفال الوردية اليومية' : 'Confirm Daily Shift Closing')}
                 message={language === 'ar'
-                    ? `${alreadyClosedToday ? '⚠️ تم تسجيل تقرير إقفال مسبقاً لهذا اليوم. هل تريد إنشاء إقفال إضافي للوردية الحالية؟\n\n' : ''}• مبيعات اليوم: ${totalSales.toLocaleString('en-US')} ج.م\n• النقدية الفعلية بالدرج: ${actualCashNum.toLocaleString('en-US')} ج.م\n• الفارق (عجز/زيادة): ${diff === 0 ? 'مطابق تماماً ✓' : `${diff > 0 ? '+' : ''}${diff.toLocaleString('en-US')} ج.م`}\n\nهل ترغب بالتأكيد وحفظ الإقفال؟`
+                    ? `${alreadyClosedToday ? 'تم تسجيل تقرير إقفال مسبقاً لهذا اليوم. هل تريد إنشاء إقفال إضافي للوردية الحالية؟\n\n' : ''}• مبيعات اليوم: ${totalSales.toLocaleString('en-US')} ج.م\n• النقدية الفعلية بالدرج: ${actualCashNum.toLocaleString('en-US')} ج.م\n• الفارق (عجز/زيادة): ${diff === 0 ? 'مطابق تماماً' : `${diff > 0 ? '+' : ''}${diff.toLocaleString('en-US')} ج.م`}\n\nهل ترغب بالتأكيد وحفظ الإقفال؟`
                     : `Confirm closing shift with actual cash: ${actualCashNum.toLocaleString('en-US')} EGP?`}
                 confirmText={language === 'ar' ? 'نعم، إقفال الوردية' : 'Close Shift'}
                 cancelText={t('cancel')}

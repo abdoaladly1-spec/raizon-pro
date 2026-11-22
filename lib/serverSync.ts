@@ -130,11 +130,13 @@ export const buildInvoicePayload = (
     total: round2(invoice.total ?? (taxable + tax)),
     payment_method: invoice.paymentMethod || 'cash',
     // تفاصيل الدفع المختلط (تُحفظ مع الفاتورة بشكل ذري في حقل واحد بالسيرفر)
-    payment_parts: Array.isArray(invoice.paymentParts)
-      ? invoice.paymentParts
-          .map((p: any) => ({ method: p?.method, amount: round2(Number(p?.amount) || 0) }))
-          .filter((p: any) => p.method && p.amount > 0)
-      : null,
+    payment_parts: (() => {
+      if (!Array.isArray(invoice.paymentParts) || invoice.paymentParts.length === 0) return null;
+      const valid = invoice.paymentParts
+        .map((p: any) => ({ method: String(p?.method || 'cash').toLowerCase(), amount: round2(Number(p?.amount) || 0) }))
+        .filter((p: any) => p.method && p.amount > 0);
+      return valid.length > 0 ? valid : null;
+    })(),
     cash_paid: invoice.cashPaid == null ? null : round2(Number(invoice.cashPaid)),
     received: invoice.received == null ? null : round2(Number(invoice.received)),
     change: invoice.change == null ? null : round2(Number(invoice.change)),

@@ -21,11 +21,15 @@
 
 /* Typography & Arabic Font Support — تكبير درجة واحدة وجعل الخطوط عريضة Bold */
 :root {
-  --font-arabic: 'Cairo', 'Tajawal', 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif;
+  --font-cairo: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+  --font-ibm: 'IBM Plex Sans Arabic', 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+  --font-heading: 'Cairo', 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+  --font-arabic: 'Cairo', 'IBM Plex Sans Arabic', 'Tajawal', 'Segoe UI', Tahoma, Arial, sans-serif;
 }
 
 html {
   font-size: 17px; /* تكبير حجم الخطوط درجة واحدة لجميع عناصر النظام */
+  scroll-behavior: smooth; /* Smooth scroll behavior */
 }
 
 html, body, button, input, select, textarea {
@@ -34,6 +38,26 @@ html, body, button, input, select, textarea {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* قاعدة موحدة ملزمة: جميع العناوين الرئيسية والفرعية وعناوين البطاقات تستخدم Cairo أو IBM Plex Sans Arabic */
+h1, h2, h3, h4, h5, h6,
+.font-heading,
+.card-title,
+.modal-title,
+[data-heading],
+[data-card-title],
+.card h1, .card h2, .card h3, .card h4, .card h5, .card h6 {
+  font-family: 'Cairo', 'IBM Plex Sans Arabic', sans-serif !important;
+  font-feature-settings: "liga" 1, "calt" 1;
+}
+
+.font-cairo {
+  font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif !important;
+}
+
+.font-ibm {
+  font-family: 'IBM Plex Sans Arabic', 'Cairo', sans-serif !important;
 }
 
 /* رفع درجات الخطوط لتكون عريضة ومقروءة بوضوح فائق */
@@ -66,6 +90,25 @@ html[lang="ar"] body {
   -webkit-font-feature-settings: "liga" 1, "calt" 1, "ccmp" 1;
 }
 
+/* قاعدة موحدة لبطاقات السيستم بالكامل: لون الثيم المحدد ولون النص أبيض دائماً في كل الصفحات */
+.dark .card,
+.dark [data-card],
+.dark .stat-card,
+.dark .card-body,
+.dark .card-title,
+.dark [data-card-title],
+.dark .card h1, .dark .card h2, .dark .card h3, .dark .card h4, .dark .card h5, .dark .card h6,
+.dark [data-card] h1, .dark [data-card] h2, .dark [data-card] h3, .dark [data-card] h4, .dark [data-card] h5, .dark [data-card] h6,
+.dark .card .font-mono,
+.dark [data-card] .font-mono {
+  color: #ffffff !important;
+}
+
+.dark .card,
+.dark [data-card] {
+  border-color: var(--color-primary-500, #3b82f6) !important;
+}
+
 /* Numerals & tabular numbers without breaking cursive Arabic ligatures */
 .font-mono,
 .tabular-nums,
@@ -76,42 +119,90 @@ input[type="number"] {
   -webkit-font-variant-numeric: lining-nums tabular-nums;
   font-feature-settings: "lnum" 1, "tnum" 1, "liga" 1, "calt" 1;
 }
-/* Custom Scrollbar */
+
+/* ==============================================================
+   Enhanced Custom Scrollbar (Thin, Subtle, Dark/Light Support)
+   ============================================================== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
+}
+
+.dark *,
+html.dark * {
+  scrollbar-color: rgba(148, 163, 184, 0.2) transparent;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.2);
-  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+  transition: background-color 200ms ease;
 }
+
 ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+.dark ::-webkit-scrollbar-thumb,
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover,
+html.dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.4);
 }
 
-@media print {
-  .no-print { display: none !important; }
-  .print-only { display: block !important; }
+/* ==============================================================
+   Focus-Visible Styles for Accessibility
+   ============================================================== */
+:focus-visible {
+  outline: 2px solid var(--color-primary-500, #10b981);
+  outline-offset: 2px;
 }
 
-/* Professional Button Animations */
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-primary-500, #10b981);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ==============================================================
+   Professional Button & Interactive Base Styles
+   ============================================================== */
 .btn-pro {
   position: relative;
   overflow: hidden;
-  transition: background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease, opacity 200ms ease;
+  transition: background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease, filter 200ms ease, opacity 200ms ease, transform 150ms ease;
   z-index: 1;
 }
 
-.btn-pro:hover {
-  /* No translateY: prevents layout jump in dense UIs */
-  filter: brightness(1.08);
+.btn-pro:hover:not(:disabled) {
+  filter: brightness(1.06);
 }
 
-.btn-pro:active {
-  transform: scale(0.97);
+.btn-pro:active:not(:disabled) {
+  transform: scale(0.98);
   filter: brightness(0.96);
 }
 
@@ -123,8 +214,6 @@ input[type="number"] {
 .dark .bg-neon-gradient {
   background: #0f172a; /* slate-900 */
 }
-
-/* Clean standard shadows */
 
 /* Glassmorphism Utilities */
 .glass {
@@ -167,12 +256,15 @@ input[type="number"] {
   background-image: linear-gradient(135deg, #fbbf24, #d97706);
 }
 
-/* card-hover: ظل أخف وحركة أقل مزعجة */
+/* card-hover: ظل ناعم وانتقال سلس ومريح */
 .card-hover {
-  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease;
 }
 .card-hover:hover {
-  box-shadow: 0 4px 16px -2px rgba(0,0,0,0.10), 0 2px 6px -1px rgba(0,0,0,0.06);
+  box-shadow: 0 6px 20px -2px rgba(0,0,0,0.08), 0 2px 6px -1px rgba(0,0,0,0.04);
+}
+.dark .card-hover:hover {
+  box-shadow: 0 6px 24px -2px rgba(0,0,0,0.35);
 }
 
 .animate-float {
@@ -195,8 +287,6 @@ input[type="number"] {
   background-size: 24px 24px;
 }
 
-
-
 /* Geometric Background */
 .geo-bg {
   background-color: #0f172a;
@@ -214,26 +304,24 @@ input[type="number"] {
     linear-gradient(90deg, rgba(14, 165, 233, 0.03) 1px, transparent 1px);
 }
 
-/* أزرار الأيقونات فقط (X/إغلاق...): توسّط أفقي ورأسي حقيقي بدون فراغ السطر
-   الذي يجعل الزر بيضاوياً تحت rounded-full (ارتفاع أطول من العرض) */
+/* أزرار الأيقونات فقط (X/إغلاق...): توسّط أفقي ورأسي حقيقي بدون فراغ السطر */
 button:has(> svg):not(:has(> :not(svg))) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-/* تأثيرات اللمس: تكبير/انكماش + انتقال سلس */
-button, .btn-pro, [role="button"], a.btn {
-  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, filter 150ms ease;
+/* تأثيرات اللمس: انتقال سلس وانكماش لطيف */
+button, [role="button"], a.btn {
+  transition: background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease, filter 200ms ease, transform 150ms ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
-button:active:not(:disabled), .btn-pro:active:not(:disabled), [role="button"]:active {
-  transform: scale(0.97);
+button:active:not(:disabled), [role="button"]:active {
+  transform: scale(0.98);
 }
-/* إزالة hover scale العام من الأزرار لمنع القفز المزعج في الجداول والنماذج */
-button:hover:not(:disabled), .btn-pro:hover:not(:disabled) {
-  filter: brightness(1.06);
+button:hover:not(:disabled) {
+  filter: brightness(1.05);
 }
 
 /* منطقة لمس أكبر في وضع اللمس */
@@ -243,7 +331,6 @@ button:hover:not(:disabled), .btn-pro:hover:not(:disabled) {
   padding-bottom: 12px;
 }
 
-/* اهتزاز خفيف عند اللمس (إذا كان الجهاز يدعمه) */
 @media (pointer: coarse) {
   button:active, [role="button"]:active {
     -webkit-user-select: none;
@@ -251,94 +338,131 @@ button:hover:not(:disabled), .btn-pro:hover:not(:disabled) {
   }
 }
 
-/* Print Styles */
-@media print {
-  @page { size: auto; margin: 0mm; }
-  body {
-    margin: 0;
-    padding: 0;
-    background: white;
-  }
-  body * {
-    visibility: hidden;
-  }
-  #printable-invoice, 
-  #printable-invoice *,
-  #printable-staff-statement,
-  #printable-staff-statement *,
-  .printable-thermal,
-  .printable-thermal * {
-    visibility: visible;
-  }
-  #printable-invoice {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    min-height: 100vh;
-    margin: 0;
-    padding: 0;
-    background: white;
-    z-index: 999999;
-  }
-  #printable-invoice-back,
-  #printable-invoice-back * {
-      visibility: visible;
-  }
-  #printable-invoice-back {
-      position: relative;
-      page-break-before: always;
-      z-index: 999999;
-  }
-  #printable-invoice {
-      display: block !important;
-  }
-  #printable-invoice * {
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-  }
-}
-
-/* Cairo font and bold printing styling */
-.font-cairo {
-  font-family: 'Cairo', system-ui, -apple-system, sans-serif !important;
-}
-
-#printable-invoice, #printable-invoice-demo, #printable-invoice *, #printable-invoice-demo * {
-  font-family: 'Tahoma', Arial, sans-serif !important;
-  font-weight: 700 !important;
-}
-
-.invoice-header-shaded,
-#printable-invoice .invoice-header-shaded,
-#printable-invoice-demo .invoice-header-shaded,
-td.invoice-header-shaded,
-th.invoice-header-shaded {
-  -webkit-print-color-adjust: exact !important;
-  print-color-adjust: exact !important;
-}
-
 /* ==============================================================
-   Shake Animation on Rejected / Invalid Input (Smooth Horizontal Shake)
+   Subtle Animation Class Library (Smooth, professional 200-300ms transitions)
    ============================================================== */
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 250ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDown 250ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes pulseSoft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulseSoft 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 250ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Smooth Page Transitions */
+.page-transition {
+  animation: pageFadeIn 250ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes pageFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Shake Animation on Rejected / Invalid Input */
 @keyframes shakeHorizontal {
   0%, 100% {
     transform: translateX(0);
   }
   15% {
-    transform: translateX(-10px);
+    transform: translateX(-8px);
   }
   30% {
-    transform: translateX(8px);
+    transform: translateX(6px);
   }
   45% {
-    transform: translateX(-6px);
+    transform: translateX(-5px);
   }
   60% {
-    transform: translateX(5px);
+    transform: translateX(4px);
   }
   75% {
-    transform: translateX(-3px);
+    transform: translateX(-2px);
   }
   90% {
     transform: translateX(1px);
@@ -443,6 +567,34 @@ th.invoice-header-shaded {
   animation: pulseGlow 3s ease-in-out infinite;
 }
 
+/* Accessibility: Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-slide-down,
+  .animate-scale-in,
+  .animate-pulse-soft,
+  .animate-fade-in-up,
+  .page-transition,
+  .animate-shake,
+  .animate-float,
+  .animate-shimmer,
+  .animate-cyber-grid,
+  .animate-radar,
+  .animate-pulse-glow {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 /* ==============================================================
    تحسين وضوح الحدود والخطوط والنصوص في الوضع النهاري (Light Mode High Contrast)
    ============================================================== */
@@ -455,7 +607,7 @@ html:not(.dark) body {
   font-weight: 500;
 }
 
-/* 1. تقوية الحدود والفواصل الشاحبة لتكون حادة ومحددة بدقة */
+/* 1. تقوية الحدود والفواصل لتكون حادة ومحددة بدقة */
 html:not(.dark) .border-slate-100,
 html:not(.dark) .border-gray-100 {
   border-color: #cbd5e1 !important; /* slate-300 */
@@ -575,7 +727,7 @@ html:not(.dark) textarea {
 html:not(.dark) input:focus,
 html:not(.dark) select:focus,
 html:not(.dark) textarea:focus {
-  border-color: #7c3aed !important;
+  border-color: var(--color-primary-600, #7c3aed) !important;
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.22) !important;
 }
 
@@ -595,7 +747,6 @@ html:not(.dark) kbd {
 
 /* ==============================================================
    1. وضع التباين العالي الليلي: النصوص جميعها بولد وبلون أبيض ناصع
-   (Dark Mode: All texts bold and crisp pure white)
    ============================================================== */
 html.dark,
 .dark {
@@ -609,7 +760,6 @@ html.dark,
   font-weight: 700;
 }
 
-/* جعل جميع العناوين والفقرات والتسميات والقوائم والجداول بولد وبلون أبيض */
 .dark h1,
 .dark h2,
 .dark h3,
@@ -628,7 +778,6 @@ html.dark,
   font-weight: 700 !important;
 }
 
-/* تحويل الألوان الرمادية الباهتة في الوضع الليلي إلى الأبيض الناصع والبولد */
 .dark .text-slate-100,
 .dark .text-slate-200,
 .dark .text-slate-300,
@@ -644,8 +793,7 @@ html.dark,
 }
 
 /* ==============================================================
-   2. الأزرار النصية (Text Buttons): بلون أزرق واضح
-   (Text buttons like 'Forgot Password' in blue)
+   2. الأزرار النصية (Text Buttons)
    ============================================================== */
 .btn-text,
 .btn-link,
@@ -678,7 +826,7 @@ button.text-link {
 }
 
 /* ==============================================================
-   3. الأرقام: أحمر للخصم والسحب والحذف / أخضر للزيادة والمبيعات / أزرق افتراضي يتغير مع الثيم
+   3. الأرقام: أحمر للخصم والسحب والحذف / أخضر للزيادة والمبيعات / أزرق افتراضي
    ============================================================== */
 
 /* أ) الأرقام الحمراء: خصم، سحب، سلفة، حذف، مصروفات، مرتجعات */
@@ -783,4 +931,356 @@ button.text-link {
 .btn-danger:hover,
 .btn-red:hover {
   background-color: #dc2626 !important;
+}
+
+/* ==============================================================
+   Print Styles (Unified, high-contrast, zero margin, reliable)
+   ============================================================== */
+@media print {
+  @page {
+    size: auto;
+    margin: 0mm;
+  }
+
+  .no-print,
+  nav,
+  aside,
+  header,
+  footer,
+  .toasts-container,
+  [role="alert"] {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #printable-invoice, 
+  #printable-invoice *,
+  #printable-invoice-back,
+  #printable-invoice-back *,
+  #printable-staff-statement,
+  #printable-staff-statement *,
+  #printable-invoice-demo,
+  #printable-invoice-demo *,
+  .printable-thermal,
+  .printable-thermal *,
+  .printable-area,
+  .printable-area * {
+    visibility: visible;
+  }
+
+  #printable-invoice {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    background: #ffffff !important;
+    display: block !important;
+    z-index: 999999;
+  }
+
+  #printable-invoice-back {
+    position: relative;
+    page-break-before: always;
+    break-before: page;
+    z-index: 999999;
+  }
+
+  #printable-invoice, 
+  #printable-invoice-demo, 
+  #printable-invoice *, 
+  #printable-invoice-demo * {
+    font-family: 'Tahoma', 'Cairo', Arial, sans-serif !important;
+    font-weight: 700 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  tr, td, th, .invoice-item {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .invoice-header-shaded,
+  #printable-invoice .invoice-header-shaded,
+  #printable-invoice-demo .invoice-header-shaded,
+  td.invoice-header-shaded,
+  th.invoice-header-shaded {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* ==============================================================
+   MATERIAL DESIGN 3 (M3) DESIGN SYSTEM & TOKENS
+   Official Google M3 Specifications: Elevation, Shapes, Surfaces,
+   State Layers, Buttons, Chips, TextFields, and Material Symbols
+   ============================================================== */
+:root {
+  /* M3 Elevation Shadow Levels */
+  --md-sys-elevation-0: none;
+  --md-sys-elevation-1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
+  --md-sys-elevation-2: 0px 2px 6px 2px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
+  --md-sys-elevation-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px 0px rgba(0, 0, 0, 0.30);
+  --md-sys-elevation-4: 0px 6px 10px 4px rgba(0, 0, 0, 0.15), 0px 2px 3px 0px rgba(0, 0, 0, 0.30);
+  --md-sys-elevation-5: 0px 8px 12px 6px rgba(0, 0, 0, 0.15), 0px 4px 4px 0px rgba(0, 0, 0, 0.30);
+
+  /* M3 Corner Radius Tokens */
+  --md-sys-shape-corner-none: 0px;
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-full: 9999px;
+
+  /* M3 Motion Easing */
+  --md-sys-motion-easing-standard: cubic-bezier(0.2, 0.0, 0, 1.0);
+  --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0.0, 0, 1.2);
+  --md-sys-motion-duration-short: 150ms;
+  --md-sys-motion-duration-medium: 250ms;
+  --md-sys-motion-duration-long: 400ms;
+
+  /* Light Theme M3 Surfaces */
+  --md-sys-color-surface: #f8fafc;
+  --md-sys-color-surface-dim: #f1f5f9;
+  --md-sys-color-surface-bright: #ffffff;
+  --md-sys-color-surface-container-lowest: #ffffff;
+  --md-sys-color-surface-container-low: #f8fafc;
+  --md-sys-color-surface-container: #ffffff;
+  --md-sys-color-surface-container-high: #f1f5f9;
+  --md-sys-color-surface-container-highest: #e2e8f0;
+  --md-sys-color-on-surface: #0f172a;
+  --md-sys-color-on-surface-variant: #475569;
+  --md-sys-color-outline: #cbd5e1;
+  --md-sys-color-outline-variant: #e2e8f0;
+  --md-sys-color-primary-container: rgba(16, 185, 129, 0.12);
+  --md-sys-color-on-primary-container: #065f46;
+}
+
+.dark {
+  /* Dark Theme M3 Surfaces (Tonal Elevation Hierarchy) */
+  --md-sys-color-surface: #0f172a;
+  --md-sys-color-surface-dim: #0b0f19;
+  --md-sys-color-surface-bright: #1e293b;
+  --md-sys-color-surface-container-lowest: #080c14;
+  --md-sys-color-surface-container-low: #0f172a;
+  --md-sys-color-surface-container: #162238;
+  --md-sys-color-surface-container-high: #1e2e4a;
+  --md-sys-color-surface-container-highest: #283a5c;
+  --md-sys-color-on-surface: #f8fafc;
+  --md-sys-color-on-surface-variant: #94a3b8;
+  --md-sys-color-outline: #334155;
+  --md-sys-color-outline-variant: rgba(255, 255, 255, 0.08);
+  --md-sys-color-primary-container: rgba(16, 185, 129, 0.20);
+  --md-sys-color-on-primary-container: #34d399;
+}
+
+/* Material Symbols Rounded Typography Utility */
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded', sans-serif !important;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'liga';
+  vertical-align: middle;
+}
+
+/* M3 Elevation Shadow Utilities */
+.m3-elevation-0 { box-shadow: var(--md-sys-elevation-0) !important; }
+.m3-elevation-1 { box-shadow: var(--md-sys-elevation-1) !important; }
+.m3-elevation-2 { box-shadow: var(--md-sys-elevation-2) !important; }
+.m3-elevation-3 { box-shadow: var(--md-sys-elevation-3) !important; }
+.m3-elevation-4 { box-shadow: var(--md-sys-elevation-4) !important; }
+.m3-elevation-5 { box-shadow: var(--md-sys-elevation-5) !important; }
+
+/* M3 State Layer (Interactive Ripple & Hover) */
+.m3-state-layer {
+  position: relative;
+  overflow: hidden;
+}
+.m3-state-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+  pointer-events: none;
+  border-radius: inherit;
+}
+.m3-state-layer:hover:not(:disabled)::after {
+  opacity: 0.08;
+}
+.m3-state-layer:focus-visible::after {
+  opacity: 0.12;
+}
+.m3-state-layer:active:not(:disabled)::after {
+  opacity: 0.16;
+}
+
+/* M3 Button System */
+.m3-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 40px;
+  padding: 0 1.5rem;
+  border-radius: var(--md-sys-shape-corner-full);
+  font-family: var(--font-arabic);
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: all var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+  cursor: pointer;
+  user-select: none;
+  border: none;
+  outline: none;
+}
+.m3-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.m3-btn-filled {
+  background-color: var(--color-primary-600, #10b981);
+  color: #ffffff;
+  box-shadow: var(--md-sys-elevation-1);
+}
+.m3-btn-filled:hover:not(:disabled) {
+  background-color: var(--color-primary-700, #059669);
+  box-shadow: var(--md-sys-elevation-2);
+}
+.m3-btn-tonal {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+.m3-btn-tonal:hover:not(:disabled) {
+  box-shadow: var(--md-sys-elevation-1);
+}
+.m3-btn-outlined {
+  background-color: transparent;
+  color: var(--md-sys-color-on-surface);
+  border: 1px solid var(--md-sys-color-outline);
+}
+.m3-btn-outlined:hover:not(:disabled) {
+  background-color: var(--md-sys-color-surface-container-high);
+}
+.m3-btn-text {
+  background-color: transparent;
+  color: var(--color-primary-600, #10b981);
+  padding: 0 1rem;
+}
+.m3-btn-text:hover:not(:disabled) {
+  background-color: var(--md-sys-color-primary-container);
+}
+.m3-fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 56px;
+  min-width: 56px;
+  padding: 0 1.25rem;
+  border-radius: var(--md-sys-shape-corner-large);
+  background-color: var(--color-primary-500, #10b981);
+  color: #ffffff;
+  box-shadow: var(--md-sys-elevation-3);
+  font-family: var(--font-arabic);
+  font-size: 0.95rem;
+  font-weight: 800;
+  transition: all var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-standard);
+  cursor: pointer;
+}
+.m3-fab:hover:not(:disabled) {
+  box-shadow: var(--md-sys-elevation-4);
+  transform: translateY(-2px);
+}
+
+/* M3 Card System */
+.m3-card {
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  transition: all var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-standard);
+}
+.m3-card-elevated {
+  background-color: var(--md-sys-color-surface-container-low);
+  box-shadow: var(--md-sys-elevation-1);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+.m3-card-elevated:hover {
+  box-shadow: var(--md-sys-elevation-2);
+}
+.m3-card-filled {
+  background-color: var(--md-sys-color-surface-container-highest);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+.m3-card-outlined {
+  background-color: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline);
+}
+
+/* M3 Navigation Pill Indicator */
+.m3-nav-indicator {
+  position: relative;
+  border-radius: var(--md-sys-shape-corner-full);
+  transition: all var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-standard);
+}
+.m3-nav-indicator.active {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+/* M3 Chips */
+.m3-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 32px;
+  padding: 0 0.85rem;
+  border-radius: var(--md-sys-shape-corner-small);
+  border: 1px solid var(--md-sys-color-outline);
+  background-color: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--font-arabic);
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: all var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+  cursor: pointer;
+  user-select: none;
+}
+.m3-chip:hover {
+  background-color: var(--md-sys-color-surface-container-high);
+}
+.m3-chip.selected {
+  background-color: var(--md-sys-color-primary-container);
+  border-color: var(--color-primary-500, #10b981);
+  color: var(--md-sys-color-on-primary-container);
+  box-shadow: var(--md-sys-elevation-1);
 }

@@ -1,6 +1,6 @@
 import { printStaffPayslipThermal, printStaffStatementThermal } from '../lib/thermalPrinter';
 /* صفحة إدارة الموظفين وفريق العمل - نظام RIZON PRO */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
     Users, Plus, Trash2, Printer, DollarSign, Clock, Search, Award, X,
@@ -726,7 +726,7 @@ export const StaffPage = () => {
                                         }`}>
                                             {currentStaffFin && currentStaffFin.netDue > 0
                                                 ? (isAr ? 'مستحق للسداد' : 'Payable')
-                                                : (isAr ? 'الحساب مسوّى ✓' : 'Settled')}
+                                                : (isAr ? 'الحساب مسوّى' : 'Settled')}
                                         </span>
                                     </div>
                                     <div className="flex items-baseline gap-1.5 mt-1">
@@ -1660,7 +1660,7 @@ export const StaffPage = () => {
                                 <button
                                     type="button"
                                     onClick={() => setStaffForm({ ...staffForm, commissionType: 'none', commissionValue: '' })}
-                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'none' ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
+                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'none' ? 'bg-primary-600 text-white border-primary-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
                                 >
                                     {isAr ? 'بدون عمولة' : 'No Comm'}
                                 </button>
@@ -1668,7 +1668,7 @@ export const StaffPage = () => {
                                 <button
                                     type="button"
                                     onClick={() => setStaffForm({ ...staffForm, commissionType: 'daily' })}
-                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'daily' ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
+                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'daily' ? 'bg-primary-600 text-white border-primary-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
                                 >
                                     {isAr ? 'يومية محددة' : 'Daily Wage'}
                                 </button>
@@ -1676,7 +1676,7 @@ export const StaffPage = () => {
                                 <button
                                     type="button"
                                     onClick={() => setStaffForm({ ...staffForm, commissionType: 'percent' })}
-                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'percent' ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
+                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'percent' ? 'bg-primary-600 text-white border-primary-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
                                 >
                                     {isAr ? 'نسبة مئوية %' : 'Percent %'}
                                 </button>
@@ -1684,7 +1684,7 @@ export const StaffPage = () => {
                                 <button
                                     type="button"
                                     onClick={() => setStaffForm({ ...staffForm, commissionType: 'fixed' })}
-                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'fixed' ? 'bg-purple-600 text-white border-purple-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
+                                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${staffForm.commissionType === 'fixed' ? 'bg-primary-600 text-white border-primary-600 shadow-xs' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
                                 >
                                     {isAr ? 'مبلغ ثابت ج.م' : 'Fixed EGP'}
                                 </button>

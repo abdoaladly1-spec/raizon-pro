@@ -12,7 +12,7 @@ import {
     BackupIcon, MailNotificationIcon, GmailLogo, EmailAlertsLogo
 } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier, AppState, CustomReceiptTemplate } from '../types';
-import { Card, Button, Input, ToastContainer, ModalShell, ConfirmModal } from '../components/ui';
+import { Card, Button, Input, ToastContainer, ModalShell, ConfirmModal, useSound } from '../components/ui';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AuditLogs } from './AuditLogsPage';
 import { AdminUsers } from './AdminUsersPage';
@@ -60,6 +60,20 @@ export const SettingsPage = () => {
     const [form, setForm] = useState(state.settings);
     const initialFormJsonRef = useRef(JSON.stringify(state.settings));
     const initialEmailJsonRef = useRef('');
+
+    const { playBeep, playSuccess, playCashChime, playScan, playWarning } = useSound();
+
+    const toggleSound = () => {
+        const nextVal = form.enableSound === false ? true : false;
+        setForm(prev => ({ ...prev, enableSound: nextVal }));
+        updateSettings({ enableSound: nextVal });
+        if (nextVal) {
+            setTimeout(() => playSuccess(), 50);
+            addToast(language === 'ar' ? 'تم تفعيل المؤثرات الصوتية بنجاح' : 'Sound effects enabled', 'success');
+        } else {
+            addToast(language === 'ar' ? 'تم كتم المؤثرات الصوتية' : 'Sound effects muted', 'info');
+        }
+    };
 
     // ساعة النظام الحية متزامنة مع الكمبيوتر
     const [systemClock, setSystemClock] = useState(() => new Date());
@@ -165,7 +179,7 @@ export const SettingsPage = () => {
                         checked: true,
                         hasUpdate: false
                     });
-                    addToast(language === 'ar' ? 'أنت على أحدث إصدار من RaiZon Pro' : 'You are on the latest version of RaiZon Pro', 'success');
+                    addToast(language === 'ar' ? 'أنت على أحدث إصدار من فلير وان (Flare One)' : 'You are on the latest version of Flare One', 'success');
                 }
             } else {
                 const cleanRepo = customRepo.replace('https://github.com/', '').trim();
@@ -191,14 +205,14 @@ export const SettingsPage = () => {
                             checked: true,
                             hasUpdate: false
                         });
-                        addToast(language === 'ar' ? 'أنت على أحدث إصدار من RaiZon Pro' : 'You are on the latest version of RaiZon Pro', 'success');
+                        addToast(language === 'ar' ? 'أنت على أحدث إصدار من فلير وان (Flare One)' : 'You are on the latest version of Flare One', 'success');
                     }
                 } else {
                     setUpdateResult({
                         checked: true,
                         hasUpdate: false
                     });
-                    addToast(language === 'ar' ? 'أنت على أحدث إصدار من RaiZon Pro' : 'You are on the latest version of RaiZon Pro', 'success');
+                    addToast(language === 'ar' ? 'أنت على أحدث إصدار من فلير وان (Flare One)' : 'You are on the latest version of Flare One', 'success');
                 }
             }
         } catch (e: any) {
@@ -206,7 +220,7 @@ export const SettingsPage = () => {
                 checked: true,
                 hasUpdate: false
             });
-            addToast(language === 'ar' ? 'أنت على أحدث إصدار من RaiZon Pro' : 'You are on the latest version of RaiZon Pro', 'success');
+            addToast(language === 'ar' ? 'أنت على أحدث إصدار من فلير وان (Flare One)' : 'You are on the latest version of Flare One', 'success');
         } finally {
             setUpdateChecking(false);
         }
@@ -297,7 +311,7 @@ export const SettingsPage = () => {
 
     // Email Notification Configuration (إشعارات Gmail للمدير)
     const [emailConfig, setEmailConfig] = useState({
-        smtpUser: 'rizon.pro.app@gmail.com',
+        smtpUser: state.settings?.emailConfig?.smtpUser || '',
         smtpPassword: '',
         emailTo: '',
         notifyOnInvoice: true,
@@ -337,7 +351,7 @@ export const SettingsPage = () => {
                 const data = await res.json();
                 setEmailConfig(prev => ({
                     ...prev,
-                    smtpUser: data.smtp_user || 'rizon.pro.app@gmail.com',
+                    smtpUser: data.smtp_user || prev.smtpUser || '',
                     emailTo: data.email_to || prev.emailTo || savedEmail,
                     notifyOnInvoice: data.notify_on_invoice !== undefined ? Boolean(data.notify_on_invoice) : prev.notifyOnInvoice,
                     notifyOnClosing: data.notify_on_closing !== undefined ? Boolean(data.notify_on_closing) : prev.notifyOnClosing,
@@ -376,7 +390,7 @@ export const SettingsPage = () => {
             notifyOnClosing: emailConfig.notifyOnClosing,
             notifyOnReturn: emailConfig.notifyOnReturn,
             notifyOnExpense: emailConfig.notifyOnExpense,
-            smtpUser: emailConfig.smtpUser || 'rizon.pro.app@gmail.com'
+            smtpUser: emailConfig.smtpUser || ''
         };
 
         try {
@@ -546,7 +560,7 @@ export const SettingsPage = () => {
             notifyOnClosing: emailConfig.notifyOnClosing,
             notifyOnReturn: emailConfig.notifyOnReturn,
             notifyOnExpense: emailConfig.notifyOnExpense,
-            smtpUser: emailConfig.smtpUser || 'rizon.pro.app@gmail.com'
+            smtpUser: emailConfig.smtpUser || ''
         };
         const backupPayload = {
             ...state,
@@ -1102,7 +1116,7 @@ export const SettingsPage = () => {
                         </div>
                         <div>
                             <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                <span>{language === 'ar' ? 'تحديثات نظام RaiZon Pro' : 'RaiZon Pro System Updates'}</span>
+                                <span>{language === 'ar' ? 'تحديثات نظام فلير وان (Flare One)' : 'Flare One System Updates'}</span>
                             </h3>
                             <p className="text-xs text-[#94A3B8] mt-0.5">
                                 {language === 'ar' 
@@ -1161,7 +1175,7 @@ export const SettingsPage = () => {
                                         <Shield size={16} className="text-amber-400 shrink-0 mt-0.5" />
                                         <div className="leading-relaxed">
                                             <span className="font-bold text-amber-300 block mb-0.5">
-                                                {language === 'ar' ? '🛡️ ميزة توفير باقة الإنترنت والأمان:' : '🛡️ Bandwidth Saver & Safety:'}
+                                                {language === 'ar' ? 'ميزة توفير استهلاك الإنترنت والأمان:' : 'Bandwidth Saver & Safety:'}
                                             </span>
                                             {language === 'ar' 
                                                 ? `تم تجاوز الإصدارات السابقة (${updateResult.skippedVersions.join('، ')}) تلقائياً والانتقال مباشرة لأحدث إصدار مستقر (v${updateResult.latestVersion}) لحماية باقة الإنترنت وتجنب التحميل المتكرر مع دمج كافة الإصلاحات لضمان عمل النظام بأعلى كفاءة.`
@@ -1210,7 +1224,7 @@ export const SettingsPage = () => {
                                 <span className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg shrink-0"><Check size={16} /></span>
                                 <div>
                                     <h4 className="text-sm font-bold text-emerald-300">
-                                        {language === 'ar' ? 'أنت على أحدث إصدار من RaiZon Pro' : 'You are on the latest version of RaiZon Pro'}
+                                        {language === 'ar' ? 'أنت على أحدث إصدار من فلير وان (Flare One)' : 'You are on the latest version of Flare One'}
                                     </h4>
                                     <p className="text-xs text-emerald-400/80 mt-0.5">
                                         {language === 'ar' 
@@ -1372,6 +1386,128 @@ export const SettingsPage = () => {
                                     </div>
                                 </button>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* اختيار نمط الخلفية الحيوية الاحترافية */}
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-700/60">
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                                {language === 'ar' ? 'الخلفية الاحترافية للنظام' : 'Professional Background Style'}
+                            </label>
+                            <span className="text-[10px] text-primary-500 font-bold">تسريع GPU عالي الأداء</span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                            {[
+                                { id: 'emerald', nameAr: 'أخضر زمردي', descAr: 'Deep Emerald', gradient: 'linear-gradient(135deg, #060a14, #059669)' },
+                                { id: 'aurora', nameAr: 'شفق سيبراني', descAr: 'Cyber Aurora', gradient: 'linear-gradient(135deg, #050714, #4f46e5, #06b6d4)' },
+                                { id: 'sunset', nameAr: 'غروب دافئ', descAr: 'Warm Sunset', gradient: 'linear-gradient(135deg, #0c0706, #d97706, #e11d48)' },
+                                { id: 'tech_grid', nameAr: 'شبكة هندسية', descAr: 'Tech Dots Grid', gradient: 'radial-gradient(circle, #10b981 1.5px, #070b12 1.5px)' },
+                                { id: 'minimal', nameAr: 'استوديو نقي', descAr: 'Minimal Studio', gradient: 'linear-gradient(135deg, #0b0f19, #1e293b)' },
+                            ].map(bg => {
+                                const isCurrent = (form.backgroundStyle || localStorage.getItem('raizon_background_style') || 'emerald') === bg.id;
+                                return (
+                                    <button 
+                                        key={bg.id}
+                                        type="button"
+                                        onClick={() => {
+                                            setForm({ ...form, backgroundStyle: bg.id as any });
+                                            localStorage.setItem('raizon_background_style', bg.id);
+                                            window.dispatchEvent(new Event('storage'));
+                                        }}
+                                        className={`group flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all cursor-pointer text-center ${
+                                            isCurrent 
+                                                ? 'border-primary-500 bg-primary-500/10 shadow-sm scale-102 font-bold ring-2 ring-primary-500/20' 
+                                                : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800/80'
+                                        }`}
+                                    >
+                                        <div 
+                                            className="w-full h-12 rounded-xl shadow-xs border border-white/10 flex items-center justify-center relative overflow-hidden" 
+                                            style={{ background: bg.gradient }}
+                                        >
+                                            {isCurrent && (
+                                                <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                                                    <Check size={12} strokeWidth={3} />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="w-full truncate">
+                                            <div className="text-xs font-black text-slate-800 dark:text-slate-100 truncate">{bg.nameAr}</div>
+                                            <div className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{bg.descAr}</div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* المؤثرات الصوتية والتنبيهات التفاعلية */}
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-700/60">
+                        <div className="flex items-center justify-between mb-3">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-800 dark:text-slate-100">
+                                    {language === 'ar' ? 'المؤثرات الصوتية والتغذية الراجعة التفاعلية' : 'Haptic Sound Effects'}
+                                </label>
+                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                    {language === 'ar' ? 'نغمات صوتية توليفية فورية (Web Audio) عند مسح الباركود، الدفع، والإشعارات' : 'Instant synthesized audio feedback for scanner, payments and alerts'}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={toggleSound}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                                    form.enableSound !== false 
+                                        ? 'bg-emerald-500 text-slate-950 font-black shadow-xs ring-1 ring-emerald-400/40' 
+                                        : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                                }`}
+                            >
+                                <span>{form.enableSound !== false ? (language === 'ar' ? 'مفعّلة' : 'Enabled') : (language === 'ar' ? 'مكتومة' : 'Muted')}</span>
+                            </button>
+                        </div>
+
+                        {/* أزرار تجربة النغمات */}
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">{language === 'ar' ? 'تجربة النغمات:' : 'Test Sounds:'}</span>
+                            <button
+                                type="button"
+                                onClick={() => playCashChime()}
+                                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-950/40 text-slate-700 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer active:scale-95 shadow-2xs flex items-center gap-1"
+                            >
+                                <Banknote size={15} className="text-emerald-500" />
+                                <span>{language === 'ar' ? 'نغمة الفاتورة' : 'Cash Chime'}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => playScan()}
+                                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-950/40 text-slate-700 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer active:scale-95 shadow-2xs flex items-center gap-1"
+                            >
+                                <Package size={15} className="text-blue-500" />
+                                <span>{language === 'ar' ? 'مسح باركود' : 'Barcode Scan'}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => playSuccess()}
+                                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-950/40 text-slate-700 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer active:scale-95 shadow-2xs flex items-center gap-1"
+                            >
+                                <Sparkles size={15} className="text-amber-500" />
+                                <span>{language === 'ar' ? 'نغمة النجاح' : 'Success'}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => playWarning()}
+                                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-amber-50 dark:bg-slate-800 dark:hover:bg-amber-950/40 text-slate-700 hover:text-amber-600 dark:text-slate-300 dark:hover:text-amber-400 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer active:scale-95 shadow-2xs flex items-center gap-1"
+                            >
+                                <AlertCircle size={15} className="text-rose-500" />
+                                <span>{language === 'ar' ? 'نغمة التحذير' : 'Warning'}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => playBeep()}
+                                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer active:scale-95 shadow-2xs flex items-center gap-1"
+                            >
+                                <Bell size={15} className="text-indigo-500" />
+                                <span>{language === 'ar' ? 'نقرة الكيبورد' : 'Beep'}</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1861,7 +1997,7 @@ export const SettingsPage = () => {
                                 notifyOnClosing: emailConfig.notifyOnClosing,
                                 notifyOnReturn: emailConfig.notifyOnReturn,
                                 notifyOnExpense: emailConfig.notifyOnExpense,
-                                smtpUser: emailConfig.smtpUser || 'rizon.pro.app@gmail.com'
+                                smtpUser: emailConfig.smtpUser || ''
                             };
                             const backupPayload = {
                                 ...state,

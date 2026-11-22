@@ -1,4 +1,62 @@
 :root {
+  /* =========================================================================
+     RaiZon Pro POS - Design Tokens (Consistent Spacing, Radii, Shadows, Transitions)
+     ========================================================================= */
+
+  /* Spacing Scale (4px base) */
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Border Radii (Unified Design System) */
+  --radius-xs: 4px;
+  --radius-sm: 8px;     /* Small tags, badges, buttons */
+  --radius-md: 12px;    /* Inputs, dropdowns, icon boxes */
+  --radius-lg: 16px;    /* Panels, dialogs, elevated containers */
+  --radius-xl: 20px;    /* Feature highlights */
+  --radius-2xl: 24px;   /* Standard system cards */
+  --radius-card: 24px;  /* Cards default */
+  --radius-full: 9999px;
+
+  /* Subtle Shadows (Enterprise depth without heaviness) */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.09), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+  --shadow-card-hover: 0 8px 20px -4px rgba(0, 0, 0, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.04);
+
+  /* Transitions (Smooth 200-300ms) */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Chrome - Light mode */
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e2e8f0;
+  --sidebar-text: #0f172a;
+  --sidebar-muted: #64748b;
+  --sidebar-hover-bg: #f8fafc;
+  --sidebar-active-bg: var(--pri-50);
+  --sidebar-active-text: var(--pri-700);
+
+  --header-bg: #ffffff;
+  --header-border: #e2e8f0;
+  --header-text: #0f172a;
+
+  --divider-color: #e2e8f0;
+
+  /* Default Theme: Dark Emerald (Forest) */
   --pri-50: #f0fdf4;
   --pri-100: #dcfce7;
   --pri-200: #bbf7d0;
@@ -12,20 +70,37 @@
   --pri-950: #022c22;
 }
 
-.theme-sunset {
-  --pri-50: #fff7ed;
-  --pri-100: #ffedd5;
-  --pri-200: #fed7aa;
-  --pri-300: #fdba74;
-  --pri-400: #fb923c;
-  --pri-500: #f97316;
-  --pri-600: #ea580c;
-  --pri-700: #c2410c;
-  --pri-800: #9a3412;
-  --pri-900: #7c2d12;
-  --pri-950: #431407;
+/* Chrome - Dark mode variables */
+.dark,
+:where(.dark, .dark *) {
+  --sidebar-bg: #0f172a;
+  --sidebar-border: #1e293b;
+  --sidebar-text: #ffffff;
+  --sidebar-muted: #94a3b8;
+  --sidebar-hover-bg: #1e293b;
+  --sidebar-active-bg: rgba(255, 255, 255, 0.06);
+  --sidebar-active-text: #ffffff;
+
+  --header-bg: #0f172a;
+  --header-border: #1e293b;
+  --header-text: #ffffff;
+
+  --divider-color: #1e293b;
+
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.45), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.35);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 8px 24px -4px rgba(0, 0, 0, 0.5);
 }
 
+/* =========================================================================
+   Theme Color Palettes (All 5 themes calibrated with proper WCAG contrast)
+   ========================================================================= */
+
+/* 1. ثيم أخضر زمردي معتمد (Dark Emerald / Forest) */
 .theme-forest {
   --pri-50: #f0fdf4;
   --pri-100: #dcfce7;
@@ -40,86 +115,114 @@
   --pri-950: #022c22;
 }
 
-/* ثيم أزرق قرمزي (Crimson / Indigo Blue) */
+/* 2. ثيم أزرق مؤسسي احترافي (Corporate Sapphire Blue / Ocean) */
 .theme-ocean {
-  --pri-50: #eef2ff;
-  --pri-100: #e0e7ff;
-  --pri-200: #c7d2fe;
-  --pri-300: #a5b4fc;
-  --pri-400: #818cf8;
-  --pri-500: #6366f1;
-  --pri-600: #4f46e5;
-  --pri-700: #4338ca;
-  --pri-800: #3730a3;
-  --pri-900: #312e81;
-  --pri-950: #1e1b4b;
+  --pri-50: #eff6ff;
+  --pri-100: #dbeafe;
+  --pri-200: #bfdbfe;
+  --pri-300: #93c5fd;
+  --pri-400: #60a5fa;
+  --pri-500: #2563eb;
+  --pri-600: #1d4ed8;
+  --pri-700: #1e40af;
+  --pri-800: #1e3a8a;
+  --pri-900: #172554;
+  --pri-950: #0f172a;
 }
 
+/* 3. ثيم غروب الشمس الدافئ (Warm Sunset) - تباين WCAG AA محسّن للأزرار والنصوص */
+.theme-sunset {
+  --pri-50: #fff7ed;
+  --pri-100: #ffedd5;
+  --pri-200: #fed7aa;
+  --pri-300: #fdba74;
+  --pri-400: #fb923c;
+  --pri-500: #ea580c;
+  --pri-600: #c2410c;
+  --pri-700: #9a3412;
+  --pri-800: #7c2d12;
+  --pri-900: #431407;
+  --pri-950: #270b04;
+}
+
+/* 4. ثيم ذهبي فاخر (Luxury Gold) - تباين WCAG AA معتمد */
 .theme-luxury {
   --pri-50: #fffbeb;
   --pri-100: #fef3c7;
   --pri-200: #fde68a;
   --pri-300: #fcd34d;
   --pri-400: #fbbf24;
-  --pri-500: #f59e0b;
-  --pri-600: #d97706;
-  --pri-700: #b45309;
-  --pri-800: #92400e;
-  --pri-900: #78350f;
-  --pri-950: #0f172a;
+  --pri-500: #d97706;
+  --pri-600: #b45309;
+  --pri-700: #92400e;
+  --pri-800: #78350f;
+  --pri-900: #451a03;
+  --pri-950: #1e0b02;
 }
 
-/* ثيم اللون البنفسجي الملكي (Royal Purple) */
-.theme-purple,
-.theme-midnight {
+/* 5. ثيم بنفسجي ملكي (Royal Purple) - متناسق مع إعدادات النظام وعالي التباين */
+.theme-purple {
   --pri-50: #faf5ff;
   --pri-100: #f3e8ff;
   --pri-200: #e9d5ff;
   --pri-300: #d8b4fe;
   --pri-400: #c084fc;
-  --pri-500: #a855f7;
-  --pri-600: #9333ea;
-  --pri-700: #7e22ce;
-  --pri-800: #6b21a8;
-  --pri-900: #581c87;
-  --pri-950: #3b0764;
+  --pri-500: #9333ea;
+  --pri-600: #7e22ce;
+  --pri-700: #6b21a8;
+  --pri-800: #581c87;
+  --pri-900: #3b0764;
+  --pri-950: #1e0533;
+}
+
+/* 6. ثيم منتصف الليل الوقور (Midnight Charcoal) */
+.theme-midnight {
+  --pri-50: #f8fafc;
+  --pri-100: #f1f5f9;
+  --pri-200: #e2e8f0;
+  --pri-300: #cbd5e1;
+  --pri-400: #94a3b8;
+  --pri-500: #475569;
+  --pri-600: #334155;
+  --pri-700: #1e293b;
+  --pri-800: #0f172a;
+  --pri-900: #020617;
+  --pri-950: #000000;
 }
 
 /* =========================================================================
-   Theme Chrome (Sidebar & Header) Backgrounds - Dynamic for Day and Night
+   Theme Chrome (Sidebar & Header) Backgrounds - Solid, Crisp & Enterprise
    ========================================================================= */
 .theme-chrome-sidebar {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
-  border-inline-end: 1px solid rgba(226, 232, 240, 0.9) !important;
-  box-shadow: 2px 0 16px -4px rgba(0, 0, 0, 0.04);
+  background: var(--sidebar-bg) !important;
+  border-inline-end: 1px solid var(--sidebar-border) !important;
+  box-shadow: 1px 0 3px 0 rgba(0, 0, 0, 0.02);
 }
 .dark .theme-chrome-sidebar,
 :where(.dark, .dark *) .theme-chrome-sidebar {
-  background: linear-gradient(180deg, #0b1120 0%, #080d19 100%) !important;
-  border-inline-end: 1px solid rgba(30, 41, 59, 0.8) !important;
-  box-shadow: 4px 0 24px -4px rgba(0, 0, 0, 0.5);
+  background: var(--sidebar-bg) !important;
+  border-inline-end: 1px solid var(--sidebar-border) !important;
+  box-shadow: none;
 }
 
 .theme-chrome-header {
-  background: rgba(255, 255, 255, 0.92) !important;
-  backdrop-filter: blur(12px) !important;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
+  background: var(--header-bg) !important;
+  border-bottom: 1px solid var(--header-border) !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
 }
 .dark .theme-chrome-header,
 :where(.dark, .dark *) .theme-chrome-header {
-  background: rgba(11, 17, 32, 0.94) !important;
-  backdrop-filter: blur(12px) !important;
-  border-bottom: 1px solid rgba(30, 41, 59, 0.8) !important;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  background: var(--header-bg) !important;
+  border-bottom: 1px solid var(--header-border) !important;
+  box-shadow: none;
 }
 
 .theme-chrome-divider {
-  border-color: rgba(226, 232, 240, 0.8) !important;
+  border-color: var(--divider-color) !important;
 }
 .dark .theme-chrome-divider,
 :where(.dark, .dark *) .theme-chrome-divider {
-  border-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: var(--divider-color) !important;
 }
 
 /* Touch Mode Utilities */
@@ -139,8 +242,6 @@
     margin-bottom: 8px !important;
 }
 
-/* أزرار الأيقونات فقط (X/الإغلاق...): دائرة كاملة 52×52 بدل بيضاوي 36×52
-   مع توسّط الأيقونة (يعمل مع قاعدة flex في index.css) */
 .touch-mode button:has(> svg):not(:has(> :not(svg))) {
   min-width: 52px !important;
   padding-left: 12px !important;

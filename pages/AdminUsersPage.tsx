@@ -64,7 +64,33 @@ const PERMISSION_GROUPS = [
     }
 ];
 
-const DEFAULT_CASHIER_PERMS = ['create_invoice', 'invoices', 'closing', 'clients'];
+const DEFAULT_CASHIER_PERMS = ['create_invoice', 'invoices', 'returns', 'closing', 'clients'];
+
+const CASHIER_PRESETS = [
+    {
+        id: 'standard',
+        nameAr: 'كاشير مبيعات (افتراضي)',
+        nameEn: 'Standard Cashier',
+        descAr: 'فواتير البيع والمرتجعات، إغلاق الوردية، ودليل العملاء',
+        permissions: ['create_invoice', 'invoices', 'returns', 'closing', 'clients']
+    },
+    {
+        id: 'extended',
+        nameAr: 'كاشير شامل',
+        nameEn: 'Extended Cashier',
+        descAr: 'المبيعات والعملاء مع متابعة الديون الآجلة والحجوزات',
+        permissions: ['create_invoice', 'invoices', 'returns', 'closing', 'clients', 'debts', 'reservations']
+    },
+    {
+        id: 'supervisor',
+        nameAr: 'مشرف وردية',
+        nameEn: 'Shift Supervisor',
+        descAr: 'المبيعات، المصروفات، متابعة المخزون، ولوحة المؤشرات',
+        permissions: ['create_invoice', 'invoices', 'returns', 'closing', 'clients', 'debts', 'reservations', 'expenses', 'inventory', 'dashboard']
+    }
+];
+
+const ALL_PERMISSIONS_FLAT = PERMISSION_GROUPS.flatMap(g => g.permissions);
 
 const emptyUser = (): UserType => ({
     id: '',
@@ -86,8 +112,10 @@ export const AdminUsers = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [modalTab, setModalTab] = useState<'profile' | 'permissions' | 'password' | 'activity'>('profile');
+    const [permSearchQuery, setPermSearchQuery] = useState('');
     const [form, setForm] = useState<UserType>(emptyUser());
     const [showPassword, setShowPassword] = useState(false);
+    const [showDetailedPerms, setShowDetailedPerms] = useState(false);
     const [userToDelete, setUserToDelete] = useState<UserType | null>(null);
     
     // قائمة الإجراءات السريعة (...)
@@ -133,40 +161,55 @@ export const AdminUsers = () => {
 
     // حساب آخر ظهور للمستخدمين
     const getLastSeenTimestamp = (u: UserType): number | null => {
-        if (u.lastLogin) return u.lastLogin;
-        const userLogs = (state.auditLogs || []).filter(a => a.user?.toLowerCase() === u.username.toLowerCase());
-        if (userLogs.length > 0) {
-            return Math.max(...userLogs.map(l => l.timestamp));
+        try {
+            if (typeof u.lastLogin === 'number' && isFinite(u.lastLogin) && u.lastLogin > 0) return u.lastLogin;
+            const uname = (u.username || '').toLowerCase();
+            const userLogs = (state.auditLogs || []).filter(a => a && typeof a.user === 'string' && a.user.toLowerCase() === uname);
+            const validTs = userLogs.map(l => l.timestamp).filter(t => typeof t === 'number' && isFinite(t) && t > 0);
+            if (validTs.length > 0) {
+                return Math.max(...validTs);
+            }
+        } catch {
+            return null;
         }
         return null;
     };
 
     const formatLastSeen = (timestamp?: number | null): { text: string; isOnline: boolean } => {
-        if (!timestamp) return { text: language === 'ar' ? 'لم يسجل دخول بعد' : 'No login yet', isOnline: false };
-        const date = new Date(timestamp);
-        const now = new Date();
-        const diffMs = now.getTime() - date.getTime();
-        const diffMinutes = Math.floor(diffMs / (60 * 1000));
-        const diffHours = Math.floor(diffMs / (60 * 60 * 1000));
+        if (!timestamp || typeof timestamp !== 'number' || isNaN(timestamp) || !isFinite(timestamp) || timestamp <= 0) {
+            return { text: language === 'ar' ? 'لم يسجل دخول بعد' : 'No login yet', isOnline: false };
+        }
+        try {
+            const date = new Date(timestamp);
+            if (isNaN(date.getTime())) {
+                return { text: language === 'ar' ? 'لم يسجل دخول بعد' : 'No login yet', isOnline: false };
+            }
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            const diffMinutes = Math.floor(diffMs / (60 * 1000));
+            const diffHours = Math.floor(diffMs / (60 * 60 * 1000));
 
-        if (diffMinutes < 5) {
-            return { text: language === 'ar' ? 'متصل الآن 🟢' : 'Online now 🟢', isOnline: true };
+            if (diffMinutes < 5) {
+                return { text: language === 'ar' ? 'متصل الآن' : 'Online now', isOnline: true };
+            }
+            if (diffMinutes < 60) {
+                return { text: language === 'ar' ? `منذ ${diffMinutes} دقيقة` : `${diffMinutes}m ago`, isOnline: false };
+            }
+            if (diffHours < 24 && date.getDate() === now.getDate()) {
+                const timeStr = typeof date.toLocaleTimeString === 'function' ? date.toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : '';
+                return { text: language === 'ar' ? `اليوم ${timeStr}` : `Today ${timeStr}`, isOnline: false };
+            }
+            if (diffHours < 48 && (date.getDate() === now.getDate() - 1 || now.getDate() - date.getDate() === 1)) {
+                const timeStr = typeof date.toLocaleTimeString === 'function' ? date.toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : '';
+                return { text: language === 'ar' ? `أمس ${timeStr}` : `Yesterday ${timeStr}`, isOnline: false };
+            }
+            const fullDate = typeof date.toLocaleDateString === 'function'
+                ? date.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : '';
+            return { text: fullDate || (language === 'ar' ? 'مسجل سابقاً' : 'Logged before'), isOnline: false };
+        } catch {
+            return { text: language === 'ar' ? 'لم يسجل دخول بعد' : 'No login yet', isOnline: false };
         }
-        if (diffMinutes < 60) {
-            return { text: language === 'ar' ? `منذ ${diffMinutes} دقيقة` : `${diffMinutes}m ago`, isOnline: false };
-        }
-        if (diffHours < 24 && date.getDate() === now.getDate()) {
-            const timeStr = date.toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' });
-            return { text: language === 'ar' ? `اليوم ${timeStr}` : `Today ${timeStr}`, isOnline: false };
-        }
-        if (diffHours < 48 && (date.getDate() === now.getDate() - 1 || now.getDate() - date.getDate() === 1)) {
-            const timeStr = date.toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' });
-            return { text: language === 'ar' ? `أمس ${timeStr}` : `Yesterday ${timeStr}`, isOnline: false };
-        }
-        const fullDate = date.toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { 
-            month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-        });
-        return { text: fullDate, isOnline: false };
     };
 
     // التصفية والبحث
@@ -215,19 +258,21 @@ export const AdminUsers = () => {
     };
 
     // فتح نافذة التعديل
-    const handleOpenEditModal = (u: UserType) => {
+    const handleOpenEditModal = (u: UserType, initialTab: 'profile' | 'permissions' = 'profile') => {
         setForm({
             ...u,
             password: '',
             permissions: u.role === 'admin' 
                 ? PERMISSION_GROUPS.flatMap(g => g.permissions.map(p => p.key))
-                : (u.permissions || [...DEFAULT_CASHIER_PERMS])
+                : (u.permissions?.length ? u.permissions : [...DEFAULT_CASHIER_PERMS])
         });
         setIsEditing(true);
-        setModalTab('profile');
+        setModalTab(initialTab);
+        setPermSearchQuery('');
         setShowPassword(false);
         setIsModalOpen(true);
         setActiveActionMenuId(null);
+        setMenuAnchor(null);
     };
 
     // تبديل حالة التنشيط/الإيقاف
@@ -515,10 +560,15 @@ export const AdminUsers = () => {
                                                     <span>{language === 'ar' ? 'مدير النظام' : 'Administrator'}</span>
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 font-medium text-[11px] border border-slate-200 dark:border-slate-700/60">
-                                                    <User size={13} className="text-slate-400" />
-                                                    <span>{language === 'ar' ? 'كاشير' : 'Cashier'}</span>
-                                                </span>
+                                                <div>
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-bold text-[11px] border border-blue-200 dark:border-blue-800">
+                                                        <User size={13} className="text-blue-500" />
+                                                        <span>{language === 'ar' ? 'كاشير' : 'Cashier'}</span>
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold block mt-0.5 font-mono">
+                                                        {u.permissions?.length || 0} {language === 'ar' ? 'صلاحيات' : 'perms'}
+                                                    </span>
+                                                </div>
                                             )}
                                         </td>
 
@@ -624,6 +674,20 @@ export const AdminUsers = () => {
                                 <span>{language === 'ar' ? 'تعديل البيانات والصلاحيات' : 'Edit User & Permissions'}</span>
                             </button>
 
+                            {/* تعديل الصلاحيات المخصصة مباشرة */}
+                            {targetUser.role === 'cashier' && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        handleOpenEditModal(targetUser, 'permissions');
+                                    }}
+                                    className="w-full flex items-center gap-2 px-2.5 py-2 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors cursor-pointer"
+                                >
+                                    <Shield size={14} className="text-blue-500" />
+                                    <span>{language === 'ar' ? 'تعديل الصلاحيات المخصصة' : 'Edit Permissions'}</span>
+                                </button>
+                            )}
+
                             {/* تعديل الباسورد */}
                             <button
                                 type="button"
@@ -693,341 +757,639 @@ export const AdminUsers = () => {
                 <ModalShell
                     title={isEditing ? (language === 'ar' ? `تعديل المستخدم: ${form.name}` : `Edit: ${form.name}`) : (language === 'ar' ? 'إضافة مستخدم جديد للنظام' : 'Add New User')}
                     onClose={() => setIsModalOpen(false)}
-                    maxWidth="max-w-3xl"
+                    maxWidth="max-w-2xl"
                 >
-                    <form onSubmit={handleSaveUser} className="space-y-5 text-right" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                        {/* أزرار التبويبات الداخلية للنافذة */}
-                        <div className="flex border-b border-slate-200 dark:border-slate-800 gap-1 pb-1">
-                            <button
-                                type="button"
-                                onClick={() => setModalTab('profile')}
-                                className={`px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
-                                    modalTab === 'profile'
-                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 font-bold'
-                                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                                }`}
-                            >
-                                <User size={14} />
-                                <span>{language === 'ar' ? 'البيانات والرتبة' : 'Profile & Role'}</span>
-                            </button>
+                    <form onSubmit={handleSaveUser} className="space-y-4 text-right" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                        {/* عند التعديل فقط: إظهار شريط التبويبات */}
+                        {isEditing && (
+                            <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2 pb-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setModalTab('profile')}
+                                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                                        modalTab === 'profile'
+                                            ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                    }`}
+                                >
+                                    {language === 'ar' ? 'بيانات الحساب' : 'Account Details'}
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setModalTab('permissions')}
-                                className={`px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
-                                    modalTab === 'permissions'
-                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 font-bold'
-                                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                                }`}
-                            >
-                                <Shield size={14} />
-                                <span>{language === 'ar' ? 'أقسام الصلاحيات' : 'Permissions'}</span>
-                                {form.role === 'admin' && (
-                                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-slate-500 font-bold">
-                                        {language === 'ar' ? 'كاملة' : 'Full'}
-                                    </span>
-                                )}
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setModalTab('permissions')}
+                                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                                        modalTab === 'permissions'
+                                            ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                    }`}
+                                >
+                                    <span>{language === 'ar' ? 'صلاحيات النظام' : 'Permissions'}</span>
+                                    {form.role === 'cashier' && (
+                                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                                            modalTab === 'permissions' 
+                                                ? 'bg-white/20 text-white dark:bg-black/20 dark:text-slate-900' 
+                                                : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                        }`}>
+                                            {form.permissions?.length || 0}
+                                        </span>
+                                    )}
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setModalTab('password')}
-                                className={`px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
-                                    modalTab === 'password'
-                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 font-bold'
-                                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                                }`}
-                            >
-                                <Lock size={14} />
-                                <span>{language === 'ar' ? 'كلمة المرور' : 'Password'}</span>
-                            </button>
-
-                            {isEditing && (
                                 <button
                                     type="button"
                                     onClick={() => setModalTab('activity')}
-                                    className={`px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
                                         modalTab === 'activity'
-                                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 font-bold'
-                                            : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                                            ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                                     }`}
                                 >
-                                    <Activity size={14} />
-                                    <span>{language === 'ar' ? 'آخر الإجراءات والسجلات' : 'Audit Logs'}</span>
-                                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-mono">
+                                    <span>{language === 'ar' ? 'سجل العمليات' : 'Audit Logs'}</span>
+                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                                        modalTab === 'activity'
+                                            ? 'bg-white/20 text-white dark:bg-black/20 dark:text-slate-900'
+                                            : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                    }`}>
                                         {editingUserLogs.length}
                                     </span>
                                 </button>
-                            )}
-                        </div>
+                            </div>
+                        )}
 
-                        {/* التبويب 1: البيانات والرتبة */}
-                        {modalTab === 'profile' && (
+                        {/* عند إضافة مستخدم جديد: واجهة فائقة البساطة والسهولة بدون تعقيدات أو تنقل بين تبويبات */}
+                        {!isEditing ? (
                             <div className="space-y-4 animate-fade-in">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {/* البيانات الأساسية */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            {language === 'ar' ? 'الاسم الفعلي للمستخدم *' : 'Real Name *'}
+                                            {language === 'ar' ? 'الاسم بالكامل' : 'Full Name'} <span className="text-rose-500">*</span>
                                         </label>
                                         <Input
                                             value={form.name}
                                             onChange={(e: any) => setForm({ ...form, name: e.target.value })}
-                                            placeholder={language === 'ar' ? 'مثال: أحمد محمود' : 'e.g. John Doe'}
+                                            placeholder={language === 'ar' ? 'مثال: أحمد محمد' : 'e.g. John Doe'}
                                             required
                                         />
                                     </div>
 
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            {language === 'ar' ? 'اسم المستخدم للدخول (Username) *' : 'Username *'}
+                                            {language === 'ar' ? 'اسم المستخدم (لتسجيل الدخول)' : 'Username'} <span className="text-rose-500">*</span>
                                         </label>
                                         <Input
                                             value={form.username}
                                             onChange={(e: any) => setForm({ ...form, username: e.target.value.toLowerCase().trim() })}
-                                            placeholder="ahmed_pos"
+                                            placeholder="ahmed1"
                                             required
                                         />
                                     </div>
-                                </div>
 
-                                {/* اختيار الرتبة بشكل صريح وبطاقتين مميزتين */}
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
-                                        {language === 'ar' ? 'الرتبة الممنوحة للمستخدم:' : 'Role:'}
-                                    </label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {/* بطاقة كاشير */}
-                                        <div
-                                            onClick={() => setForm({ ...form, role: 'cashier' })}
-                                            className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-3 ${
-                                                form.role === 'cashier'
-                                                    ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-950/40 shadow-xs'
-                                                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                                            }`}
-                                        >
-                                            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 shrink-0">
-                                                <User size={20} />
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-extrabold text-sm text-slate-900 dark:text-white">
-                                                        {language === 'ar' ? 'كاشير' : 'Cashier'}
-                                                    </span>
-                                                    {form.role === 'cashier' && <Check size={14} className="text-blue-500" />}
-                                                </div>
-                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                                                    {language === 'ar' ? 'صلاحيات مخصصة لبيع الفواتير والمقبوضات دون التدخل في إعدادات النظام الحساسة.' : 'Tailored for point of sale and checkout with restricted administrative access.'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* بطاقة مدير */}
-                                        <div
-                                            onClick={() => setForm({ ...form, role: 'admin' })}
-                                            className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-3 ${
-                                                form.role === 'admin'
-                                                    ? 'border-purple-500 bg-purple-50/60 dark:bg-purple-950/40 shadow-xs'
-                                                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                                            }`}
-                                        >
-                                            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-950 text-slate-600 dark:text-slate-300 shrink-0">
-                                                <Shield size={20} />
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-extrabold text-sm text-slate-900 dark:text-white">
-                                                        {language === 'ar' ? 'مدير النظام' : 'Administrator'}
-                                                    </span>
-                                                    {form.role === 'admin' && <Check size={14} className="text-slate-500" />}
-                                                </div>
-                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                                                    {language === 'ar' ? 'تحكم وإشراف كامل على كل أجزاء البرنامج والتقارير والإعدادات والنسخ الاحتياطي.' : 'Full access to all modules, reports, system settings, and audit logs.'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                                    {/* الفرع المخصص */}
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            {language === 'ar' ? 'الفرع المخصص للعمل:' : 'Assigned Branch:'}
+                                            {language === 'ar' ? 'كلمة المرور' : 'Password'} <span className="text-rose-500">*</span>
+                                        </label>
+                                        <div className="relative">
+                                            <Input
+                                                type={showPassword ? 'text' : 'password'}
+                                                value={form.password || ''}
+                                                onChange={(e: any) => setForm({ ...form, password: e.target.value })}
+                                                placeholder="••••••••"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(prev => !prev)}
+                                                className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-1"
+                                            >
+                                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                            {language === 'ar' ? 'الفرع المخصص' : 'Assigned Branch'}
                                         </label>
                                         <select
                                             value={form.locationId || ''}
                                             onChange={(e) => setForm({ ...form, locationId: e.target.value })}
-                                            className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-slate-500 cursor-pointer"
+                                            className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-slate-500 cursor-pointer"
                                         >
-                                            <option value="">{language === 'ar' ? 'جميع الفروع والمواقع (غير مقيد)' : 'All Locations (Unrestricted)'}</option>
+                                            <option value="">{language === 'ar' ? 'كافة الفروع (غير مقيد)' : 'All Locations'}</option>
                                             {state.locations.map(loc => (
                                                 <option key={loc.id} value={loc.id}>فرع {loc.name}</option>
                                             ))}
                                         </select>
                                     </div>
-
-                                    {/* حالة الحساب */}
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            {language === 'ar' ? 'حالة الحساب:' : 'Account Status:'}
-                                        </label>
-                                        <div className="flex items-center gap-3 h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
-                                            <input
-                                                type="checkbox"
-                                                id="user-active-checkbox"
-                                                checked={form.active}
-                                                onChange={(e) => setForm({ ...form, active: e.target.checked })}
-                                                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer accent-purple-600"
-                                            />
-                                            <label htmlFor="user-active-checkbox" className="text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
-                                                {form.active 
-                                                    ? (language === 'ar' ? 'الحساب مفعل ونشط للعمل' : 'Account Active')
-                                                    : (language === 'ar' ? 'الحساب متوقف مؤقتاً' : 'Account Disabled')}
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* التبويب 2: الصلاحيات */}
-                        {modalTab === 'permissions' && (
-                            <div className="space-y-4 animate-fade-in">
-                                {form.role === 'admin' ? (
-                                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Shield size={16} className="text-slate-600 dark:text-slate-300" />
-                                            <span className="font-extrabold text-sm">{language === 'ar' ? 'صلاحيات كاملة تلقائية للمدير' : 'Full Access Granted'}</span>
-                                        </div>
-                                        <p className="text-xs opacity-90 leading-relaxed">
-                                            {language === 'ar' 
-                                                ? 'بصفتك اخترت رتبة «مدير النظام»، يمتلك هذا الحساب تلقائياً حق الوصول الكامل لجميع صفحات وأقسام البرنامج دون الحاجة لتحديد صلاحيات فردية.' 
-                                                : 'As an Administrator, this user automatically has full access to all system modules.'}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                                            <span className="text-xs text-slate-500 font-medium">
-                                                {language === 'ar' ? 'حدد الأقسام المسموح للكاشير بالوصول إليها:' : 'Select allowed permissions:'}
-                                            </span>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setForm({
-                                                        ...form,
-                                                        permissions: PERMISSION_GROUPS.flatMap(g => g.permissions.map(p => p.key))
-                                                    })}
-                                                    className="text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:underline cursor-pointer"
-                                                >
-                                                    {language === 'ar' ? 'تحديد الكل' : 'Select All'}
-                                                </button>
-                                                <span className="text-slate-300">•</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setForm({ ...form, permissions: [...DEFAULT_CASHIER_PERMS] })}
-                                                    className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                                                >
-                                                    {language === 'ar' ? 'الافتراضي للكاشير' : 'Cashier Defaults'}
-                                                </button>
-                                                <span className="text-slate-300">•</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setForm({ ...form, permissions: [] })}
-                                                    className="text-[11px] font-bold text-slate-400 hover:underline cursor-pointer"
-                                                >
-                                                    {language === 'ar' ? 'إلغاء الكل' : 'Clear All'}
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar pe-1">
-                                            {PERMISSION_GROUPS.map(group => (
-                                                <div key={group.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800">
-                                                    <h4 className="font-extrabold text-xs text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                                                        <span>{language === 'ar' ? group.titleAr : group.titleEn}</span>
-                                                    </h4>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                        {group.permissions.map(perm => {
-                                                            const isChecked = form.permissions.includes(perm.key);
-                                                            return (
-                                                                <label 
-                                                                    key={perm.key}
-                                                                    className={`p-2.5 rounded-lg border transition-all cursor-pointer flex items-center gap-2.5 text-xs font-bold ${
-                                                                        isChecked
-                                                                            ? 'border-slate-400 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
-                                                                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300'
-                                                                    }`}
-                                                                >
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={isChecked}
-                                                                        onChange={() => {
-                                                                            setForm(prev => ({
-                                                                                ...prev,
-                                                                                permissions: isChecked
-                                                                                    ? prev.permissions.filter(p => p !== perm.key)
-                                                                                    : [...prev.permissions, perm.key]
-                                                                            }));
-                                                                        }}
-                                                                        className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer accent-purple-600"
-                                                                    />
-                                                                    <span className="flex-1">{language === 'ar' ? perm.labelAr : perm.labelEn}</span>
-                                                                </label>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        )}
-
-                        {/* التبويب 3: كلمة المرور */}
-                        {modalTab === 'password' && (
-                            <div className="space-y-4 animate-fade-in max-w-md mx-auto py-2">
-                                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs leading-relaxed">
-                                    {isEditing 
-                                        ? (language === 'ar' ? 'اترك حقل كلمة المرور فارغاً إذا كنت لا ترغب بتغييرها للمستخدم الحالي.' : 'Leave blank to keep existing password.')
-                                        : (language === 'ar' ? 'حدد كلمة مرور قوية للمستخدم الجديد للدخول للنظام.' : 'Set a strong password for this new user.')}
                                 </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                        {isEditing ? (language === 'ar' ? 'كلمة المرور الجديدة (اختياري):' : 'New Password (Optional):') : (language === 'ar' ? 'كلمة المرور *:' : 'Password *:')}
+                                {/* اختيار رتبة الحساب: كاشير أو مدير */}
+                                <div className="space-y-1.5 pt-1">
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                                        {language === 'ar' ? 'نوع الحساب والصلاحيات:' : 'Account Role:'}
                                     </label>
-                                    <div className="relative">
-                                        <Input
-                                            type={showPassword ? 'text' : 'password'}
-                                            value={form.password || ''}
-                                            onChange={(e: any) => setForm({ ...form, password: e.target.value })}
-                                            placeholder="••••••••"
-                                            required={!isEditing}
-                                        />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                         <button
                                             type="button"
-                                            onClick={() => setShowPassword(prev => !prev)}
-                                            className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-1"
+                                            onClick={() => setForm({
+                                                ...form,
+                                                role: 'cashier',
+                                                permissions: [...DEFAULT_CASHIER_PERMS]
+                                            })}
+                                            className={`p-3 rounded-xl border text-right transition-all cursor-pointer ${
+                                                form.role === 'cashier'
+                                                    ? 'border-emerald-600 bg-emerald-50/60 dark:bg-emerald-950/20 ring-1 ring-emerald-500 text-slate-900 dark:text-white'
+                                                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                                            }`}
                                         >
-                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="font-bold text-xs flex items-center gap-1.5">
+                                                    <User size={15} className={form.role === 'cashier' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'} />
+                                                    <span>{language === 'ar' ? 'كاشير مبيعات (افتراضي)' : 'Cashier'}</span>
+                                                </span>
+                                                {form.role === 'cashier' && <Check size={14} className="text-emerald-600 dark:text-emerald-400" />}
+                                            </div>
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
+                                                {language === 'ar' ? 'يمنح تلقائياً صلاحيات الفواتير، المرتجعات، تقفيل الوردية، ودليل العملاء' : 'Standard POS sales, shifts, returns, and clients.'}
+                                            </p>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setForm({
+                                                ...form,
+                                                role: 'admin',
+                                                permissions: ALL_PERMISSIONS_FLAT.map(p => p.key)
+                                            })}
+                                            className={`p-3 rounded-xl border text-right transition-all cursor-pointer ${
+                                                form.role === 'admin'
+                                                    ? 'border-amber-600 bg-amber-50/60 dark:bg-amber-950/20 ring-1 ring-amber-500 text-slate-900 dark:text-white'
+                                                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                                            }`}
+                                        >
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="font-bold text-xs flex items-center gap-1.5">
+                                                    <Shield size={15} className={form.role === 'admin' ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'} />
+                                                    <span>{language === 'ar' ? 'مدير نظام (تحكم كامل)' : 'Administrator'}</span>
+                                                </span>
+                                                {form.role === 'admin' && <Check size={14} className="text-amber-600 dark:text-amber-400" />}
+                                            </div>
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
+                                                {language === 'ar' ? 'صلاحيات كاملة وغير مقيدة لكافة الأقسام والتقارير المالية وإعدادات النظام' : 'Full unrestricted access to all modules and settings.'}
+                                            </p>
                                         </button>
                                     </div>
                                 </div>
+
+                                {/* خيارات صلاحيات الكاشير التلقائية */}
+                                {form.role === 'cashier' && (
+                                    <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/80 space-y-2.5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                                {language === 'ar' ? 'مستوى الصلاحيات المحدد للكاشير:' : 'Cashier Level:'}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowDetailedPerms(p => !p)}
+                                                className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline cursor-pointer flex items-center gap-1"
+                                            >
+                                                {showDetailedPerms 
+                                                    ? (language === 'ar' ? '▲ إخفاء التخصيص التفصيلي' : '▲ Hide custom list')
+                                                    : (language === 'ar' ? 'تخصيص الصلاحيات يدوياً (اختياري)' : 'Custom permissions (optional)')}
+                                            </button>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                            {CASHIER_PRESETS.map(preset => {
+                                                const isMatch = preset.permissions.length === form.permissions?.length &&
+                                                    preset.permissions.every(p => form.permissions?.includes(p));
+                                                return (
+                                                    <button
+                                                        key={preset.id}
+                                                        type="button"
+                                                        onClick={() => setForm({ ...form, permissions: [...preset.permissions] })}
+                                                        className={`p-2.5 text-right rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                                                            isMatch
+                                                                ? 'border-slate-900 dark:border-slate-100 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                                                                : 'border-slate-200 dark:border-slate-700/80 bg-white/70 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center justify-between mb-0.5">
+                                                            <span>{language === 'ar' ? preset.nameAr : preset.nameEn}</span>
+                                                            {isMatch && <Check size={13} className="text-slate-900 dark:text-slate-100" />}
+                                                        </div>
+                                                        <div className="text-[10px] font-normal text-slate-400 leading-tight">
+                                                            {language === 'ar' ? preset.descAr : preset.descAr}
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* قائمة الصلاحيات التفصيلية (تظهر فقط عند رغبة المدير في التخصيص اليدوي) */}
+                                        {showDetailedPerms && (
+                                            <div className="pt-2 animate-fade-in">
+                                                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200 dark:border-slate-700 text-xs">
+                                                    <span className="font-mono text-slate-500 font-bold">
+                                                        {form.permissions?.length || 0} / {ALL_PERMISSIONS_FLAT.length} {language === 'ar' ? 'صلاحية مفعلة' : 'perms'}
+                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setForm({ ...form, permissions: ALL_PERMISSIONS_FLAT.map(p => p.key) })}
+                                                            className="font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                                                        >
+                                                            {language === 'ar' ? 'تحديد الكل' : 'Select All'}
+                                                        </button>
+                                                        <span className="text-slate-300 dark:text-slate-700">•</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setForm({ ...form, permissions: [] })}
+                                                            className="font-bold text-slate-600 dark:text-slate-400 hover:text-rose-500 cursor-pointer"
+                                                        >
+                                                            {language === 'ar' ? 'إلغاء الكل' : 'Clear'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-3 max-h-[35vh] overflow-y-auto custom-scrollbar pe-1">
+                                                    {PERMISSION_GROUPS.map(group => {
+                                                        const groupKeys = group.permissions.map(p => p.key);
+                                                        const allChecked = groupKeys.every(k => form.permissions?.includes(k));
+                                                        return (
+                                                            <div key={group.id} className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                                                                <div className="flex items-center justify-between mb-1.5 pb-1 border-b border-slate-100 dark:border-slate-800">
+                                                                    <span className="font-bold text-xs text-slate-800 dark:text-slate-200">
+                                                                        {language === 'ar' ? group.titleAr : group.titleEn}
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            if (allChecked) {
+                                                                                setForm(prev => ({
+                                                                                    ...prev,
+                                                                                    permissions: prev.permissions.filter(k => !groupKeys.includes(k))
+                                                                                }));
+                                                                            } else {
+                                                                                setForm(prev => ({
+                                                                                    ...prev,
+                                                                                    permissions: Array.from(new Set([...prev.permissions, ...groupKeys]))
+                                                                                }));
+                                                                            }
+                                                                        }}
+                                                                        className="text-[11px] font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                                                                    >
+                                                                        {allChecked ? (language === 'ar' ? 'إلغاء' : 'Deselect') : (language === 'ar' ? 'تحديد' : 'Select')}
+                                                                    </button>
+                                                                </div>
+
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                                                    {group.permissions.map(perm => {
+                                                                        const isChecked = form.permissions?.includes(perm.key);
+                                                                        return (
+                                                                            <label
+                                                                                key={perm.key}
+                                                                                className={`p-2 rounded border transition-all cursor-pointer flex items-center gap-2 text-xs font-bold ${
+                                                                                    isChecked
+                                                                                        ? 'border-slate-900 dark:border-slate-100 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white'
+                                                                                        : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                                                                                }`}
+                                                                            >
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={isChecked}
+                                                                                    onChange={() => {
+                                                                                        setForm(prev => ({
+                                                                                            ...prev,
+                                                                                            permissions: isChecked
+                                                                                                ? prev.permissions.filter(p => p !== perm.key)
+                                                                                                : [...prev.permissions, perm.key]
+                                                                                        }));
+                                                                                    }}
+                                                                                    className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900 cursor-pointer accent-slate-900 dark:accent-slate-100"
+                                                                                />
+                                                                                <span className="flex-1 truncate">
+                                                                                    {language === 'ar' ? perm.labelAr : perm.labelEn}
+                                                                                </span>
+                                                                            </label>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
+                        ) : (
+                            /* عند التعديل: التبويب 1 (بيانات الحساب) أو التبويب 2 (الصلاحيات) أو 3 (النشاط) */
+                            <>
+                                {modalTab === 'profile' && (
+                                    <div className="space-y-4 animate-fade-in">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                                    {language === 'ar' ? 'الاسم بالكامل' : 'Full Name'} <span className="text-rose-500">*</span>
+                                                </label>
+                                                <Input
+                                                    value={form.name}
+                                                    onChange={(e: any) => setForm({ ...form, name: e.target.value })}
+                                                    placeholder={language === 'ar' ? 'مثال: أحمد محمد' : 'e.g. John Doe'}
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                                    {language === 'ar' ? 'اسم المستخدم (لتسجيل الدخول)' : 'Username'} <span className="text-rose-500">*</span>
+                                                </label>
+                                                <Input
+                                                    value={form.username}
+                                                    onChange={(e: any) => setForm({ ...form, username: e.target.value.toLowerCase().trim() })}
+                                                    placeholder="ahmed1"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                                    {language === 'ar' ? 'كلمة المرور الجديدة (اتركها فارغة للإبقاء)' : 'New Password (Optional)'}
+                                                </label>
+                                                <div className="relative">
+                                                    <Input
+                                                        type={showPassword ? 'text' : 'password'}
+                                                        value={form.password || ''}
+                                                        onChange={(e: any) => setForm({ ...form, password: e.target.value })}
+                                                        placeholder="••••••••"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(prev => !prev)}
+                                                        className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-1"
+                                                    >
+                                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                                    {language === 'ar' ? 'الفرع المخصص' : 'Assigned Branch'}
+                                                </label>
+                                                <select
+                                                    value={form.locationId || ''}
+                                                    onChange={(e) => setForm({ ...form, locationId: e.target.value })}
+                                                    className="w-full h-10 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:border-slate-500 cursor-pointer"
+                                                >
+                                                    <option value="">{language === 'ar' ? 'كافة الفروع (غير مقيد)' : 'All Locations'}</option>
+                                                    {state.locations.map(loc => (
+                                                        <option key={loc.id} value={loc.id}>فرع {loc.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end pt-1">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                                    {language === 'ar' ? 'نوع الحساب (الرتبة)' : 'Account Role'}
+                                                </label>
+                                                <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const shouldReset = form.role === 'admin' || !form.permissions?.length;
+                                                            setForm({
+                                                                ...form,
+                                                                role: 'cashier',
+                                                                permissions: shouldReset ? [...DEFAULT_CASHIER_PERMS] : form.permissions
+                                                            });
+                                                        }}
+                                                        className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                                                            form.role === 'cashier'
+                                                                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                                                                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                                                        }`}
+                                                    >
+                                                        {language === 'ar' ? 'كاشير' : 'Cashier'}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setForm({
+                                                            ...form,
+                                                            role: 'admin',
+                                                            permissions: ALL_PERMISSIONS_FLAT.map(p => p.key)
+                                                        })}
+                                                        className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                                                            form.role === 'admin'
+                                                                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                                                                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                                                        }`}
+                                                    >
+                                                        {language === 'ar' ? 'مدير نظام' : 'Admin'}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                                    {language === 'ar' ? 'حالة الحساب' : 'Account Status'}
+                                                </label>
+                                                <label className="flex items-center gap-3 h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={form.active}
+                                                        onChange={(e) => setForm({ ...form, active: e.target.checked })}
+                                                        className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900 cursor-pointer accent-slate-900 dark:accent-slate-100"
+                                                    />
+                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                                                        {form.active 
+                                                            ? (language === 'ar' ? 'الحساب نشط ومفعل' : 'Active Account') 
+                                                            : (language === 'ar' ? 'الحساب معطل مؤقتاً' : 'Disabled Account')}
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* تبويب 2: الصلاحيات عند التعديل */}
+                                {modalTab === 'permissions' && (
+                                    <div className="space-y-4 animate-fade-in">
+                                        {form.role === 'admin' ? (
+                                            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400">
+                                                {language === 'ar' 
+                                                    ? 'رتبة مدير النظام تمنح حق الوصول والتحكم الكامل في كافة وظائف البرنامج بصورة تلقائية.' 
+                                                    : 'Administrators have full access to all system features.'}
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-200 dark:border-slate-800">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                                            {language === 'ar' ? 'المستوى المطبق:' : 'Preset:'}
+                                                        </span>
+                                                        <div className="flex items-center gap-1.5">
+                                                            {CASHIER_PRESETS.map(preset => {
+                                                                const isMatch = preset.permissions.length === form.permissions?.length &&
+                                                                    preset.permissions.every(p => form.permissions?.includes(p));
+                                                                return (
+                                                                    <button
+                                                                        key={preset.id}
+                                                                        type="button"
+                                                                        onClick={() => setForm({ ...form, permissions: [...preset.permissions] })}
+                                                                        className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                                                                            isMatch
+                                                                                ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                                                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                                                                        }`}
+                                                                    >
+                                                                        {language === 'ar' ? preset.nameAr : preset.nameEn}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 text-xs">
+                                                        <span className="font-mono text-slate-500 font-bold">
+                                                            {form.permissions?.length || 0} / {ALL_PERMISSIONS_FLAT.length}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setForm({ ...form, permissions: ALL_PERMISSIONS_FLAT.map(p => p.key) })}
+                                                            className="font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                                                        >
+                                                            {language === 'ar' ? 'تحديد الكل' : 'Select All'}
+                                                        </button>
+                                                        <span className="text-slate-300 dark:text-slate-700">•</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setForm({ ...form, permissions: [] })}
+                                                            className="font-bold text-slate-600 dark:text-slate-400 hover:text-rose-500 cursor-pointer"
+                                                        >
+                                                            {language === 'ar' ? 'إلغاء الكل' : 'Clear'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="relative">
+                                                    <Search size={14} className="absolute top-1/2 -translate-y-1/2 right-3 text-slate-400" />
+                                                    <input
+                                                        type="text"
+                                                        value={permSearchQuery}
+                                                        onChange={(e) => setPermSearchQuery(e.target.value)}
+                                                        placeholder={language === 'ar' ? 'بحث في الصلاحيات...' : 'Filter permissions...'}
+                                                        className="w-full pr-9 pl-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 outline-none focus:border-slate-400"
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-3.5 max-h-[44vh] overflow-y-auto custom-scrollbar pe-1">
+                                                    {PERMISSION_GROUPS.map(group => {
+                                                        const filteredPerms = group.permissions.filter(p => {
+                                                            if (!permSearchQuery.trim()) return true;
+                                                            const q = permSearchQuery.toLowerCase();
+                                                            return p.labelAr.toLowerCase().includes(q) ||
+                                                                p.labelEn.toLowerCase().includes(q) ||
+                                                                p.key.toLowerCase().includes(q);
+                                                        });
+                                                        if (filteredPerms.length === 0) return null;
+
+                                                        const groupKeys = group.permissions.map(p => p.key);
+                                                        const allChecked = groupKeys.every(k => form.permissions?.includes(k));
+                                                        const checkedCount = groupKeys.filter(k => form.permissions?.includes(k)).length;
+
+                                                        return (
+                                                            <div key={group.id} className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                                                                <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="font-bold text-xs text-slate-900 dark:text-white">
+                                                                            {language === 'ar' ? group.titleAr : group.titleEn}
+                                                                        </span>
+                                                                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold">
+                                                                            {checkedCount} / {group.permissions.length}
+                                                                        </span>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            if (allChecked) {
+                                                                                setForm(prev => ({
+                                                                                    ...prev,
+                                                                                    permissions: prev.permissions.filter(k => !groupKeys.includes(k))
+                                                                                }));
+                                                                            } else {
+                                                                                setForm(prev => ({
+                                                                                    ...prev,
+                                                                                    permissions: Array.from(new Set([...prev.permissions, ...groupKeys]))
+                                                                                }));
+                                                                            }
+                                                                        }}
+                                                                        className="text-[11px] font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                                                                    >
+                                                                        {allChecked ? (language === 'ar' ? 'إلغاء' : 'Deselect') : (language === 'ar' ? 'تحديد' : 'Select')}
+                                                                    </button>
+                                                                </div>
+
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                                    {filteredPerms.map(perm => {
+                                                                        const isChecked = form.permissions?.includes(perm.key);
+                                                                        return (
+                                                                            <label
+                                                                                key={perm.key}
+                                                                                className={`p-2.5 rounded-lg border transition-all cursor-pointer flex items-center gap-2.5 text-xs font-bold ${
+                                                                                    isChecked
+                                                                                        ? 'border-slate-900 dark:border-slate-100 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white'
+                                                                                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                                                                                }`}
+                                                                            >
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={isChecked}
+                                                                                    onChange={() => {
+                                                                                        setForm(prev => ({
+                                                                                            ...prev,
+                                                                                            permissions: isChecked
+                                                                                                ? prev.permissions.filter(p => p !== perm.key)
+                                                                                                : [...prev.permissions, perm.key]
+                                                                                        }));
+                                                                                    }}
+                                                                                    className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900 cursor-pointer accent-slate-900 dark:accent-slate-100"
+                                                                                />
+                                                                                <span className="flex-1 truncate">
+                                                                                    {language === 'ar' ? perm.labelAr : perm.labelEn}
+                                                                                </span>
+                                                                            </label>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </>
                         )}
 
-                        {/* التبويب 4: آخر الإجراءات وسجلات التدقيق الخاصة بالمستخدم */}
+                        {/* تبويب 3: سجل نشاط المستخدم */}
                         {modalTab === 'activity' && isEditing && (
                             <div className="space-y-3 animate-fade-in">
-                                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                        {language === 'ar' ? `سجل حركات وعمليات «${form.name}» على النظام:` : 'Activity Logs:'}
+                                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
+                                    <span className="font-bold text-slate-700 dark:text-slate-300">
+                                        {language === 'ar' ? `سجل عمليات «${form.name}»:` : 'Activity Logs:'}
                                     </span>
-                                    <span className="text-[11px] text-slate-400 font-mono">
-                                        {editingUserLogs.length} {language === 'ar' ? 'إجراء مسجل' : 'events'}
+                                    <span className="font-mono text-slate-400">
+                                        {editingUserLogs.length} {language === 'ar' ? 'إجراء' : 'events'}
                                     </span>
                                 </div>
 
@@ -1066,13 +1428,13 @@ export const AdminUsers = () => {
                             </div>
                         )}
 
-                        {/* أزرار الحفظ والإلغاء */}
-                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                        {/* أزرار الإجراءات السفلية */}
+                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
                             <Button
                                 type="button"
                                 variant="secondary"
                                 onClick={() => setIsModalOpen(false)}
-                                className="px-4"
+                                className="px-4 text-xs font-bold"
                             >
                                 {language === 'ar' ? 'إلغاء' : 'Cancel'}
                             </Button>
@@ -1080,7 +1442,7 @@ export const AdminUsers = () => {
                             <Button
                                 type="submit"
                                 variant="primary"
-                                className="px-6"
+                                className="px-6 text-xs font-bold"
                             >
                                 {isEditing ? (language === 'ar' ? 'حفظ التعديلات' : 'Save Changes') : (language === 'ar' ? 'إضافة المستخدم' : 'Add User')}
                             </Button>

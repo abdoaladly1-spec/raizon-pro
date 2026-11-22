@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-11-13T19:12:11.065Z",
+  "hardware": {
+    "platform": "win32",
+    "arch": "x64",
+    "nodeVersion": "v24.3.0"
+  },
+  "generation": {
+    "customersCount": 10000,
+    "itemsCount": 10000,
+    "invoicesCount": 30000,
+    "durationMs": 217
+  },
+  "inMemory": {
+    "totalPayloadMB": 25.16,
+    "serializeTimeMs": 213,
+    "deserializeTimeMs": 166,
+    "customerSearchLatencyMs": 2.082,
+    "customerSearchHits": 2976,
+    "barcodeSearchLatencyMs": 0.6604,
+    "invoicesAggregationLatencyMs": 5.278,
+    "monthInvoicesAnalyzed": 2548,
+    "monthTotalRevenue": 6311591.099999993,
+    "paginationSliceLatencyMs": 0.0034
+  },
+  "sqlite": {
+    "custInsertMs": 44.51,
+    "itemInsertMs": 44.1,
+    "invInsertMs": 673.04,
+    "totalInsertMs": 761.65,
+    "invoicesPerSec": 44573.87,
+    "aggQueryMs": 31.82,
+    "customerQueryMs": 0.19,
+    "itemQueryMs": 0.13,
+    "databaseSizeMB": 9.91
+  },
+  "supabase": {
+    "connected": true,
+    "customerBatchSynced": 100,
+    "customerBatchLatencyMs": 319,
+    "customerSyncError": null,
+    "invoiceBatchSynced": 100,
+    "invoiceBatchLatencyMs": 247,
+    "invoiceSyncError": null,
+    "avgSyncSpeedPerRecordMs": 2.83
+  }
+}

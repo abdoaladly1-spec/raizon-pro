@@ -241,7 +241,7 @@ def build_invoice_email(inv: Dict[str, Any]) -> Dict[str, str]:
 
       <!-- Minimal Quiet Footer -->
       <div style="text-align: center; color: #64748b; font-size: 11px; padding-top: 8px; border-top: 1px solid #1c1630;">
-        تم الإصدار آلياً بواسطة نظام الكاشير
+        تم الإصدار آلياً بواسطة نظام Rizon Pro System Cashier
       </div>
 
     </div>

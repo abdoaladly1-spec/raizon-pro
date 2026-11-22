@@ -1,12 +1,12 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
-import '../api.dart';
+import '../models/models.dart';
+import '../repositories/supabase_repository.dart';
+import '../theme/app_theme.dart';
 
 class InvoicesScreen extends StatefulWidget {
-  const InvoicesScreen({super.key});
+  final String? initialBranchId;
+  const InvoicesScreen({super.key, this.initialBranchId});
 
   @override
   State<InvoicesScreen> createState() => _InvoicesScreenState();
@@ -17,70 +17,33 @@ enum _Range { all, today, week, month, custom }
 class _InvoicesScreenState extends State<InvoicesScreen> {
   final _searchCtrl = TextEditingController();
   List<Invoice> _invoices = [];
+  List<Branch> _branches = [];
+  String? _selectedBranchId;
   bool _loading = false;
   String? _error;
-  _Range _range = _Range.all;
+  _Range _range = _Range.today;
   DateTimeRange? _custom;
 
-  // مزامنة تلقائية: نجلب فقط ما هو أحدث من آخر فاتورة مستلمة
-  Timer? _pollTimer;
-  int _lastTimestamp = 0;
-  DateTime? _lastSync;
-  static const _pollInterval = Duration(seconds: 10);
+  final _currencyFormat = NumberFormat("#,##0", "en_US");
 
   @override
   void initState() {
     super.initState();
-    _load().then((_) => _startPolling());
+    _selectedBranchId = widget.initialBranchId;
+    _loadBranches();
+    _load();
   }
 
   @override
   void dispose() {
-    _pollTimer?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
 
-  void _startPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(_pollInterval, (_) => _pollNewInvoices());
-  }
-
-  /// جلب الفواتير الجديدة من السيرفر بدون إعادة تحميل القائمة كاملة
-  Future<void> _pollNewInvoices() async {
-    if (!mounted || _loading) return;
-    if (AppApi.i.config.url.trim().isEmpty) return;
-    // لا نعيد تحميل القائمة أثناء وجود بحث أو فلتر مفعّل
-    if (_searchCtrl.text.trim().isNotEmpty || _range != _Range.all) return;
-
-    if (_error != null) {
-      // كان هناك خطأ (سيرفر متوقف مثلاً) → نعيد التحميل الكامل عند التعافي
-      await _load();
-      return;
-    }
-
-    try {
-      final fresh = await AppApi.i.fetchInvoicesSince(_lastTimestamp);
-      if (!mounted) return;
-      if (fresh.isEmpty) {
-        setState(() => _lastSync = DateTime.now());
-        return;
-      }
-      final known = _invoices.map((e) => e.id).toSet();
-      final added = fresh.where((e) => !known.contains(e.id)).toList();
-      if (added.isEmpty) {
-        setState(() => _lastSync = DateTime.now());
-        return;
-      }
-      setState(() {
-        _invoices = [...added, ..._invoices];
-        _lastTimestamp = _invoices
-            .map((e) => e.timestamp)
-            .fold(_lastTimestamp, (a, b) => b > a ? b : a);
-        _lastSync = DateTime.now();
-      });
-    } catch (_) {
-      // صامت: نعيد المحاولة في الدورة التالية
+  void _loadBranches() async {
+    final list = await SupabaseRepository.fetchBranches();
+    if (mounted) {
+      setState(() => _branches = list);
     }
   }
 
@@ -106,18 +69,12 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   }
 
   Future<void> _load() async {
-    if (AppApi.i.config.url.trim().isEmpty) {
-      setState(() {
-        _error = 'لم يتم إعداد رابط السيرفر بعد — افتح تبويب الإعدادات';
-        _loading = false;
-        _invoices = [];
-      });
-      return;
-    }
     setState(() => _loading = true);
+    final b = _bounds();
     try {
-      final b = _bounds();
-      final list = await AppApi.i.fetchInvoices(
+      final list = await SupabaseRepository.fetchRecentInvoices(
+        limit: 100,
+        branchId: _selectedBranchId,
         search: _searchCtrl.text.trim(),
         dateFrom: b.from,
         dateTo: b.to,
@@ -125,12 +82,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       if (!mounted) return;
       setState(() {
         _invoices = list;
-        _error = null;
         _loading = false;
-        _lastSync = DateTime.now();
-        _lastTimestamp = list
-            .map((e) => e.timestamp)
-            .fold(0, (a, b) => b > a ? b : a);
+        _error = null;
       });
     } catch (e) {
       if (!mounted) return;
@@ -160,167 +113,332 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    double totalSum = _invoices.fold(0.0, (acc, i) => acc + i.total);
+
     return Scaffold(
+      backgroundColor: AppColors.slate950,
       appBar: AppBar(
-        title: const Text('الفواتير'),
+        backgroundColor: AppColors.slate900,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
-          if (_lastSync != null)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
-                  'تحديث ${DateFormat('HH:mm').format(_lastSync!)}',
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
-                ),
-              ),
-            ),
-          IconButton(onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh)),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.emerald400),
+            onPressed: _load,
+          ),
         ],
+        title: const Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            "سجل الفواتير والمبيعات",
+            style: TextStyle(color: AppColors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-            child: TextField(
-              controller: _searchCtrl,
-              textInputAction: TextInputAction.search,
-              onSubmitted: (_) => _load(),
-              decoration: InputDecoration(
-                hintText: 'بحث باسم العميل، الهاتف أو رقم الفاتورة...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchCtrl.clear();
-                    _load();
-                  },
+          // Filter Section
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: AppColors.slate900,
+            child: Column(
+              children: [
+                // Search Box
+                TextField(
+                  controller: _searchCtrl,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  onSubmitted: (_) => _load(),
+                  decoration: InputDecoration(
+                    hintText: "بحث برقم الفاتورة، اسم العميل، أو الهاتف...",
+                    hintStyle: const TextStyle(color: AppColors.slate400, fontSize: 12),
+                    prefixIcon: IconButton(
+                      icon: const Icon(Icons.search, color: AppColors.emerald400),
+                      onPressed: _load,
+                    ),
+                    suffixIcon: _searchCtrl.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close, color: AppColors.slate400, size: 18),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              _load();
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: AppColors.slate800,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
                 ),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                isDense: true,
-              ),
+                const SizedBox(height: 10),
+
+                // Range Filter Chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  reverse: true,
+                  child: Row(
+                    children: [
+                      _rangeChip("الكل", _Range.all),
+                      _rangeChip("اليوم", _Range.today),
+                      _rangeChip("أسبوع", _Range.week),
+                      _rangeChip("شهر", _Range.month),
+                      GestureDetector(
+                        onTap: _pickRange,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          margin: const EdgeInsets.only(left: 6),
+                          decoration: BoxDecoration(
+                            color: _range == _Range.custom ? AppColors.emerald500 : AppColors.slate800,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: _range == _Range.custom ? AppColors.emerald400 : AppColors.slate700,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.calendar_today, size: 12, color: Colors.white),
+                              SizedBox(width: 4),
+                              Text("مخصص", style: TextStyle(color: Colors.white, fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Branch Filter Chips
+                if (_branches.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    reverse: true,
+                    child: Row(
+                      children: [
+                        _branchChip("جميع الفروع", null),
+                        ..._branches.map((b) => _branchChip(b.name, b.id)),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+
+          // Summary Strip
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.slate900.withOpacity(0.5),
+              border: const Border(bottom: BorderSide(color: AppColors.slate800)),
+            ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _chip('الكل', _Range.all),
-                _chip('اليوم', _Range.today),
-                _chip('آخر 7 أيام', _Range.week),
-                _chip('آخر 30 يوم', _Range.month),
-                FilterChip(
-                  label: const Text('فترة مخصصة'),
-                  selected: _range == _Range.custom,
-                  onSelected: (_) => _pickRange(),
-                  avatar: const Icon(Icons.date_range, size: 18),
+                Row(
+                  children: [
+                    const Text("الإجمالي: ", style: TextStyle(color: AppColors.slate400, fontSize: 12)),
+                    Text(
+                      "${_currencyFormat.format(totalSum)} ج.م",
+                      style: const TextStyle(color: AppColors.emerald400, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ],
+                ),
+                Text(
+                  "${_invoices.length} فاتورة",
+                  style: const TextStyle(color: AppColors.slate300, fontWeight: FontWeight.bold, fontSize: 12),
                 ),
               ],
             ),
           ),
-          if (_error != null)
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.cloud_off, size: 56, color: theme.colorScheme.error),
-                      const SizedBox(height: 12),
-                      Text(_error!, textAlign: TextAlign.center),
-                      const SizedBox(height: 12),
-                      FilledButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('إعادة المحاولة')),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          else if (_loading)
-            const Expanded(child: Center(child: CircularProgressIndicator()))
-          else if (_invoices.isEmpty)
-            const Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.receipt_long, size: 56, color: Colors.grey),
-                    SizedBox(height: 12),
-                    Text('لا توجد فواتير'),
-                  ],
-                ),
-              ),
-            )
-          else
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _load,
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  itemCount: _invoices.length,
-                  itemBuilder: (_, i) => _invoiceTile(_invoices[i]),
-                ),
-              ),
-            ),
+
+          // Invoices List
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.emerald500))
+                : _invoices.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.receipt_long, size: 48, color: AppColors.slate600),
+                            SizedBox(height: 12),
+                            Text("لا توجد فواتير في هذه الفترة", style: TextStyle(color: AppColors.slate400, fontSize: 14)),
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        color: AppColors.emerald500,
+                        onRefresh: _load,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _invoices.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (ctx, i) => _InvoiceItemCard(invoice: _invoices[i]),
+                        ),
+                      ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _chip(String label, _Range value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: _range == value,
-        onSelected: (_) {
-          setState(() => _range = value);
-          _load();
-        },
+  Widget _rangeChip(String label, _Range r) {
+    final sel = _range == r;
+    return GestureDetector(
+      onTap: () {
+        setState(() => _range = r);
+        _load();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        margin: const EdgeInsets.only(left: 6),
+        decoration: BoxDecoration(
+          color: sel ? AppColors.emerald500 : AppColors.slate800,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: sel ? AppColors.emerald400 : AppColors.slate700),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(color: sel ? Colors.white : AppColors.slate300, fontSize: 11, fontWeight: sel ? FontWeight.bold : FontWeight.normal),
+        ),
       ),
     );
   }
 
-  Widget _invoiceTile(Invoice inv) {
-    final f = NumberFormat('#,##0.00');
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      child: ExpansionTile(
-        shape: const Border(),
-        title: Text(
-          'فاتورة #${inv.localId ?? inv.id}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+  Widget _branchChip(String label, String? id) {
+    final sel = _selectedBranchId == id;
+    return GestureDetector(
+      onTap: () {
+        setState(() => _selectedBranchId = id);
+        _load();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        margin: const EdgeInsets.only(left: 6),
+        decoration: BoxDecoration(
+          color: sel ? AppColors.cyan500.withOpacity(0.2) : AppColors.slate800,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: sel ? AppColors.cyan500 : AppColors.slate700),
         ),
-        subtitle: Text('${inv.customerName} • ${inv.date}'),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text('${f.format(inv.total)} ج.م',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF059669))),
-            Text(inv.paymentMethod == 'card' ? 'بطاقة' : 'نقداً',
-                style: const TextStyle(fontSize: 11, color: Colors.grey)),
-          ],
+        child: Text(
+          label,
+          style: TextStyle(color: sel ? AppColors.cyan500 : AppColors.slate400, fontSize: 11, fontWeight: sel ? FontWeight.bold : FontWeight.normal),
         ),
+      ),
+    );
+  }
+}
+
+class _InvoiceItemCard extends StatelessWidget {
+  final Invoice invoice;
+  const _InvoiceItemCard({required this.invoice});
+
+  Color _getMethodColor(String method) {
+    final m = method.toLowerCase();
+    if (m.contains('كاش') || m.contains('cash')) return AppColors.emerald500;
+    if (m.contains('card') || m.contains('insta') || m.contains('بنك')) return AppColors.cyan500;
+    if (m.contains('محفظة') || m.contains('wallet')) return AppColors.amber500;
+    if (m.contains('آجل') || m.contains('credit')) return Colors.redAccent;
+    return AppColors.slate400;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final formatter = NumberFormat("#,##0", "en_US");
+    final methodColor = _getMethodColor(invoice.paymentMethod);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.slate900,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.slate800),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAlignment.end,
         children: [
-          if (inv.items.isEmpty)
-            const ListTile(title: Text('بدون أصناف'))
-          else
-            ...inv.items.map(
-              (it) => ListTile(
-                dense: true,
-                title: Text(it.name),
-                subtitle: Text('${it.quantity} × ${f.format(it.price)}'),
-                trailing: Text('${f.format(it.lineTotal)} ج.م'),
+          // Top Row: Number & Amount
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "${formatter.format(invoice.total)} ج.م",
+                style: const TextStyle(color: AppColors.emerald400, fontWeight: FontWeight.bold, fontSize: 16),
               ),
-            ),
-          if (inv.discount > 0 || inv.tax > 0)
-            ListTile(
-              dense: true,
-              title: Text('خصم: ${f.format(inv.discount)} • ضريبة: ${f.format(inv.tax)}'),
-              trailing: Text('الكاشير: ${inv.createdBy.isEmpty ? '-' : inv.createdBy}'),
-            ),
+              Row(
+                children: [
+                  if (invoice.branchName != null && invoice.branchName!.isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.slate800,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        invoice.branchName!,
+                        style: const TextStyle(color: AppColors.slate400, fontSize: 10),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(
+                    "#${invoice.invoiceNumber.isNotEmpty ? invoice.invoiceNumber : (invoice.clientKey ?? '')}",
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Customer and Staff info
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: methodColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: methodColor.withOpacity(0.4)),
+                ),
+                child: Text(
+                  invoice.paymentMethod,
+                  style: TextStyle(color: methodColor, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAlignment.end,
+                children: [
+                  Text(
+                    invoice.customerName ?? "عميل نقدي",
+                    style: const TextStyle(color: AppColors.slate200, fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  if (invoice.phone != null && invoice.phone!.isNotEmpty)
+                    Text(invoice.phone!, style: const TextStyle(color: AppColors.slate500, fontSize: 11)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Date and Time
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (invoice.staffName != null && invoice.staffName!.isNotEmpty)
+                Text("الموظف: ${invoice.staffName}", style: const TextStyle(color: AppColors.slate500, fontSize: 11)),
+              Text(
+                invoice.createdAt.length >= 16 ? invoice.createdAt.substring(0, 16).replaceAll("T", " ") : invoice.createdAt,
+                style: const TextStyle(color: AppColors.slate500, fontSize: 11),
+              ),
+            ],
+          ),
         ],
       ),
     );

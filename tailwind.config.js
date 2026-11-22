@@ -13,6 +13,9 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Cairo', 'sans-serif'],
+        cairo: ['Cairo', 'sans-serif'],
+        ibm: ['"IBM Plex Sans Arabic"', 'Cairo', 'sans-serif'],
+        heading: ['"IBM Plex Sans Arabic"', 'Cairo', 'sans-serif'],
       },
       colors: {
         slate: {

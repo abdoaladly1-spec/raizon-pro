@@ -1,12 +1,13 @@
 import { printCustomerStatementThermal } from '../lib/thermalPrinter';
 import { CustomerProfileModal } from '../components/CustomerProfileModal';
+import { normalizePhone, isValidPhone } from '../lib/phoneUtils';
 /* تم فصل هذا الملف من App.tsx (نظام ProCashier) */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
     FileText, Users, Plus, Trash2, Printer, Search, X, 
     User, DollarSign, Clock, Settings, Check, CreditCard, Wallet, Banknote,
-    Filter, ChevronDown,
+    Filter, ChevronDown, AlertCircle, Sparkles,
     WhatsAppIcon, StatementIcon, CustomEditIcon, CustomTrashIcon, CustomPrinterIcon, TimeIcon
 } from '../components/Icons';
 import { Customer, CustomerPayment } from '../types';
@@ -103,6 +104,19 @@ export const Clients = () => {
             return matchesSearch && matchesDebt && matchesFilter;
         });
     }, [state.customers, search, filterDebtOnly, clientFilter]);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const PAGE_SIZE = 50;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, filterDebtOnly, clientFilter]);
+
+    const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+    const paginatedClients = useMemo(() => {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        return filtered.slice(start, start + PAGE_SIZE);
+    }, [filtered, currentPage, PAGE_SIZE]);
 
     // جميع فواتير العميل المختار
     const customerInvoices = useMemo(() => {
@@ -213,12 +227,9 @@ export const Clients = () => {
     // تقديم نموذج إضافة/تعديل العميل
     const handleSubmit = (e: any) => {
         e.preventDefault();
-        const phoneRegex = /^01\d{9}$/;
-        const nameRegex = /^(\S+)\s+(\S+).*$/; 
-
-        const cleanPhone = form.phone.trim().replace(/[٠-٩]/g, (d: string) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString()).replace(/[^\d]/g, '');
-        if (cleanPhone.length !== 11 || !cleanPhone.startsWith('01')) {
-            addToast(language === 'ar' ? 'شرط: رقم الهاتف يجب أن يتكون من 11 رقماً بالضبط ويبدأ بـ 01' : 'Phone number must be exactly 11 digits starting with 01', 'error');
+        const cleanPhone = normalizePhone(form.phone);
+        if (!isValidPhone(cleanPhone)) {
+            addToast(language === 'ar' ? 'شرط: رقم الهاتف يجب أن يتكون من 11 رقماً ويبدأ بـ 01 (مثال: 01012345678)' : 'Phone number must be valid 11 digits starting with 01', 'error');
             return;
         }
         const nameParts = form.name.trim().split(/\s+/).filter(Boolean);
@@ -397,7 +408,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                 <button
                                     type="button"
                                     onClick={() => { setClientFilter('all'); setShowFilterDropdown(false); }}
-                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'all' ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
+                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'all' ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400 font-extrabold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
                                 >
                                     <span>{language === 'ar' ? 'جميع العملاء' : 'All Clients'}</span>
                                     <span className="font-mono text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700">{state.customers.length}</span>
@@ -406,7 +417,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                 <button
                                     type="button"
                                     onClick={() => { setClientFilter('vip'); setShowFilterDropdown(false); }}
-                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'vip' ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
+                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'vip' ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400 font-extrabold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
                                 >
                                     <span className="flex items-center gap-1.5">
                                         <span className="text-amber-500">⭐</span>
@@ -418,10 +429,10 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                 <button
                                     type="button"
                                     onClick={() => { setClientFilter('debt'); setShowFilterDropdown(false); }}
-                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'debt' ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
+                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'debt' ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400 font-extrabold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
                                 >
                                     <span className="flex items-center gap-1.5">
-                                        <span className="text-rose-500">⚠️</span>
+                                        <AlertCircle size={14} className="text-rose-500" />
                                         <span>{language === 'ar' ? 'عليهم مديونية (آجل)' : 'Clients with Debt'}</span>
                                     </span>
                                     <span className="font-mono text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700">{state.customers.filter(c => (c.balance || 0) > 0).length}</span>
@@ -430,10 +441,10 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                 <button
                                     type="button"
                                     onClick={() => { setClientFilter('clear'); setShowFilterDropdown(false); }}
-                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'clear' ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
+                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'clear' ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400 font-extrabold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
                                 >
                                     <span className="flex items-center gap-1.5">
-                                        <span className="text-emerald-500">✓</span>
+                                        <Check size={14} className="text-emerald-500" />
                                         <span>{language === 'ar' ? 'حسابات مسددة (بدون دين)' : 'Clear Balance (0 Debt)'}</span>
                                     </span>
                                     <span className="font-mono text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700">{state.customers.filter(c => (c.balance || 0) <= 0).length}</span>
@@ -442,10 +453,10 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                                 <button
                                     type="button"
                                     onClick={() => { setClientFilter('loyalty'); setShowFilterDropdown(false); }}
-                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'loyalty' ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
+                                    className={`w-full px-3.5 py-2.5 text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${clientFilter === 'loyalty' ? 'bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400 font-extrabold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
                                 >
                                     <span className="flex items-center gap-1.5">
-                                        <span className="text-purple-500">🎁</span>
+                                        <Sparkles size={14} className="text-purple-500" />
                                         <span>{language === 'ar' ? 'لديهم نقاط ولاء' : 'Has Loyalty Points'}</span>
                                     </span>
                                     <span className="font-mono text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700">{state.customers.filter(c => (c.loyaltyPoints || 0) > 0).length}</span>
@@ -529,7 +540,7 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                            {filtered.map(c => {
+                            {paginatedClients.map(c => {
                                 const hasDebt = (c.balance || 0) > 0;
                                 return (
                                     <tr 
@@ -644,6 +655,40 @@ ${state.settings.phone ? `للتواصل: ${state.settings.phone}` : ''}`;
                         </tbody>
                     </table>
                 </div>
+
+                {/* شريط ترقيم الصفحات وسرعة التصفح لقاعدة العملاء الضخمة */}
+                {filtered.length > PAGE_SIZE && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3.5 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-200 dark:border-slate-750 text-xs font-bold">
+                        <div className="text-slate-500 dark:text-slate-400">
+                            {language === 'ar' ? (
+                                <span>عرض <strong className="text-slate-900 dark:text-slate-100 font-mono">{(currentPage - 1) * PAGE_SIZE + 1}</strong> إلى <strong className="text-slate-900 dark:text-slate-100 font-mono">{Math.min(currentPage * PAGE_SIZE, filtered.length)}</strong> من إجمالي <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{filtered.length}</strong> عميل</span>
+                            ) : (
+                                <span>Showing <strong>{(currentPage - 1) * PAGE_SIZE + 1}</strong> to <strong>{Math.min(currentPage * PAGE_SIZE, filtered.length)}</strong> of <strong>{filtered.length}</strong> clients</span>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                            >
+                                {language === 'ar' ? 'السابق' : 'Previous'}
+                            </button>
+                            <span className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono border border-emerald-500/20">
+                                {currentPage} / {totalPages}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage >= totalPages}
+                                className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                            >
+                                {language === 'ar' ? 'التالي' : 'Next'}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </Card>
 
             {/* نافذة ملف العميل وكشف الحساب والآجل التفصيلية الموحدة */}

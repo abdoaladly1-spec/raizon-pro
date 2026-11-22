@@ -77,9 +77,9 @@ if not API_KEY:
 # --- البريد الإلكتروني (Gmail SMTP) ---
 SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
-SMTP_USER = os.environ.get("SMTP_USER", "rizon.pro.app@gmail.com").strip()      # حساب Gmail المخصص للتطبيق
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "udgddndyondosvxk").strip()  # App Password (16 خانة)
-EMAIL_FROM = os.environ.get("EMAIL_FROM", "rizon.pro.app@gmail.com").strip() or SMTP_USER
+SMTP_USER = os.environ.get("SMTP_USER", "").strip()      # حساب Gmail المخصص للتطبيق
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "").strip()  # App Password (16 خانة)
+EMAIL_FROM = os.environ.get("EMAIL_FROM", "").strip() or SMTP_USER
 EMAIL_TO = os.environ.get("EMAIL_TO", "").strip()        # إيميل صاحب المشروع
 EMAIL_SUBJECT_PREFIX = os.environ.get("EMAIL_SUBJECT_PREFIX", "[Rizon Pro]")
 

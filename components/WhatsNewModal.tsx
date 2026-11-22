@@ -49,7 +49,7 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
             {releaseName || `ما الجديد في الإصدار ${version}`}
           </h3>
           <p className="text-xs text-slate-400 mt-1">
-            تمت ترقية نظام RaiZon Pro بنجاح بأحدث الميزات والأمان
+            تمت ترقية نظام فلير وان (Flare One) بنجاح بأحدث الميزات والأمان
           </p>
         </div>
 

@@ -6,11 +6,12 @@ import {
     FileText, Calendar, Award, PieChart, Activity, Plus,
     Package, ChevronRight, TrendingUp, ShoppingCart, Sparkles,
     CreditCard, Printer, X, Check, ArrowUp, ArrowDown, User, Users,
-    Phone, Building, Wallet, Info, Filter, History, Settings, RefreshCw
+    Phone, Building, Wallet, Info, Filter, History, Settings, RefreshCw, BarChart2
 } from '../components/Icons';
 import { Card, Button, SimpleBarChart, ModalShell } from '../components/ui';
 import { parseInvoiceDate, localIsoToday, toIsoDate } from '../lib/dates';
-import { round2, isCashExpense } from '../lib/payments';
+import { round2, isCashExpense, getAutoShrinkNumberClass } from '../lib/payments';
+export { getAutoShrinkNumberClass };
 import { 
     sumRevenue, sumReturns, sumExpenses, countableInvoice, calcPeriod, 
     periodInvoices, periodExpenses, periodReturns, byStaff, profitBreakdown,
@@ -28,7 +29,7 @@ const KPI_CARDS_STORAGE_KEY = 'raizon_dashboard_kpi_cards_v1';
 
 const KPI_CARDS_CATALOG: { id: KpiCardId; titleAr: string; titleEn: string; descAr: string; icon: any; color: string }[] = [
   { id: 'revenue', titleAr: 'إجمالي الإيرادات', titleEn: 'Total Revenue', descAr: 'مبيعات وفواتير الفترة المحددة وطرق الدفع', icon: DollarSign, color: 'text-emerald-500' },
-  { id: 'profit', titleAr: 'صافي الأرباح', titleEn: 'Net Profit', descAr: 'الأرباح الحقيقية بعد خصم تكلفة البضاعة والمصروفات', icon: TrendingUp, color: 'text-purple-500' },
+  { id: 'profit', titleAr: 'صافي الأرباح', titleEn: 'Net Profit', descAr: 'الأرباح الحقيقية بعد خصم تكلفة البضاعة والمصروفات', icon: TrendingUp, color: 'text-blue-500' },
   { id: 'expenses', titleAr: 'المصروفات', titleEn: 'Expenses', descAr: 'المصروفات التشغيلية والنثرية والرواتب', icon: PieChart, color: 'text-rose-500' },
   { id: 'customers', titleAr: 'العملاء والنشاط', titleEn: 'Customers & Activity', descAr: 'عدد العملاء المسجلين والديون وحالة نواقص المخزون', icon: Users, color: 'text-sky-500' },
   { id: 'drawer', titleAr: 'المتوقع بالدرج', titleEn: 'Expected Drawer Cash', descAr: 'المبلغ النقدي المحسوب بالدرج وفق المعادلة المعتمدة', icon: Wallet, color: 'text-amber-500' },
@@ -38,8 +39,42 @@ const KPI_CARDS_CATALOG: { id: KpiCardId; titleAr: string; titleEn: string; desc
   { id: 'opening', titleAr: 'الرصيد الافتتاحي', titleEn: 'Opening Balance', descAr: 'رصيد بداية اليومية أو الوردية المعتمد للدرج', icon: Banknote, color: 'text-teal-500' },
 ];
 
+const formatAppointmentDate = (dateStr: string): string => {
+    if (!dateStr) return '-';
+    try {
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            const y = parts[0];
+            const m = parseInt(parts[1], 10);
+            const d = parseInt(parts[2], 10);
+            return `${d}/${m}/${y}`;
+        }
+    } catch {}
+    return dateStr;
+};
+
+const formatAppointmentTime = (timeStr: string): string => {
+    if (!timeStr) return '-';
+    let s = timeStr.trim();
+    s = s.replace(/\s*م\s*$/, ' PM').replace(/\s*ص\s*$/, ' AM');
+    if (s.includes(' | ')) return s;
+    const m = s.match(/^(\d{1,2}:\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+    if (m) {
+        const hhmm = m[1];
+        const period = m[2] ? m[2].toUpperCase() : '';
+        return period ? `${hhmm} | ${period}` : hhmm;
+    }
+    if (/[\s]+[Pp][Mm]/.test(s)) return s.replace(/[\s]+[Pp][Mm]/, ' | PM');
+    if (/[\s]+[Aa][Mm]/.test(s)) return s.replace(/[\s]+[Aa][Mm]/, ' | AM');
+    return s;
+};
+
 export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) => void, showStats: boolean }) => {
-    const { state, t, language, formatDate, formatTime, currentUser, formatNumber, addToast } = useApp();
+    const { state, t, language, formatDate, formatTime, currentUser, formatNumber, addToast, updateReservation } = useApp();
+    const todayIsoStr = useMemo(() => localIsoToday(), []);
+    const todayReservationsList = useMemo(() => {
+        return (state.reservations || []).filter(r => r.date === todayIsoStr && r.status !== 'cancelled');
+    }, [state.reservations, todayIsoStr]);
     const [range, setRange] = useState<DashboardRange>('day');
     
     // نافذة التفاصيل المنبثقة عند الضغط على أي بطاقة
@@ -63,8 +98,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
     });
     const [showCustomizeModal, setShowCustomizeModal] = useState(false);
     const [tempSelectedKpiCards, setTempSelectedKpiCards] = useState<KpiCardId[]>(activeKpiCards);
-    // نمط عرض الرسم البياني أو خريطة ساعات النشاط والذروة
-    const [chartSubView, setChartSubView] = useState<'chart' | 'heatmap'>('chart');
+    // نوع الإحصائية المعروضة في الرسم البياني: المبيعات / الفواتير / الزوار / المصاريف
+    const [chartMetric, setChartMetric] = useState<'sales' | 'invoices' | 'visitors' | 'expenses'>('sales');
 
     // الساعة الحية
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -420,7 +455,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
         return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 5);
     }, [periodFilteredInvoices, itemsMap, language]);
 
-    // بيانات الرسم البياني متوافقة تماماً مع الفترة المختارة
+    // بيانات الرسم البياني متوافقة تماماً مع الفترة المختارة ونوع الإحصائية (مبيعات / فواتير / زوار / مصاريف)
     const chartData = useMemo(() => {
         const locale = language === 'ar' ? 'ar-EG' : 'en-US';
         const toYmd = (d: Date) => {
@@ -430,6 +465,28 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
             return `${y}-${m}-${day}`;
         };
 
+        const computeMetricValue = (invList: typeof periodFilteredInvoices, expList: typeof periodFilteredExpenses): number => {
+            if (chartMetric === 'sales') {
+                return round2(invList.reduce((acc, curr) => acc + (curr.total || 0), 0));
+            }
+            if (chartMetric === 'invoices') {
+                return invList.length;
+            }
+            if (chartMetric === 'visitors') {
+                const uniqueVisitors = new Set<string>();
+                invList.forEach(inv => {
+                    if (inv.customerId) uniqueVisitors.add(`id_${inv.customerId}`);
+                    else if (inv.customerName && inv.customerName !== 'عميل نقدي' && inv.customerName.trim()) uniqueVisitors.add(`name_${inv.customerName.trim()}`);
+                    else uniqueVisitors.add(`inv_${inv.id}`);
+                });
+                return uniqueVisitors.size;
+            }
+            if (chartMetric === 'expenses') {
+                return round2(expList.reduce((acc, curr) => acc + (curr.amount || 0), 0));
+            }
+            return 0;
+        };
+
         const result: { label: string; value: number; isToday?: boolean }[] = [];
         const todayDate = new Date();
         const todayYmd = toYmd(todayDate);
@@ -437,15 +494,17 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
         if (range === 'day' || range === 'today') {
             const currentHour = todayDate.getHours();
             for (let i = 0; i < 24; i++) {
-                const total = periodFilteredInvoices
-                    .filter(inv => {
-                        const h = inv.timestamp ? new Date(inv.timestamp).getHours() : 12;
-                        return h === i;
-                    })
-                    .reduce((acc, curr) => acc + (curr.total || 0), 0);
+                const hourInvoices = periodFilteredInvoices.filter(inv => {
+                    const h = inv.timestamp ? new Date(inv.timestamp).getHours() : 12;
+                    return h === i;
+                });
+                const hourExpenses = periodFilteredExpenses.filter(e => {
+                    const t = (e as any).timestamp || (e.date ? parseInvoiceDate(e.date).getTime() : 0);
+                    return new Date(t).getHours() === i;
+                });
                 result.push({ 
                     label: `${String(i).padStart(2, '0')}:00`, 
-                    value: round2(total),
+                    value: computeMetricValue(hourInvoices, hourExpenses),
                     isToday: i === currentHour
                 });
             }
@@ -454,15 +513,11 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                 const d = new Date(todayDate);
                 d.setDate(d.getDate() - i);
                 const targetYmd = toYmd(d);
-                const total = periodFilteredInvoices
-                    .filter(inv => {
-                        const invYmd = toYmd(parseInvoiceDate(inv.date));
-                        return invYmd === targetYmd;
-                    })
-                    .reduce((acc, curr) => acc + (curr.total || 0), 0);
+                const dayInvoices = periodFilteredInvoices.filter(inv => toYmd(parseInvoiceDate(inv.date)) === targetYmd);
+                const dayExpenses = periodFilteredExpenses.filter(e => toYmd(parseInvoiceDate(e.date)) === targetYmd);
                 result.push({ 
-                    label: d.toLocaleDateString(locale, { weekday: 'short' }), 
-                    value: round2(total),
+                    label: d?.toLocaleDateString ? d.toLocaleDateString(locale, { weekday: 'short' }) : '', 
+                    value: computeMetricValue(dayInvoices, dayExpenses),
                     isToday: targetYmd === todayYmd
                 });
             }
@@ -471,40 +526,78 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                 const d = new Date(todayDate);
                 d.setDate(d.getDate() - i);
                 const targetYmd = toYmd(d);
-                const total = periodFilteredInvoices
-                    .filter(inv => {
-                        const invYmd = toYmd(parseInvoiceDate(inv.date));
-                        return invYmd === targetYmd;
-                    })
-                    .reduce((acc, curr) => acc + (curr.total || 0), 0);
+                const dayInvoices = periodFilteredInvoices.filter(inv => toYmd(parseInvoiceDate(inv.date)) === targetYmd);
+                const dayExpenses = periodFilteredExpenses.filter(e => toYmd(parseInvoiceDate(e.date)) === targetYmd);
                 result.push({ 
                     label: String(d.getDate()).padStart(2, '0'), 
-                    value: round2(total),
+                    value: computeMetricValue(dayInvoices, dayExpenses),
                     isToday: targetYmd === todayYmd
                 });
             }
         } else {
-            // سنة أو المدة الكاملة: عرض بالأشهر
-            const currentYm = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}`;
-            for (let i = 11; i >= 0; i--) {
-                const d = new Date(todayDate.getFullYear(), todayDate.getMonth() - i, 1);
-                const targetYm = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                const total = periodFilteredInvoices
-                    .filter(inv => {
-                        const invD = parseInvoiceDate(inv.date);
-                        const invYm = `${invD.getFullYear()}-${String(invD.getMonth() + 1).padStart(2, '0')}`;
-                        return invYm === targetYm;
-                    })
-                    .reduce((acc, curr) => acc + (curr.total || 0), 0);
+            // سنة أو المدة الكاملة: عرض شهور السنة بالترتيب الصحيح من يناير (1) إلى ديسمبر (12)
+            const currentYear = todayDate.getFullYear();
+            const currentMonthIdx = todayDate.getMonth(); // 0-based: 0=يناير ... 10=نوفمبر, 11=ديسمبر
+            const monthNames = language === 'ar'
+                ? ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+                : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            for (let m = 0; m < 12; m++) {
+                const targetYm = `${currentYear}-${String(m + 1).padStart(2, '0')}`;
+                const monthInvoices = periodFilteredInvoices.filter(inv => {
+                    const invD = parseInvoiceDate(inv.date);
+                    return `${invD.getFullYear()}-${String(invD.getMonth() + 1).padStart(2, '0')}` === targetYm;
+                });
+                const monthExpenses = periodFilteredExpenses.filter(e => {
+                    const expD = parseInvoiceDate(e.date);
+                    return `${expD.getFullYear()}-${String(expD.getMonth() + 1).padStart(2, '0')}` === targetYm;
+                });
                 result.push({ 
-                    label: d.toLocaleDateString(locale, { month: 'short' }), 
-                    value: round2(total),
-                    isToday: targetYm === currentYm
+                    label: monthNames[m], 
+                    value: computeMetricValue(monthInvoices, monthExpenses),
+                    isToday: m === currentMonthIdx
                 });
             }
         }
         return result;
-    }, [periodFilteredInvoices, range, language]);
+    }, [periodFilteredInvoices, periodFilteredExpenses, range, language, chartMetric]);
+
+    // تفاصيل ملخص الإحصائية المعروضة في زاوية كارت الرسم البياني
+    const chartMetricSummary = useMemo(() => {
+        if (chartMetric === 'sales') {
+            return {
+                label: language === 'ar' ? 'إجمالي المبيعات:' : 'Total Sales:',
+                value: `${totalRevenue.toLocaleString('en-US')} ${t('egp')}`,
+                unit: 'ج.م'
+            };
+        }
+        if (chartMetric === 'invoices') {
+            return {
+                label: language === 'ar' ? 'إجمالي عدد الفواتير:' : 'Total Invoices:',
+                value: `${totalInvoicesCount} ${language === 'ar' ? 'فاتورة' : 'invoices'}`,
+                unit: language === 'ar' ? 'فاتورة' : 'inv'
+            };
+        }
+        if (chartMetric === 'visitors') {
+            const uniqueVisitors = new Set<string>();
+            periodFilteredInvoices.forEach(inv => {
+                if (inv.customerId) uniqueVisitors.add(`id_${inv.customerId}`);
+                else if (inv.customerName && inv.customerName !== 'عميل نقدي' && inv.customerName.trim()) uniqueVisitors.add(`name_${inv.customerName.trim()}`);
+                else uniqueVisitors.add(`inv_${inv.id}`);
+            });
+            return {
+                label: language === 'ar' ? 'إجمالي عدد الزوار:' : 'Total Visitors:',
+                value: `${uniqueVisitors.size} ${language === 'ar' ? 'زائر' : 'visitors'}`,
+                unit: language === 'ar' ? 'زائر' : 'visitors'
+            };
+        }
+        // expenses
+        return {
+            label: language === 'ar' ? 'إجمالي المصروفات:' : 'Total Expenses:',
+            value: `${totalExpenses.toLocaleString('en-US')} ${t('egp')}`,
+            unit: 'ج.م'
+        };
+    }, [chartMetric, totalRevenue, totalInvoicesCount, totalExpenses, periodFilteredInvoices, language, t]);
 
     // خريطة الساعات الأكثر نشاطاً والذروة (Peak Hours Heatmap) لقرارات التشغيل وتوزيع الموظفين
     const hourlyHeatmapData = useMemo(() => {
@@ -583,7 +676,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                     idx + 1,
                     c.name,
                     c.phone || '-',
-                    c.lastVisit ? new Date(c.lastVisit).toLocaleDateString('ar-EG') : '-',
+                    c.lastVisit && !isNaN(new Date(c.lastVisit).getTime()) ? new Date(c.lastVisit).toLocaleDateString('ar-EG') : '-',
                     Number(c.balance || 0).toLocaleString('en-US')
                 ]),
                 totals: [
@@ -607,7 +700,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                     ['[-] رواتب وعمولات الموظفين', periodStaffCosts.toLocaleString('en-US'), 'تكلفة عمالة', 'الرواتب والعمولات المسددة خلال الفترة'],
                     ['[=] صافي الربح الدفتري (Accrual)', accrualNetProfit.toLocaleString('en-US'), 'صافي الأرباح', 'الربح المحاسبي الفعلي الناتج عن النشاط'],
                     ['[!] مبيعات آجلة غير محصلة (ديون عملاء)', paymentBreakdown.credit.toLocaleString('en-US'), 'مديونية مؤجلة', 'مبالغ مقيدة على حسابات العملاء'],
-                    ['[✓] صافي الربح النقدي المحصل فعلياً (Cash)', cashNetProfit.toLocaleString('en-US'), 'سيولة نقدية', 'الربح المحصل باليد بعد خصم الآجل وإضافة التحصيلات']
+                    ['صافي الربح النقدي المحصل فعلياً (Cash)', cashNetProfit.toLocaleString('en-US'), 'سيولة نقدية', 'الربح المحصل باليد بعد خصم الآجل وإضافة التحصيلات']
                 ],
                 totals: [
                     { label: 'صافي الربح الفعلي', value: `${accrualNetProfit.toLocaleString('en-US')} ج.م` },
@@ -719,8 +812,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
 
     // نصوص الفترات لعرضها في الشريط
     const rangeLabels: { key: DashboardRange; label: string }[] = [
-        { key: 'today', label: language === 'ar' ? 'إحصائيات اليوم' : 'Today' },
-        { key: 'day', label: language === 'ar' ? 'يوم' : 'Day' },
+        { key: 'today', label: language === 'ar' ? 'اليوم' : 'Today' },
         { key: 'week', label: language === 'ar' ? 'أسبوع' : 'Week' },
         { key: 'month', label: language === 'ar' ? 'شهر' : 'Month' },
         { key: 'year', label: language === 'ar' ? 'سنة' : 'Year' },
@@ -750,8 +842,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                 <DollarSign size={24} />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h3 className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight truncate">
-                                    {totalRevenue.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                                <h3 className={`${getAutoShrinkNumberClass(totalRevenue, 'kpi-exec')} font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight flex items-baseline gap-1 truncate`} dir="ltr" title={`${totalRevenue.toLocaleString('en-US')} ${t('egp')}`}>
+                                    <span className="truncate">{totalRevenue.toLocaleString('en-US')}</span> <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                 </h3>
                                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                                     <span>نقدي: <b className="text-emerald-600 dark:text-emerald-400 font-mono">{paymentBreakdown.cash.toLocaleString('en-US')}</b></span>
@@ -774,21 +866,21 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                             <span className="text-xs font-black text-slate-700 dark:text-slate-300">
                                 {t('net_profit')} وهامش الربح
                             </span>
-                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono shrink-0 ${profitMargin >= 0 ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'}`}>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono shrink-0 ${profitMargin >= 0 ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'}`}>
                                 {profitMargin}% هامش
                             </span>
                         </div>
                         <div className="flex items-center gap-3.5">
-                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                                 <TrendingUp size={24} />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h3 className={`text-xl sm:text-2xl font-black font-mono tracking-tight truncate ${accrualNetProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                    {accrualNetProfit.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                                <h3 className={`${getAutoShrinkNumberClass(accrualNetProfit, 'kpi-exec')} font-black font-mono tracking-tight flex items-baseline gap-1 truncate ${accrualNetProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} dir="ltr" title={`${accrualNetProfit.toLocaleString('en-US')} ${t('egp')}`}>
+                                    <span className="truncate">{accrualNetProfit.toLocaleString('en-US')}</span> <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                 </h3>
                                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                                     <span>التكلفة: <b className="font-mono">{totalCOGS.toLocaleString('en-US')}</b></span>
-                                    <span className="text-purple-500 font-bold group-hover:-translate-x-0.5 transition-transform text-[11px]">المعادلة ←</span>
+                                    <span className="text-blue-500 font-bold group-hover:-translate-x-0.5 transition-transform text-[11px]">المعادلة ←</span>
                                 </div>
                             </div>
                         </div>
@@ -816,8 +908,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                 <PieChart size={24} />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h3 className="text-xl sm:text-2xl font-black text-rose-500 font-mono tracking-tight truncate">
-                                    {totalExpenses.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                                <h3 className={`${getAutoShrinkNumberClass(totalExpenses, 'kpi-exec')} font-black text-rose-500 font-mono tracking-tight flex items-baseline gap-1 truncate`} dir="ltr" title={`${totalExpenses.toLocaleString('en-US')} ${t('egp')}`}>
+                                    <span className="truncate">{totalExpenses.toLocaleString('en-US')}</span> <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                 </h3>
                                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                                     <span>نقدي: <b className="font-mono text-rose-600 dark:text-rose-400">{todayCashExpensesDeducted.toLocaleString('en-US')}</b></span>
@@ -841,7 +933,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                 العملاء والنشاط
                             </span>
                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 font-mono ${lowStockCount > 0 ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' : 'bg-blue-500/10 text-blue-600 border border-blue-500/20'}`}>
-                                {lowStockCount > 0 ? `⚠️ ${lowStockCount} نواقص مخزون` : 'المخزون متزن'}
+                                {lowStockCount > 0 ? `${lowStockCount} نواقص مخزون` : 'المخزون متزن'}
                             </span>
                         </div>
                         <div className="flex items-center gap-3.5">
@@ -849,8 +941,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                 <Users size={24} />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight truncate">
-                                    {state.customers.length} <span className="text-xs font-bold text-slate-400">عميل مسجل</span>
+                                <h3 className={`${getAutoShrinkNumberClass(state.customers.length, 'kpi-exec')} font-black text-slate-900 dark:text-white tracking-tight flex items-baseline gap-1 truncate`} dir="ltr">
+                                    <span className="truncate">{state.customers.length.toLocaleString('en-US')}</span> <span className="text-xs font-bold text-slate-400 shrink-0">عميل مسجل</span>
                                 </h3>
                                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                                     <span>ديون: <b className="font-mono text-rose-500">{totalCurrentDebts.toLocaleString('en-US')}</b></span>
@@ -882,8 +974,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                 <Wallet size={24} />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight truncate">
-                                    {expectedDrawerCash.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                                <h3 className={`${getAutoShrinkNumberClass(expectedDrawerCash, 'kpi-exec')} font-black text-slate-900 dark:text-white font-mono tracking-tight flex items-baseline gap-1 truncate`} dir="ltr" title={`${expectedDrawerCash.toLocaleString('en-US')} ${t('egp')}`}>
+                                    <span className="truncate">{expectedDrawerCash.toLocaleString('en-US')}</span> <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                 </h3>
                                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                                     <span>مبيعات نقدي: <b className="font-mono text-emerald-500">{paymentBreakdown.cash.toLocaleString('en-US')}</b></span>
@@ -906,21 +998,21 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                             <span className="text-xs font-black text-slate-700 dark:text-slate-300">
                                 عدد الفواتير
                             </span>
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0 font-mono">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 font-mono">
                                 {averageInvoice.toLocaleString('en-US')} ج.م / متوسط
                             </span>
                         </div>
                         <div className="flex items-center gap-3.5">
-                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
                                 <FileText size={24} />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h3 className="text-xl sm:text-2xl font-black text-blue-600 dark:text-blue-400 font-mono tracking-tight truncate">
-                                    {totalInvoicesCount.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">فاتورة</span>
+                                <h3 className={`${getAutoShrinkNumberClass(totalInvoicesCount, 'kpi-exec')} font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight flex items-baseline gap-1 truncate`} dir="ltr">
+                                    <span className="truncate">{totalInvoicesCount.toLocaleString('en-US')}</span> <span className="text-xs font-bold text-slate-400 shrink-0">فاتورة</span>
                                 </h3>
                                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                                     <span>فواتير نقدية وآجلة</span>
-                                    <span className="text-blue-500 font-bold group-hover:-translate-x-0.5 transition-transform text-[11px]">تفاصيل ←</span>
+                                    <span className="text-emerald-500 font-bold group-hover:-translate-x-0.5 transition-transform text-[11px]">تفاصيل ←</span>
                                 </div>
                             </div>
                         </div>
@@ -948,8 +1040,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                 <History size={24} />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h3 className="text-xl sm:text-2xl font-black text-orange-600 dark:text-orange-400 font-mono tracking-tight truncate">
-                                    {totalReturns.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                                <h3 className={`${getAutoShrinkNumberClass(totalReturns, 'kpi-exec')} font-black text-orange-600 dark:text-orange-400 font-mono tracking-tight flex items-baseline gap-1 truncate`} dir="ltr" title={`${totalReturns.toLocaleString('en-US')} ${t('egp')}`}>
+                                    <span className="truncate">{totalReturns.toLocaleString('en-US')}</span> <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                 </h3>
                                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                                     <span>مرتجع معتمد</span>
@@ -981,8 +1073,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                 <CreditCard size={24} />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h3 className="text-xl sm:text-2xl font-black text-red-500 font-mono tracking-tight truncate">
-                                    {totalCurrentDebts.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                                <h3 className={`${getAutoShrinkNumberClass(totalCurrentDebts, 'kpi-exec')} font-black text-red-500 font-mono tracking-tight flex items-baseline gap-1 truncate`} dir="ltr" title={`${totalCurrentDebts.toLocaleString('en-US')} ${t('egp')}`}>
+                                    <span className="truncate">{totalCurrentDebts.toLocaleString('en-US')}</span> <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                 </h3>
                                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                                     <span>إجمالي مديونيات</span>
@@ -1014,8 +1106,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                 <Banknote size={24} />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h3 className="text-xl sm:text-2xl font-black text-teal-600 dark:text-teal-400 font-mono tracking-tight truncate">
-                                    {drawerOpeningBalance.toLocaleString('en-US')} <span className="text-xs font-bold text-slate-400">{t('egp')}</span>
+                                <h3 className={`${getAutoShrinkNumberClass(drawerOpeningBalance, 'kpi-exec')} font-black text-teal-600 dark:text-teal-400 font-mono tracking-tight flex items-baseline gap-1 truncate`} dir="ltr" title={`${drawerOpeningBalance.toLocaleString('en-US')} ${t('egp')}`}>
+                                    <span className="truncate">{drawerOpeningBalance.toLocaleString('en-US')}</span> <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                 </h3>
                                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
                                     <span>رصيد الدرج الأساسي</span>
@@ -1093,7 +1185,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                     </button>
                     <button
                         onClick={() => onNavigate('create_invoice')}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
                     >
                         <Plus size={16} className="stroke-[2.5]" />
                         <span>{t('new_invoice')}</span>
@@ -1107,7 +1199,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div className="flex items-center gap-3.5">
                             <div className="w-12 h-12 rounded-2xl bg-primary-500/20 text-primary-600 dark:text-primary-400 border border-primary-500/30 flex items-center justify-center shrink-0">
-                                <Sparkles size={24} />
+                                <Building size={24} />
                             </div>
                             <div>
                                 <h3 className="text-base md:text-lg font-black text-slate-900 dark:text-white">
@@ -1139,7 +1231,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                             <button
                                 type="button"
                                 onClick={() => onNavigate('create_invoice')}
-                                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-sm transition-all cursor-pointer active:scale-95"
+                                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-black shadow-sm transition-all cursor-pointer active:scale-95"
                             >
                                 <FileText size={14} />
                                 <span>{language === 'ar' ? '3. أول فاتورة' : '3. First Invoice'}</span>
@@ -1148,6 +1240,79 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                     </div>
                 </div>
             )}
+
+            {/* 1.5 شريط الإجراءات والوصول السريع للعمليات اليومية (Quick Actions Launchpad) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+                <button
+                    type="button"
+                    onClick={() => onNavigate('create_invoice')}
+                    className="flex items-center gap-2.5 p-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-md shadow-emerald-500/20 transition-all cursor-pointer active:scale-97 group border border-emerald-400/20"
+                >
+                    <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <Plus size={18} strokeWidth={2.8} />
+                    </div>
+                    <div className="text-right truncate">
+                        <span className="block truncate font-black text-white">{language === 'ar' ? 'فاتورة جديدة' : 'New Invoice'}</span>
+                        <span className="text-[10px] text-emerald-100 font-mono">F1</span>
+                    </div>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => onNavigate('expenses')}
+                    className="flex items-center gap-2.5 p-3 rounded-2xl bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-97 group"
+                >
+                    <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <TrendingUp size={16} />
+                    </div>
+                    <div className="text-right truncate">
+                        <span className="block truncate font-black">{language === 'ar' ? 'تسجيل مصروف' : 'Add Expense'}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">خوارج اليوم</span>
+                    </div>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => onNavigate('clients')}
+                    className="flex items-center gap-2.5 p-3 rounded-2xl bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-97 group"
+                >
+                    <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <Users size={16} />
+                    </div>
+                    <div className="text-right truncate">
+                        <span className="block truncate font-black">{language === 'ar' ? 'سجل العملاء' : 'Clients'}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">{state.customers.length} عميل</span>
+                    </div>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => onNavigate('inventory')}
+                    className="flex items-center gap-2.5 p-3 rounded-2xl bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-97 group"
+                >
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <Package size={16} />
+                    </div>
+                    <div className="text-right truncate">
+                        <span className="block truncate font-black">{language === 'ar' ? 'إدارة المخزون' : 'Inventory'}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">{lowStockCount > 0 ? `${lowStockCount} نواقص` : 'المخزون كافي'}</span>
+                    </div>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => onNavigate('closing')}
+                    className="flex items-center gap-2.5 p-3 rounded-2xl bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-97 group"
+                >
+                    <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <Wallet size={16} />
+                    </div>
+                    <div className="text-right truncate">
+                        <span className="block truncate font-black">{language === 'ar' ? 'إقفال الوردية' : 'Close Shift'}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">الدرج والخزينة</span>
+                    </div>
+                </button>
+            </div>
 
             {/* 2. شريط فلترة الفترة الزمنية المتطور الشامل (إحصائيات اليوم | يوم | أسبوع | شهر | سنة | المدة الكاملة) والفروع */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2.5 shadow-xs">
@@ -1161,16 +1326,16 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                     </span>
                 </div>
 
-                {/* أزرار اختيار الفترة الشاملة مع زر المدة الكاملة المطور */}
-                <div className="inline-flex bg-slate-100 dark:bg-slate-900/60 p-1 rounded-xl border border-slate-200 dark:border-slate-700 gap-1 flex-wrap">
+                {/* أزرار اختيار الفترة الشاملة بنمط Material Design 3 Segmented Pill Buttons */}
+                <div className="inline-flex items-center p-1 rounded-full bg-slate-100 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 gap-1 flex-wrap m3-elevation-0">
                     {rangeLabels.map(item => (
                         <button
                             key={item.key}
                             onClick={() => setRange(item.key)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer m3-state-layer ${
                                 range === item.key
-                                    ? 'bg-primary-600 text-white shadow-sm scale-105'
-                                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                                    ? 'bg-primary-600 text-white shadow-xs font-black'
+                                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/80'
                             }`}
                         >
                             {item.label}
@@ -1185,7 +1350,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                     {/* شريط التبديل بين العرض التنفيذي وتخصيص المؤشرات والعرض التفصيلي الشامل */}
                     <div className="flex flex-wrap items-center justify-between gap-2 px-1">
                         <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                            <Sparkles size={14} className="text-amber-500" />
+                            <Activity size={14} className="text-primary-500" />
                             <span>{executiveView ? `الملخص التنفيذي (${activeKpiCards.length} مؤشرات)` : 'المؤشرات التفصيلية الشاملة (10 بطاقات كاملة)'}</span>
                         </span>
                         <div className="flex items-center gap-2">
@@ -1196,10 +1361,10 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                         setTempSelectedKpiCards(activeKpiCards);
                                         setShowCustomizeModal(true);
                                     }}
-                                    className="text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-primary-600 dark:hover:text-primary-400 flex items-center gap-1.5 transition-all cursor-pointer bg-white dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/80 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs active:scale-95"
+                                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1.5 transition-all cursor-pointer bg-blue-50/80 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800/60 shadow-xs active:scale-95"
                                     title="تخصيص البطاقات المعروضة في شاشة العرض المباشر"
                                 >
-                                    <Settings size={13} className="text-primary-500" />
+                                    <Settings size={13} className="text-blue-500" />
                                     <span>{language === 'ar' ? 'تخصيص العرض المباشر' : 'Customize Live Display'}</span>
                                 </button>
                             )}
@@ -1235,7 +1400,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     title="انقر لعرض تفاصيل المبيعات وطباعة التقرير"
                                 >
                                     <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                             {t('total_revenue')}
                                         </span>
                                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 whitespace-nowrap">
@@ -1247,8 +1412,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                             <DollarSign size={20} />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <h3 className="text-lg sm:text-xl font-black text-emerald-500 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${totalRevenue.toLocaleString('en-US')} ${t('egp')}`}>
-                                                <span className="truncate">{totalRevenue.toLocaleString('en-US')}</span>
+                                            <h3 className={`${getAutoShrinkNumberClass(totalRevenue, 'kpi-card')} font-black text-emerald-500 font-mono tracking-tight flex items-baseline gap-1`} dir="ltr" title={`${totalRevenue.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="shrink-0">{totalRevenue.toLocaleString('en-US')}</span>
                                                 <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                             </h3>
                                             <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
@@ -1266,25 +1431,25 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     title="انقر لعرض تفاصيل العملية الحسابية للأرباح وطباعة التقرير"
                                 >
                                     <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                             {t('net_profit')}
                                         </span>
-                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 whitespace-nowrap ${accrualNetProfit >= 0 ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'}`}>
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 whitespace-nowrap ${accrualNetProfit >= 0 ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'}`}>
                                             {accrualNetProfit >= 0 ? 'صافي أرباح' : 'عجز'}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200/60 dark:border-purple-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
                                             <Banknote size={20} />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <h3 className={`text-lg sm:text-xl font-black font-mono tracking-tight flex items-baseline gap-1 ${accrualNetProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} dir="ltr" title={`${accrualNetProfit.toLocaleString('en-US')} ${t('egp')}`}>
-                                                <span className="truncate">{accrualNetProfit.toLocaleString('en-US')}</span>
+                                            <h3 className={`${getAutoShrinkNumberClass(accrualNetProfit, 'kpi-card')} font-black font-mono tracking-tight flex items-baseline gap-1 ${accrualNetProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} dir="ltr" title={`${accrualNetProfit.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="shrink-0">{accrualNetProfit.toLocaleString('en-US')}</span>
                                                 <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                             </h3>
                                             <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
                                                 <span className="truncate">التكلفة (COGS): <b className="font-mono">{totalCOGS.toLocaleString('en-US')}</b></span>
-                                                <span className="text-purple-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">المعادلة ←</span>
+                                                <span className="text-blue-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">المعادلة ←</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1297,7 +1462,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     title="انقر لعرض العملية الحسابية التفصيلية للمصروفات وطباعة التقرير"
                                 >
                                     <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                             {t('expenses')}
                                         </span>
                                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0 whitespace-nowrap">
@@ -1309,8 +1474,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                             <PieChart size={20} />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <h3 className="text-lg sm:text-xl font-black text-rose-500 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${totalExpenses.toLocaleString('en-US')} ${t('egp')}`}>
-                                                <span className="truncate">{totalExpenses.toLocaleString('en-US')}</span>
+                                            <h3 className={`${getAutoShrinkNumberClass(totalExpenses, 'kpi-card')} font-black text-rose-500 font-mono tracking-tight flex items-baseline gap-1`} dir="ltr" title={`${totalExpenses.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="shrink-0">{totalExpenses.toLocaleString('en-US')}</span>
                                                 <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                             </h3>
                                             <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
@@ -1328,7 +1493,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     title="انقر لعرض العملية الحسابية وتفاصيل المبلغ المتوقع بالدرج"
                                 >
                                     <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                             المتوقع بالدرج
                                         </span>
                                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 shrink-0 whitespace-nowrap">
@@ -1340,8 +1505,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                             <Wallet size={20} />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <h3 className="text-lg sm:text-xl font-black font-mono tracking-tight text-emerald-500 flex items-baseline gap-1" dir="ltr" title={`${expectedDrawerCash.toLocaleString('en-US')} ${t('egp')}`}>
-                                                <span className="truncate">{expectedDrawerCash.toLocaleString('en-US')}</span>
+                                            <h3 className={`${getAutoShrinkNumberClass(expectedDrawerCash, 'kpi-card')} font-black font-mono tracking-tight text-emerald-500 flex items-baseline gap-1`} dir="ltr" title={`${expectedDrawerCash.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="shrink-0">{expectedDrawerCash.toLocaleString('en-US')}</span>
                                                 <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                             </h3>
                                             <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
@@ -1359,7 +1524,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     title="انقر لعرض تفاصيل الرصيد الافتتاحي المعتمد لبداية اليوم"
                                 >
                                     <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                             الرصيد الافتتاحي
                                         </span>
                                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 shrink-0 whitespace-nowrap">
@@ -1371,8 +1536,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                             <Banknote size={20} />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <h3 className="text-lg sm:text-xl font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${drawerOpeningBalance.toLocaleString('en-US')} ${t('egp')}`}>
-                                                <span className="truncate">{drawerOpeningBalance.toLocaleString('en-US')}</span>
+                                            <h3 className={`${getAutoShrinkNumberClass(drawerOpeningBalance, 'kpi-card')} font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight flex items-baseline gap-1`} dir="ltr" title={`${drawerOpeningBalance.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="shrink-0">{drawerOpeningBalance.toLocaleString('en-US')}</span>
                                                 <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                             </h3>
                                             <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
@@ -1393,7 +1558,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     title="انقر لعرض كشف حسابات وديون العملاء وطباعة التقرير"
                                 >
                                     <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                             ديون العملاء
                                         </span>
                                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0 whitespace-nowrap">
@@ -1405,8 +1570,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                             <CreditCard size={20} />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <h3 className="text-lg sm:text-xl font-black text-rose-500 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${totalCurrentDebts.toLocaleString('en-US')} ${t('egp')}`}>
-                                                <span className="truncate">{totalCurrentDebts.toLocaleString('en-US')}</span>
+                                            <h3 className={`${getAutoShrinkNumberClass(totalCurrentDebts, 'kpi-card')} font-black text-rose-500 font-mono tracking-tight flex items-baseline gap-1`} dir="ltr" title={`${totalCurrentDebts.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="shrink-0">{totalCurrentDebts.toLocaleString('en-US')}</span>
                                                 <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                             </h3>
                                             <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
@@ -1424,25 +1589,25 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     title="انقر لعرض قائمة الفواتير وطباعة التقرير"
                                 >
                                     <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                             {t('invoices')}
                                         </span>
-                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 shrink-0 whitespace-nowrap">
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 whitespace-nowrap">
                                             إجمالي الفترة
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200/60 dark:border-sky-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                                        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
                                             <FileText size={20} />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <h3 className="text-lg sm:text-xl font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${totalInvoicesCount.toLocaleString('en-US')} ${language === 'ar' ? 'عدد' : t('invoices')}`}>
-                                                <span className="truncate">{totalInvoicesCount.toLocaleString('en-US')}</span>
+                                            <h3 className={`${getAutoShrinkNumberClass(totalInvoicesCount, 'kpi-card')} font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight flex items-baseline gap-1`} dir="ltr" title={`${totalInvoicesCount.toLocaleString('en-US')} ${language === 'ar' ? 'عدد' : t('invoices')}`}>
+                                                <span className="shrink-0">{totalInvoicesCount.toLocaleString('en-US')}</span>
                                                 <span className="text-xs font-bold text-slate-400 shrink-0">{language === 'ar' ? 'عدد' : 'Count'}</span>
                                             </h3>
                                             <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
                                                 <span className="truncate">فواتير نقدية وآجلة</span>
-                                                <span className="text-sky-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">عرض القائمة ←</span>
+                                                <span className="text-emerald-500 group-hover:-translate-x-0.5 transition-transform text-[10px] font-bold shrink-0">عرض القائمة ←</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1455,7 +1620,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     title="انقر لعرض تحليل سلة المبيعات وطباعة التقرير"
                                 >
                                     <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                             {language === 'ar' ? 'متوسط الفاتورة' : 'Avg Invoice'}
                                         </span>
                                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0 whitespace-nowrap">
@@ -1467,8 +1632,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                             <TrendingUp size={20} />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <h3 className="text-lg sm:text-xl font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${averageInvoice.toLocaleString('en-US')} ${t('egp')}`}>
-                                                <span className="truncate">{averageInvoice.toLocaleString('en-US')}</span>
+                                            <h3 className={`${getAutoShrinkNumberClass(averageInvoice, 'kpi-card')} font-black text-primary-600 dark:text-primary-400 font-mono tracking-tight flex items-baseline gap-1`} dir="ltr" title={`${averageInvoice.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="shrink-0">{averageInvoice.toLocaleString('en-US')}</span>
                                                 <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                             </h3>
                                             <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
@@ -1486,7 +1651,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     title="انقر لعرض سجل المرتجعات وطباعة التقرير"
                                 >
                                     <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                             {t('returns')}
                                         </span>
                                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0 whitespace-nowrap">
@@ -1498,8 +1663,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                             <TrendingDown size={20} />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <h3 className="text-lg sm:text-xl font-black text-rose-500 font-mono tracking-tight flex items-baseline gap-1" dir="ltr" title={`${totalReturns.toLocaleString('en-US')} ${t('egp')}`}>
-                                                <span className="truncate">{totalReturns.toLocaleString('en-US')}</span>
+                                            <h3 className={`${getAutoShrinkNumberClass(totalReturns, 'kpi-card')} font-black text-rose-500 font-mono tracking-tight flex items-baseline gap-1`} dir="ltr" title={`${totalReturns.toLocaleString('en-US')} ${t('egp')}`}>
+                                                <span className="shrink-0">{totalReturns.toLocaleString('en-US')}</span>
                                                 <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                                             </h3>
                                             <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400 mt-1 truncate">
@@ -1517,7 +1682,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     title="انقر لعرض تصنيف وإنتاجية جميع الموظفين مع إمكانية التحديد والطباعة"
                                 >
                                     <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                             {language === 'ar' ? 'أفضل موظف' : 'Top Staff'}
                                         </span>
                                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 whitespace-nowrap">
@@ -1549,131 +1714,98 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
 
             {/* 4. قسم الرسم البياني + الفواتير الأخيرة */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* الرسم البياني لمبيعات الفترة المحددة وخريطة ساعات الذروة */}
+                {/* بطاقة الرسم البياني */}
                 <Card className="lg:col-span-2 relative overflow-hidden flex flex-col justify-between">
                     <div>
                         <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-3">
                                 <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
-                                    <div className="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-xl text-primary-600 dark:text-primary-400">
-                                        {chartSubView === 'chart' ? <TrendingUp size={20}/> : <Clock size={20}/>}
+                                    <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-blue-600 dark:text-blue-400 shadow-xs">
+                                        <BarChart2 size={20}/>
                                     </div>
-                                    <span>
-                                        {chartSubView === 'chart' 
-                                            ? `مبيعات ${rangeLabels.find(r => r.key === range)?.label}` 
-                                            : (language === 'ar' ? 'خريطة ساعات النشاط والذروة (Heatmap)' : 'Peak Hours Traffic Heatmap')}
-                                    </span>
+                                    <span className="font-extrabold">{language === 'ar' ? 'رسم بياني' : 'Chart'}</span>
                                 </h3>
 
-                                {/* Subview Switcher */}
-                                <div className="inline-flex items-center p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                                {/* أزرار الإحصائيات: المبيعات (أخضر) - الفواتير (أخضر) - الزوار (أزرق) - المصاريف (أحمر) */}
+                                <div className="inline-flex items-center p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700/80 gap-1">
                                     <button
                                         type="button"
-                                        onClick={() => setChartSubView('chart')}
-                                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                            chartSubView === 'chart'
-                                                ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-300 shadow-xs'
-                                                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                                        onClick={() => setChartMetric('sales')}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                            chartMetric === 'sales'
+                                                ? 'bg-emerald-600 text-white shadow-xs'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
                                         }`}
                                     >
-                                        <span>📊 {language === 'ar' ? 'رسم بياني' : 'Chart'}</span>
+                                        <TrendingUp size={13} className={chartMetric === 'sales' ? 'text-white' : 'text-emerald-500'} />
+                                        <span>{language === 'ar' ? 'المبيعات' : 'Sales'}</span>
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setChartSubView('heatmap')}
-                                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                            chartSubView === 'heatmap'
-                                                ? 'bg-white dark:bg-slate-700 text-amber-500 dark:text-amber-300 shadow-xs'
-                                                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                                        onClick={() => setChartMetric('invoices')}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                            chartMetric === 'invoices'
+                                                ? 'bg-emerald-600 text-white shadow-xs'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
                                         }`}
                                     >
-                                        <span>🔥 {language === 'ar' ? 'ساعات الذروة' : 'Heatmap'}</span>
+                                        <FileText size={13} className={chartMetric === 'invoices' ? 'text-white' : 'text-emerald-500'} />
+                                        <span>{language === 'ar' ? 'الفواتير' : 'Invoices'}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setChartMetric('visitors')}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                            chartMetric === 'visitors'
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30'
+                                        }`}
+                                    >
+                                        <Users size={13} className={chartMetric === 'visitors' ? 'text-white' : 'text-blue-500'} />
+                                        <span>{language === 'ar' ? 'الزوار' : 'Visitors'}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setChartMetric('expenses')}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                            chartMetric === 'expenses'
+                                                ? 'bg-rose-600 text-white shadow-xs'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30'
+                                        }`}
+                                    >
+                                        <PieChart size={13} className={chartMetric === 'expenses' ? 'text-white' : 'text-rose-500'} />
+                                        <span>{language === 'ar' ? 'المصاريف' : 'Expenses'}</span>
                                     </button>
                                 </div>
                             </div>
 
                             <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                                    {language === 'ar' ? 'إجمالي مبيعات الفترة:' : 'Period Total:'}
+                                    {chartMetricSummary.label}
                                 </span>
-                                <span className="text-xs font-black text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-2.5 py-1 rounded-lg border border-primary-200/50 dark:border-primary-800/50 font-mono">
-                                    {totalRevenue.toLocaleString('en-US')} {t('egp')}
+                                <span className={`text-xs font-black px-2.5 py-1 rounded-lg border font-mono ${
+                                    chartMetric === 'expenses'
+                                        ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border-rose-200/50 dark:border-rose-800/50'
+                                        : chartMetric === 'visitors'
+                                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border-blue-200/50 dark:border-blue-800/50'
+                                        : 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200/50 dark:border-emerald-800/50'
+                                }`}>
+                                    {chartMetricSummary.value}
                                 </span>
                             </div>
                         </div>
 
-                        {chartSubView === 'chart' ? (
-                            <SimpleBarChart data={chartData} />
-                        ) : (
-                            <div className="space-y-4 animate-fade-in">
-                                {/* Insights Header Banner */}
-                                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 flex flex-wrap items-center justify-between gap-3 text-xs">
-                                    <div className="flex items-center gap-2.5">
-                                        <span className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold text-sm shrink-0">
-                                            🔥
-                                        </span>
-                                        <div>
-                                            <span className="font-extrabold text-slate-800 dark:text-slate-100 block">
-                                                {hourlyHeatmapData.peakHour.count > 0 ? (
-                                                    language === 'ar' 
-                                                        ? `ساعة الذروة القصوى: الساعة ${hourlyHeatmapData.peakHour.label} (${hourlyHeatmapData.peakHour.count} فاتورة — ${hourlyHeatmapData.peakHour.total.toLocaleString('en-US')} ج.م)`
-                                                        : `Peak Rush Hour: ${hourlyHeatmapData.peakHour.label} (${hourlyHeatmapData.peakHour.count} sales — ${hourlyHeatmapData.peakHour.total.toLocaleString('en-US')} EGP)`
-                                                ) : (
-                                                    language === 'ar' ? 'لا توجد حركة مبيعات مسجلة في هذه الفترة بعد' : 'No sales activity recorded for this period yet'
-                                                )}
-                                            </span>
-                                            <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                                                {language === 'ar' ? 'توصية للموارد البشرية: زيادة موظفي الكاشير والخدمة خلال ساعات الذروة لتسريع خدمة العملاء' : 'HR Insight: Allocate more staff during peak rush hours for faster service'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-                                        <span>{language === 'ar' ? 'إجمالي المعاملات:' : 'Total:'} <strong className="text-slate-900 dark:text-white font-bold">{hourlyHeatmapData.totalVisits}</strong></span>
-                                    </div>
-                                </div>
-
-                                {/* 24-Hours Heatmap Grid */}
-                                <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
-                                    {hourlyHeatmapData.hours.map(h => {
-                                        const ratio = hourlyHeatmapData.maxCount > 0 ? (h.count / hourlyHeatmapData.maxCount) : 0;
-                                        const isPeak = h.count > 0 && h.count === hourlyHeatmapData.peakHour.count;
-                                        
-                                        // Dynamic heat styles
-                                        let bgClass = 'bg-slate-50 dark:bg-slate-800/60 border-slate-200/70 dark:border-slate-700/60 text-slate-400';
-                                        if (isPeak) {
-                                            bgClass = 'bg-gradient-to-tr from-amber-500/30 to-amber-500/15 border-amber-500/50 text-amber-500 dark:text-amber-300 ring-1 ring-amber-500/40 shadow-xs';
-                                        } else if (ratio > 0.6) {
-                                            bgClass = 'bg-amber-500/20 dark:bg-amber-500/25 border-amber-500/40 text-amber-600 dark:text-amber-300';
-                                        } else if (ratio > 0.3) {
-                                            bgClass = 'bg-emerald-500/15 dark:bg-emerald-500/20 border-emerald-500/30 text-emerald-600 dark:text-emerald-300';
-                                        } else if (h.count > 0) {
-                                            bgClass = 'bg-blue-500/10 dark:bg-blue-500/15 border-blue-500/25 text-blue-600 dark:text-blue-300';
-                                        }
-
-                                        return (
-                                            <div
-                                                key={h.hour}
-                                                className={`p-2.5 rounded-xl border flex flex-col items-center justify-between text-center transition-all hover:scale-105 cursor-default relative group ${bgClass}`}
-                                                title={`${h.label}: ${h.count} ${language === 'ar' ? 'فاتورة' : 'sales'} (${h.total.toLocaleString('en-US')} ج.م)`}
-                                            >
-                                                {isPeak && (
-                                                    <span className="absolute -top-1.5 -end-1 text-[10px]">🔥</span>
-                                                )}
-                                                <span className="text-[11px] font-bold block mb-1">
-                                                    {h.label}
-                                                </span>
-                                                <span className={`text-base font-black font-mono leading-none ${h.count > 0 ? 'text-slate-900 dark:text-white' : 'text-slate-300 dark:text-slate-600'}`}>
-                                                    {h.count}
-                                                </span>
-                                                <span className="text-[9px] font-mono mt-1 text-slate-500 dark:text-slate-400 block truncate max-w-full">
-                                                    {h.total > 0 ? `${Math.round(h.total)} ج.م` : '—'}
-                                                </span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
+                        <SimpleBarChart 
+                            data={chartData} 
+                            color={
+                                chartMetric === 'expenses'
+                                    ? '#ef4444'
+                                    : chartMetric === 'visitors'
+                                    ? '#2563eb'
+                                    : '#10b981'
+                            }
+                            unit={chartMetricSummary.unit} 
+                        />
                     </div>
                 </Card>
                 
@@ -1731,13 +1863,180 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                 </Card>
             </div>
 
+            {/* بطاقة مواعيد وحجوزات اليوم للصالون */}
+            <div className="animate-fade-in">
+                <Card className="relative overflow-hidden border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+                    <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+                        <div className="flex items-center gap-2.5">
+                            <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl text-emerald-600 dark:text-emerald-400">
+                                <Calendar size={20} />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                    <span>{language === 'ar' ? 'مواعيد وحجوزات اليوم' : "Today's Appointments"}</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-mono font-bold">
+                                        {todayReservationsList.length} {language === 'ar' ? 'موعد' : 'res'}
+                                    </span>
+                                </h3>
+                                <p className="text-xs text-slate-400 mt-0.5">
+                                    {language === 'ar' ? 'متابعة مباشرة للعملاء القادمين ومصففيهم مع إمكانية التحويل الفوري للفاتورة' : 'Live tracking of incoming bookings with quick checkout'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => onNavigate('reservations')}
+                                className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                                <span>{language === 'ar' ? 'إدارة كل الحجوزات' : 'All Bookings'}</span>
+                                <ChevronRight size={14} className="rtl:rotate-180" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {todayReservationsList.length === 0 ? (
+                        <div className="text-center py-6 text-slate-400 flex flex-col items-center justify-center gap-2">
+                            <Calendar size={32} className="text-slate-300 dark:text-slate-600" />
+                            <p className="text-xs font-bold">{language === 'ar' ? 'لا توجد حجوزات مسجلة لليوم حتى الآن' : 'No bookings for today'}</p>
+                            <button
+                                type="button"
+                                onClick={() => onNavigate('reservations')}
+                                className="mt-1 text-xs font-bold text-primary-600 hover:underline cursor-pointer"
+                            >
+                                {language === 'ar' ? '+ تسجيل موعد جديد' : '+ New Booking'}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {todayReservationsList.slice(0, 6).map(res => {
+                                const isConfirmed = res.status === 'confirmed';
+                                const isPending = res.status === 'pending';
+                                const isCompleted = res.status === 'completed';
+
+                                const staffObj = state.staff.find(s => s.id === res.staffId);
+                                const barberName = staffObj?.name || 'مصفف الصالون';
+
+                                const cName = res.customerName || (res as any).customer_name || '';
+                                const pMatch = cName ? cName.match(/\(([^)]+)\)/) : null;
+                                const rawPhone = (res as any).phone || (pMatch ? pMatch[1] : (state.customers.find(c => c.id === res.customerId)?.phone || ''));
+                                const cleanPhone = (rawPhone || '').replace(/[^0-9+]/g, '');
+                                const cleanCustomerName = cName ? cName.replace(/\s*\([^)]*\)/, '').trim() : 'عميل بدون اسم';
+
+                                return (
+                                    <div 
+                                        key={res.id} 
+                                        className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
+                                            isConfirmed 
+                                                ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-800/40' 
+                                                : isPending 
+                                                ? 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-800/40'
+                                                : 'bg-slate-50/60 dark:bg-slate-800/50 border-slate-200/80 dark:border-slate-700/80'
+                                        }`}
+                                    >
+                                        <div>
+                                            <div className="flex items-start justify-between gap-2 mb-2">
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span className="font-mono text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1">
+                                                        <Clock size={13} className="text-emerald-600" />
+                                                        <span>{formatAppointmentTime(res.time)}</span>
+                                                    </span>
+                                                    <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                                        <Calendar size={11} className="text-slate-400" />
+                                                        <span>{formatAppointmentDate(res.date)}</span>
+                                                    </span>
+                                                </div>
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                                    isConfirmed 
+                                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300' 
+                                                        : isPending 
+                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
+                                                        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                }`}>
+                                                    {isConfirmed ? (language === 'ar' ? 'مؤكد' : 'Confirmed') : 
+                                                     isPending ? (language === 'ar' ? 'قيد الانتظار' : 'Pending') : 
+                                                     isCompleted ? (language === 'ar' ? 'مكتمل' : 'Completed') : res.status}
+                                                </span>
+                                            </div>
+
+                                            <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">
+                                                {cleanCustomerName}
+                                            </h4>
+
+                                            <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+                                                <span className="truncate">✂️ {barberName}</span>
+                                                {cleanPhone ? (
+                                                    <a 
+                                                        href={`tel:${cleanPhone}`} 
+                                                        className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1 shrink-0" 
+                                                        dir="ltr"
+                                                        title="اتصال بالعميل"
+                                                    >
+                                                        <Phone size={11} />
+                                                        <span>{cleanPhone}</span>
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-slate-400 text-[11px]">-</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const cName = res.customerName || (res as any).customer_name || '';
+                                                    const pMatch = cName ? cName.match(/\(([^)]+)\)/) : null;
+                                                    const pPhone = pMatch ? pMatch[1] : (state.customers.find(c => c.id === res.customerId)?.phone || '');
+                                                    const cleanName = cName ? cName.replace(/\s*\([^)]*\)/, '').trim() : 'عميل';
+                                                    sessionStorage.setItem('pending_pos_reservation', JSON.stringify({
+                                                        customerName: cleanName,
+                                                        phone: pPhone,
+                                                        staffId: res.staffId,
+                                                        serviceName: res.serviceName,
+                                                        notes: `حجز موعد ${res.date} ${res.time}`
+                                                    }));
+                                                    onNavigate('create_invoice');
+                                                }}
+                                                className="flex-1 py-1.5 px-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-xs transition-all cursor-pointer"
+                                                title="فتح الفاتورة وتحصيل المبلغ"
+                                            >
+                                                <FileText size={13} />
+                                                <span>{language === 'ar' ? 'تحويل لفاتورة' : 'POS Checkout'}</span>
+                                            </button>
+
+                                            {isPending && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (updateReservation) {
+                                                            updateReservation({ ...res, status: 'confirmed' });
+                                                            addToast(language === 'ar' ? `تم تأكيد حجز ${res.customerName}` : 'Booking confirmed', 'success');
+                                                        }
+                                                    }}
+                                                    className="p-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 font-bold transition-all cursor-pointer"
+                                                    title="تأكيد الموعد"
+                                                >
+                                                    <Check size={14} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </Card>
+            </div>
+
             {/* 5. الأصناف والخدمات الأكثر طلباً ومبيعاً خلال الفترة مع حساب الأرباح */}
             <div className="animate-fade-in">
                 <Card className="relative overflow-hidden">
                     <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
                         <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
                             <div className="p-2 bg-amber-50 dark:bg-amber-900/30 rounded-xl text-amber-600 dark:text-amber-400">
-                                <Sparkles size={20} />
+                                <Award size={20} />
                             </div>
                             <span>الأصناف والخدمات الأكثر مبيعاً في {rangeLabels.find(r => r.key === range)?.label}</span>
                         </h3>
@@ -1758,7 +2057,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     'from-slate-300 to-slate-400 text-slate-900',
                                     'from-amber-700 to-amber-600 text-white',
                                     'from-primary-600 to-sky-500 text-white',
-                                    'from-purple-600 to-indigo-500 text-white',
+                                    'from-teal-600 to-emerald-600 text-white',
                                 ];
                                 return (
                                     <div 
@@ -1781,7 +2080,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                                 {item.total.toLocaleString('en-US')} {t('egp')}
                                             </span>
                                             {item.cost > 0 && (
-                                                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-mono font-bold" title="ربح الصنف بعد خصم التكلفة">
+                                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold" title="ربح الصنف بعد خصم التكلفة">
                                                     +{item.profit.toLocaleString('en-US')} ربح
                                                 </span>
                                             )}
@@ -1973,9 +2272,9 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     {totalCurrentDebts.toLocaleString('en-US')} ج.م
                                 </span>
                             </div>
-                            <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800">
-                                <span className="text-[10px] text-purple-700 dark:text-purple-400 block font-bold">فواتير آجلة بالفترة</span>
-                                <span className="text-base font-black text-purple-600 dark:text-purple-300 font-mono">
+                            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800">
+                                <span className="text-[10px] text-blue-700 dark:text-blue-400 block font-bold">فواتير آجلة بالفترة</span>
+                                <span className="text-base font-black text-blue-600 dark:text-blue-300 font-mono">
                                     {paymentBreakdown.credit.toLocaleString('en-US')} ج.م
                                 </span>
                             </div>
@@ -2064,39 +2363,39 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                     maxWidth="max-w-2xl"
                 >
                     <div className="space-y-4">
-                        <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800">
-                            <h4 className="text-sm font-bold text-purple-900 dark:text-purple-200 mb-3 flex items-center justify-between">
+                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center justify-between">
                                 <span>المعادلة المحاسبية المعتمدة ({rangeLabels.find(r => r.key === range)?.label}):</span>
-                                <span className="font-mono text-purple-700 dark:text-purple-300 font-extrabold text-base">
+                                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-extrabold text-base">
                                     صافي الربح = {accrualNetProfit.toLocaleString('en-US')} {t('egp')}
                                 </span>
                             </h4>
 
                             <div className="space-y-2 text-xs font-mono">
-                                <div className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-slate-900/60 border border-purple-100 dark:border-purple-900/50">
+                                <div className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
                                     <span className="text-emerald-700 dark:text-emerald-400 font-bold">[+] إجمالي الإيرادات والمبيعات:</span>
                                     <span className="font-bold text-emerald-600">+{totalRevenue.toLocaleString('en-US')} ج.م</span>
                                 </div>
-                                <div className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-slate-900/60 border border-purple-100 dark:border-purple-900/50">
+                                <div className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
                                     <span className="text-rose-700 dark:text-rose-400 font-bold">[-] التكلفة التجارية للمنتجات والخدمات (COGS):</span>
                                     <span className="font-bold text-rose-600">-{totalCOGS.toLocaleString('en-US')} ج.م</span>
                                 </div>
-                                <div className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-slate-900/60 border border-purple-100 dark:border-purple-900/50">
+                                <div className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
                                     <span className="text-rose-700 dark:text-rose-400 font-bold">[-] المصروفات التشغيلية:</span>
                                     <span className="font-bold text-rose-600">-{totalExpenses.toLocaleString('en-US')} ج.م</span>
                                 </div>
-                                <div className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-slate-900/60 border border-purple-100 dark:border-purple-900/50">
+                                <div className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
                                     <span className="text-amber-700 dark:text-amber-400 font-bold">[-] المرتجعات المعتمدة:</span>
                                     <span className="font-bold text-amber-600">-{totalReturns.toLocaleString('en-US')} ج.م</span>
                                 </div>
                                 {periodStaffCosts > 0 && (
-                                    <div className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-slate-900/60 border border-purple-100 dark:border-purple-900/50">
+                                    <div className="flex justify-between items-center p-2 rounded-lg bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
                                         <span className="text-rose-700 dark:text-rose-400 font-bold">[-] أجور وعمولات الموظفين:</span>
                                         <span className="font-bold text-rose-600">-{periodStaffCosts.toLocaleString('en-US')} ج.م</span>
                                     </div>
                                 )}
-                                <div className="flex justify-between items-center p-2.5 rounded-lg bg-purple-100/80 dark:bg-purple-900/50 border border-purple-300 dark:border-purple-700 text-sm font-black">
-                                    <span className="text-purple-900 dark:text-purple-100">[=] صافي الربح الدفتري الفعلي:</span>
+                                <div className="flex justify-between items-center p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-sm font-black">
+                                    <span className="text-emerald-900 dark:text-emerald-200">[=] صافي الربح الدفتري الفعلي:</span>
                                     <span className={accrualNetProfit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600'}>
                                         {accrualNetProfit.toLocaleString('en-US')} ج.م
                                     </span>
@@ -2123,7 +2422,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                         <div className="flex justify-between items-center pt-2">
                             <button
                                 onClick={() => handlePrintCard('profit')}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
                             >
                                 <Printer size={16} />
                                 <span>طباعة التقرير المالي للأرباح</span>
@@ -2160,9 +2459,9 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     {paymentBreakdown.card.toLocaleString('en-US')} ج.م
                                 </span>
                             </div>
-                            <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800">
-                                <span className="text-[10px] text-purple-700 dark:text-purple-400 block font-bold">محافظ إلكترونية</span>
-                                <span className="text-base font-black text-purple-600 dark:text-purple-300 font-mono">
+                            <div className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800">
+                                <span className="text-[10px] text-sky-700 dark:text-sky-400 block font-bold">محافظ إلكترونية</span>
+                                <span className="text-base font-black text-sky-600 dark:text-sky-300 font-mono">
                                     {paymentBreakdown.wallet.toLocaleString('en-US')} ج.م
                                 </span>
                             </div>
@@ -2190,7 +2489,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                         <div className="flex justify-between items-center pt-2">
                             <button
                                 onClick={() => handlePrintCard('revenue')}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
                             >
                                 <Printer size={16} />
                                 <span>طباعة تقرير المبيعات</span>
@@ -2226,7 +2525,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                         onClick={() => setStaffModalRange(item.key)}
                                         className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                                             staffModalRange === item.key
-                                                ? 'bg-emerald-600 text-white shadow-xs'
+                                                ? 'bg-primary-600 text-white shadow-xs'
                                                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                                         }`}
                                     >
@@ -2249,7 +2548,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                                         staffSortCriteria === 'revenue'
                                             ? 'bg-emerald-600 text-white shadow-xs'
-                                            : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                                            : 'text-slate-600 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400'
                                     }`}
                                 >
                                     <DollarSign size={13} />
@@ -2261,7 +2560,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                                         staffSortCriteria === 'invoices'
                                             ? 'bg-emerald-600 text-white shadow-xs'
-                                            : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                                            : 'text-slate-600 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400'
                                     }`}
                                 >
                                     <FileText size={13} />
@@ -2272,8 +2571,8 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                     onClick={() => setStaffSortCriteria('services')}
                                     className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                                         staffSortCriteria === 'services'
-                                            ? 'bg-emerald-600 text-white shadow-xs'
-                                            : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400'
                                     }`}
                                 >
                                     <Package size={13} />
@@ -2339,13 +2638,13 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                                     </span>
                                                 </td>
                                                 <td className="p-2.5 font-bold text-slate-800 dark:text-slate-200">{st.name}</td>
-                                                <td className={`p-2.5 font-mono ${staffSortCriteria === 'invoices' ? 'font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/5' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                <td className={`p-2.5 font-mono ${staffSortCriteria === 'invoices' ? 'font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' : 'text-slate-600 dark:text-slate-400'}`}>
                                                     {st.invoices} فاتورة
                                                 </td>
-                                                <td className={`p-2.5 font-mono ${staffSortCriteria === 'services' ? 'font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/5' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                <td className={`p-2.5 font-mono ${staffSortCriteria === 'services' ? 'font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10' : 'text-slate-600 dark:text-slate-400'}`}>
                                                     {st.services} خدمة
                                                 </td>
-                                                <td className={`p-2.5 font-bold font-mono text-left ${staffSortCriteria === 'revenue' ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/5' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                <td className={`p-2.5 font-bold font-mono text-left ${staffSortCriteria === 'revenue' ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' : 'text-slate-700 dark:text-slate-300'}`}>
                                                     {st.revenue.toLocaleString('en-US')} ج.م
                                                 </td>
                                             </tr>
@@ -2359,7 +2658,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                         <div className="flex justify-between items-center pt-2">
                             <button
                                 onClick={() => handlePrintCard('staff')}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
                             >
                                 <Printer size={16} />
                                 <span>طباعة كشف أداء الموظفين</span>
@@ -2411,7 +2710,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                                                     <span className="text-amber-600 font-bold">آجل</span>
                                                 ) : inv.paymentMethod}
                                             </td>
-                                            <td className="p-2.5 font-bold font-mono text-emerald-600 text-left">
+                                            <td className="p-2.5 font-bold font-mono text-primary-600 text-left">
                                                 {inv.total.toLocaleString('en-US')} ج.م
                                             </td>
                                         </tr>
@@ -2423,7 +2722,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                         <div className="flex justify-between items-center pt-2">
                             <button
                                 onClick={() => handlePrintCard('invoices')}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
                             >
                                 <Printer size={16} />
                                 <span>طباعة كشف الفواتير</span>
@@ -2456,7 +2755,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                         <div className="flex justify-between items-center pt-2">
                             <button
                                 onClick={() => handlePrintCard('avg')}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
                             >
                                 <Printer size={16} />
                                 <span>طباعة التقرير</span>
@@ -2502,7 +2801,7 @@ export const Dashboard = ({ onNavigate, showStats }: { onNavigate: (tab: any) =>
                         <div className="flex justify-between items-center pt-2">
                             <button
                                 onClick={() => handlePrintCard('returns')}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
                             >
                                 <Printer size={16} />
                                 <span>طباعة تقرير المرتجعات</span>

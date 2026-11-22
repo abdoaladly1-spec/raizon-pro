@@ -362,7 +362,7 @@ export const NotesPage: React.FC = () => {
                             />
                             <span>ترقيم تلقائي للملاحظات الجديدة</span>
                         </label>
-                        <span className="font-mono text-[10px]">Apple Ruled 📝</span>
+                        <span className="font-mono text-[10px]">Apple Ruled</span>
                     </div>
                 </div>
 
@@ -536,14 +536,14 @@ export const NotesPage: React.FC = () => {
                                             : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700'}`}
                                     title="تبديل نمط الورق (مسطر / عادي)"
                                 >
-                                    <span>{isLinedPaper ? '📝 مسطر' : '📄 عادي'}</span>
+                                    <span>{isLinedPaper ? 'مسطر' : 'عادي'}</span>
                                 </button>
                             </div>
 
                             {/* أزرار الإجراءات في الجانب الآخر (طباعة، تصدير، حذف، حفظ) */}
                             <div className="flex items-center gap-1.5">
                                 <span className="text-[11px] font-mono text-slate-400 ml-2 hidden sm:inline">
-                                    {saveStatus === 'saving' ? 'جاري الحفظ...' : saveStatus === 'unsaved' ? 'تعديلات غير محفوظة' : 'تم الحفظ تلقائياً ✓'}
+                                    {saveStatus === 'saving' ? 'جاري الحفظ...' : saveStatus === 'unsaved' ? 'تعديلات غير محفوظة' : 'تم الحفظ تلقائياً'}
                                 </span>
 
                                 <button 

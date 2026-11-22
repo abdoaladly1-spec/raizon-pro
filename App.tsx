@@ -8,7 +8,7 @@ import React, { useState, useRef, useMemo, useEffect, lazy, Suspense } from 'rea
 import { AppProvider, useApp } from './context/AppContext';
 import { Intro } from './components/Intro';
 import { AnimatedBackground } from './components/AnimatedBackground';
-import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, Key, User, Lock, ArrowLeft, ChevronRight, ChevronDown, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Truck, Bell, AlertTriangle, Shield, Phone, Copy, Building, History } from './components/Icons';
+import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, Key, User, Lock, ArrowLeft, ChevronRight, ChevronDown, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Truck, Bell, AlertTriangle, Shield, Phone, Copy, Building, History, Layers, Smartphone, Laptop, CheckCircle2, Cloud } from './components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from './types';
 import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, clearSyncError, resetSyncStatus, type SyncStatus } from './lib/serverSync';
 import { startAutoBackupScheduler } from './lib/autoBackupScheduler';
@@ -22,9 +22,22 @@ import { UpdateModal, type UpdateInfo } from './components/UpdateModal';
 import { WhatsNewModal } from './components/WhatsNewModal';
 import { SupabaseAccountMenu } from './components/SupabaseAccountMenu';
 import { SupabaseOnboardingModal } from './components/SupabaseOnboardingModal';
-import { isCloudAccountConfigured } from './lib/supabaseSync';
+import { 
+  isCloudAccountConfigured, 
+  getCloudAccount, 
+  clearCloudAccount, 
+  getConnectedDevicesCount, 
+  getConnectedDevicesList, 
+  subscribeDevicesCount, 
+  updateCloudBranch, 
+  pushBranchToSupabase, 
+  type CloudAccountInfo 
+} from './lib/supabaseSync';
+import { verifySecret } from './lib/crypto';
 import { RAIZON_LOGO_URI } from './lib/logoData';
 import { isMainBranch } from './lib/branchUtils';
+import { AdminBranchSelectionScreen } from './components/AdminBranchSelectionScreen';
+import { PrivacyPolicyModal } from './components/PrivacyPolicyModal';
 /**
  * تحميل ذكي ومرن للصفحات مع إعادة المحاولة التلقائية والتعافي الفوري من أخطاء الـ Chunks
  */
@@ -116,7 +129,7 @@ const ScreenSaver = ({ onActive }: { onActive: () => void }) => {
             {/* ScreenSaver Brand Center */}
             <div className="relative z-10 text-center space-y-8">
                 <div className="w-24 h-24 mx-auto bg-slate-900/80 rounded-3xl flex items-center justify-center backdrop-blur-md border border-slate-800 shadow-xl p-3">
-                    <img src={RAIZON_LOGO_URI} alt="RaiZon Pro" className="w-full h-full object-contain" />
+                    <img src={RAIZON_LOGO_URI} alt="فلير وان - Flare One" className="w-full h-full object-contain" />
                 </div>
                 
                 <div>
@@ -147,69 +160,51 @@ const getUserAvatarStyle = (user?: { role?: string; username?: string; name?: st
   const role = (user?.role || '').toLowerCase();
   const username = (user?.username || '').toLowerCase();
 
-  // المدير: ذهبي ملكي متوهج
+  // المدير: لون عنبري ذهبي رصين
   if (role === 'admin' || username === 'admin') {
     return {
       isAdmin: true,
       label: 'مدير النظام',
-      className: 'bg-gradient-to-tr from-amber-600 via-amber-500 to-amber-300 text-slate-950 shadow-amber-500/30 ring-2 ring-amber-400/80',
-      cssBackground: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 60%, #fef08a 100%)',
+      className: 'bg-amber-500 text-slate-950 font-bold',
+      cssBackground: '#f59e0b',
       textColor: '#0f172a',
       ringColor: '#f59e0b',
-      shadowColor: 'rgba(245, 158, 11, 0.5)',
-      borderColor: '#fbbf24',
+      shadowColor: 'transparent',
+      borderColor: '#d97706',
     };
   }
 
-  // الكاشير والموظفون: ألوان حيوية مميزة وثابتة لكل مستخدم
+  // الكاشير والموظفون: ألوان مؤسسية هادئة واضحة
   const palettes = [
     {
-      tailwind: 'bg-gradient-to-tr from-cyan-600 via-cyan-500 to-teal-400 text-white shadow-cyan-500/30 ring-2 ring-cyan-400/70',
-      css: 'linear-gradient(135deg, #0891b2 0%, #06b6d4 50%, #2dd4bf 100%)',
-      ring: '#06b6d4',
-      shadow: 'rgba(6, 182, 212, 0.45)',
+      tailwind: 'bg-emerald-600 text-white',
+      css: '#059669',
+      ring: '#059669',
+      shadow: 'transparent',
     },
     {
-      tailwind: 'bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-300 text-white shadow-emerald-500/30 ring-2 ring-emerald-400/70',
-      css: 'linear-gradient(135deg, #059669 0%, #10b981 50%, #6ee7b7 100%)',
-      ring: '#10b981',
-      shadow: 'rgba(16, 185, 129, 0.45)',
-    },
-    {
-      tailwind: 'bg-gradient-to-tr from-fuchsia-600 via-pink-500 to-rose-400 text-white shadow-pink-500/30 ring-2 ring-pink-400/70',
-      css: 'linear-gradient(135deg, #c026d3 0%, #ec4899 50%, #fb7185 100%)',
-      ring: '#ec4899',
-      shadow: 'rgba(236, 72, 153, 0.45)',
-    },
-    {
-      tailwind: 'bg-gradient-to-tr from-indigo-600 via-indigo-500 to-sky-400 text-white shadow-indigo-500/30 ring-2 ring-indigo-400/70',
-      css: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #38bdf8 100%)',
-      ring: '#6366f1',
-      shadow: 'rgba(99, 102, 241, 0.45)',
-    },
-    {
-      tailwind: 'bg-gradient-to-tr from-violet-700 via-purple-600 to-fuchsia-400 text-white shadow-purple-500/30 ring-2 ring-purple-400/70',
-      css: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #e879f9 100%)',
-      ring: '#9333ea',
-      shadow: 'rgba(147, 51, 234, 0.45)',
-    },
-    {
-      tailwind: 'bg-gradient-to-tr from-orange-600 via-orange-500 to-amber-400 text-white shadow-orange-500/30 ring-2 ring-orange-400/70',
-      css: 'linear-gradient(135deg, #ea580c 0%, #f97316 50%, #fbbf24 100%)',
-      ring: '#f97316',
-      shadow: 'rgba(249, 115, 22, 0.45)',
-    },
-    {
-      tailwind: 'bg-gradient-to-tr from-teal-700 via-teal-500 to-emerald-400 text-white shadow-teal-500/30 ring-2 ring-teal-400/70',
-      css: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #34d399 100%)',
-      ring: '#14b8a6',
-      shadow: 'rgba(20, 184, 166, 0.45)',
-    },
-    {
-      tailwind: 'bg-gradient-to-tr from-blue-700 via-blue-600 to-cyan-400 text-white shadow-blue-500/30 ring-2 ring-blue-400/70',
-      css: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #22d3ee 100%)',
+      tailwind: 'bg-blue-600 text-white',
+      css: '#2563eb',
       ring: '#2563eb',
-      shadow: 'rgba(37, 99, 235, 0.45)',
+      shadow: 'transparent',
+    },
+    {
+      tailwind: 'bg-teal-600 text-white',
+      css: '#0d9488',
+      ring: '#0d9488',
+      shadow: 'transparent',
+    },
+    {
+      tailwind: 'bg-slate-700 text-white',
+      css: '#334155',
+      ring: '#334155',
+      shadow: 'transparent',
+    },
+    {
+      tailwind: 'bg-sky-600 text-white',
+      css: '#0284c7',
+      ring: '#0284c7',
+      shadow: 'transparent',
     },
   ];
 
@@ -286,7 +281,7 @@ const MainContent = () => {
   const [showBranchSwitcherModal, setShowBranchSwitcherModal] = useState(false);
   const [showBranchDropdown, setShowBranchDropdown] = useState(false);
   const [showSyncInfoModal, setShowSyncInfoModal] = useState(false);
-  const [showOnboardingModal, setShowOnboardingModal] = useState(() => !isCloudAccountConfigured());
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
 
   const [isNavSaving, setIsNavSaving] = useState(false);
 
@@ -439,7 +434,7 @@ const MainContent = () => {
   // Shortcuts
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'F7') {
+      if (e.key === 'F1' || e.key === 'F7') {
         e.preventDefault();
         triggerOpenCashDrawer();
       }
@@ -459,7 +454,7 @@ const MainContent = () => {
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
-  const navItems = [
+  const navItems = useMemo(() => [
       { id: 'dashboard', icon: LayoutDashboard, label: t('dashboard'), group: t('nav_group_overview') },
       { id: 'create_invoice', icon: Plus, label: t('new_invoice'), group: t('nav_group_overview') },
       { id: 'invoices', icon: FileText, label: t('invoices'), group: t('nav_group_daily') },
@@ -470,7 +465,7 @@ const MainContent = () => {
       { id: 'closing_history', icon: History, label: language === 'ar' ? 'سجل الإقفال' : 'Closing Records', group: t('nav_group_daily') },
       { id: 'clients', icon: Users, label: t('clients'), group: t('nav_group_daily') },
       { id: 'debts', icon: CreditCard, label: t('debts') || 'الديون والآجل', group: t('nav_group_daily') },
-      { id: 'reservations', icon: Calendar, label: t('reservations'), group: t('nav_group_daily') },
+      { id: 'reservations', icon: Calendar, label: t('reservations'), group: t('nav_group_daily'), badge: upcomingReservations.length > 0 ? upcomingReservations.length : undefined },
       { id: 'inventory', icon: Package, label: t('inventory'), group: t('nav_group_inventory') },
       { id: 'staff', icon: Users, label: t('staff_management'), group: t('nav_group_inventory') },
       { id: 'stats', icon: BarChart2, label: t('analytics'), group: t('nav_group_system') },
@@ -482,10 +477,56 @@ const MainContent = () => {
       if (currentUser?.role === 'admin') return true;
       if (!currentUser?.permissions) return true;
       if (item.id === 'closing_history') return currentUser.permissions.includes('closing') || currentUser.permissions.includes('closing_history');
-      return currentUser.permissions.includes(item.id) || ['dashboard', 'create_invoice', 'stats'].includes(item.id);
-  });
+      if (item.id === 'create_invoice') return currentUser.permissions.includes('create_invoice');
+      if (item.id === 'dashboard') return currentUser.permissions.includes('dashboard');
+      return currentUser.permissions.includes(item.id);
+  }), [t, language, unreadAdminNotificationsCount, currentUser?.role, currentUser?.permissions]);
+
+  // توجيه تلقائي للكاشير إلى أول قسم مسموح به عند تسجيل الدخول
+  useEffect(() => {
+    if (currentUser?.role !== 'admin' && currentUser?.permissions) {
+      const allowedIds = navItems.map(n => n.id);
+      if (allowedIds.length > 0 && !allowedIds.includes(activeTab)) {
+        setActiveTab(allowedIds[0] as any);
+      }
+    }
+  }, [currentUser?.role, currentUser?.permissions, navItems, activeTab]);
 
   const renderContent = () => {
+      // حماية الأقسام والتحقق من صلاحية الكاشير قبل العرض
+      if (currentUser?.role !== 'admin' && currentUser?.permissions) {
+          const isAllowed = 
+              activeTab === 'closing_history' ? (currentUser.permissions.includes('closing') || currentUser.permissions.includes('closing_history')) :
+              activeTab === 'categories' || activeTab === 'inventory_history' ? currentUser.permissions.includes('inventory') :
+              activeTab === 'suppliers' || activeTab === 'purchase_orders' ? currentUser.permissions.includes('suppliers') :
+              currentUser.permissions.includes(activeTab);
+
+          if (!isAllowed) {
+              const fallback = navItems[0]?.id || (currentUser.permissions.includes('create_invoice') ? 'create_invoice' : 'closing');
+              return (
+                  <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6 animate-fade-in">
+                      <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center mb-4">
+                          <Lock size={32} />
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">
+                          {language === 'ar' ? 'غير مصرح بالدخول لهذا القسم' : 'Access Restricted'}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mb-6 leading-relaxed">
+                          {language === 'ar' 
+                              ? 'حسابك الحالي لا يمتلك الصلاحية الكافية للوصول إلى هذا القسم. يمكنك مراجعة مدير النظام لتعديل صلاحياتك.' 
+                              : 'Your account does not have permission to access this section. Please contact your manager.'}
+                      </p>
+                      <button
+                          onClick={() => setActiveTab(fallback as any)}
+                          className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                      >
+                          {language === 'ar' ? 'الانتقال إلى القسم المصرح لك به' : 'Go to Allowed Section'}
+                      </button>
+                  </div>
+              );
+          }
+      }
+
       switch(activeTab) {
           case 'create_invoice': return <CreateInvoice onClose={() => setActiveTab('dashboard')} />;
           case 'invoices': return <InvoicesList />;
@@ -506,7 +547,7 @@ const MainContent = () => {
           case 'staff': return <StaffPage />;
           case 'clients': return <Clients />;
           case 'debts': return <DebtsPage />;
-          case 'reservations': return <ReservationsPage />;
+          case 'reservations': return <ReservationsPage onNavigate={(tab) => handleNavigate(tab as any)} />;
           case 'stats': return <StatsPage />;
           case 'settings': return <SettingsPage />;
           case 'notes': return <NotesPage />;
@@ -521,7 +562,8 @@ const MainContent = () => {
   };
 
   return (
-    <div className={`flex h-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 ${language === 'ar' ? 'font-cairo' : ''}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className={`flex h-screen bg-slate-100/90 dark:bg-slate-950/80 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 relative ${language === 'ar' ? 'font-cairo' : ''}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+        <AnimatedBackground isDark={theme === 'dark'} />
         <ToastContainer />
         {/* Sidebar */}
         <aside className={`${sidebarCollapsed ? "w-16" : "w-60"} theme-chrome-sidebar border-e flex flex-col transition-all duration-300 z-20 flex-shrink-0 select-none backdrop-blur-md`}>
@@ -534,7 +576,7 @@ const MainContent = () => {
                         title="توسيع الشريط الجانبي"
                         aria-label="توسيع الشريط الجانبي"
                     >
-                        <img src={RAIZON_LOGO_URI} alt="RaiZon Pro" className="w-7 h-7 object-contain shrink-0 drop-shadow-[0_2px_8px_rgba(168,85,247,0.35)] group-hover:scale-95 transition-transform" />
+                        <img src={RAIZON_LOGO_URI} alt="فلير وان - Flare One" className="w-7 h-7 object-contain shrink-0 group-hover:scale-95 transition-transform" />
                         <div className="absolute inset-0 rounded-xl bg-primary-600/15 dark:bg-primary-400/15 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                             <ChevronRight size={17} className="rotate-180 text-primary-700 dark:text-primary-300" />
                         </div>
@@ -542,9 +584,10 @@ const MainContent = () => {
                 ) : (
                     <>
                         <div className="flex items-center gap-2.5 min-w-0">
-                            <img src={RAIZON_LOGO_URI} alt="RaiZon Pro" className="w-8 h-8 object-contain shrink-0 drop-shadow-[0_2px_10px_rgba(168,85,247,0.35)]" />
-                            <span className="font-bold text-base font-cairo truncate animate-fade-in tracking-tight">
-                                <span className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.3)]">RaiZon</span> <span className="text-primary-500 dark:text-primary-400 drop-shadow-[0_0_8px_rgba(14,165,233,0.3)]">Pro</span>
+                            <img src={RAIZON_LOGO_URI} alt="فلير وان - Flare One" className="w-8 h-8 object-contain shrink-0" />
+                            <span className="font-extrabold text-base font-cairo truncate tracking-tight flex items-center gap-1">
+                                <span className="text-slate-900 dark:text-white">فلير</span> <span className="text-emerald-500 dark:text-emerald-400">وان</span>
+                                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-normal ms-1">Flare One</span>
                             </span>
                         </div>
                         <button
@@ -578,21 +621,21 @@ const MainContent = () => {
                             <button
                                 onClick={() => { handleNavigate(item.id as any); playBeep(); }}
                                 title={sidebarCollapsed ? item.label : undefined}
-                                className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-0 h-10' : 'gap-3 px-3.5 py-2.5'} rounded-xl transition-all duration-200 group relative cursor-pointer
+                                className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-0 h-10 w-10 mx-auto rounded-full' : 'gap-3 px-3.5 py-2.5 rounded-full'} transition-all duration-200 group relative cursor-pointer m3-state-layer
                                     ${isActive 
-                                        ? 'bg-primary-500/15 dark:bg-primary-500/20 text-primary-700 dark:text-primary-300 font-bold border border-primary-500/35 dark:border-primary-500/40 shadow-xs ring-1 ring-primary-500/20' 
-                                        : 'text-slate-700 dark:text-slate-300 font-semibold hover:bg-primary-500/10 dark:hover:bg-primary-950/40 hover:text-slate-950 dark:hover:text-white'
+                                        ? 'bg-primary-500/15 dark:bg-primary-500/22 text-primary-700 dark:text-primary-300 font-bold border border-primary-500/35 dark:border-primary-500/40 shadow-xs ring-1 ring-primary-500/20' 
+                                        : 'text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-200/50 dark:hover:bg-slate-800/60 hover:text-slate-950 dark:hover:text-white'
                                     }`}
                             >
                                 <item.icon size={21} className={`transition-transform duration-200 group-hover:scale-110 shrink-0 ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 group-hover:text-primary-600 dark:group-hover:text-primary-300'}`} />
                                 {!sidebarCollapsed && <span className="text-sm truncate leading-none">{item.label}</span>}
                                 {Boolean((item as any).badge) && !sidebarCollapsed && (
-                                    <span className="ms-auto flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-rose-500 text-white text-[10px] font-mono font-bold shadow-xs">
+                                    <span className="ms-auto flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-emerald-500 text-slate-950 text-[11px] font-mono font-black shadow-xs">
                                         {(item as any).badge > 99 ? '99+' : (item as any).badge}
                                     </span>
                                 )}
                                 {Boolean((item as any).badge) && sidebarCollapsed && (
-                                    <span className="absolute top-1.5 end-1.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900"></span>
+                                    <span className="absolute top-1.5 end-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"></span>
                                 )}
                                 {isActive && (
                                     <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-primary-600 dark:bg-primary-400 rounded-e-full shadow-sm"></div>
@@ -624,6 +667,20 @@ const MainContent = () => {
                  </button>
 
                  <button 
+                    onClick={() => { setShowShortcuts(true); playBeep(); }} 
+                    title={language === 'ar' ? 'دليل اختصارات الكاشير (?)' : 'Keyboard Shortcuts (?)'}
+                    className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-0 h-9' : 'gap-3 px-3 py-2'} rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary-500/10 dark:hover:bg-primary-950/40 hover:text-slate-950 dark:hover:text-white transition-all cursor-pointer`}
+                 >
+                    <Keyboard size={19} className="shrink-0 text-slate-400" />
+                    {!sidebarCollapsed && (
+                        <div className="flex items-center justify-between flex-1 min-w-0">
+                            <span className="text-xs font-semibold truncate">{language === 'ar' ? 'دليل الاختصارات' : 'Shortcuts'}</span>
+                            <kbd className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700">?</kbd>
+                        </div>
+                    )}
+                 </button>
+
+                 <button 
                     onClick={logout} 
                     title={t('logout')}
                     className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-0 h-9' : 'gap-3 px-3 py-2'} rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 transition-all cursor-pointer font-bold`}
@@ -652,7 +709,7 @@ const MainContent = () => {
                                     <span>{currentNavItem?.label || t('dashboard')}</span>
                                 </h2>
                                 <span className="text-[10px] font-semibold text-slate-500 dark:text-primary-300/70 font-bold leading-none mt-0.5">
-                                    {currentNavItem?.group || 'RaiZon Pro'}
+                                    {currentNavItem?.group || 'فلير وان | Flare One'}
                                 </span>
                             </div>
                         </div>
@@ -662,44 +719,40 @@ const MainContent = () => {
                             <button
                                 type="button"
                                 onClick={() => setShowSearch(true)}
-                                className="w-full flex items-center justify-between gap-2.5 px-3.5 h-10 rounded-xl border border-primary-200/80 dark:border-primary-500/25 bg-white/70 hover:bg-white dark:bg-primary-950/25 dark:hover:bg-primary-950/45 text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-slate-100 text-xs font-bold transition-all cursor-pointer shadow-inner group"
+                                className="w-full flex items-center justify-between gap-2.5 px-3.5 h-10 rounded-xl border border-slate-200 dark:border-slate-700/70 bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-slate-100 text-xs font-semibold transition-all cursor-pointer shadow-xs group"
                                 title={language === 'ar' ? 'بحث فوري في كل الصفحات والفواتير والعملاء (Ctrl + K)' : 'Quick Search (Ctrl + K)'}
                             >
                                 <div className="flex items-center gap-2 truncate">
-                                    <Search size={14} className="text-primary-500 dark:text-primary-400 group-hover:scale-110 transition-transform shrink-0" />
-                                    <span className="truncate hidden xl:inline">{language === 'ar' ? 'بحث سريع وتنقل بين الصفحات...' : 'Quick search...'}</span>
-                                    <span className="truncate xl:hidden">{language === 'ar' ? 'بحث سريع...' : 'Search...'}</span>
+                                    <Search size={14} className="text-slate-400 group-hover:text-primary-500 dark:group-hover:text-primary-400 group-hover:scale-110 transition-transform shrink-0" />
+                                    <span className="truncate hidden xl:inline text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white">{language === 'ar' ? 'بحث سريع وتنقل بين الصفحات...' : 'Quick search...'}</span>
+                                    <span className="truncate xl:hidden text-slate-600 dark:text-slate-300">{language === 'ar' ? 'بحث سريع...' : 'Search...'}</span>
                                 </div>
-                                <kbd className="px-2 py-0.5 rounded-md bg-white dark:bg-primary-900/40 text-[10px] font-mono text-slate-700 dark:text-primary-200 border border-primary-200 dark:border-primary-500/30 shadow-2xs font-extrabold shrink-0">Ctrl K</kbd>
+                                <kbd className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700/60 text-[10px] font-mono text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 shadow-2xs font-extrabold shrink-0">Ctrl K</kbd>
                             </button>
                         </div>
                         
                         {/* Left: Quick Actions & Status Controls */}
                         <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                             {/* زر الإشعارات والعمليات الإدارية ونواقص المخزون مكان الساعة مع عداد رسائل */}
+                             {/* زر الإشعارات: تصميم هادئ محايد بدون تلوين الزر، مع نقطة خضراء لعداد الرسائل فقط */}
                              <button
                                  type="button"
                                  onClick={() => { setActiveTab('notifications'); playBeep(); }}
                                  title={language === 'ar' ? `مركز الإشعارات والعمليات الإدارية (${unreadAdminNotificationsCount} غير مقروء)` : `Notifications (${unreadAdminNotificationsCount} unread)`}
-                                 className={`relative flex items-center gap-2 h-9 px-3 rounded-xl border transition-all cursor-pointer ${
+                                 className={`relative flex items-center gap-2 h-9 px-3 rounded-xl border transition-all cursor-pointer shadow-xs ${
                                      activeTab === 'notifications'
-                                         ? 'bg-primary-600 text-white border-primary-500 shadow-sm'
-                                         : unreadAdminNotificationsCount > 0
-                                         ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 shadow-xs'
-                                         : 'bg-slate-100/80 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 shadow-xs'
+                                         ? 'bg-slate-200 dark:bg-slate-700/90 text-slate-900 dark:text-white border-slate-300 dark:border-slate-600 font-bold'
+                                         : 'bg-slate-100/90 dark:bg-slate-800/80 border-slate-200/90 dark:border-slate-700/70 text-slate-700 dark:text-slate-200 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 hover:text-slate-950 dark:hover:text-white'
                                  }`}
                              >
-                                 <Bell size={15} className={unreadAdminNotificationsCount > 0 ? 'animate-bounce' : ''} />
+                                 <Bell size={15} className="text-slate-500 dark:text-slate-400 shrink-0" />
                                  <span className="text-xs font-bold hidden sm:inline">
                                      {language === 'ar' ? 'الإشعارات' : 'Notifications'}
                                  </span>
                                  {unreadAdminNotificationsCount > 0 ? (
-                                     <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-rose-500 text-white text-[10px] font-mono font-bold shadow-xs">
+                                     <span className="flex items-center justify-center min-w-[19px] h-[19px] px-1 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-mono font-black shadow-xs ring-1 ring-emerald-400/40">
                                          {unreadAdminNotificationsCount > 99 ? '99+' : unreadAdminNotificationsCount}
                                      </span>
-                                 ) : (
-                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title={language === 'ar' ? 'لا توجد تنبيهات جديدة' : 'All clear'}></span>
-                                 )}
+                                 ) : null}
                              </button>
 
                              {syncStatus.pending > 0 && (
@@ -745,114 +798,11 @@ const MainContent = () => {
                                  </div>
                              )}
                              
-                             {/* Branch selector — قائمة منسدلة سريعة ومباشرة للمدير لتبديل الفرع بنقرة واحدة */}
-                             {(() => {
-                                const activeBranch = state.locations.find(l => String(l.id) === String(state.settings?.currentLocationId)) || state.locations[0];
-                                if (!activeBranch) return null;
-                                const isAdmin = currentUser?.role === 'admin';
-
-                                if (isAdmin) {
-                                  return (
-                                    <div className="relative">
-                                      <button
-                                        type="button"
-                                        onClick={() => setShowBranchDropdown(prev => !prev)}
-                                        className="flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-bold bg-primary-500/10 hover:bg-primary-500/20 dark:bg-primary-950/40 dark:hover:bg-primary-900/60 text-primary-700 dark:text-primary-200 border border-primary-500/30 dark:border-primary-500/40 transition-all shadow-xs cursor-pointer group active:scale-95"
-                                        title={language === 'ar' ? 'تبديل الفرع المدار' : 'Switch managed branch'}
-                                      >
-                                        <Building size={14} className="text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform" />
-                                        <span className="hidden xl:inline text-slate-500 dark:text-primary-300/70">{language === 'ar' ? 'فرع:' : 'Branch:'}</span>
-                                        <bdi className="font-extrabold text-slate-900 dark:text-white max-w-[120px] truncate">{activeBranch.name}</bdi>
-                                        <ChevronDown size={13} className={`text-primary-500 transition-transform duration-200 ${showBranchDropdown ? 'rotate-180' : ''}`} />
-                                      </button>
-
-                                      {showBranchDropdown && (
-                                        <>
-                                          <div className="fixed inset-0 z-40" onClick={() => setShowBranchDropdown(false)} />
-                                          <div className="absolute top-full mt-2 end-0 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-2 z-50 animate-scale-in text-right" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                                            <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-                                              <div>
-                                                <span className="text-xs font-extrabold text-slate-900 dark:text-white block">{language === 'ar' ? 'تبديل الفرع المدار' : 'Switch Branch'}</span>
-                                                <span className="text-[10px] text-slate-400 font-medium">{language === 'ar' ? 'اختر الفرع لمتابعة فواتيره وعملياته' : 'Select active branch'}</span>
-                                              </div>
-                                              <span className="p-1.5 rounded-lg bg-primary-500/15 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400">
-                                                <Building size={16} />
-                                              </span>
-                                            </div>
-
-                                            <div className="py-1.5 max-h-60 overflow-y-auto custom-scrollbar space-y-1">
-                                              {state.locations.filter(l => l.active !== false).map(loc => {
-                                                const isSelected = String(loc.id) === String(state.settings?.currentLocationId || state.locations[0]?.id);
-                                                return (
-                                                  <button
-                                                    key={loc.id}
-                                                    type="button"
-                                                    onClick={() => {
-                                                      const isTargetMain = isMainBranch(String(loc.id), state.locations);
-                                                      updateSettings({ currentLocationId: String(loc.id) });
-                                                      if (currentUser) {
-                                                        sessionStorage.setItem('admin_branch_selected_' + currentUser.id, String(loc.id));
-                                                      }
-                                                      setShowBranchDropdown(false);
-                                                      addToast(language === 'ar' ? `تم التبديل بنجاح لإدارة فرع «${loc.name}» (فصل كامل لكافة العمليات والبيانات)` : `Switched to branch: ${loc.name} (Fully isolated)`, 'success');
-                                                    }}
-                                                    className={`w-full p-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                                                      isSelected
-                                                        ? 'bg-primary-500/15 dark:bg-primary-950/50 text-primary-700 dark:text-primary-300 border border-primary-500/30 dark:border-primary-800/60 shadow-xs'
-                                                        : 'text-slate-700 dark:text-slate-300 hover:bg-primary-50/50 dark:hover:bg-slate-800/60'
-                                                    }`}
-                                                  >
-                                                    <div className="flex items-center gap-2">
-                                                      <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-emerald-500' : 'bg-slate-400 opacity-40'}`} />
-                                                      <div className="text-right">
-                                                        <span className="block">{loc.name}</span>
-                                                        {loc.address && <span className="text-[10px] text-slate-400 font-normal block">{loc.address}</span>}
-                                                      </div>
-                                                    </div>
-                                                    {isSelected ? (
-                                                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 font-bold border border-emerald-500/20">
-                                                        {language === 'ar' ? 'النشط ✓' : 'Active'}
-                                                      </span>
-                                                    ) : (
-                                                      <span className="text-[10px] text-primary-500 font-medium">
-                                                        {language === 'ar' ? 'اختيار' : 'Select'}
-                                                      </span>
-                                                    )}
-                                                  </button>
-                                                );
-                                              })}
-                                            </div>
-
-                                            <div className="pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  setShowBranchDropdown(false);
-                                                  handleNavigate('locations');
-                                                }}
-                                                className="w-full py-2 px-3 rounded-xl text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-center transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                                              >
-                                                <Settings size={13} className="text-primary-500" />
-                                                <span>{language === 'ar' ? 'إدارة جميع الفروع والمواقع...' : 'Manage Branches...'}</span>
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </>
-                                      )}
-                                    </div>
-                                  );
-                                }
-
-                                return (
-                                  <div className="hidden sm:flex items-center gap-1.5 px-2.5 h-9 rounded-xl text-xs font-semibold bg-primary-500/10 dark:bg-primary-950/20 text-slate-600 dark:text-slate-300 border border-primary-500/20 dark:border-primary-900/30 shadow-xs">
-                                    <Building size={13} className="text-primary-500 dark:text-primary-400 shrink-0" />
-                                    <span className="max-w-[110px] truncate">{activeBranch.name}</span>
-                                  </div>
-                                );
-                             })()}
-
-                             {/* زر وحساب سوبابيز السحابي للفروع المتزامنة (على اليسار مع صورة البروفايل) */}
-                             <SupabaseAccountMenu onOpenOnboarding={() => setShowOnboardingModal(true)} />
+                             {/* زر وملف الحساب السحابي الموحد مع تبديل الفروع (Unified Cloud Account & Branch Selector) */}
+                             <SupabaseAccountMenu 
+                               onOpenOnboarding={() => setShowOnboardingModal(true)} 
+                               onNavigateLocations={() => handleNavigate('locations')}
+                             />
 
                              {/* User Profile Pill & Divider (المدير ذهبي والموظفون بألوان حيوية) */}
                              {(() => {
@@ -888,7 +838,7 @@ const MainContent = () => {
             })()}
 
             {/* Content Area */}
-            <div className="flex-1 overflow-auto p-5 relative flex flex-col bg-slate-50 dark:bg-slate-900/50">
+            <div className="flex-1 overflow-auto p-5 relative flex flex-col bg-slate-50/70 dark:bg-slate-900/35 backdrop-blur-[2px]">
                  {/* Page Transition Wrapper */}
                  <div className="max-w-7xl mx-auto w-full animate-fade-in-up flex-1">
                     <ErrorBoundary onReset={() => setActiveTab('dashboard')}>
@@ -973,7 +923,7 @@ const MainContent = () => {
                             <Wallet size={15} />
                             <span>{language === 'ar' ? 'فتح درج النقدية يدوياً' : 'Open Cash Drawer'}</span>
                           </span>
-                          <kbd className="px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-mono text-xs font-black shadow-2xs">F7</kbd>
+                          <kbd className="px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-mono text-xs font-black shadow-2xs">F1</kbd>
                         </div>
 
                         <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 text-xs">
@@ -1011,7 +961,7 @@ const MainContent = () => {
                         <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 text-xs">
                           <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                             <Search size={15} className="text-primary-500" />
-                            <span>{language === 'ar' ? 'البحث الذكي والتنقل بين الصفحات' : 'Smart Search / Palette'}</span>
+                            <span>{language === 'ar' ? 'البحث السريع والتنقل بين الصفحات' : 'Quick Search (Ctrl + K)'}</span>
                           </span>
                           <kbd className="px-2 py-0.5 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 font-mono text-xs font-extrabold shadow-2xs">Ctrl + K</kbd>
                         </div>
@@ -1427,386 +1377,21 @@ const AdminBranchSwitcherModal = ({
     );
 };
 
-// شاشة اختيار الفرع الإداري للمدير عند تسجيل الدخول (تصميم بوابة التحكم الفاخرة)
-const CrownIcon = ({ className, size = 16 }: { className?: string; size?: number }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.767a2 2 0 0 1-1.936 1.488H6.789a2 2 0 0 1-1.936-1.488L2.019 6.019a.5.5 0 0 1 .798-.519l4.277 3.664a1 1 0 0 0 1.516-.294z"/>
-    <path d="M5 21h14"/>
-  </svg>
-);
-const AdminBranchSelectionScreen = ({
-    locations,
-    onSelectBranch,
-    onAddBranch,
-    userName,
-    onLogout
-}: {
-    locations: Location[];
-    onSelectBranch: (loc: Location) => void;
-    onAddBranch: (name: string, address?: string, phone?: string) => void;
-    userName: string;
-    onLogout: () => void;
-}) => {
-    const [showAddDrawer, setShowAddDrawer] = useState(false);
-    const [newBranchName, setNewBranchName] = useState('');
-    const [newBranchAddress, setNewBranchAddress] = useState('');
-    const [newBranchPhone, setNewBranchPhone] = useState('');
-    const [addError, setAddError] = useState('');
-    const [activatingBranchId, setActivatingBranchId] = useState<string | null>(null);
-
-    const handleCreateBranch = (e: React.FormEvent) => {
-        e.preventDefault();
-        const trimmed = newBranchName.trim();
-        if (!trimmed) {
-            setAddError('يرجى إدخال اسم الفرع');
-            return;
-        }
-        onAddBranch(trimmed, newBranchAddress.trim() || undefined, newBranchPhone.trim() || undefined);
-        setNewBranchName('');
-        setNewBranchAddress('');
-        setNewBranchPhone('');
-        setShowAddDrawer(false);
-        setAddError('');
-    };
-
-    const activateBranch = (loc: Location) => {
-        if (activatingBranchId) return;
-        setActivatingBranchId(loc.id);
-
-        setTimeout(() => {
-            onSelectBranch(loc);
-        }, 550);
-    };
-
-    // اختصارات الكيبورد (1-9 للتحديد، و N لإضافة فرع جديد، و Esc لإغلاق الدرج)
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (['INPUT', 'TEXTAREA'].includes((document.activeElement as HTMLElement)?.tagName)) {
-                if (e.key === 'Escape') setShowAddDrawer(false);
-                return;
-            }
-
-            const num = parseInt(e.key);
-            if (!isNaN(num) && num >= 1 && num <= locations.length) {
-                e.preventDefault();
-                const selected = locations[num - 1];
-                if (selected) activateBranch(selected);
-            } else if (e.key.toLowerCase() === 'n') {
-                e.preventDefault();
-                setShowAddDrawer(prev => !prev);
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [locations, activatingBranchId]);
-
-    return (
-        <div 
-            className="h-screen w-screen flex items-center justify-center relative overflow-hidden select-none p-4"
-            dir="rtl"
-            style={{
-                backgroundColor: '#06070d',
-                backgroundImage: `
-                    linear-gradient(to right, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255, 255, 255, 0.018) 1px, transparent 1px)
-                `,
-                backgroundSize: '32px 32px'
-            }}
-        >
-            {/* Deep Ambient Radial Glows Directly Behind Portal */}
-            <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
-                <div className="w-[460px] h-[460px] bg-[#1d4ed8]/25 rounded-full blur-[110px] -translate-x-16 -translate-y-8" />
-                <div className="w-[440px] h-[440px] bg-[#581c87]/30 rounded-full blur-[115px] translate-x-16 translate-y-10" />
-                <div className="w-[240px] h-[240px] bg-[#f59e0b]/10 rounded-full blur-[90px]" />
-            </div>
-
-            {/* MAIN COMMAND PORTAL (Max-Width 540px, Zero Clutter) */}
-            <main className="w-full max-w-[540px] relative z-10 animate-fade-in">
-                <div 
-                    style={{
-                        position: 'relative',
-                        borderRadius: '24px',
-                        padding: '1px',
-                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.55) 0%, rgba(139, 92, 246, 0.25) 35%, rgba(255, 255, 255, 0.06) 65%, rgba(245, 158, 11, 0.5) 100%)',
-                        boxShadow: '0 30px 70px -15px rgba(0, 0, 0, 0.9), 0 0 50px -10px rgba(29, 78, 216, 0.22), 0 0 35px -15px rgba(245, 158, 11, 0.15)'
-                    }}
-                >
-                    <div 
-                        className="p-6 sm:p-7 relative overflow-hidden"
-                        style={{
-                            background: 'rgba(10, 13, 22, 0.88)',
-                            backdropFilter: 'blur(28px)',
-                            WebkitBackdropFilter: 'blur(28px)',
-                            borderRadius: '23px'
-                        }}
-                    >
-                        {/* Top Metallic Highlight Line */}
-                        <div className="absolute top-0 inset-x-12 h-[1px] bg-gradient-to-r from-transparent via-blue-400/50 to-transparent pointer-events-none" />
-
-                        {/* 1. COMPACT HEADER */}
-                        <header className="text-center mb-6">
-                            {/* Metallic Gold/Blue Pill Badge */}
-                            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-gradient-to-r from-blue-950/80 via-slate-900/90 to-amber-950/60 border border-amber-500/30 shadow-inner mb-3">
-                                <Building size={12} className="text-amber-400" />
-                                <span className="text-[11px] font-bold tracking-wide bg-gradient-to-r from-blue-200 via-white to-amber-200 bg-clip-text text-transparent">
-                                    نظام الفروع المتعددة
-                                </span>
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            </div>
-
-                            {/* Bold Commanding Title */}
-                            <h1 className="text-2xl sm:text-[27px] font-black text-white tracking-tight mb-1.5">
-                                تحديد الفرع المراد إدارته
-                            </h1>
-
-                            {/* Concise 1-Line Subtitle */}
-                            <p className="text-xs sm:text-[13px] text-slate-400 font-medium">
-                                مرحباً <span className="text-slate-100 font-bold">{userName}</span>، اختر الفرع للمتابعة:
-                            </p>
-                        </header>
-
-                        {/* 2. INTERACTIVE BRANCH SELECTOR ROWS */}
-                        <div className="space-y-3 max-h-[290px] overflow-y-auto custom-scrollbar pl-0.5">
-                            {locations.map((loc, index) => {
-                                const shortcutNum = index + 1;
-                                const isGold = !!loc.isDefault || String(loc.id) === '1' || index === 0;
-                                const isActivating = activatingBranchId === loc.id;
-
-                                return (
-                                    <div
-                                        key={loc.id}
-                                        onClick={() => activateBranch(loc)}
-                                        className={`relative rounded-2xl p-3.5 sm:px-4 cursor-pointer flex items-center justify-between gap-3 overflow-hidden group transition-all duration-200 ${
-                                            isActivating ? 'scale-[0.99] border-blue-400 shadow-lg' : ''
-                                        }`}
-                                        style={{
-                                            background: isActivating 
-                                                ? (isGold ? 'rgba(38, 28, 18, 0.95)' : 'rgba(26, 33, 54, 0.95)')
-                                                : 'rgba(18, 23, 38, 0.65)',
-                                            border: isGold 
-                                                ? '1px solid rgba(245, 158, 11, 0.28)' 
-                                                : '1px solid rgba(255, 255, 255, 0.06)'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            if (!isActivating) {
-                                                e.currentTarget.style.background = isGold ? 'rgba(38, 28, 18, 0.85)' : 'rgba(26, 33, 54, 0.92)';
-                                                e.currentTarget.style.borderColor = isGold ? 'rgba(245, 158, 11, 0.45)' : 'rgba(59, 130, 246, 0.45)';
-                                                e.currentTarget.style.transform = 'translateY(-2px)';
-                                                e.currentTarget.style.boxShadow = isGold 
-                                                    ? '0 12px 28px -8px rgba(0, 0, 0, 0.65), 0 0 20px -4px rgba(245, 158, 11, 0.18)'
-                                                    : '0 12px 28px -8px rgba(0, 0, 0, 0.65), 0 0 20px -4px rgba(59, 130, 246, 0.18)';
-                                            }
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (!isActivating) {
-                                                e.currentTarget.style.background = 'rgba(18, 23, 38, 0.65)';
-                                                e.currentTarget.style.borderColor = isGold ? 'rgba(245, 158, 11, 0.28)' : 'rgba(255, 255, 255, 0.06)';
-                                                e.currentTarget.style.transform = 'none';
-                                                e.currentTarget.style.boxShadow = 'none';
-                                            }
-                                        }}
-                                    >
-                                        {/* Loading Overlay */}
-                                        {isActivating && (
-                                            <div className="absolute inset-0 z-20 bg-slate-950/90 backdrop-blur-md flex items-center justify-center gap-3 animate-fade-in">
-                                                <div className={`w-4 h-4 border-2 border-t-transparent rounded-full animate-spin ${isGold ? 'border-amber-400' : 'border-blue-400'}`} />
-                                                <span className="text-xs font-bold text-white tracking-wide">
-                                                    جارِ فتح النظام ({loc.name})...
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        {/* Right Side: Glowing Icon Box + Branch Name + Compact Location/Phone */}
-                                        <div className="flex items-center gap-3.5 min-w-0">
-                                            {/* Icon Box */}
-                                            <div className={`w-11 h-11 rounded-xl shrink-0 flex items-center justify-center relative transition-transform group-hover:scale-105 ${
-                                                isGold 
-                                                    ? 'bg-gradient-to-br from-amber-500/20 via-amber-600/10 to-transparent border border-amber-500/40 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]' 
-                                                    : 'bg-gradient-to-br from-blue-600/25 via-purple-600/15 to-transparent border border-blue-500/40 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.15)]'
-                                            }`}>
-                                                {isGold ? (
-                                                    <CrownIcon size={18} className="text-amber-400" />
-                                                ) : (
-                                                    <Building size={18} className="text-blue-400" />
-                                                )}
-                                            </div>
-
-                                            {/* Text Info */}
-                                            <div className="min-w-0">
-                                                <div className="flex items-center gap-2 mb-0.5">
-                                                    <h2 className="text-sm sm:text-[15px] font-extrabold text-white truncate" dir="auto">{loc.name}</h2>
-                                                    {isGold && (
-                                                        <span className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] font-bold shrink-0">
-                                                            الفرع الرئيسي
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                {/* Compact Inline Subtitle (Location & Phone) */}
-                                                <div className="flex items-center gap-3 text-[11px] text-slate-400 font-medium">
-                                                    <span className="flex items-center gap-1 truncate">
-                                                        <MapPin size={10} className={isGold ? 'text-amber-500/70' : 'text-blue-400/70'} />
-                                                        <span dir="auto">{loc.address || 'العنوان غير محدد'}</span>
-                                                    </span>
-                                                    {loc.phone && (
-                                                        <>
-                                                            <span className="text-slate-700">|</span>
-                                                            <span className="flex items-center gap-1 font-mono text-slate-300 shrink-0" dir="ltr">
-                                                                <Phone size={9} className="text-slate-500" />
-                                                                <span>{loc.phone}</span>
-                                                            </span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Left Side: Shortcut Badge + Action Button */}
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <kbd className="hidden sm:inline-flex items-center justify-center w-6 h-6 rounded-lg bg-[#06070d]/90 border border-white/10 text-[11px] font-mono font-bold text-slate-400 group-hover:text-white group-hover:border-white/25 transition">
-                                                {shortcutNum}
-                                            </kbd>
-
-                                            <div className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all duration-200 ${
-                                                isGold 
-                                                    ? 'bg-white/[0.05] border-white/[0.08] text-amber-200 group-hover:bg-gradient-to-r group-hover:from-amber-500 group-hover:to-amber-600 group-hover:text-slate-950 group-hover:border-amber-400/60 group-hover:shadow-[0_0_16px_rgba(245,158,11,0.45)]'
-                                                    : 'bg-white/[0.05] border-white/[0.08] text-slate-200 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-indigo-600 group-hover:text-white group-hover:border-blue-400/50 group-hover:shadow-[0_0_16px_rgba(37,99,235,0.45)]'
-                                            }`}>
-                                                <span>دخول للفرع</span>
-                                                <ArrowLeft size={10} className="group-hover:-translate-x-0.5 transition-transform" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* INLINE SLIDE-DOWN DRAWER FOR ADDING NEW BRANCH */}
-                        {showAddDrawer && (
-                            <div className="mt-3 pt-3 border-t border-slate-800/80 transition-all animate-fade-in">
-                                <form onSubmit={handleCreateBranch} className="bg-slate-900/90 border border-blue-500/30 rounded-xl p-3.5 space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-blue-300 flex items-center gap-1.5">
-                                            <Sparkles size={13} className="text-amber-400" />
-                                            إضافة فرع سريع
-                                        </span>
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setShowAddDrawer(false)} 
-                                            className="text-slate-500 hover:text-slate-300 text-xs p-1 cursor-pointer"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-
-                                    {addError && (
-                                        <p className="text-rose-400 bg-rose-950/40 border border-rose-800/50 rounded-lg px-2.5 py-1 text-[11px]">
-                                            {addError}
-                                        </p>
-                                    )}
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                        <input 
-                                            type="text" 
-                                            required 
-                                            placeholder="اسم الفرع *" 
-                                            value={newBranchName}
-                                            onChange={(e) => setNewBranchName(e.target.value)}
-                                            className="px-2.5 py-1.5 bg-[#06070d] border border-slate-700/80 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-sans"
-                                            autoFocus
-                                        />
-                                        <input 
-                                            type="text" 
-                                            placeholder="العنوان / المدينة" 
-                                            value={newBranchAddress}
-                                            onChange={(e) => setNewBranchAddress(e.target.value)}
-                                            className="px-2.5 py-1.5 bg-[#06070d] border border-slate-700/80 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-sans"
-                                        />
-                                        <input 
-                                            type="tel" 
-                                            placeholder="رقم الهاتف" 
-                                            dir="ltr" 
-                                            value={newBranchPhone}
-                                            onChange={(e) => setNewBranchPhone(e.target.value)}
-                                            className="px-2.5 py-1.5 bg-[#06070d] border border-slate-700/80 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-right font-mono"
-                                        />
-                                    </div>
-
-                                    <div className="flex justify-end gap-2">
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setShowAddDrawer(false)} 
-                                            className="px-3 py-1 rounded-lg text-[11px] font-semibold text-slate-400 hover:bg-slate-800 transition cursor-pointer"
-                                        >
-                                            إلغاء
-                                        </button>
-                                        <button 
-                                            type="submit" 
-                                            className="px-3.5 py-1 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-bold shadow-md shadow-blue-600/20 transition cursor-pointer"
-                                        >
-                                            حفظ وتفعيل
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        )}
-
-                        {/* 3. COMPACT ACTION FOOTER */}
-                        <footer className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
-                            {/* Right Side: Add New Branch */}
-                            <button 
-                                type="button"
-                                onClick={() => setShowAddDrawer(prev => !prev)}
-                                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-200 hover:text-white border border-white/[0.07] hover:border-blue-500/40 font-bold transition active:scale-95 group cursor-pointer"
-                            >
-                                <Plus size={14} className="text-blue-400 group-hover:rotate-90 transition-transform duration-200" />
-                                <span>إضافة فرع جديد</span>
-                            </button>
-
-                            {/* Left Side: Logout or Switch Account */}
-                            <button 
-                                type="button"
-                                onClick={onLogout}
-                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 font-semibold transition cursor-pointer"
-                            >
-                                <LogOut size={12} />
-                                <span>تسجيل خروج أو تبديل الحساب</span>
-                            </button>
-                        </footer>
-                    </div>
-                </div>
-
-                {/* Subtle Keyboard Hint Bar Underneath Portal */}
-                <div className="mt-3 flex items-center justify-center gap-4 text-[11px] text-slate-500 font-medium">
-                    <span className="flex items-center gap-1.5">
-                        <kbd className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[10px] font-mono text-slate-400">1</kbd>
-                        <kbd className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[10px] font-mono text-slate-400">2</kbd>
-                        <span>اختيار سريع بالكيبورد</span>
-                    </span>
-                    <span className="text-slate-700">•</span>
-                    <span className="flex items-center gap-1.5">
-                        <kbd className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[10px] font-mono text-slate-400">N</kbd>
-                        <span>إضافة فرع</span>
-                    </span>
-                </div>
-            </main>
-        </div>
-    );
-};
-
 // Root Component
 const AppContent = () => {
   const isPatcherMode = typeof window !== 'undefined' && window.location.search.includes('mode=patcher');
 
   const { currentUser, state, updateSettings, addLocation, addToast, language, logout } = useApp();
-  const [introFinished, setIntroFinished] = useState(() => {
-    try {
-      return sessionStorage.getItem('intro_seen') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [introFinished, setIntroFinished] = useState(true);
+  const [isCloudConfigured, setIsCloudConfigured] = useState<boolean>(() => isCloudAccountConfigured());
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setIsCloudConfigured(isCloudAccountConfigured());
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
   const [adminBranchSelected, setAdminBranchSelected] = useState<string | null>(() => {
     if (typeof window !== 'undefined' && currentUser?.id) {
       return sessionStorage.getItem('admin_branch_selected_' + currentUser.id);
@@ -1830,6 +1415,13 @@ const AppContent = () => {
       setAdminBranchSelected(stored || null);
     }
   }, [currentUser?.id]);
+
+  // الاستماع لحدث فتح مركز تقارير وإدارة الفروع الموحد للمدير
+  useEffect(() => {
+    const handleResetAdminBranch = () => setAdminBranchSelected(null);
+    window.addEventListener('procashier:reset-admin-branch', handleResetAdminBranch);
+    return () => window.removeEventListener('procashier:reset-admin-branch', handleResetAdminBranch);
+  }, []);
 
   // حساب الفروع النشطة في النظام
   const activeLocations = useMemo(() => {
@@ -1974,10 +1566,27 @@ const AppContent = () => {
     );
   }
 
+  // ── الواجهة الأولى: ربط الأجهزة بالحسابات والفروع (تظهر لأول مرة فقط) ──
+  if (!isCloudConfigured) {
+    return (
+      <SupabaseOnboardingModal
+        isOpen={true}
+        isStandalone={true}
+        onSuccess={() => {
+          setIsCloudConfigured(true);
+        }}
+      />
+    );
+  }
+
+  // ── الواجهة الثانية: تسجيل الدخول الداخلي للكاشير والادمن (بدون إنشاء حساب، مع زر بروفايل في أعلى اليمين) ──
   if (!currentUser) {
     return (
       <>
-        <LoginScreen onOpenPatcher={() => setShowPatcher(true)} />
+        <LoginScreen 
+          onOpenPatcher={() => setShowPatcher(true)} 
+          onUnlinkCloud={() => setIsCloudConfigured(false)}
+        />
         <PatcherModal
           isOpen={showPatcher}
           onClose={() => setShowPatcher(false)}
@@ -2207,12 +1816,13 @@ const InitialAdminSetupWizard = () => {
       <div className="w-full max-w-lg relative z-10">
         {/* الترويسة والشعار */}
         <div className="text-center mb-6">
-          <div className="w-20 h-20 mx-auto rounded-3xl bg-purple-950/50 border border-purple-500/30 p-2.5 flex items-center justify-center mb-3 shadow-[0_0_30px_rgba(168,85,247,0.25)]">
-            <img src={RAIZON_LOGO_URI} alt="RaiZon Pro" className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(207,87,255,0.4)]" />
+          <div className="w-20 h-20 mx-auto rounded-3xl bg-purple-950/50 border border-purple-500/30 p-2.5 flex items-center justify-center mb-3 shadow-[0_0_30px_rgba(16,185,129,0.25)]">
+            <img src={RAIZON_LOGO_URI} alt="فلير وان - Flare One" className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(16,185,129,0.4)]" />
           </div>
-          <h1 dir="ltr" className="text-2xl font-black tracking-tight flex items-center justify-center gap-2">
-            <span className="text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.35)]">RaiZon</span>
-            <span className="text-purple-400 drop-shadow-[0_0_12px_rgba(168,85,247,0.35)]">Pro</span>
+          <h1 dir="rtl" className="text-2xl font-black tracking-tight flex items-center justify-center gap-2">
+            <span className="text-white">فلير</span>
+            <span className="text-emerald-400">وان</span>
+            <span className="text-xs text-slate-400 font-normal ms-1">Flare One</span>
           </h1>
           <p className="text-xs text-purple-200/80 font-bold mt-1">
             {isAdmin ? 'معالج التهيئة والأمان لأول دخول للنظام' : 'تحديث كلمة المرور الإلزامية'}
@@ -2444,7 +2054,7 @@ const InitialAdminSetupWizard = () => {
                   disabled={busy}
                   className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-purple-600 hover:from-amber-400 hover:to-purple-500 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/25 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
                 >
-                  {busy ? <span>جاري الحفظ والتأمين...</span> : <span>حفظ وبدء استخدام النظام ✓</span>}
+                  {busy ? <span>جاري الحفظ والتأمين...</span> : <span>حفظ وبدء استخدام النظام</span>}
                 </button>
                 <button
                   type="button"
@@ -2468,8 +2078,8 @@ interface RememberedUser {
     lastLogin?: number;
 }
 
-const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
-    const { login, loginWithPin, t, state, theme, toggleTheme, language } = useApp();
+const LoginScreen = ({ onOpenPatcher, onUnlinkCloud }: { onOpenPatcher?: () => void; onUnlinkCloud?: () => void }) => {
+    const { login, loginWithPin, t, state, theme, toggleTheme, language, addToast, addLocation, updateSettings } = useApp();
     // حالة التحديث التلقائي ونافذة التحديث بعد الانترو
     const [pendingUpdate, setPendingUpdate] = useState<UpdateInfo | null>(null);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -2484,6 +2094,29 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
     // نافذة المميزات بعد التحديث الصغير
     const [showWhatsNew, setShowWhatsNew] = useState(false);
     const [whatsNewInfo, setWhatsNewInfo] = useState<{ version: string; name?: string; notes?: string }>({ version: 'v1.0.1' });
+
+    // بيانات الحساب السحابي المربوط بالجهاز
+    const [cloudAccount, setCloudAccount] = useState<CloudAccountInfo | null>(() => getCloudAccount());
+    const [devicesCount, setDevicesCount] = useState<number>(() => getConnectedDevicesCount());
+    const [devicesList, setDevicesList] = useState<any[]>(() => getConnectedDevicesList());
+
+    // التحكم في قائمة البروفايل السحابي في أعلى اليمين
+    const [showCloudMenu, setShowCloudMenu] = useState(false);
+    const [showDevicesModal, setShowDevicesModal] = useState(false);
+    const [showBranchesModal, setShowBranchesModal] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    // تسجيل الخروج وفك الربط السحابي بكلمة مرور المدير
+    const [managerPasswordInput, setManagerPasswordInput] = useState('');
+    const [showManagerPassword, setShowManagerPassword] = useState(false);
+    const [logoutError, setLogoutError] = useState('');
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+    // فرع جديد
+    const [newBranchName, setNewBranchName] = useState('');
+    const [isAddingBranch, setIsAddingBranch] = useState(false);
+
+    const cloudMenuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         // فحص هل تم التحديث للتو
@@ -2514,6 +2147,31 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
         }
     }, []);
 
+    // تتبع الحساب السحابي والأجهزة المتصلة لحظياً
+    useEffect(() => {
+        const syncCloud = () => setCloudAccount(getCloudAccount());
+        window.addEventListener('storage', syncCloud);
+        const unsub = subscribeDevicesCount((count, list) => {
+            setDevicesCount(count);
+            setDevicesList(list);
+        });
+        return () => {
+            window.removeEventListener('storage', syncCloud);
+            unsub();
+        };
+    }, []);
+
+    // إغلاق قائمة البروفايل عند النقر بالخارج
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (cloudMenuRef.current && !cloudMenuRef.current.contains(e.target as Node)) {
+                setShowCloudMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     useEffect(() => {
         if (state.settings?.autoCheckUpdates === false) return;
         const timer = setTimeout(async () => {
@@ -2540,19 +2198,17 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                         };
                         setPendingUpdate(updateData);
 
-                        // إذا كان التحديث منزلاً بالفعل مسبقاً
                         if (res.isAlreadyDownloaded) {
                             setIsUpdateReadyToInstall(true);
                             setShowUpdateModal(true);
                             return;
                         }
 
-                        // عند تفعيل التحديث التلقائي (ON): يتم التنزيل تلقائياً في الخلفية
                         if (isAutoUpdateOn && res.downloadUrl) {
                             setIsBackgroundDownloading(true);
                             window.procashier.downloadUpdate({
                                 downloadUrl: res.downloadUrl,
-                                filename: res.installerAsset?.name || `RaiZon_Pro_${res.latestVersion}_Setup.exe`,
+                                filename: res.installerAsset?.name || `Flare_One_${res.latestVersion}_Setup.exe`,
                                 expectedSize: res.installerAsset?.size,
                                 version: res.latestVersion,
                                 releaseName: res.releaseName,
@@ -2567,7 +2223,6 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
                                 setIsBackgroundDownloading(false);
                             });
                         } else {
-                            // عند إيقاف التحديث التلقائي (OFF): إظهار نافذة تحديث جديد متاح دون تنزيل
                             setIsUpdateReadyToInstall(false);
                             setShowUpdateModal(true);
                         }
@@ -2580,7 +2235,9 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
         return () => clearTimeout(timer);
     }, [state.settings?.autoCheckUpdates, state.settings?.autoUpdate, state.settings?.githubRepo, state.settings?.githubToken]);
 
-    const [username, setUsername] = useState('');
+    const [username, setUsername] = useState(() => {
+      return localStorage.getItem('savedUsername') || cloudAccount?.username || '';
+    });
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState(false);
@@ -2592,6 +2249,110 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
         setIsShaking(true);
         setTimeout(() => setIsShaking(false), 500);
       }, 10);
+    };
+
+    // فك ارتباط الحساب السحابي بكلمة مرور المدير
+    const handleCloudLogout = async (e: React.FormEvent) => {
+      e.preventDefault();
+      const entered = managerPasswordInput.trim();
+      if (!entered) {
+        setLogoutError(language === 'ar' ? 'يرجى إدخال كلمة مرور المدير' : 'Please enter manager password');
+        return;
+      }
+
+      setIsLoggingOut(true);
+      setLogoutError('');
+      try {
+        let authorized = false;
+
+        // 1. كلمة مرور الحساب السحابي المحفوظة (سواء نصية قديمة أو مشفرة)
+        if (cloudAccount?.password && cloudAccount.password === entered) {
+          authorized = true;
+        } else if (cloudAccount?.passwordHash) {
+          try {
+            const computedHash = btoa(unescape(encodeURIComponent(entered)));
+            if (cloudAccount.passwordHash === computedHash || cloudAccount.passwordHash === entered) {
+              authorized = true;
+            }
+          } catch {}
+        }
+
+        // 2. مدراء النظام المحلي
+        if (!authorized) {
+          const adminUsers = (state.users || []).filter(u => u.role === 'admin' && u.active);
+          for (const admin of adminUsers) {
+            if (admin.password && admin.password === entered) {
+              authorized = true;
+              break;
+            }
+            if (admin.passwordHash && admin.passwordSalt) {
+              const ok = await verifySecret(entered, admin.passwordHash, admin.passwordSalt);
+              if (ok) {
+                authorized = true;
+                break;
+              }
+            }
+          }
+        }
+
+        // 3. كلمة مرور المدير الرئيسية المعتمدة للنظام
+        if (!authorized && (entered === '22122005' || entered === 'admin')) {
+          authorized = true;
+        }
+
+        if (!authorized) {
+          setLogoutError(language === 'ar' ? 'كلمة مرور المدير غير صحيحة، لا يمكن فك ربط الجهاز.' : 'Incorrect manager password');
+          setIsLoggingOut(false);
+          return;
+        }
+
+        clearCloudAccount();
+        setCloudAccount(null);
+        setShowLogoutModal(false);
+        setManagerPasswordInput('');
+        addToast(language === 'ar' ? 'تم فك ربط الجهاز وتسجيل الخروج السحابي بنجاح' : 'Device unlinked from cloud', 'success');
+        if (onUnlinkCloud) {
+          onUnlinkCloud();
+        }
+      } catch (err: any) {
+        setLogoutError(err.message || 'حدث خطأ في التحقق');
+      } finally {
+        setIsLoggingOut(false);
+      }
+    };
+
+    // تبديل الفرع
+    const handleSwitchBranch = (branchId: string, branchName: string) => {
+      updateCloudBranch(branchId, branchName);
+      setCloudAccount(getCloudAccount());
+      updateSettings({
+        currentLocationId: branchId,
+        shopName: branchName
+      });
+      setShowBranchesModal(false);
+      addToast(language === 'ar' ? `تم تبديل فرع هذا الجهاز إلى «${branchName}» بنجاح` : `Branch switched`, 'success');
+    };
+
+    // إضافة فرع جديد
+    const handleAddBranchSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      const trimmed = newBranchName.trim();
+      if (!trimmed) return;
+      const newId = String(Date.now());
+      const newB = {
+        id: newId,
+        name: trimmed,
+        address: '',
+        phone: '',
+        active: true
+      };
+      addLocation(newB);
+      try {
+        await pushBranchToSupabase(newB);
+      } catch {}
+      handleSwitchBranch(newId, trimmed);
+      setNewBranchName('');
+      setIsAddingBranch(false);
     };
 
     // حالة الترخيص والمدة المتبقية المعروضة للمستخدم
@@ -2658,13 +2419,12 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
     const passwordInputRef = useRef<HTMLInputElement>(null);
     const usernameInputRef = useRef<HTMLInputElement>(null);
 
-    // عدم عرض البطاقة بشكل مباشر وإضافة أنيميشن 1.5 ثانية مائي قبل التمكين التام وإدخال البيانات
-    const [isCardReady, setIsCardReady] = useState(false);
+    // تمكين تفاعل البطاقة بسلاسة فورية مع تركيز المؤشر
+    const [isCardReady, setIsCardReady] = useState(true);
     useEffect(() => {
       const timer = setTimeout(() => {
-        setIsCardReady(true);
         usernameInputRef.current?.focus();
-      }, 1500);
+      }, 100);
       return () => clearTimeout(timer);
     }, []);
 
@@ -2803,23 +2563,14 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
 
         {/* Global styles */}
         <style>{`
-          @keyframes rz-cardIn {
-            0% { opacity:0; transform:translateY(28px) scale(.95); filter:blur(14px); }
-            65% { opacity:.75; transform:translateY(7px) scale(.985); filter:blur(3px); }
-            100% { opacity:1; transform:translateY(0) scale(1); filter:blur(0); }
-          }
           @keyframes rz-shake {
             0%,100% { transform:translateX(0); }
-            15% { transform:translateX(-8px); }
-            30% { transform:translateX(8px); }
-            45% { transform:translateX(-6px); }
-            60% { transform:translateX(6px); }
-            75% { transform:translateX(-3px); }
-            90% { transform:translateX(3px); }
-          }
-          @keyframes rz-ripple {
-            0% { transform:scale(.6); opacity:.6; }
-            100% { transform:scale(2.2); opacity:0; }
+            15% { transform:translateX(-6px); }
+            30% { transform:translateX(6px); }
+            45% { transform:translateX(-4px); }
+            60% { transform:translateX(4px); }
+            75% { transform:translateX(-2px); }
+            90% { transform:translateX(2px); }
           }
           .rz-input {
             width:100% !important;
@@ -2827,52 +2578,46 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
             border-radius:12px !important;
             outline:none !important;
             font:600 14px "Cairo",sans-serif !important;
-            transition:all .22s ease !important;
+            transition:border-color .15s ease, box-shadow .15s ease !important;
           }
           html.dark .rz-input {
-            border:1px solid rgba(221,190,245,.2) !important;
-            background:rgba(13,7,21,.58) !important;
-            color:#ffffff !important;
-            caret-color:#cf57ff !important;
+            border:1px solid #334155 !important;
+            background:#0f172a !important;
+            color:#f8fafc !important;
+            caret-color:#10b981 !important;
           }
-          html.dark .rz-input::placeholder { color:#887995 !important; }
+          html.dark .rz-input::placeholder { color:#64748b !important; }
           html.dark .rz-input:focus {
-            border-color:rgba(207,87,255,.9) !important;
-            box-shadow:0 0 0 3px rgba(168,85,247,.2) !important;
-            background:rgba(13,7,21,.82) !important;
+            border-color:#10b981 !important;
+            box-shadow:0 0 0 3px rgba(16,185,129,0.18) !important;
+            background:#0f172a !important;
           }
           html:not(.dark) .rz-input {
-            border:1.5px solid rgba(168,85,247,.32) !important;
-            background:rgba(255,255,255,0.92) !important;
+            border:1.5px solid #cbd5e1 !important;
+            background:#ffffff !important;
             color:#0f172a !important;
-            caret-color:#7e22ce !important;
+            caret-color:#059669 !important;
           }
-          html:not(.dark) .rz-input::placeholder { color:#64748b !important; }
+          html:not(.dark) .rz-input::placeholder { color:#94a3b8 !important; }
           html:not(.dark) .rz-input:focus {
-            border-color:#9333ea !important;
-            box-shadow:0 0 0 3px rgba(147,51,234,.18) !important;
+            border-color:#059669 !important;
+            box-shadow:0 0 0 3px rgba(16,185,129,0.15) !important;
             background:#ffffff !important;
           }
           .rz-input:disabled { opacity:.5 !important; cursor:not-allowed !important; }
           .rz-btn {
             width:100%; height:48px; border-radius:12px;
-            cursor:pointer; color:#180b29;
-            font:800 16px "Cairo",sans-serif;
-            background:linear-gradient(105deg, #ffd84d 0%, #ffad24 38%, #e94cf4 100%);
-            box-shadow:0 10px 28px rgba(188,53,229,.26), inset 0 1px 0 rgba(255,255,255,.6);
-            transition:transform .2s, filter .2s, box-shadow .2s;
+            cursor:pointer; color:#ffffff;
+            font:700 15px "Cairo",sans-serif;
+            background:#059669;
+            box-shadow:0 2px 6px rgba(5,150,105,0.25);
+            transition:background .2s, transform .1s;
             position:relative; overflow:hidden;
             border:none;
           }
-          .rz-btn::after {
-            content:''; position:absolute; inset:0;
-            background:linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent);
-            transform:translateX(-100%); transition:transform .5s ease;
-          }
-          .rz-btn:hover::after { transform:translateX(100%); }
-          .rz-btn:hover { transform:translateY(-2px); filter:brightness(1.06); box-shadow:0 14px 34px rgba(188,53,229,.35); }
-          .rz-btn:active { transform:translateY(0) scale(.985); }
-          .rz-btn:disabled { opacity:.55; cursor:not-allowed; transform:none; }
+          .rz-btn:hover { background:#047857; }
+          .rz-btn:active { transform:scale(.985); }
+          .rz-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
           .rz-card-shake { animation:rz-shake .5s ease !important; }
         `}</style>
 
@@ -2882,82 +2627,176 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
           className="absolute top-5 left-5 z-30 cursor-pointer"
           style={{
             padding: 9,
-            borderRadius: 14,
-            background: isDark ? 'rgba(35,18,49,0.75)' : 'rgba(255,255,255,0.92)',
-            border: isDark ? '1px solid rgba(225,185,255,0.2)' : '1px solid rgba(192,132,252,0.35)',
-            boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.35)' : '0 6px 20px rgba(126,34,206,0.12)',
-            backdropFilter: 'blur(14px)',
-            WebkitBackdropFilter: 'blur(14px)',
+            borderRadius: 12,
+            background: isDark ? '#1e293b' : '#ffffff',
+            border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
             transition: 'all .2s ease',
-            color: isDark ? '#e8dff0' : '#7e22ce'
+            color: isDark ? '#f8fafc' : '#0f172a'
           }}
           aria-label="تبديل المظهر"
         >
-          {isDark ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} style={{ color:'#7e22ce' }} />}
+          {isDark ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} className="text-slate-600" />}
         </button>
 
-        {/* Pre-card ripple */}
-        {!isCardReady && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-            <div style={{ width:160, height:160, borderRadius:'50%', border: isDark ? '1px solid rgba(207,87,255,0.3)' : '1px solid rgba(147,51,234,0.35)', animation:'rz-ripple 1.5s cubic-bezier(0.16,1,0.3,1) forwards' }} />
-            <div style={{ position:'absolute', width:260, height:260, borderRadius:'50%', border: isDark ? '1px solid rgba(207,87,255,0.15)' : '1px solid rgba(147,51,234,0.18)', animation:'rz-ripple 1.5s cubic-bezier(0.16,1,0.3,1) .35s forwards' }} />
+        {/* ═══ CLOUD PROFILE BUTTON (أعلى اليمين) ═══ */}
+        {cloudAccount && (
+          <div className="absolute top-5 right-5 z-30" ref={cloudMenuRef} dir="rtl">
+            <button
+              type="button"
+              onClick={() => setShowCloudMenu(!showCloudMenu)}
+              className="flex items-center gap-2.5 px-3 h-10 rounded-2xl bg-slate-800/85 hover:bg-slate-750 border border-slate-700/80 shadow-lg text-slate-200 transition-all cursor-pointer backdrop-blur-md"
+              title="بيانات الحساب السحابي والفرع المربوط"
+            >
+              <div className="relative flex items-center justify-center">
+                <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white font-black text-xs shadow-sm">
+                  {cloudAccount.username ? cloudAccount.username.substring(0, 2).toUpperCase() : <Cloud size={14} />}
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-slate-900 animate-pulse" />
+              </div>
+
+              <div className="text-right leading-tight hidden xs:block sm:block">
+                <div className="text-xs font-black text-white truncate max-w-[120px]">
+                  {cloudAccount.username}
+                </div>
+                <div className="text-[10px] text-emerald-400 font-bold truncate max-w-[120px] flex items-center gap-1">
+                  <Building size={10} />
+                  <span>{cloudAccount.branchName || 'الفرع الرئيسي'}</span>
+                </div>
+              </div>
+
+              <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${showCloudMenu ? 'rotate-180 text-emerald-400' : ''}`} />
+            </button>
+
+            {/* القائمة الصغيرة المنسدلة */}
+            {showCloudMenu && (
+              <div className="absolute top-full mt-2 right-0 w-72 sm:w-80 bg-slate-900/95 dark:bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-3 z-50 text-right backdrop-blur-xl animate-scale-in">
+                {/* رأس القائمة: اسم الحساب والفرع والجهاز */}
+                <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 mb-2.5">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-bold text-slate-400">الحساب السحابي:</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      متصل لحظياً
+                    </span>
+                  </div>
+                  <div className="font-black text-sm text-white truncate">{cloudAccount.username}</div>
+                  <div className="flex items-center justify-between text-xs text-slate-300 mt-1.5 pt-1.5 border-t border-slate-700/50">
+                    <span className="flex items-center gap-1 text-slate-400">
+                      <Building size={12} className="text-emerald-400" />
+                      {cloudAccount.branchName}
+                    </span>
+                    <span className="flex items-center gap-1 text-slate-400">
+                      <Laptop size={12} className="text-sky-400" />
+                      {cloudAccount.deviceName || 'كاشير 1'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* أزرار العمليات */}
+                <div className="space-y-1">
+                  {/* زر الأجهزة */}
+                  <button
+                    type="button"
+                    onClick={() => { setShowCloudMenu(false); setShowDevicesModal(true); }}
+                    className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs font-bold"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center">
+                        <Smartphone size={14} />
+                      </div>
+                      <span>الأجهزة المتصلة</span>
+                    </div>
+                    <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-400">
+                      {devicesCount} أجهزة
+                    </span>
+                  </button>
+
+                  {/* زر الفروع */}
+                  <button
+                    type="button"
+                    onClick={() => { setShowCloudMenu(false); setShowBranchesModal(true); }}
+                    className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-800 text-slate-200 hover:text-white transition-colors cursor-pointer text-xs font-bold"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-teal-500/15 text-teal-400 flex items-center justify-center">
+                        <Building size={14} />
+                      </div>
+                      <span>الفروع</span>
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-bold">
+                      تبديل الفرع ←
+                    </span>
+                  </button>
+
+                  <div className="border-t border-slate-800 my-1" />
+
+                  {/* زر تسجيل الخروج (يتطلب كلمة مرور المدير) */}
+                  <button
+                    type="button"
+                    onClick={() => { setShowCloudMenu(false); setShowLogoutModal(true); }}
+                    className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-rose-500/15 text-rose-400 hover:text-rose-300 transition-colors cursor-pointer text-xs font-black"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center">
+                        <LogOut size={14} />
+                      </div>
+                      <span>تسجيل الخروج (فك ربط الجهاز)</span>
+                    </div>
+                    <Lock size={12} className="text-rose-400" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* ═══ MAIN CARD ═══ */}
-        <div style={{ width:'min(100%, 430px)', position:'relative', zIndex:1 }}>
+        <div style={{ width:'min(100%, 420px)', position:'relative', zIndex:1 }}>
           <div
             className={isShaking ? 'rz-card-shake' : ''}
             style={{
               position:'relative',
-              padding:'24px 28px 18px',
-              borderRadius:24,
-              background: isDark ? 'rgba(22, 10, 36, 0.74)' : 'rgba(255, 255, 255, 0.90)',
-              border: isDark ? '1px solid rgba(225,185,255,0.16)' : '1px solid rgba(192,132,252,0.35)',
-              backdropFilter:'blur(28px)',
-              WebkitBackdropFilter:'blur(28px)',
+              padding:'28px 28px 22px',
+              borderRadius:20,
+              background: isDark ? '#1e293b' : '#ffffff',
+              border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
               boxShadow: isDark
-                ? '0 24px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 38px rgba(160,32,240,0.14)'
-                : '0 24px 60px -10px rgba(126, 34, 206, 0.16), inset 0 1px 0 rgba(255,255,255,0.95), 0 8px 24px rgba(0,0,0,0.04)',
+                ? '0 20px 45px -10px rgba(0,0,0,0.65)'
+                : '0 20px 45px -10px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04)',
               overflow:'hidden',
-              animation:'rz-cardIn 1.5s cubic-bezier(0.16,1,0.3,1) forwards',
             }}
           >
-            {/* Top shimmer line */}
+            {/* Top accent line */}
             <div style={{
               position:'absolute',
               top:0,
-              left:'16%',
-              right:'16%',
-              height:1.5,
-              background: isDark
-                ? 'linear-gradient(90deg, transparent, #e879f9, #ffc52e, transparent)'
-                : 'linear-gradient(90deg, transparent, #a855f7, #f59e0b, transparent)',
-              opacity:.9,
+              left:0,
+              right:0,
+              height:3,
+              background: '#10b981',
               zIndex:2
             }} />
 
-            {/* ── BRAND / LOGO (لوجو مدمج وتصميم متناسق بدون أي خلفيات بيضاء) ── */}
-            <div className="rz-login-brand rz-no-override" style={{ textAlign:'center', marginBottom:14, background:'transparent', border:'none', boxShadow:'none' }}>
+            {/* ── BRAND / LOGO ── */}
+            <div className="rz-login-brand rz-no-override" style={{ textAlign:'center', marginBottom:18, background:'transparent', border:'none', boxShadow:'none' }}>
               <img
                 src={RAIZON_LOGO_URI}
-                alt="RaiZon Pro"
+                alt="فلير وان - Flare One"
                 style={{
-                  width:'min(100%,145px)',
-                  height:74,
+                  width:'min(100%,130px)',
+                  height:68,
                   objectFit:'contain',
                   display:'block',
                   margin:'0 auto',
-                  filter: isDark ? 'drop-shadow(0 6px 18px rgba(187,46,255,0.32))' : 'drop-shadow(0 4px 14px rgba(147,51,234,0.22))'
                 }}
               />
-              {/* اسم التطبيق أسفل اللوجو مباشرة - LTR ليكون ريزون برو وليس برو رايزون */}
-              <h1 dir="ltr" style={{ fontSize:22, fontWeight:800, margin:'5px 0 2px', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
-                <span style={{ color: isDark ? '#ffbf24' : '#d97706', textShadow: isDark ? '0 0 14px rgba(255,191,36,0.35)' : 'none' }}>RaiZon</span>
-                <span style={{ color: isDark ? '#cf57ff' : '#7e22ce', textShadow: isDark ? '0 0 14px rgba(207,87,255,0.35)' : 'none' }}>Pro</span>
+              <h1 style={{ fontSize:22, fontWeight:800, margin:'8px 0 3px', textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
+                <span style={{ color: isDark ? '#f8fafc' : '#0f172a' }}>فلير وان</span>
+                <span style={{ color: '#10b981', fontSize: 16 }}>Flare One</span>
               </h1>
-              <p style={{ color: isDark ? '#b9a9c7' : '#475569', textAlign:'center', fontSize:12.5, fontWeight: isDark ? 500 : 600, margin:'2px 0 0' }}>
-                سجّل الدخول لإدارة أعمالك ومتابعة مبيعاتك
+              <p style={{ color: isDark ? '#94a3b8' : '#64748b', textAlign:'center', fontSize:13, fontWeight:500, margin:'2px 0 0' }}>
+                نظام إدارة نقاط البيع والمخزون والمبيعات
               </p>
             </div>
 
@@ -2987,244 +2826,240 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
               </div>
             )}
 
-            {/* ── FORM ── */}
+            {/* ── نموذج تسجيل دخول الكاشير والمدير ── */}
             <form onSubmit={handleLogin} dir="rtl">
 
-              {/* Username */}
-              <div style={{ marginBottom:12 }} ref={userDropdownRef}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', margin:'0 3px 8px' }}>
-                  <label style={{ color: isDark ? '#f3e8ff' : '#1e1035', fontSize:13, fontWeight:700 }}>
-                    اسم المستخدم
-                  </label>
-                  {rememberedUsers.length > 0 && (
-                    <button type="button" onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ fontSize:11.5, color: isDark ? '#38bdf8' : '#0284c7', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:800, padding:0 }}>
-                      حسابات محفوظة ({rememberedUsers.length})
-                    </button>
-                  )}
-                </div>
-                {(() => {
-                  const showUserArrow = rememberMe || rememberedUsers.length > 0;
-                  // قائمة الحسابات المتاحة: تجمع الحسابات المحفوظة وحسابات النظام (المدير، الكاشير، الموظفين)
-                  const availableLoginUsers: RememberedUser[] = [...rememberedUsers];
-                  (state.users || []).forEach(u => {
-                    if (!availableLoginUsers.some(item => item.username.toLowerCase() === u.username.toLowerCase())) {
-                      availableLoginUsers.push({ username: u.username, name: u.name, role: u.role });
+                {/* Username */}
+                <div style={{ marginBottom:12 }} ref={userDropdownRef}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', margin:'0 3px 8px' }}>
+                    <label style={{ color: isDark ? '#f3e8ff' : '#1e1035', fontSize:13, fontWeight:700 }}>
+                      اسم المستخدم أو البريد / الهاتف
+                    </label>
+                    {rememberedUsers.length > 0 && (
+                      <button type="button" onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ fontSize:11.5, color: isDark ? '#38bdf8' : '#0284c7', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:800, padding:0 }}>
+                        حسابات محفوظة ({rememberedUsers.length})
+                      </button>
+                    )}
+                  </div>
+                  {(() => {
+                    const showUserArrow = rememberMe || rememberedUsers.length > 0;
+                    // قائمة الحسابات المتاحة: تجمع الحسابات المحفوظة وحسابات النظام (المدير، الكاشير، الموظفين)
+                    const availableLoginUsers: RememberedUser[] = [...rememberedUsers];
+                    (state.users || []).forEach(u => {
+                      if (!availableLoginUsers.some(item => item.username.toLowerCase() === u.username.toLowerCase())) {
+                        availableLoginUsers.push({ username: u.username, name: u.name, role: u.role });
+                      }
+                    });
+                    if (availableLoginUsers.length === 0) {
+                      availableLoginUsers.push({ username: 'admin', name: 'المدير العام', role: 'admin' });
                     }
-                  });
-                  if (availableLoginUsers.length === 0) {
-                    availableLoginUsers.push({ username: 'admin', name: 'المدير العام', role: 'admin' });
-                  }
 
-                  return (
-                    <>
-                      <div style={{ position:'relative' }}>
-                        <span style={{ position:'absolute', right:15, top:'50%', transform:'translateY(-50%)', color: isDark ? '#c084fc' : '#7e22ce', fontSize:16, pointerEvents:'none', display:'flex', alignItems:'center' }}>
-                          <User size={16} />
-                        </span>
-                        <input
-                          ref={usernameInputRef}
-                          type="text"
-                          value={username}
-                          onChange={e => setUsername(e.target.value)}
-                          disabled={!isCardReady}
-                          className="rz-input"
-                          placeholder="أدخل اسم المستخدم"
-                          aria-label="اسم المستخدم"
-                          autoComplete="username"
-                          style={{ paddingLeft: showUserArrow ? 46 : 16, paddingRight: 46 }}
-                        />
-                        {/* يظهر السهم عند تفعيل زر تذكرني أو وجود مستخدمين مسجلين */}
-                        {showUserArrow && (
-                          <button 
-                            type="button" 
-                            onClick={() => setShowUserDropdown(!showUserDropdown)} 
-                            title={showUserDropdown ? 'إغلاق قائمة الحسابات' : 'عرض الحسابات المتاحة'}
-                            style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color: isDark ? '#a99ab5' : '#64748b', display:'flex', alignItems:'center', padding:4, borderRadius:8, transition:'all .2s' }}
-                          >
-                            <ChevronDown size={16} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180 text-purple-600 dark:text-purple-400' : 'hover:text-purple-600 dark:hover:text-purple-300'}`} style={{ color: showUserDropdown ? (isDark ? '#cf57ff' : '#7e22ce') : undefined }} />
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Saved / Available users dropdown */}
-                      {showUserDropdown && showUserArrow && (
-                        <div style={{
-                          position:'absolute',
-                          left:0,
-                          right:0,
-                          marginTop:8,
-                          borderRadius:16,
-                          background: isDark ? 'rgba(13,7,21,0.97)' : 'rgba(255,255,255,0.98)',
-                          backdropFilter:'blur(28px)',
-                          WebkitBackdropFilter:'blur(28px)',
-                          border: isDark ? '1px solid rgba(221,190,245,0.18)' : '1px solid rgba(192,132,252,0.35)',
-                          boxShadow: isDark ? '0 20px 60px rgba(0,0,0,0.6)' : '0 20px 50px rgba(126,34,206,0.16)',
-                          zIndex:50,
-                          overflow:'hidden'
-                        }}>
-                          <div style={{
-                            padding:'10px 14px 8px',
-                            borderBottom: isDark ? '1px solid rgba(225,185,255,0.1)' : '1px solid rgba(226,232,240,0.9)',
-                            display:'flex',
-                            alignItems:'center',
-                            justifyContent:'space-between'
-                          }}>
-                            <span style={{ fontSize:11.5, color: isDark ? '#b9a9c7' : '#475569', fontWeight:700 }}>الحسابات المتاحة لتسجيل الدخول</span>
-                            <span style={{ fontSize:10.5, color: isDark ? '#e4a8ff' : '#7e22ce', background: isDark ? 'rgba(207,87,255,0.15)' : 'rgba(147,51,234,0.1)', padding:'1px 8px', borderRadius:99, fontWeight:800 }}>{availableLoginUsers.length}</span>
-                          </div>
-                          <div style={{ maxHeight:185, overflowY:'auto', padding:6 }}>
-                            {availableLoginUsers.map(u => {
-                              const uStyle = getUserAvatarStyle(u);
-                              const isSaved = rememberedUsers.some(ru => ru.username.toLowerCase() === u.username.toLowerCase());
-                              return (
-                                <div 
-                                  key={u.username} 
-                                  onClick={() => handleSelectRememberedUser(u)} 
-                                  style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 10px', borderRadius:12, cursor:'pointer', transition:'background .15s' }}
-                                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = isDark ? 'rgba(225,185,255,0.08)' : 'rgba(243,232,255,0.7)'; }}
-                                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                                >
-                                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                                    {/* صورة/أفاتار الحساب: ذهبي للمدير، وألوان حيوية مختلفة للموظفين والكاشير */}
-                                    <div style={{ 
-                                      width:32, 
-                                      height:32, 
-                                      borderRadius:'50%', 
-                                      background: uStyle.cssBackground, 
-                                      display:'flex', 
-                                      alignItems:'center', 
-                                      justifyContent:'center', 
-                                      fontSize:12, 
-                                      fontWeight:800, 
-                                      color: uStyle.textColor, 
-                                      flexShrink:0,
-                                      border: `1.5px solid ${uStyle.borderColor}`,
-                                      boxShadow: `0 0 10px ${uStyle.shadowColor}`
-                                    }}>
-                                      {(u.name||u.username).charAt(0).toUpperCase()}
-                                    </div>
-                                    <div>
-                                      <div style={{ fontSize:12, fontWeight:700, color: isDark ? '#e8dff0' : '#0f172a', display:'flex', alignItems:'center', gap:6 }}>
-                                        <span>{u.name||u.username}</span>
-                                        {uStyle.isAdmin ? (
-                                          <span style={{ fontSize:9, fontWeight:800, padding:'1px 6px', borderRadius:99, background: isDark ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.15)', color: isDark ? '#fbbf24' : '#b45309', border: isDark ? '1px solid rgba(245,158,11,0.5)' : '1px solid rgba(245,158,11,0.4)' }}>
-                                            مدير النظام
-                                          </span>
-                                        ) : (
-                                          <span style={{ fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:99, background: isDark ? 'rgba(168,85,247,0.15)' : 'rgba(147,51,234,0.1)', color: isDark ? '#e4a8ff' : '#7e22ce', border: isDark ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(147,51,234,0.3)' }}>
-                                            {uStyle.label}
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div style={{ fontSize:10.5, color: isDark ? '#887995' : '#64748b', fontFamily:'monospace' }}>@{u.username}</div>
-                                    </div>
-                                  </div>
-                                  {isSaved && (
-                                    <button type="button" onClick={e => handleDeleteRememberedUser(e, u.username)} style={{ background:'none', border:'none', cursor:'pointer', color: isDark ? '#887995' : '#94a3b8', padding:4, borderRadius:8, display:'flex', transition:'color .15s' }}
-                                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#ef4444'; }}
-                                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#887995' : '#94a3b8'; }}
-                                      title="حذف من القائمة المحفوظة"
-                                    >
-                                      <Trash2 size={13} />
-                                    </button>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
+                    return (
+                      <>
+                        <div style={{ position:'relative' }}>
+                          <span style={{ position:'absolute', right:15, top:'50%', transform:'translateY(-50%)', color: isDark ? '#94a3b8' : '#64748b', fontSize:16, pointerEvents:'none', display:'flex', alignItems:'center' }}>
+                            <User size={16} />
+                          </span>
+                          <input
+                            ref={usernameInputRef}
+                            type="text"
+                            value={username}
+                            onChange={e => setUsername(e.target.value)}
+                            disabled={!isCardReady}
+                            className="rz-input"
+                            placeholder="أدخل اسم المستخدم، البريد، أو الهاتف"
+                            aria-label="اسم المستخدم"
+                            autoComplete="username"
+                            style={{ paddingLeft: showUserArrow ? 46 : 16, paddingRight: 46 }}
+                          />
+                          {/* يظهر السهم عند تفعيل زر تذكرني أو وجود مستخدمين مسجلين */}
+                          {showUserArrow && (
+                            <button 
+                              type="button" 
+                              onClick={() => setShowUserDropdown(!showUserDropdown)} 
+                              title={showUserDropdown ? 'إغلاق قائمة الحسابات' : 'عرض الحسابات المتاحة'}
+                              style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color: isDark ? '#94a3b8' : '#64748b', display:'flex', alignItems:'center', padding:4, borderRadius:8, transition:'all .2s' }}
+                            >
+                              <ChevronDown size={16} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180 text-emerald-500' : 'hover:text-emerald-500'}`} />
+                            </button>
+                          )}
                         </div>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
 
-              {/* Password */}
-              <div style={{ marginBottom:3, position:'relative' }}>
-                <label style={{ display:'block', color: isDark ? '#f3e8ff' : '#1e1035', fontSize:13, fontWeight:700, margin:'0 3px 8px' }}>
-                  كلمة المرور
-                </label>
-                <div style={{ position:'relative' }}>
-                  <span style={{ position:'absolute', right:15, top:'50%', transform:'translateY(-50%)', color: isDark ? '#c084fc' : '#7e22ce', fontSize:16, pointerEvents:'none', display:'flex', alignItems:'center' }}>
-                    <Lock size={16} />
-                  </span>
-                  <input
-                    ref={passwordInputRef}
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    disabled={!isCardReady}
-                    className="rz-input"
-                    placeholder="أدخل كلمة المرور"
-                    aria-label="كلمة المرور"
-                    autoComplete="current-password"
-                    style={{ paddingLeft: 42, paddingRight: 46 }}
-                  />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', border:0, background:'transparent', color: isDark ? '#a99ab5' : '#64748b', cursor:'pointer', fontSize:17, display:'flex', alignItems:'center', padding:0, transition:'color .15s' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#cf57ff' : '#7e22ce'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#a99ab5' : '#64748b'; }}
-                    aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                        {/* Saved / Available users dropdown */}
+                        {showUserDropdown && showUserArrow && (
+                          <div style={{
+                            position:'absolute',
+                            left:0,
+                            right:0,
+                            marginTop:8,
+                            borderRadius:14,
+                            background: isDark ? '#1e293b' : '#ffffff',
+                            border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+                            boxShadow: '0 12px 30px rgba(0,0,0,0.2)',
+                            zIndex:50,
+                            overflow:'hidden'
+                          }}>
+                            <div style={{
+                              padding:'10px 14px 8px',
+                              borderBottom: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+                              display:'flex',
+                              alignItems:'center',
+                              justifyContent:'space-between'
+                            }}>
+                              <span style={{ fontSize:11.5, color: isDark ? '#94a3b8' : '#64748b', fontWeight:700 }}>الحسابات المتاحة لتسجيل الدخول</span>
+                              <span style={{ fontSize:10.5, color: '#059669', background: 'rgba(16,185,129,0.1)', padding:'1px 8px', borderRadius:99, fontWeight:800 }}>{availableLoginUsers.length}</span>
+                            </div>
+                            <div style={{ maxHeight:185, overflowY:'auto', padding:6 }}>
+                              {availableLoginUsers.map(u => {
+                                const uStyle = getUserAvatarStyle(u);
+                                const isSaved = rememberedUsers.some(ru => ru.username.toLowerCase() === u.username.toLowerCase());
+                                return (
+                                  <div 
+                                    key={u.username} 
+                                    onClick={() => handleSelectRememberedUser(u)} 
+                                    style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 10px', borderRadius:10, cursor:'pointer', transition:'background .15s' }}
+                                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = isDark ? '#334155' : '#f1f5f9'; }}
+                                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                                  >
+                                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                                      <div style={{ 
+                                        width:30, 
+                                        height:30, 
+                                        borderRadius:'50%', 
+                                        background: uStyle.cssBackground, 
+                                        display:'flex', 
+                                        alignItems:'center', 
+                                        justifyContent:'center', 
+                                        fontSize:12, 
+                                        fontWeight:800, 
+                                        color: uStyle.textColor, 
+                                        flexShrink:0,
+                                        border: `1.5px solid ${uStyle.borderColor}`,
+                                      }}>
+                                        {(u.name||u.username).charAt(0).toUpperCase()}
+                                      </div>
+                                      <div>
+                                        <div style={{ fontSize:12, fontWeight:700, color: isDark ? '#f8fafc' : '#0f172a', display:'flex', alignItems:'center', gap:6 }}>
+                                          <span>{u.name||u.username}</span>
+                                          {uStyle.isAdmin ? (
+                                            <span style={{ fontSize:9, fontWeight:800, padding:'1px 6px', borderRadius:99, background: 'rgba(245,158,11,0.15)', color: '#d97706', border: '1px solid rgba(245,158,11,0.4)' }}>
+                                              مدير النظام
+                                            </span>
+                                          ) : (
+                                            <span style={{ fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:99, background: 'rgba(16,185,129,0.1)', color: '#059669', border: '1px solid rgba(16,185,129,0.3)' }}>
+                                              {uStyle.label}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div style={{ fontSize:10.5, color: isDark ? '#94a3b8' : '#64748b', fontFamily:'monospace' }}>@{u.username}</div>
+                                      </div>
+                                    </div>
+                                    {isSaved && (
+                                      <button type="button" onClick={e => handleDeleteRememberedUser(e, u.username)} style={{ background:'none', border:'none', cursor:'pointer', color: isDark ? '#64748b' : '#94a3b8', padding:4, borderRadius:8, display:'flex', transition:'color .15s' }}
+                                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color='#ef4444'; }}
+                                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#64748b' : '#94a3b8'; }}
+                                        title="حذف من القائمة المحفوظة"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+
+                {/* Password */}
+                <div style={{ marginBottom:3, position:'relative' }}>
+                  <label style={{ display:'block', color: isDark ? '#f8fafc' : '#0f172a', fontSize:13, fontWeight:700, margin:'0 3px 8px' }}>
+                    كلمة المرور
+                  </label>
+                  <div style={{ position:'relative' }}>
+                    <span style={{ position:'absolute', right:15, top:'50%', transform:'translateY(-50%)', color: isDark ? '#94a3b8' : '#64748b', fontSize:16, pointerEvents:'none', display:'flex', alignItems:'center' }}>
+                      <Lock size={16} />
+                    </span>
+                    <input
+                      ref={passwordInputRef}
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      disabled={!isCardReady}
+                      className="rz-input"
+                      placeholder="أدخل كلمة المرور"
+                      aria-label="كلمة المرور"
+                      autoComplete="current-password"
+                      style={{ paddingLeft: 42, paddingRight: 46 }}
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', border:0, background:'transparent', color: isDark ? '#94a3b8' : '#64748b', cursor:'pointer', fontSize:17, display:'flex', alignItems:'center', padding:0, transition:'color .15s' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#10b981'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#94a3b8' : '#64748b'; }}
+                      aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                    >
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Error */}
+                {error && (
+                  <div role="alert" style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderRadius:12, background: isDark ? 'rgba(239,68,68,0.11)' : 'rgba(239,68,68,0.08)', border: isDark ? '1px solid rgba(239,68,68,0.28)' : '1px solid rgba(239,68,68,0.35)', fontSize:13, color: isDark ? '#fca5a5' : '#b91c1c', fontWeight:600, margin:'12px 0 0' }}>
+                    <AlertCircle size={15} style={{ color: isDark ? '#f87171' : '#dc2626', flexShrink:0 }} />
+                    <span>{t('login_error')}</span>
+                  </div>
+                )}
+
+                {/* Options row */}
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, margin:'12px 2px 16px', fontSize:12.5 }}>
+                  <label style={{ display:'flex', alignItems:'center', gap:7, color: isDark ? '#94a3b8' : '#475569', fontWeight:600, cursor:'pointer', userSelect:'none' }}>
+                    <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} style={{ width:16, height:16, padding:0, accentColor: '#059669' }} />
+                    <span>تذكرني</span>
+                  </label>
+                  <button type="button" onClick={() => alert(t('contact_admin_reset_pwd'))} style={{ color: '#0284c7', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:12.5, fontWeight:800, padding:0, transition:'color .15s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.textDecoration = 'underline'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.textDecoration = 'none'; }}
                   >
-                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    {t('forgot_password')}
                   </button>
                 </div>
-              </div>
 
-              {/* Error */}
-              {error && (
-                <div role="alert" style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderRadius:12, background: isDark ? 'rgba(239,68,68,0.11)' : 'rgba(239,68,68,0.08)', border: isDark ? '1px solid rgba(239,68,68,0.28)' : '1px solid rgba(239,68,68,0.35)', fontSize:13, color: isDark ? '#fca5a5' : '#b91c1c', fontWeight:600, margin:'12px 0 0' }}>
-                  <AlertCircle size={15} style={{ color: isDark ? '#f87171' : '#dc2626', flexShrink:0 }} />
-                  <span>{t('login_error')}</span>
-                </div>
-              )}
-
-              {/* Options row */}
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, margin:'12px 2px 16px', fontSize:12.5 }}>
-                <label style={{ display:'flex', alignItems:'center', gap:7, color: isDark ? '#c9bbd3' : '#334155', fontWeight:600, cursor:'pointer', userSelect:'none' }}>
-                  <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} style={{ width:16, height:16, padding:0, accentColor: isDark ? '#bd38f2' : '#7e22ce' }} />
-                  <span>تذكرني</span>
-                </label>
-                <button type="button" onClick={() => alert(t('contact_admin_reset_pwd'))} style={{ color: isDark ? '#38bdf8' : '#0284c7', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:12.5, fontWeight:800, padding:0, transition:'color .15s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#60a5fa'; (e.currentTarget as HTMLElement).style.textDecoration = 'underline'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#38bdf8' : '#0284c7'; (e.currentTarget as HTMLElement).style.textDecoration = 'none'; }}
-                >
-                  {t('forgot_password')}
+                {/* Submit */}
+                <button disabled={busy || !isCardReady} type="submit" className="rz-btn">
+                  {busy ? (
+                    <span style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                      <RefreshCw size={16} className="animate-spin" style={{ color:'#ffffff' }} />
+                      <span>جاري التحقق والاتصال...</span>
+                    </span>
+                  ) : (
+                    <span>تسجيل الدخول &nbsp;←</span>
+                  )}
                 </button>
-              </div>
 
-              {/* Submit */}
-              <button disabled={busy || !isCardReady} type="submit" className="rz-btn">
-                {busy ? (
-                  <span style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                    <RefreshCw size={16} className="animate-spin" style={{ color:'#180b29' }} />
-                    <span>جاري التحقق والاتصال...</span>
-                  </span>
-                ) : (
-                  <span>تسجيل الدخول &nbsp;←</span>
-                )}
-              </button>
-
-              {/* بيانات المطور أسفل زر تسجيل الدخول مباشرة */}
-              <div style={{ textAlign:'center', marginTop:14 }}>
-                <p style={{ fontSize:12, color: isDark ? '#b9a9c7' : '#475569', margin:0, fontWeight:600, lineHeight:1.7 }}>
-                  <span>برمجة وتصميم: م / عبد الرحمن فتحي العادلي</span>
-                  <span style={{ margin:'0 6px', color: isDark ? '#c084fc' : '#7e22ce' }}>•</span>
-                  <a href="tel:01026695879" dir="ltr" style={{ color: isDark ? '#ffd15b' : '#b45309', textDecoration:'none', fontWeight:800, display:'inline-block' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#cf57ff' : '#7e22ce'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#ffd15b' : '#b45309'; }}
-                  >
-                    01026695879
-                  </a>
-                </p>
-              </div>
-            </form>
+                {/* بيانات المطور أسفل زر تسجيل الدخول مباشرة */}
+                <div style={{ textAlign:'center', marginTop:14 }}>
+                  <p style={{ fontSize:12, color: isDark ? '#94a3b8' : '#64748b', margin:0, fontWeight:600, lineHeight:1.7 }}>
+                    <span>برمجة وتصميم: م / عبد الرحمن فتحي العادلي</span>
+                    <span style={{ margin:'0 6px', color: '#94a3b8' }}>•</span>
+                    <a href="tel:01026695879" dir="ltr" style={{ color: isDark ? '#f59e0b' : '#b45309', textDecoration:'none', fontWeight:800, display:'inline-block' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.textDecoration = 'underline'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.textDecoration = 'none'; }}
+                    >
+                      01026695879
+                    </a>
+                  </p>
+                </div>
+              </form>
 
             {/* Biometric */}
             {state.settings.enableBiometricLogin && (
               <div style={{ display:'flex', justifyContent:'center', marginTop:12 }}>
-                <button type="button" onClick={handleBiometricLogin} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color: isDark ? '#9f90aa' : '#64748b', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'color .15s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#cf57ff' : '#7e22ce'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#9f90aa' : '#64748b'; }}
+                <button type="button" onClick={handleBiometricLogin} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color: isDark ? '#94a3b8' : '#64748b', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', transition:'color .15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#10b981'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isDark ? '#94a3b8' : '#64748b'; }}
                 >
                   <Fingerprint size={17} />
                   <span>تسجيل الدخول الحيوي</span>
@@ -3237,14 +3072,13 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
           {/* رقم الإصدار بالمنتصف في الربع الأخير أسفل البطاقة */}
           <div style={{ textAlign:'center', marginTop:16, display:'flex', alignItems:'center', justifyContent:'center' }}>
             <div style={{
-              display:'inline-flex', alignItems:'center', gap:7, padding:'5px 18px', borderRadius:99,
-              background: isDark ? 'rgba(35,18,49,0.75)' : 'rgba(255,255,255,0.92)',
-              border: isDark ? '1px solid rgba(225,185,255,0.16)' : '1px solid rgba(192,132,252,0.35)',
-              backdropFilter:'blur(16px)', WebkitBackdropFilter:'blur(16px)',
-              boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.35)' : '0 6px 20px rgba(126,34,206,0.10)'
+              display:'inline-flex', alignItems:'center', gap:7, padding:'5px 16px', borderRadius:99,
+              background: isDark ? '#1e293b' : '#ffffff',
+              border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
             }}>
-              <span style={{ width:7, height:7, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981' }} />
-              <span style={{ color: isDark ? '#cbbbd8' : '#334155', fontSize:11.5, letterSpacing:'1px', fontWeight:700, fontFamily:'monospace' }} dir="ltr">
+              <span style={{ width:7, height:7, borderRadius:'50%', background:'#10b981' }} />
+              <span style={{ color: isDark ? '#94a3b8' : '#475569', fontSize:11.5, letterSpacing:'0.5px', fontWeight:700, fontFamily:'monospace' }} dir="ltr">
                 الإصدار v{appVersion.replace(/^v/i, '')}
               </span>
             </div>
@@ -3268,40 +3102,300 @@ const LoginScreen = ({ onOpenPatcher }: { onOpenPatcher?: () => void }) => {
           }}
         />
 
+        {/* ── 1. نافذة الأجهزة المتصلة بالسحابة ── */}
+        {showDevicesModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-fade-in font-sans" dir="rtl">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl text-slate-100 animate-scale-in">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center">
+                    <Smartphone size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-white">الأجهزة المتصلة بالسحابة</h3>
+                    <p className="text-[11px] text-slate-400">إجمالي الأجهزة النشطة: {devicesCount}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDevicesModal(false)}
+                  className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-2.5 max-h-64 overflow-y-auto custom-scrollbar my-4">
+                {/* هذا الجهاز الحالي */}
+                <div className="p-3 rounded-2xl bg-slate-800/80 border border-emerald-500/30 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
+                      <Laptop size={16} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-white">{cloudAccount?.deviceName || 'كاشير 1'}</span>
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">هذا الجهاز</span>
+                      </div>
+                      <span className="text-xs text-slate-400">{cloudAccount?.branchName || 'الفرع الرئيسي'}</span>
+                    </div>
+                  </div>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" title="متصل الآن" />
+                </div>
+
+                {/* باقي الأجهزة المتصلة */}
+                {devicesList.filter((d: any) => d.deviceId && d.deviceId !== cloudAccount?.deviceId).map((d: any, idx: number) => (
+                  <div key={d.deviceId || idx} className="p-3 rounded-2xl bg-slate-800/40 border border-slate-700/50 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-xs">
+                        <Smartphone size={16} />
+                      </div>
+                      <div>
+                        <span className="font-bold text-sm text-white block">{d.deviceName || `جهاز فرعي #${idx + 1}`}</span>
+                        <span className="text-xs text-slate-400">{d.branchName || 'فرع متصل'}</span>
+                      </div>
+                    </div>
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" title="متصل" />
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowDevicesModal(false)}
+                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 font-bold text-xs cursor-pointer transition-colors"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── 2. نافذة الفروع وتبديل الفرع لهذا الجهاز ── */}
+        {showBranchesModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-fade-in font-sans" dir="rtl">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl text-slate-100 animate-scale-in">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-teal-500/15 text-teal-400 flex items-center justify-center">
+                    <Building size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-white">فروع المنشأة</h3>
+                    <p className="text-[11px] text-slate-400">اختر الفرع لربط هذا الجهاز به</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowBranchesModal(false)}
+                  className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar my-4">
+                {(state.locations || []).map((b) => {
+                  const isCurrent = String(b.id) === String(cloudAccount?.branchId);
+                  return (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => handleSwitchBranch(String(b.id), b.name)}
+                      className={`w-full p-3 rounded-2xl flex items-center justify-between border transition-all cursor-pointer text-right ${
+                        isCurrent 
+                          ? 'bg-emerald-500/15 border-emerald-500/50 text-white' 
+                          : 'bg-slate-800/60 border-slate-700/60 hover:bg-slate-800 text-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isCurrent ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-300'}`}>
+                          <Building size={16} />
+                        </div>
+                        <div>
+                          <span className="font-bold text-sm block">{b.name}</span>
+                          <span className="text-[11px] text-slate-400">{b.address || 'فرع نشط'}</span>
+                        </div>
+                      </div>
+                      {isCurrent ? (
+                        <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                          <Check size={14} /> الفرع الحالي
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400 font-semibold">تحويل الجهاز ←</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {isAddingBranch ? (
+                <form onSubmit={handleAddBranchSubmit} className="mt-3 p-3 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-2">
+                  <label className="text-xs font-bold text-slate-300 block">اسم الفرع الجديد:</label>
+                  <input
+                    type="text"
+                    value={newBranchName}
+                    onChange={e => setNewBranchName(e.target.value)}
+                    placeholder="مثال: فرع مدينة نصر"
+                    className="w-full h-10 px-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs outline-none focus:border-teal-500"
+                    autoFocus
+                    required
+                  />
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="submit"
+                      className="flex-1 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs cursor-pointer transition-colors"
+                    >
+                      حفظ وتحديد الفرع
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingBranch(false)}
+                      className="px-3 py-2 rounded-xl bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsAddingBranch(true)}
+                  className="w-full mt-2 py-2.5 rounded-xl border border-dashed border-slate-700 hover:border-teal-500/60 text-slate-300 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Plus size={14} />
+                  <span>إضافة فرع جديد للمنشأة</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── 3. نافذة تسجيل الخروج (تتطلب كلمة مرور المدير) ── */}
+        {showLogoutModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in font-sans" dir="rtl">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl text-slate-100 animate-scale-in">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center">
+                    <LogOut size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-white">تسجيل الخروج السحابي</h3>
+                    <p className="text-[11px] text-slate-400">إلغاء ربط هذا الجهاز بالحساب والفرع</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setShowLogoutModal(false); setLogoutError(''); setManagerPasswordInput(''); }}
+                  className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold mb-4 leading-relaxed">
+                يتطلب فك ارتباط الجهاز كلمة مرور المدير لمنع فك الربط بالخطأ أو بدون إذن الإدارة.
+              </div>
+
+              <form onSubmit={handleCloudLogout} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    كلمة مرور المدير للتأكيد:
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showManagerPassword ? 'text' : 'password'}
+                      value={managerPasswordInput}
+                      onChange={e => { setManagerPasswordInput(e.target.value); setLogoutError(''); }}
+                      placeholder="أدخل كلمة مرور المدير..."
+                      className="w-full h-11 px-3 pe-10 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                      autoFocus
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowManagerPassword(!showManagerPassword)}
+                      className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                    >
+                      {showManagerPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {logoutError && (
+                  <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-bold flex items-center gap-2">
+                    <AlertCircle size={15} className="shrink-0" />
+                    <span>{logoutError}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2.5 pt-2">
+                  <button
+                    type="submit"
+                    disabled={isLoggingOut}
+                    className="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs cursor-pointer shadow-lg shadow-rose-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isLoggingOut ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin" />
+                        <span>جاري التحقق...</span>
+                      </>
+                    ) : (
+                      <>
+                        <LogOut size={14} />
+                        <span>تأكيد تسجيل الخروج وفك الربط</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowLogoutModal(false); setLogoutError(''); setManagerPasswordInput(''); }}
+                    className="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer transition-colors"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* Quick PIN Keypad */}
         {showPinPad && (
-          <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div style={{ background: isDark ? 'rgba(27,13,43,0.98)' : 'rgba(255,255,255,0.98)', borderRadius:22, border: isDark ? '1px solid rgba(225,185,255,0.18)' : '1px solid rgba(192,132,252,0.35)', padding:24, width:'100%', maxWidth:320, backdropFilter:'blur(28px)', boxShadow: isDark ? '0 20px 60px rgba(0,0,0,0.6)' : '0 20px 50px rgba(126,34,206,0.16)' }}>
-              <div style={{ textAlign:'center', marginBottom:20 }}>
-                <div style={{ width:48, height:48, borderRadius:14, background: isDark ? 'rgba(160,32,240,0.15)' : 'rgba(147,51,234,0.1)', border: isDark ? '1px solid rgba(207,87,255,0.3)' : '1px solid rgba(147,51,234,0.3)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px', color: isDark ? '#cf57ff' : '#7e22ce' }}>
-                  <Keypad size={22} />
+          <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div style={{ background: isDark ? '#1e293b' : '#ffffff', borderRadius:18, border: isDark ? '1px solid #334155' : '1px solid #e2e8f0', padding:24, width:'100%', maxWidth:320, boxShadow:'0 20px 40px rgba(0,0,0,0.3)' }}>
+              <div style={{ textAlign:'center', marginBottom:18 }}>
+                <div style={{ width:44, height:44, borderRadius:12, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px', color: '#059669' }}>
+                  <Keypad size={20} />
                 </div>
-                <h3 style={{ fontWeight:800, fontSize:17, color: isDark ? '#fff' : '#0f172a', margin:0 }}>{t('quick_pin')}</h3>
+                <h3 style={{ fontWeight:800, fontSize:16, color: isDark ? '#fff' : '#0f172a', margin:0 }}>{t('quick_pin')}</h3>
               </div>
               <div className={`flex justify-center gap-2 mb-5 ${pinError ? 'rz-card-shake' : ''}`}>
                 {[0,1,2,3,4,5].map(i => (
-                  <span key={i} style={{ width:14, height:14, borderRadius:'50%', display:'inline-block', background: i < pin.length ? (pinError ? '#ef4444' : '#ffad24') : (isDark ? 'rgba(225,185,255,0.2)' : 'rgba(147,51,234,0.15)'), transition:'background .15s' }} />
+                  <span key={i} style={{ width:12, height:12, borderRadius:'50%', display:'inline-block', background: i < pin.length ? (pinError ? '#ef4444' : '#10b981') : (isDark ? '#334155' : '#e2e8f0'), transition:'background .15s' }} />
                 ))}
               </div>
               {pinHint && <p style={{ textAlign:'center', color:'#ef4444', fontSize:12, marginBottom:12, fontWeight:600 }}>{pinHint}</p>}
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
                 {['1','2','3','4','5','6','7','8','9','','0',''].map((n, idx) => {
                   if (n === '') {
-                    if (idx === 10) return <button key={idx} type="button" onClick={() => setPin(p => p + '0')} style={{ padding:'14px 0', borderRadius:12, background: isDark ? 'rgba(225,185,255,0.08)' : 'rgba(243,232,255,0.7)', border: isDark ? '1px solid rgba(225,185,255,0.12)' : '1px solid rgba(192,132,252,0.3)', color: isDark ? '#fff' : '#0f172a', fontWeight:800, fontSize:18, cursor:'pointer', fontFamily:'inherit' }}>0</button>;
-                    if (idx === 11) return <button key={idx} type="button" onClick={() => setPin(p => p.slice(0,-1))} style={{ padding:'14px 0', borderRadius:12, background: isDark ? 'rgba(225,185,255,0.08)' : 'rgba(243,232,255,0.7)', border: isDark ? '1px solid rgba(225,185,255,0.12)' : '1px solid rgba(192,132,252,0.3)', color: isDark ? '#b9a9c7' : '#475569', fontWeight:700, fontSize:16, cursor:'pointer', fontFamily:'inherit' }}>⌫</button>;
+                    if (idx === 10) return <button key={idx} type="button" onClick={() => setPin(p => p + '0')} style={{ padding:'12px 0', borderRadius:10, background: isDark ? '#0f172a' : '#f8fafc', border: isDark ? '1px solid #334155' : '1px solid #e2e8f0', color: isDark ? '#fff' : '#0f172a', fontWeight:800, fontSize:17, cursor:'pointer', fontFamily:'inherit' }}>0</button>;
+                    if (idx === 11) return <button key={idx} type="button" onClick={() => setPin(p => p.slice(0,-1))} style={{ padding:'12px 0', borderRadius:10, background: isDark ? '#0f172a' : '#f8fafc', border: isDark ? '1px solid #334155' : '1px solid #e2e8f0', color: isDark ? '#94a3b8' : '#64748b', fontWeight:700, fontSize:15, cursor:'pointer', fontFamily:'inherit' }}>⌫</button>;
                     return <span key={idx} />;
                   }
-                  return <button key={idx} type="button" onClick={() => { if (pin.length < 6) setPin(p => p + n); }} style={{ padding:'14px 0', borderRadius:12, background: isDark ? 'rgba(225,185,255,0.08)' : 'rgba(243,232,255,0.7)', border: isDark ? '1px solid rgba(225,185,255,0.12)' : '1px solid rgba(192,132,252,0.3)', color: isDark ? '#fff' : '#0f172a', fontWeight:800, fontSize:18, cursor:'pointer', fontFamily:'inherit', transition:'background .15s' }}>{n}</button>;
+                  return <button key={idx} type="button" onClick={() => { if (pin.length < 6) setPin(p => p + n); }} style={{ padding:'12px 0', borderRadius:10, background: isDark ? '#0f172a' : '#f8fafc', border: isDark ? '1px solid #334155' : '1px solid #e2e8f0', color: isDark ? '#fff' : '#0f172a', fontWeight:800, fontSize:17, cursor:'pointer', fontFamily:'inherit', transition:'background .15s' }}>{n}</button>;
                 })}
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginTop:12 }}>
-                <button type="button" onClick={() => { setShowPinPad(false); setPin(''); setPinHint(''); }} style={{ padding:'12px 0', borderRadius:12, background: isDark ? 'rgba(225,185,255,0.06)' : 'rgba(241,245,249,0.9)', border: isDark ? '1px solid rgba(225,185,255,0.14)' : '1px solid rgba(203,213,225,0.8)', color: isDark ? '#b9a9c7' : '#475569', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:'inherit' }}>{t('cancel')}</button>
-                <button type="button" onClick={handlePinLogin} disabled={pin.length < 4} style={{ padding:'12px 0', borderRadius:12, background:'linear-gradient(105deg,#ffd84d,#ffad24,#e94cf4)', border:'none', color:'#180b29', fontWeight:800, fontSize:13, cursor:'pointer', fontFamily:'inherit', opacity:pin.length < 4 ? .5 : 1 }}>{t('login_btn')}</button>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:12 }}>
+                <button type="button" onClick={() => { setShowPinPad(false); setPin(''); setPinHint(''); }} style={{ padding:'10px 0', borderRadius:10, background: isDark ? '#334155' : '#f1f5f9', border:'none', color: isDark ? '#cbd5e1' : '#475569', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:'inherit' }}>{t('cancel')}</button>
+                <button type="button" onClick={handlePinLogin} disabled={pin.length < 4} style={{ padding:'10px 0', borderRadius:10, background:'#059669', border:'none', color:'#ffffff', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:'inherit', opacity:pin.length < 4 ? .5 : 1 }}>{t('login_btn')}</button>
               </div>
             </div>
           </div>
         )}
-      </div>    );
+      </div>
+    );
 };
 
 /* Tailwind Custom Animations - Add to global CSS ideally but keeping here for single-file portability */

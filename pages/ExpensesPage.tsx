@@ -1,17 +1,28 @@
 /* تم فصل هذا الملف من App.tsx (نظام ProCashier) */
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw } from '../components/Icons';
+import { LayoutDashboard, FileText, Users, Calendar, Package, Settings, LogOut, Plus, Trash2, Printer, Globe, DollarSign, TrendingUp, AlertCircle, Clock, Sun, Moon, Flask, Sparkles, Search, HelpCircle, Keyboard, Award, PauseCircle, X, CreditCard, Scissors, Eye, EyeOff, Keypad, User, ArrowLeft, ChevronRight, Wallet, Banknote, PieChart, Activity, Fingerprint, WifiOff, Wifi, Check, Info, ArrowUp, ArrowDown, Filter, Tag, MapPin, BarChart2, RefreshCw, Smartphone } from '../components/Icons';
 import { Invoice, Item, Reservation, Expense, Note, User as UserType, ClosingReport, Category, Location, Supplier } from '../types';
 import { Card, Button, Input, ModalShell, ToastContainer, SimpleBarChart, useSound, useLiveTick, EmptyState, ConfirmModal } from '../components/ui';
 import { FilterModal } from '../components/FilterModal';
 import { isCashExpense, round2 } from '../lib/payments';
-import { getDrawerOpeningBalance, isAfterClosing } from '../lib/analytics';
+import { getDrawerOpeningBalance, isAfterClosing, calcPeriod } from '../lib/analytics';
 import { localIsoToday, toIsoDate } from '../lib/dates';
 import { CreateInvoice } from './CreateInvoicePage';
 import { AuditLogs } from './AuditLogsPage';
 import { AdminUsers } from './AdminUsersPage';
 import { testConnection, onSyncStatus, flushQueue, getSyncStatus, pushBackup, fetchBackup, type SyncStatus } from '../lib/serverSync';
+
+const QUICK_EXPENSE_PRESETS = [
+    { title: 'بوفيه ومشروبات', category: 'بوفيه' },
+    { title: 'مستلزمات ونظافة', category: 'نظافة' },
+    { title: 'صيانة دورية', category: 'صيانة' },
+    { title: 'فواتير وكهرباء', category: 'فواتير' },
+    { title: 'نثريات ومواصلات', category: 'نثريات' },
+    { title: 'سحب نقدي للمالك', category: 'مسحوبات' },
+];
+
+const QUICK_AMOUNTS = [20, 50, 100, 200, 500];
 
 export const ExpensesPage = () => {
     const { state, addExpense, deleteExpense, t, addToast, currentUser, language } = useApp();
@@ -87,15 +98,150 @@ export const ExpensesPage = () => {
         return state.expenses.filter(e => !e.locationId || String(e.locationId) === activeLocationId);
     }, [state.expenses, activeLocationId]);
 
-    const totalExpenses = branchExpenses.reduce((acc, curr) => acc + curr.amount, 0);
     const todayStr = localIsoToday();
-    const todayExpenses = branchExpenses
-        .filter(e => toIsoDate(e.date) === todayStr)
-        .reduce((acc, curr) => acc + curr.amount, 0);
-    // المصروفات النقدية فقط للفرع (تلك التي تُخصم من درج نقدية الفرع)
-    const todayCashExpenses = branchExpenses
-        .filter(e => toIsoDate(e.date) === todayStr && isCashExpense(e))
-        .reduce((acc, curr) => acc + curr.amount, 0);
+
+    // فلتر المدة: يوم | أسبوع | شهر | سنة | المدة كاملة | مدة مخصصة
+    type ExpensesRange = 'day' | 'week' | 'month' | 'year' | 'all' | 'custom';
+    const [range, setRange] = useState<ExpensesRange>('day');
+    const [customFrom, setCustomFrom] = useState(todayStr);
+    const [customTo, setCustomTo] = useState(todayStr);
+
+    const rangeLabels: { key: ExpensesRange; label: string }[] = [
+        { key: 'day', label: language === 'ar' ? 'يوم' : 'Day' },
+        { key: 'week', label: language === 'ar' ? 'أسبوع' : 'Week' },
+        { key: 'month', label: language === 'ar' ? 'شهر' : 'Month' },
+        { key: 'year', label: language === 'ar' ? 'سنة' : 'Year' },
+        { key: 'all', label: language === 'ar' ? 'المدة كاملة' : 'All Time' },
+        { key: 'custom', label: language === 'ar' ? 'مدة مخصصة' : 'Custom' },
+    ];
+
+    const currentPeriod = useMemo(() => {
+        const preset = range === 'day' ? 'today' : range === 'all' ? 'all' : range;
+        return calcPeriod(preset as any, customFrom, customTo);
+    }, [range, customFrom, customTo]);
+
+    const isDateInPeriod = useCallback((dateStr: string) => {
+        if (!dateStr) return true;
+        const cleanDate = toIsoDate(dateStr);
+        if (range === 'day') return cleanDate === todayStr;
+        if (range === 'all') return true;
+        if (range === 'custom') {
+            if (customFrom && cleanDate < customFrom) return false;
+            if (customTo && cleanDate > customTo) return false;
+            return true;
+        }
+        const t = new Date(cleanDate + 'T12:00:00').getTime();
+        return t >= currentPeriod.from && t <= currentPeriod.to;
+    }, [range, todayStr, customFrom, customTo, currentPeriod]);
+
+    // مصروفات الفترة
+    const periodExpenses = useMemo(() => {
+        return branchExpenses.filter(e => isDateInPeriod(e.date));
+    }, [branchExpenses, isDateInPeriod]);
+
+    const totalPeriodExpenses = useMemo(() => {
+        return periodExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+    }, [periodExpenses]);
+
+    // المصروفات النقدية فقط للفرع بالفترة (تلك التي تُخصم من درج نقدية الفرع)
+    const periodCashExpenses = useMemo(() => {
+        return periodExpenses
+            .filter(e => isCashExpense(e))
+            .reduce((acc, curr) => acc + curr.amount, 0);
+    }, [periodExpenses]);
+
+    // فواتير الفرع بالفترة
+    const branchInvoices = useMemo(() => {
+        return state.invoices.filter(inv => {
+            if (inv.status === 'cancelled' || (inv as any).status === 'refunded') return false;
+            if (inv.locationId && String(inv.locationId) !== activeLocationId) return false;
+            return true;
+        });
+    }, [state.invoices, activeLocationId]);
+
+    const periodInvoices = useMemo(() => {
+        return branchInvoices.filter(inv => isDateInPeriod(inv.date));
+    }, [branchInvoices, isDateInPeriod]);
+
+    // مدفوعات ديون العملاء بالفترة
+    const periodCustomerPayments = useMemo(() => {
+        return (state.customerPayments || []).filter(cp => {
+            if (cp.locationId && String(cp.locationId) !== activeLocationId) return false;
+            return isDateInPeriod(cp.date);
+        });
+    }, [state.customerPayments, activeLocationId, isDateInPeriod]);
+
+    // رصيد بنكي / انستا
+    const bankInstaBreakdown = useMemo(() => {
+        let card = 0;
+        let instapay = 0;
+        periodInvoices.forEach(inv => {
+            if (inv.paymentParts && inv.paymentParts.length > 0) {
+                inv.paymentParts.forEach(p => {
+                    if (p.method === 'card') card += (p.amount || 0);
+                    else if (p.method === 'instapay') instapay += (p.amount || 0);
+                });
+            } else {
+                if (inv.paymentMethod === 'card' || inv.paymentMethod === 'visa') card += (inv.total || 0);
+                else if (inv.paymentMethod === 'instapay') instapay += (inv.total || 0);
+            }
+        });
+
+        periodCustomerPayments.forEach(cp => {
+            if (cp.paymentMethod === 'card') card += (cp.amount || 0);
+            else if (cp.paymentMethod === 'instapay') instapay += (cp.amount || 0);
+        });
+
+        return {
+            card: round2(card),
+            instapay: round2(instapay),
+            total: round2(card + instapay)
+        };
+    }, [periodInvoices, periodCustomerPayments]);
+
+    // المحافظ الإلكترونية بالفترة
+    const walletBreakdown = useMemo(() => {
+        let wallet = 0;
+        periodInvoices.forEach(inv => {
+            if (inv.paymentParts && inv.paymentParts.length > 0) {
+                inv.paymentParts.forEach(p => {
+                    if (p.method === 'wallet') wallet += (p.amount || 0);
+                });
+            } else if (inv.paymentMethod === 'wallet') {
+                wallet += (inv.total || 0);
+            }
+        });
+
+        periodCustomerPayments.forEach(cp => {
+            if (cp.paymentMethod === 'wallet') wallet += (cp.amount || 0);
+        });
+
+        return {
+            total: round2(wallet)
+        };
+    }, [periodInvoices, periodCustomerPayments]);
+
+    // المدينون (الديون والآجل)
+    const debtors = useMemo(() => {
+        return state.customers.filter(c => (c.balance || 0) > 0);
+    }, [state.customers]);
+
+    const totalCurrentDebts = useMemo(() => {
+        return round2(debtors.reduce((s, c) => s + (c.balance || 0), 0));
+    }, [debtors]);
+
+    const periodCreditSales = useMemo(() => {
+        return round2(periodInvoices.reduce((s, inv) => {
+            if (inv.paymentParts && inv.paymentParts.length > 0) {
+                return s + inv.paymentParts.filter(p => p.method === 'credit').reduce((ps, p) => ps + p.amount, 0);
+            }
+            return s + (inv.paymentMethod === 'credit' ? (inv.total || 0) : 0);
+        }, 0));
+    }, [periodInvoices]);
+
+    const periodDebtCollected = useMemo(() => {
+        return round2(periodCustomerPayments.reduce((s, cp) => s + (cp.amount || 0), 0));
+    }, [periodCustomerPayments]);
 
     // =========================================================================
     // حسابات حركة الدرج اليومية والمبلغ المتوقع والرصيد الافتتاحي بدقة 100%
@@ -204,8 +350,17 @@ export const ExpensesPage = () => {
         todayStaffCashPayouts
     ]);
 
+    const displayedExpenses = useMemo(() => {
+        return periodExpenses.filter(e => 
+            !searchFilter || 
+            e.title.toLowerCase().includes(searchFilter.toLowerCase()) || 
+            (e.category && e.category.toLowerCase().includes(searchFilter.toLowerCase())) ||
+            (e.description && e.description.toLowerCase().includes(searchFilter.toLowerCase()))
+        );
+    }, [periodExpenses, searchFilter]);
+
     return (
-        <div className="space-y-6 animate-fade-in pb-24">
+        <div className="space-y-5 animate-fade-in pb-24">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -224,105 +379,220 @@ export const ExpensesPage = () => {
                 </div>
             </div>
 
-            {/* Stats Cards Elevated */}
+            {/* شريط فلتر المدة المتطور */}
+            <div className="bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-3.5 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                    <Filter size={16} className="text-primary-500 shrink-0" />
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">فلتر المدة:</span>
+                    <span className="text-xs font-extrabold text-slate-900 dark:text-white bg-primary-500/10 text-primary-600 dark:text-primary-400 px-2.5 py-0.5 rounded-lg border border-primary-500/20">
+                        {rangeLabels.find(r => r.key === range)?.label}
+                    </span>
+                </div>
+
+                <div className="inline-flex bg-slate-100 dark:bg-slate-900/60 p-1 rounded-xl border border-slate-200 dark:border-slate-700 gap-1 flex-wrap w-full md:w-auto">
+                    {rangeLabels.map(item => (
+                        <button
+                            key={item.key}
+                            type="button"
+                            onClick={() => setRange(item.key)}
+                            className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
+                                range === item.key
+                                    ? 'bg-primary-600 text-white shadow-sm scale-105'
+                                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                            }`}
+                        >
+                            {item.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* حقول المدة المخصصة إذا اختار المستخدم مدة مخصصة */}
+            {range === 'custom' && (
+                <div className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl flex-wrap animate-fade-in">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">من تاريخ:</span>
+                        <input
+                            type="date"
+                            value={customFrom}
+                            onChange={e => setCustomFrom(e.target.value)}
+                            className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 outline-none focus:border-primary-500 font-mono"
+                        />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">إلى تاريخ:</span>
+                        <input
+                            type="date"
+                            value={customTo}
+                            onChange={e => setCustomTo(e.target.value)}
+                            className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 outline-none focus:border-primary-500 font-mono"
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* الصف الأول: 5 بطاقات إحصائية (إجمالي المصاريف، رصيد بنكي / انستا، مصروفات نقدية، المبلغ المتوقع بالدرج، الرصيد الافتتاحي) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
                 {/* 1. إجمالي المصاريف */}
                 <div className="bg-white dark:bg-slate-800/95 p-4 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 overflow-hidden flex flex-col justify-between">
                     <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-9 h-9 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
-                                <DollarSign size={18} />
-                            </div>
-                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">{t('total_expenses')}</span>
+                        <div className="w-9 h-9 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                            <DollarSign size={18} />
                         </div>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">إجمالي</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">
+                            {rangeLabels.find(r => r.key === range)?.label}
+                        </span>
                     </div>
                     <div className="mt-1 min-w-0">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                            {t('total_expenses')}
+                        </span>
                         <div className="flex items-baseline gap-1.5 flex-wrap">
-                            <h3 className="text-xl sm:text-2xl font-bold font-mono text-rose-500 tracking-tight">{totalExpenses.toLocaleString('en-US')}</h3>
+                            <h3 className="text-xl sm:text-2xl font-bold font-mono text-rose-500 tracking-tight">{totalPeriodExpenses.toLocaleString('en-US')}</h3>
                             <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-1 truncate">المصروفات المسجلة</p>
+                        <p className="text-[10px] text-slate-400 mt-1">المصروفات المسجلة بالفترة</p>
                     </div>
                 </div>
 
-                {/* 2. مبيعات اليوم (المصروفات) */}
-                <div className="bg-white dark:bg-slate-800/95 p-4 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 overflow-hidden flex flex-col justify-between">
+                {/* 2. رصيد بنكي / انستا (بديل مصاريف اليوم) */}
+                <div className="bg-white dark:bg-slate-800/95 p-4 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-sky-500/30 overflow-hidden flex flex-col justify-between">
                     <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-9 h-9 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
-                                <Calendar size={18} />
-                            </div>
-                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">{t('sold_today')} ({t('expenses')})</span>
+                        <div className="w-9 h-9 bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200/60 dark:border-sky-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                            <CreditCard size={18} />
                         </div>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">اليوم</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 shrink-0">
+                            بنك & إنستا
+                        </span>
                     </div>
                     <div className="mt-1 min-w-0">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                            رصيد بنكي / انستا
+                        </span>
                         <div className="flex items-baseline gap-1.5 flex-wrap">
-                            <h3 className="text-xl sm:text-2xl font-bold font-mono text-rose-500 tracking-tight">{todayExpenses.toLocaleString('en-US')}</h3>
+                            <h3 className="text-xl sm:text-2xl font-bold font-mono text-sky-600 dark:text-sky-400 tracking-tight">{bankInstaBreakdown.total.toLocaleString('en-US')}</h3>
                             <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-1 truncate">كافة طرق الدفع اليوم</p>
+                        <p className="text-[10px] text-slate-400 mt-1">
+                            بطاقة: {bankInstaBreakdown.card.toLocaleString('en-US')} | إنستا: {bankInstaBreakdown.instapay.toLocaleString('en-US')}
+                        </p>
                     </div>
                 </div>
 
                 {/* 3. مصروفات نقدية اليوم (من الدرج) */}
                 <div className="bg-white dark:bg-slate-800/95 p-4 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-slate-200/90 dark:border-slate-700/80 overflow-hidden flex flex-col justify-between">
                     <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-9 h-9 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
-                                <Wallet size={18} />
-                            </div>
-                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">{t('cash_expenses_today')}</span>
+                        <div className="w-9 h-9 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                            <Wallet size={18} />
                         </div>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">من الدرج</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">
+                            من الدرج
+                        </span>
                     </div>
                     <div className="mt-1 min-w-0">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                            {t('cash_expenses_today')}
+                        </span>
                         <div className="flex items-baseline gap-1.5 flex-wrap">
-                            <h3 className="text-xl sm:text-2xl font-bold font-mono text-rose-500 tracking-tight">{todayCashExpenses.toLocaleString('en-US')}</h3>
+                            <h3 className="text-xl sm:text-2xl font-bold font-mono text-rose-500 tracking-tight">{periodCashExpenses.toLocaleString('en-US')}</h3>
                             <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-1 truncate">المدفوعة نقداً اليوم</p>
+                        <p className="text-[10px] text-slate-400 mt-1">المدفوعة نقداً بالفترة</p>
                     </div>
                 </div>
 
                 {/* 4. بطاقة المبلغ المتوقع في الدرج */}
                 <div className="bg-white dark:bg-slate-800/95 p-4 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-emerald-500/30 overflow-hidden flex flex-col justify-between">
                     <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-9 h-9 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
-                                <Banknote size={18} />
-                            </div>
-                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">المبلغ المتوقع في الدرج</span>
+                        <div className="w-9 h-9 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                            <Banknote size={18} />
                         </div>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">لحظي</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                            لحظي
+                        </span>
                     </div>
                     <div className="mt-1 min-w-0">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                            المبلغ المتوقع في الدرج
+                        </span>
                         <div className="flex items-baseline gap-1.5 flex-wrap">
                             <h3 className="text-xl sm:text-2xl font-bold font-mono text-emerald-500 tracking-tight">{expectedDrawerCash.toLocaleString('en-US')}</h3>
                             <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-1 truncate">النقد الفعلي المفترض تواجده بالدرج</p>
+                        <p className="text-[10px] text-slate-400 mt-1">النقد الفعلي المفترض تواجده بالدرج</p>
                     </div>
                 </div>
 
                 {/* 5. بطاقة الرصيد الافتتاحي */}
                 <div className="bg-white dark:bg-slate-800/95 p-4 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-primary-500/30 overflow-hidden flex flex-col justify-between">
                     <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-9 h-9 bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-200/60 dark:border-primary-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
-                                <Wallet size={18} />
-                            </div>
-                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">الرصيد الافتتاحي</span>
+                        <div className="w-9 h-9 bg-primary-50 dark:bg-primary-950/60 text-primary-600 dark:text-primary-400 border border-primary-200/60 dark:border-primary-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                            <Wallet size={18} />
                         </div>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-500/20 shrink-0">بداية اليوم</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-500/20 shrink-0">
+                            بداية اليوم
+                        </span>
                     </div>
                     <div className="mt-1 min-w-0">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                            الرصيد الافتتاحي
+                        </span>
                         <div className="flex items-baseline gap-1.5 flex-wrap">
                             <h3 className="text-xl sm:text-2xl font-bold font-mono text-primary-600 dark:text-primary-400 tracking-tight">{drawerOpeningBalance.toLocaleString('en-US')}</h3>
                             <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-1 truncate">رصيد عهدة الدرج المعتمد</p>
+                        <p className="text-[10px] text-slate-400 mt-1">رصيد عهدة الدرج المعتمد</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* الصف الثاني بالأسفل: بطاقة المدينون وبطاقة المحافظ */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {/* 1. بطاقة المدينون (الديون والآجل) */}
+                <div className="bg-white dark:bg-slate-800/95 p-4 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-amber-500/30 overflow-hidden flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="w-9 h-9 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                            <Users size={18} />
+                        </div>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                            {debtors.length} عميل مدين
+                        </span>
+                    </div>
+                    <div className="mt-1 min-w-0">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                            المدينون (الديون والآجل)
+                        </span>
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                            <h3 className="text-xl sm:text-2xl font-bold font-mono text-rose-500 tracking-tight">{totalCurrentDebts.toLocaleString('en-US')}</h3>
+                            <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-1">
+                            مبيعات آجلة بالفترة: {periodCreditSales.toLocaleString('en-US')} ج.م | سداد ديون: {periodDebtCollected.toLocaleString('en-US')} ج.م
+                        </p>
+                    </div>
+                </div>
+
+                {/* 2. بطاقة المحافظ الإلكترونية */}
+                <div className="bg-white dark:bg-slate-800/95 p-4 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-indigo-500/30 overflow-hidden flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                            <Smartphone size={18} />
+                        </div>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shrink-0">
+                            محافظ كاش
+                        </span>
+                    </div>
+                    <div className="mt-1 min-w-0">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                            المحافظ الإلكترونية
+                        </span>
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                            <h3 className="text-xl sm:text-2xl font-bold font-mono text-indigo-600 dark:text-indigo-400 tracking-tight">{walletBreakdown.total.toLocaleString('en-US')}</h3>
+                            <span className="text-xs font-bold text-slate-400 shrink-0">{t('egp')}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-1">
+                            فودافون كاش، أورنج كاش، اتصالات والمحافظ الذكية
+                        </p>
                     </div>
                 </div>
             </div>
@@ -341,7 +611,7 @@ export const ExpensesPage = () => {
                         />
                     </div>
                     <span className="text-xs font-bold text-slate-400">
-                        {state.expenses.filter(e => !searchFilter || e.title.toLowerCase().includes(searchFilter.toLowerCase()) || e.category.toLowerCase().includes(searchFilter.toLowerCase())).length} مصروف مسجل
+                        {displayedExpenses.length} مصروف مسجل ({rangeLabels.find(r => r.key === range)?.label})
                     </span>
                 </div>
                 <div className="overflow-x-auto">
@@ -358,27 +628,27 @@ export const ExpensesPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {branchExpenses.length === 0 ? (
+                            {displayedExpenses.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="p-0 py-8">
                                         <EmptyState
                                             icon={TrendingUp}
-                                            title={language === 'ar' ? 'سجل المصروفات فارغ' : 'No expenses recorded'}
-                                            description={language === 'ar' ? 'لم تقم بتسجيل أي مصروفات تشغيلية لهذا الفرع بعد.' : 'No operational expenses recorded for this branch yet.'}
+                                            title={language === 'ar' ? 'لا توجد مصروفات في هذه الفترة' : 'No expenses recorded in this period'}
+                                            description={language === 'ar' ? `لم يتم العثور على أي مصروفات مسجلة في فترة (${rangeLabels.find(r => r.key === range)?.label}).` : 'No expenses match the selected period.'}
                                             action={
                                                 <Button 
                                                     variant="primary" 
                                                     onClick={() => setShowAddModal(true)}
                                                     className="text-xs py-2 px-5 shadow-sm font-bold"
                                                 >
-                                                    <Plus size={15} /> {language === 'ar' ? 'تسجيل أول مصروف' : 'Add First Expense'}
+                                                    <Plus size={15} /> {language === 'ar' ? 'تسجيل مصروف جديد' : 'Add Expense'}
                                                 </Button>
                                             }
                                         />
                                     </td>
                                 </tr>
                             ) : (
-                                branchExpenses.slice().reverse().map((expense) => (
+                                displayedExpenses.slice().reverse().map((expense) => (
                                     <tr key={expense.id} className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-100">
                                             {expense.title}
@@ -426,18 +696,59 @@ export const ExpensesPage = () => {
                     maxWidth="max-w-md"
                 >
                     <div className="space-y-4">
+                            {/* تصنيفات سريعة شائعة */}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">{language === 'ar' ? 'تصنيفات جاهزة سريعة:' : 'Quick Presets:'}</label>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {QUICK_EXPENSE_PRESETS.map((preset, idx) => (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={() => setNewExpense((prev: any) => ({ ...prev, title: preset.title, category: preset.category }))}
+                                            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-primary-50 dark:bg-slate-800/80 dark:hover:bg-primary-950/40 text-slate-700 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 border border-slate-200 dark:border-slate-700/80 transition-all cursor-pointer shadow-2xs active:scale-95"
+                                        >
+                                            {preset.title}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             <Input 
                                 label={t('expense_title')} 
                                 value={newExpense.title} 
                                 onChange={(e: any) => setNewExpense({...newExpense, title: e.target.value})} 
                             />
                             <div className="grid grid-cols-2 gap-4">
-                                <Input 
-                                    label={t('expense_amount')} 
-                                    type="number"
-                                    value={newExpense.amount} 
-                                    onChange={(e: any) => setNewExpense({...newExpense, amount: e.target.value})} 
-                                />
+                                <div>
+                                    <Input 
+                                        label={t('expense_amount')} 
+                                        type="number"
+                                        value={newExpense.amount} 
+                                        onChange={(e: any) => setNewExpense({...newExpense, amount: e.target.value})} 
+                                    />
+                                    {/* مبالغ نقدية سريعة */}
+                                    <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                                        {QUICK_AMOUNTS.map((amt) => (
+                                            <button
+                                                key={amt}
+                                                type="button"
+                                                onClick={() => setNewExpense((prev: any) => ({ ...prev, amount: (Number(prev.amount) || 0) + amt }))}
+                                                className="px-2 py-0.5 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-mono font-bold border border-emerald-500/20 transition-all cursor-pointer"
+                                                title={`+${amt}`}
+                                            >
+                                                +{amt}
+                                            </button>
+                                        ))}
+                                        {Number(newExpense.amount) > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setNewExpense((prev: any) => ({ ...prev, amount: 0 }))}
+                                                className="px-1.5 py-0.5 rounded-md text-[10px] text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer"
+                                                title={language === 'ar' ? 'تصفير' : 'Clear'}
+                                            ><X size={12} /></button>
+                                        )}
+                                    </div>
+                                </div>
                                 <Input 
                                     label={t('expense_category')} 
                                     value={newExpense.category} 

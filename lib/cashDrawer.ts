@@ -6,43 +6,17 @@
  * متوافق مع كافة طابعات الفواتير والإيصالات الحرارية القياسية (Epson, Xprinter, Star, Rongta, etc.)
  */
 export const openCashDrawerDevice = () => {
-  // 1. إرسال أمر النبضة القياسي إلى الطابعة عبر iframe صامت
+  // 1. إرسال أمر نبضة فتح الدرج الصامت عبر جسر النظام المباشر (Electron Desktop Bridge)
+  // بدون فتح نافذة حوار الطباعة (Print Dialog) المزعجة إطلاقاً
   try {
-    const frame = document.createElement('iframe');
-    frame.style.position = 'fixed';
-    frame.style.right = '0';
-    frame.style.bottom = '0';
-    frame.style.width = '0';
-    frame.style.height = '0';
-    frame.style.border = '0';
-    document.body.appendChild(frame);
-
-    // أوامر ESC/POS القياسية لطابعات الفواتير لفتح الدرج (Pin 2 + Pin 5):
-    // ESC p 0 25 250 (\x1B\x70\x00\x19\xFA)
-    // ESC p 1 25 250 (\x1B\x70\x01\x19\xFA)
-    // DLE DC4 1 0 5 (\x10\x14\x01\x00\x05)
-    const kickCommands = '\x1B\x70\x00\x19\xFA\x1B\x70\x01\x19\xFA\x10\x14\x01\x00\x05';
-
-    const doc = frame.contentWindow?.document;
-    if (doc) {
-      doc.open();
-      doc.write(`<!DOCTYPE html><html><head><style>@page{size:1mm auto;margin:0;}body{margin:0;padding:0;}</style></head><body><pre style="display:none;">${kickCommands}</pre></body></html>`);
-      doc.close();
-
-      try {
-        frame.contentWindow?.focus();
-        frame.contentWindow?.print();
-      } catch (err) {
-        // تجاهل أي قيود صامتة للمتصفح
-      }
-
-      setTimeout(() => {
-        try {
-          if (frame.parentNode) {
-            document.body.removeChild(frame);
-          }
-        } catch (e) {}
-      }, 1500);
+    const bridge = typeof window !== 'undefined' ? (window as any).procashier : undefined;
+    if (bridge?.printJob) {
+      bridge.printJob({
+        silent: true,
+        deviceName: '',
+        pageSize: { width: 48000, height: 10000 },
+        printBackground: false
+      }).catch(() => {});
     }
   } catch (err) {
     console.warn('Cash drawer pulse dispatch notice:', err);

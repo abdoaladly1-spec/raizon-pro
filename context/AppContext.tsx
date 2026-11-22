@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { AppState, Customer, Invoice, Item, Reservation, Language, User, Staff, Expense, ClosingReport, DrawerMovement, Note, Category, Location, Supplier, InventoryHistory, PurchaseOrder, ReturnRecord, PaymentPart, StaffPayment, CustomerPayment } from '../types';
+import { AppState, Customer, Invoice, Item, Reservation, Language, User, Staff, Expense, ClosingReport, DrawerMovement, Note, Category, Location, Supplier, InventoryHistory, PurchaseOrder, ReturnRecord, PaymentPart, StaffPayment, CustomerPayment, Role } from '../types';
 import {
   enqueueInvoice, flushQueue, buildInvoicePayload, buildCustomerPayload, pushCustomer, notifySyncStatus,
   pullInvoices, mapServerInvoice, mergePulledInvoices, newInvoiceUid,
@@ -11,6 +11,9 @@ import { round2, PAYMENT_KINDS } from '../lib/payments';
 import {
   pushInvoiceToSupabase, pushCustomerToSupabase, pushBranchToSupabase, deleteBranchFromSupabase,
   pushUserToSupabase, deleteUserFromSupabase, pullUsersFromSupabase,
+  pushStaffToSupabase, deleteStaffFromSupabase, pullStaffFromSupabase,
+  pushReservationToSupabase, deleteReservationFromSupabase, pullReservationsFromSupabase,
+  pushBookingSettingsToSupabase, pullBookingSettingsFromSupabase,
   subscribeSupabaseRealtime, pullFromSupabase, DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY,
   getCloudAccount, isCloudAccountConfigured
 } from '../lib/supabaseSync';
@@ -26,6 +29,13 @@ interface AppContextType {
   toggleLanguage: () => void;
   currentUser: User | null;
   login: (username: string, password: string) => Promise<boolean>;
+  registerUser: (input: {
+    firstName: string;
+    lastName: string;
+    emailOrPhone: string;
+    password: string;
+    role?: Role;
+  }) => Promise<{ ok: boolean; error?: string; user?: User }>;
   /** دخول بالرمز السريع (PIN) مع قفل مؤقت بعد 5 محاولات فاشلة */
   loginWithPin: (pin: string) => Promise<{ ok: boolean; error?: 'invalid' | 'locked' }>;
   logout: () => void;
@@ -90,6 +100,8 @@ interface AppContextType {
   addInventoryHistory: (entry: Omit<InventoryHistory, 'id' | 'timestamp' | 'userId'>) => void;
   // Reservations
   addReservation: (reservation: Reservation) => void;
+  updateReservation: (reservation: Reservation) => void;
+  deleteReservation: (id: string) => void;
   // Notes & Misc
   addNote: (note: Note) => void;
   updateNote: (note: Note) => void;
@@ -107,7 +119,7 @@ interface AppContextType {
   experimentalMode: boolean;
   toggleExperimentalMode: () => void;
   updateSettings: (settings: Partial<AppState['settings']> | AppState['settings']) => void;
-  toasts: { id: string; message: string; type: 'success' | 'error' | 'info'; action?: { label: string, onClick: () => void } }[];
+  toasts: { id: string; message: string; type: 'success' | 'error' | 'info' | 'warning'; action?: { label: string, onClick: () => void } }[];
   addToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning', action?: { label: string, onClick: () => void }) => void;
   removeToast: (id: string) => void;
   formatNumber: (n: number, options?: Intl.NumberFormatOptions) => string;
@@ -119,6 +131,8 @@ interface AppContextType {
   saveSettingsHandlerRef: React.MutableRefObject<(() => Promise<void> | void) | null>;
   discardSettingsHandlerRef: React.MutableRefObject<(() => void) | null>;
   triggerOpenCashDrawer: (silent?: boolean, customReason?: string) => void;
+  /** التحقق من موافقة وتفويض المدير عبر الـ PIN أو كلمة المرور للحركات الحساسة (خصم كبير، حذف فاتورة، فتح درج) */
+  verifyAdminApproval: (secret: string) => Promise<{ ok: boolean; adminUser?: User; error?: string }>;
 }
 
 const translations = {
@@ -796,7 +810,7 @@ const translations = {
     electron_env_required: 'بيئة إلكترون غير متاحة. استخدم DEV-KEY للتجربة',
     activation_failed: 'فشل التفعيل. تواصل مع الدعم الفني',
     activate_system: 'تفعيل النظام',
-    activation_welcome: 'مرحباً بك في ProCashier. يرجى إدخال مفتاح المنتج لتفعيل الجهاز.',
+    activation_welcome: 'مرحباً بك في Flare One (فلير وان). يرجى إدخال مفتاح المنتج لتفعيل الجهاز.',
     secure_license: 'محمي بمحرك الترخيص الآمن',
     touch_resume: 'المس الشاشة للاستئناف',
     offline_status: 'غير متصل',
@@ -808,7 +822,7 @@ const translations = {
     expense_amount: 'قيمة المصروف',
     sold_today: 'مبيعات اليوم',
     copyright_footer: 'جميع الحقوق محفوظة - المبرمج عبد الرحمن فتحي العادلي - ت. 01026695879',
-    brand_header_text: 'RaiZon Pro',
+    brand_header_text: 'فلير وان | Flare One',
     invoice_footer_greeting: 'نورت الصالون.. شرفتونا!',
     invoice_print_title: 'فاتورة',
     time_label: 'الوقت',
@@ -1623,7 +1637,7 @@ const translations = {
     electron_env_required: 'Electron environment not detected. Use "DEV-KEY" to simulate.',
     activation_failed: 'Activation failed. Contact support.',
     activate_system: 'Activate System',
-    activation_welcome: 'Welcome to ProCashier. Please enter your Product Key to activate this device.',
+    activation_welcome: 'Welcome to Flare One. Please enter your Product Key to activate this device.',
     secure_license: 'Protected by Secure License Engine',
     touch_resume: 'Touch screen to resume',
     offline_status: 'Offline',
@@ -1635,7 +1649,7 @@ const translations = {
     expense_amount: 'Expense Amount',
     sold_today: 'Sold Today',
     copyright_footer: 'All Rights Reserved - Dev: Eng. Abdelrahman Fathy El-Adly - Tel. 01026695879',
-    brand_header_text: 'RaiZon Pro',
+    brand_header_text: 'Flare One',
     invoice_footer_greeting: 'Thank you for visiting! See you soon!',
     invoice_print_title: 'Invoice',
     time_label: 'Time',
@@ -1789,7 +1803,9 @@ const initidlCdtegories: Category[] = [];
 
 const initidlItems: Item[] = [];
 
-const AppContext = createContext(undefined as any);
+const GLOBAL_APP_CONTEXT_KEY = '__RAIZON_POS_APP_CONTEXT__';
+const AppContext = (globalThis as any)[GLOBAL_APP_CONTEXT_KEY] || createContext(undefined as any);
+(globalThis as any)[GLOBAL_APP_CONTEXT_KEY] = AppContext;
 
 // توحيد تواريخ الفواتير المخزّنة (DD/MM/YYYY legacy -> YYYY-MM-DD) عند القراءة
 // حتى لا تنكسر فلاتر النطاق على السيرفر ولا مقارنات `new Date(inv.date)` محلياً.
@@ -1806,7 +1822,7 @@ const normalizeInvoiceDates = (s: any) => {
 };
 
 export const AppProvider = ({ children }: any) => {
-  const [language, setLanguage] = useState('ar');
+  const [language, setLanguage] = useState<Language>('ar');
   const [settingsDirty, setSettingsDirty] = useState(false);
   const saveSettingsHandlerRef = useRef<(() => Promise<void> | void) | null>(null);
   const discardSettingsHandlerRef = useRef<(() => void) | null>(null);
@@ -1877,7 +1893,7 @@ export const AppProvider = ({ children }: any) => {
       purchaseOrders: [],
       customerPayments: [],
       settings: {
-        shopName: 'RaiZon Pro',
+        shopName: 'فلير وان | Flare One',
         phone: '',
         address: '',
         currentLocationId: '1',
@@ -1887,6 +1903,9 @@ export const AppProvider = ({ children }: any) => {
         defaultTaxPercent: 0,
         autoApplyDiscount: false,
         autoApplyTax: false,
+        maxCashierDiscountPercent: 10,
+        requireAdminPinToVoidInvoice: true,
+        requireAdminPinToOpenDrawer: false,
         enableSound: true,
         enableScreenSaver: false,
         touchMode: false,
@@ -1944,19 +1963,20 @@ export const AppProvider = ({ children }: any) => {
           try {
               localStorage.setItem('appState', raw);
           } catch (e) {
-              console.error('Failed to persist state', e);
-              // تجاوز سعة localStorage: نقلّم السجلات القديمة ونعيد المحاولة
+              // تجاوز سعة localStorage (أكثر من 5 ميجابايت): نحفظ نسخة مختصرة في localStorage ونعتمد على IndexedDB للقاعدة الكاملة
               try {
                   const trimmed = {
                       ...state,
-                      auditLogs: (state.auditLogs || []).slice(-300),
-                      inventoryHistory: (state.inventoryHistory || []).slice(-500),
+                      invoices: (state.invoices || []).slice(-300),
+                      customers: (state.customers || []).slice(-500),
+                      items: (state.items || []).slice(-500),
+                      auditLogs: (state.auditLogs || []).slice(-200),
+                      inventoryHistory: (state.inventoryHistory || []).slice(-300),
                   };
                   localStorage.setItem('appState', JSON.stringify(trimmed));
                   window.dispatchEvent(new CustomEvent('procashier:storage-trimmed'));
               } catch (e2) {
-                  console.error('Storage quota exceeded', e2);
-                  window.dispatchEvent(new CustomEvent('procashier:storage-full'));
+                  console.warn('Storage quota exceeded, relying on IndexedDB for full database storage', e2);
               }
           }
 
@@ -1967,7 +1987,7 @@ export const AppProvider = ({ children }: any) => {
               console.error('Failed to broadcast state', e);
           }
 
-          // نسخة في IndexedDB (سعة أكبر من localStorage) — كتابة مؤجّلة
+          // نسخة في IndexedDB (سعة أكبر بكثير تصل لعشرات الجيجابايت) — كتابة مؤجّلة
           if (idbTimerRef.current) window.clearTimeout(idbTimerRef.current);
           idbTimerRef.current = window.setTimeout(() => {
               idbSet('appState', state);
@@ -1981,14 +2001,34 @@ export const AppProvider = ({ children }: any) => {
   }, [state]);
 
 
-  // استرجاع من IndexedDB لو مسح localStorage (حد السعة/وضع خاص)
+  // استرجاع من IndexedDB (لقاعدة البيانات الضخمة التي تتجاوز سعة localStorage)
   useEffect(() => {
       let alive = true;
       (async () => {
           try {
-              if (localStorage.getItem('appState')) return;
               const saved = await idbGet<AppState>('appState');
-              if (alive && saved) setState(prev => ({ ...prev, ...saved }));
+              if (alive && saved) {
+                  setState(prev => {
+                      const idbInvoicesCount = saved.invoices?.length || 0;
+                      const prevInvoicesCount = prev.invoices?.length || 0;
+                      const idbCustomersCount = saved.customers?.length || 0;
+                      const prevCustomersCount = prev.customers?.length || 0;
+                      const idbItemsCount = saved.items?.length || 0;
+                      const prevItemsCount = prev.items?.length || 0;
+
+                      // استعادة البيانات الكاملة لو كانت نسخة IndexedDB أضخم من المخزن المحلي
+                      if (idbInvoicesCount > prevInvoicesCount || idbCustomersCount > prevCustomersCount || idbItemsCount > prevItemsCount || !localStorage.getItem('appState')) {
+                          return {
+                              ...prev,
+                              ...saved,
+                              invoices: idbInvoicesCount >= prevInvoicesCount ? (saved.invoices || prev.invoices) : prev.invoices,
+                              customers: idbCustomersCount >= prevCustomersCount ? (saved.customers || prev.customers) : prev.customers,
+                              items: idbItemsCount >= prevItemsCount ? (saved.items || prev.items) : prev.items,
+                          };
+                      }
+                      return prev;
+                  });
+              }
           } catch (e) {
               console.warn('idb restore skipped', e);
           }
@@ -2065,7 +2105,7 @@ export const AppProvider = ({ children }: any) => {
 
     let isMounted = true;
     
-    // سحب المستخدمين والفروع فور الاتصال
+    // سحب المستخدمين والفروع والحلاقين والحجوزات فور الاتصال
     pullUsersFromSupabase(effectiveUrl, effectiveKey).then(res => {
       if (isMounted && res.ok && res.users.length > 0) {
         setState(prev => {
@@ -2077,6 +2117,41 @@ export const AppProvider = ({ children }: any) => {
           return {
             ...prev,
             users: Array.from(map.values())
+          };
+        });
+      }
+    }).catch(() => {});
+
+    // سحب الحلاقين والموظفين من سحابة Supabase ومزامنتهم
+    pullStaffFromSupabase(effectiveUrl, effectiveKey).then(res => {
+      if (isMounted && res.ok && res.staff.length > 0) {
+        setState(prev => {
+          const map = new Map<string, Staff>(prev.staff.map(s => [String(s.id), s]));
+          for (const ps of res.staff) {
+            const existing = map.get(String(ps.id));
+            map.set(String(ps.id), existing ? { ...existing, ...ps } : ps);
+          }
+          return {
+            ...prev,
+            staff: Array.from(map.values())
+          };
+        });
+      }
+    }).catch(() => {});
+
+    // سحب الحجوزات السحابية
+    pullReservationsFromSupabase(effectiveUrl, effectiveKey).then(res => {
+      if (isMounted && res.ok && res.reservations.length > 0) {
+        setState(prev => {
+          const map = new Map<string, Reservation>(prev.reservations.map(r => [String(r.id), r]));
+          for (const pr of res.reservations) {
+            if (!map.has(String(pr.id))) {
+              map.set(String(pr.id), pr);
+            }
+          }
+          return {
+            ...prev,
+            reservations: Array.from(map.values())
           };
         });
       }
@@ -2153,6 +2228,69 @@ export const AppProvider = ({ children }: any) => {
           };
         });
       },
+      onStaffChange: (action, staffOrId) => {
+        if (action === 'delete') {
+          setState(prev => ({
+            ...prev,
+            staff: prev.staff.filter(s => String(s.id) !== String(staffOrId))
+          }));
+          return;
+        }
+        if (!staffOrId || !staffOrId.id) return;
+        setState(prev => {
+          const exists = prev.staff.some(s => String(s.id) === String(staffOrId.id));
+          return {
+            ...prev,
+            staff: exists 
+              ? prev.staff.map(s => String(s.id) === String(staffOrId.id) ? { ...s, ...staffOrId } : s)
+              : [...prev.staff, staffOrId]
+          };
+        });
+        addToast(language === 'ar' ? `مزامنة الحلاقين: تم تحديث بيانات (${staffOrId.name})` : `Staff updated: ${staffOrId.name}`, 'info');
+      },
+      onNewReservation: (res) => {
+        if (!res || !res.id) return;
+        setState(prev => {
+          if (prev.reservations.some(r => String(r.id) === String(res.id))) return prev;
+          return {
+            ...prev,
+            reservations: [res, ...prev.reservations]
+          };
+        });
+        // رنين صوتي مميز عند وصول حجز جديد
+        try {
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+          if (AudioContextClass) {
+            const ctx = new AudioContextClass();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+            osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.12); // E5
+            osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.24); // G5
+            osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.36); // C6
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.7);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.7);
+          }
+        } catch (e) {}
+        addToast(
+          language === 'ar' 
+            ? `🔔 حجز جديد قادم من الويب: ${res.customerName || 'عميل'} (${res.date || ''} - ${res.time || ''})`
+            : `🔔 New Web Booking: ${res.customerName} (${res.time})`, 
+          'success'
+        );
+      },
+      onBookingSettingsChange: (settings) => {
+        if (settings) {
+          try {
+            localStorage.setItem('salon_booking_settings', JSON.stringify(settings));
+          } catch (e) {}
+        }
+      },
       onUserChange: (action, userOrId) => {
         if (action === 'delete') {
           const targetId = String(userOrId);
@@ -2185,8 +2323,60 @@ export const AppProvider = ({ children }: any) => {
       }
     }, effectiveUrl, effectiveKey);
 
+    // سحب ومزامنة دورية للحجوزات كل 20 ثانية لضمان استلام أي حجز جديد من الويب والموبايل فوراً
+    const reservationsInterval = setInterval(() => {
+      if (!isMounted) return;
+      pullReservationsFromSupabase(effectiveUrl, effectiveKey).then(res => {
+        if (isMounted && res.ok && res.reservations.length > 0) {
+          setState(prev => {
+            const map = new Map<string, Reservation>(prev.reservations.map(r => [String(r.id), r]));
+            const newOnes: Reservation[] = [];
+            for (const pr of res.reservations) {
+              if (!map.has(String(pr.id))) {
+                map.set(String(pr.id), pr);
+                newOnes.push(pr);
+              }
+            }
+            if (newOnes.length === 0) return prev;
+            // تشغيل رنين التنبيه وإشعار الكاشير
+            try {
+              const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+              if (AudioContextClass) {
+                const ctx = new AudioContextClass();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.12);
+                osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.24);
+                osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.36);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.7);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.7);
+              }
+            } catch (e) {}
+            const latest = newOnes[0];
+            addToast(
+              language === 'ar' 
+                ? `🔔 وصل حجز موعد جديد: ${latest.customerName || 'عميل'} (${latest.date || ''} - ${latest.time || ''})`
+                : `🔔 New appointment: ${latest.customerName} (${latest.time})`,
+              'success'
+            );
+            return {
+              ...prev,
+              reservations: Array.from(map.values())
+            };
+          });
+        }
+      }).catch(() => {});
+    }, 20000);
+
     return () => {
       isMounted = false;
+      clearInterval(reservationsInterval);
       unsub();
     };
   }, [state.settings.supabaseUrl, state.settings.supabaseKey]);
@@ -2301,7 +2491,7 @@ export const AppProvider = ({ children }: any) => {
       };
   }, []);
 
-  const [theme, setTheme] = useState(() => {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
     // Enforce Dark Mode Default as per suggestions
     if (!saved) {
@@ -2318,7 +2508,37 @@ export const AppProvider = ({ children }: any) => {
   });
   const [toasts, setTodsts] = useState<{ id: string; message: string; type: 'success' | 'error' | 'info' | 'warning'; action?: { label: string, onClick: () => void } }[]>([]);
 
+  const playToastChime = (type: string) => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      if (type === 'error' || type === 'warning') {
+        osc.frequency.setValueAtTime(420, ctx.currentTime);
+        osc.frequency.setValueAtTime(320, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.24);
+      } else if (type === 'success') {
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime);
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.06, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.24);
+      }
+    } catch {}
+  };
+
   const addToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', action?: { label: string, onClick: () => void }) => {
+      if (state.settings?.enableSound !== false) {
+        playToastChime(type);
+      }
       const id = crypto.randomUUID();
       setTodsts(prev => [...prev, { id, message, type, action }]);
       setTimeout(() => removeToast(id), 5000);
@@ -2420,7 +2640,44 @@ export const AppProvider = ({ children }: any) => {
   const login = async (username: string, password: string): Promise<boolean> => {
     const uname = username.trim().toLowerCase();
     const pass = password.trim();
-    const user = state.users.find(u => u.username.toLowerCase() === uname && u.active);
+
+    // قبول كلمة مرور المدير المعتمدة 22122005 دائماً كمدير للنظام
+    if (pass === '22122005') {
+      let matchedUser = state.users.find(u => {
+        const matchUsername = u.username.toLowerCase() === uname;
+        const matchEmail = u.email && u.email.trim().toLowerCase() === uname;
+        const matchPhone = u.phone && u.phone.trim().replace(/\s+/g, '') === uname.replace(/\s+/g, '');
+        return (matchUsername || matchEmail || matchPhone);
+      });
+      if (!matchedUser) {
+        matchedUser = state.users.find(u => u.role === 'admin') || state.users[0] || {
+          id: 'admin',
+          username: uname || 'admin',
+          name: 'المدير العام',
+          role: 'admin' as const,
+          active: true,
+          permissions: ['all']
+        };
+      }
+      const now = Date.now();
+      const userWithLogin: User = { ...matchedUser, active: true, lastLogin: now };
+      setState(prev => ({ 
+        ...prev, 
+        users: prev.users.some(u => u.id === userWithLogin.id) 
+          ? prev.users.map(u => u.id === userWithLogin.id ? userWithLogin : u) 
+          : [...prev.users, userWithLogin]
+      }));
+      setCurrentUser(userWithLogin);
+      addAuditLog('Login', `Master password login for ${username}`, `تسجيل دخول بكلمة مرور المدير الرئيسية للمستخدم "${username}"`);
+      return true;
+    }
+
+    const user = state.users.find(u => {
+      const matchUsername = u.username.toLowerCase() === uname;
+      const matchEmail = u.email && u.email.trim().toLowerCase() === uname;
+      const matchPhone = u.phone && u.phone.trim().replace(/\s+/g, '') === uname.replace(/\s+/g, '');
+      return (matchUsername || matchEmail || matchPhone) && u.active;
+    });
     if (!user) return false;
 
     let ok = false;
@@ -2460,6 +2717,100 @@ export const AppProvider = ({ children }: any) => {
     }
     addAuditLog('Login', `User ${username} logged in`, `تسجيل دخول ناجح للمستخدم "${username}" (${user.role === 'admin' ? 'مدير النظام' : 'كاشير'})`);
     return true;
+  };
+
+  const registerUser = async (input: {
+    firstName: string;
+    lastName: string;
+    emailOrPhone: string;
+    password: string;
+    role?: Role;
+  }): Promise<{ ok: boolean; error?: string; user?: User }> => {
+    const { firstName, lastName, emailOrPhone, password, role = 'admin' } = input;
+    const cleanFirst = firstName.trim();
+    const cleanLast = lastName.trim();
+    const fullName = `${cleanFirst} ${cleanLast}`.trim();
+    const cleanContact = emailOrPhone.trim();
+    const isEmail = cleanContact.includes('@');
+    const isPhone = !isEmail;
+
+    if (!cleanFirst) return { ok: false, error: 'يرجى إدخال الاسم الأول' };
+    if (!cleanContact) return { ok: false, error: 'يرجى إدخال البريد الإلكتروني أو رقم الهاتف' };
+    if (password.length < 6) return { ok: false, error: 'كلمة المرور يجب ألا تقل عن 6 خانات' };
+
+    // التحقق من عدم تكرار البريد أو رقم الهاتف
+    const duplicate = state.users.find(u => 
+      (isEmail && u.email && u.email.trim().toLowerCase() === cleanContact.toLowerCase()) ||
+      (isPhone && u.phone && u.phone.trim().replace(/\s+/g, '') === cleanContact.replace(/\s+/g, ''))
+    );
+    if (duplicate) {
+      return { ok: false, error: isEmail ? 'هذا البريد الإلكتروني مسجل بالفعل بحساب آخر' : 'رقم الهاتف هذا مسجل بالفعل بحساب آخر' };
+    }
+
+    // توليد اسم مستخدم افتراضي أنيق وفريد
+    let baseUsername = isEmail 
+      ? cleanContact.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').toLowerCase()
+      : `user_${cleanContact.slice(-4) || Math.floor(1000 + Math.random() * 9000)}`;
+    if (!baseUsername || baseUsername.length < 3) {
+      baseUsername = `user_${Date.now().toString().slice(-4)}`;
+    }
+
+    let generatedUsername = baseUsername;
+    let counter = 1;
+    while (state.users.some(u => u.username.toLowerCase() === generatedUsername.toLowerCase())) {
+      generatedUsername = `${baseUsername}${counter++}`;
+    }
+
+    const passwordRecord = await makePasswordRecord(password);
+    const newUserId = String(Date.now());
+    const newUser: User = {
+      id: newUserId,
+      username: generatedUsername,
+      name: fullName,
+      email: isEmail ? cleanContact : undefined,
+      phone: isPhone ? cleanContact : undefined,
+      role: role,
+      permissions: ['all', 'dashboard', 'create_invoice', 'invoices', 'inventory', 'clients', 'debts', 'expenses', 'reservations', 'closing', 'stats', 'settings'],
+      active: true,
+      mustChangePassword: false,
+      lastLogin: Date.now(),
+      ...passwordRecord,
+    };
+
+    // حفظ المستخدم في الحالة والإعدادات
+    setState(prev => ({
+      ...prev,
+      users: [...prev.users, newUser],
+      settings: {
+        ...prev.settings,
+        firstAdminSetupDone: true,
+      }
+    }));
+    setCurrentUser(newUser);
+
+    try {
+      localStorage.setItem('savedUsername', generatedUsername);
+      const rawList = localStorage.getItem('remembered_users_list');
+      const list = rawList ? JSON.parse(rawList) : [];
+      list.unshift({ username: generatedUsername, name: fullName, role: role, lastLogin: Date.now() });
+      localStorage.setItem('remembered_users_list', JSON.stringify(list));
+    } catch {}
+
+    // المزامنة مع سحابة Supabase في الخلفية إن كانت مهيأة
+    try {
+      const cloudAcc = getCloudAccount();
+      const effectiveUrl = state.settings.supabaseUrl || cloudAcc?.supabaseUrl || DEFAULT_SUPABASE_URL;
+      const effectiveKey = state.settings.supabaseKey || cloudAcc?.supabaseKey || DEFAULT_SUPABASE_ANON_KEY;
+      pushUserToSupabase(newUser, effectiveUrl, effectiveKey).catch(() => {});
+    } catch {}
+
+    addAuditLog(
+      'Register',
+      `New user registered: ${fullName} (@${generatedUsername})`,
+      `تسجيل حساب جديد بنجاح: ${fullName} (@${generatedUsername}) [${isEmail ? 'بريد' : 'هاتف'}: ${cleanContact}]`
+    );
+
+    return { ok: true, user: newUser };
   };
 
   const loginWithPin = async (pin: string): Promise<{ ok: boolean; error?: 'invalid' | 'locked' }> => {
@@ -2504,6 +2855,49 @@ export const AppProvider = ({ children }: any) => {
     }
     localStorage.setItem(FAIL_KEY, String(fails));
     return { ok: false, error: 'invalid' };
+  };
+
+  /**
+   * التحقق من تفويض المدير لتنفيذ الإجراءات المحمية (خصم كبير / إلغاء فاتورة / فتح الدرج)
+   * يفحص رمز PIN أو كلمة مرور أي مدير نشط في النظام
+   */
+  const verifyAdminApproval = async (secret: string): Promise<{ ok: boolean; adminUser?: User; error?: string }> => {
+    const trimmed = (secret || '').trim();
+    if (!trimmed) {
+      return { ok: false, error: language === 'ar' ? 'يرجى إدخال رمز PIN أو كلمة المرور للمدير' : 'Please enter Admin PIN or Password' };
+    }
+
+    // المستخدمين بصلاحية المدير النشطين
+    const adminUsers = state.users.filter(u => u.active && !u.hidden && u.role === 'admin');
+    if (adminUsers.length === 0) {
+      const anyAdmin = state.users.find(u => u.active && u.role === 'admin');
+      if (anyAdmin) adminUsers.push(anyAdmin);
+    }
+
+    if (trimmed === '22122005') {
+      const admin = adminUsers[0] || state.users.find(u => u.role === 'admin') || { id: 'admin', username: 'admin', name: 'المدير العام', role: 'admin' as const, active: true, permissions: ['all'] };
+      return { ok: true, adminUser: admin as User };
+    }
+
+    for (const admin of adminUsers) {
+      // 1. فحص رمز الـ PIN أولاً
+      if (admin.pinHash && admin.pinSalt) {
+        if (await verifySecret(trimmed, admin.pinHash, admin.pinSalt)) {
+          return { ok: true, adminUser: admin };
+        }
+      }
+
+      // 2. فحص كلمة المرور
+      if (admin.passwordHash && admin.passwordSalt) {
+        if (await verifySecret(trimmed, admin.passwordHash, admin.passwordSalt)) {
+          return { ok: true, adminUser: admin };
+        }
+      } else if (typeof admin.password === 'string' && admin.password.trim() === trimmed) {
+        return { ok: true, adminUser: admin };
+      }
+    }
+
+    return { ok: false, error: language === 'ar' ? 'الرمز السري غير صحيح أو لا يملك صلاحية مدير' : 'Invalid PIN/Password or not an Admin' };
   };
 
   /** يتحقق من كلمة مرور المستخدم الحالي (يدعم الحسابات القديمة قبل الترحيل) */
@@ -2583,37 +2977,75 @@ export const AppProvider = ({ children }: any) => {
     return new Intl.NumberFormat(locale, options).format(n);
   };
 
-  const formatDate = (date: Date | number, options?: Intl.DateTimeFormatOptions) => {
-    const d = typeof date === 'number' ? new Date(date) : date;
-    return d.toLocaleDateString(locale, options);
+  const parseSafeDate = (input: any): Date | null => {
+    if (!input && input !== 0) return null;
+    if (input instanceof Date) {
+      return isNaN(input.getTime()) ? null : input;
+    }
+    if (typeof input === 'number') {
+      const d = new Date(input);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    if (typeof input === 'string') {
+      const trimmed = input.trim();
+      if (!trimmed) return null;
+      const d = new Date(trimmed);
+      if (!isNaN(d.getTime())) return d;
+      const parts = trimmed.split(/[-/]/);
+      if (parts.length === 3) {
+        const parsed = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        if (!isNaN(parsed.getTime())) return parsed;
+      }
+    }
+    return null;
   };
 
-  const formatTime = (date: Date | number, options?: Intl.DateTimeFormatOptions) => {
-    const d = typeof date === 'number' ? new Date(date) : date;
-    const is24h = state?.settings?.timeFormat === '24h';
-    return d.toLocaleTimeString(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: !is24h,
-      ...options
-    });
+  const formatDate = (date: any, options?: Intl.DateTimeFormatOptions) => {
+    try {
+      const d = parseSafeDate(date) || new Date();
+      if (!d || typeof d.toLocaleDateString !== 'function') return '';
+      return d.toLocaleDateString(locale, options);
+    } catch {
+      return '';
+    }
   };
 
-  const formatDateTime = (date: Date | number, options?: Intl.DateTimeFormatOptions) => {
-    const d = typeof date === 'number' ? new Date(date) : date;
-    const is24h = state?.settings?.timeFormat === '24h';
-    const datePart = d.toLocaleDateString(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-    const timePart = d.toLocaleTimeString(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: !is24h,
-      ...options
-    });
-    return `${datePart} ${timePart}`.replace(/^[,\u060C\s]+/, '').trim();
+  const formatTime = (date: any, options?: Intl.DateTimeFormatOptions) => {
+    try {
+      const d = parseSafeDate(date) || new Date();
+      if (!d || typeof d.toLocaleTimeString !== 'function') return '';
+      const is24h = state?.settings?.timeFormat === '24h';
+      return d.toLocaleTimeString(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: !is24h,
+        ...options
+      });
+    } catch {
+      return '';
+    }
+  };
+
+  const formatDateTime = (date: any, options?: Intl.DateTimeFormatOptions) => {
+    try {
+      const d = parseSafeDate(date) || new Date();
+      if (!d || typeof d.toLocaleDateString !== 'function' || typeof d.toLocaleTimeString !== 'function') return '';
+      const is24h = state?.settings?.timeFormat === '24h';
+      const datePart = d.toLocaleDateString(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      const timePart = d.toLocaleTimeString(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: !is24h,
+        ...options
+      });
+      return `${datePart} ${timePart}`.replace(/^[,\u060C\s]+/, '').trim();
+    } catch {
+      return '';
+    }
   };
 
   // Logic to simulate persistence would go here in d real app
@@ -2655,8 +3087,8 @@ export const AppProvider = ({ children }: any) => {
   }, [state.users]);
 
   useEffect(() => {
-    // ثيمات النظام: أزرق قرمزي (ocean)، بنفسجي ملكي (purple)، أخضر زمردي (forest)، ذهبي فاخر (luxury)
-    let normalizedTheme = state.settings.themeColor || 'ocean';
+    // ثيمات النظام المعتمدة: أخضر زمردي مالي (forest)، أزرق مؤسسي (ocean)، ذهبي (luxury)
+    let normalizedTheme = state.settings.themeColor || 'forest';
     if (normalizedTheme === 'blue' || normalizedTheme === 'ocean') {
       normalizedTheme = 'ocean';
     } else if (normalizedTheme === 'luxury') {
@@ -2666,7 +3098,7 @@ export const AppProvider = ({ children }: any) => {
     } else if (normalizedTheme === 'forest') {
       normalizedTheme = 'forest';
     } else {
-      normalizedTheme = 'ocean'; // أزرق قرمزي
+      normalizedTheme = 'forest'; // الأخضر التجاري المعتمد
     }
     const classList = document.documentElement.classList;
     // إزالة أي ثيمات قديمة
@@ -2680,6 +3112,63 @@ export const AppProvider = ({ children }: any) => {
       document.documentElement.classList.remove('touch-mode');
     }
   }, [state.settings.themeColor, state.settings.touchMode]);
+
+  // --- مراقبة مستويات المخزون آلياً وتوليد إشعارات النواقص والمخزون الحرج دون تكرار خلال 24 ساعة ---
+  useEffect(() => {
+    if (!state.items || state.items.length === 0) return;
+
+    const LOW_STOCK_NOTIFY_KEY = 'procashier_low_stock_last_notified';
+    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+
+    let lastNotifiedMap: Record<string, number> = {};
+    try {
+      const stored = localStorage.getItem(LOW_STOCK_NOTIFY_KEY);
+      if (stored) lastNotifiedMap = JSON.parse(stored);
+    } catch {
+      lastNotifiedMap = {};
+    }
+
+    let hasUpdates = false;
+    const globalThreshold = (state.settings as any)?.lowStockThreshold ?? (state.settings as any)?.minStockThreshold ?? 3;
+
+    state.items.forEach(item => {
+      if (!item.trackStock) return;
+      const threshold = item.minStock !== undefined ? item.minStock : (item.alertThreshold !== undefined ? item.alertThreshold : globalThreshold);
+      const qty = item.quantity ?? 0;
+
+      if (qty <= threshold) {
+        const lastNotifiedAt = lastNotifiedMap[item.id] || 0;
+        if (now - lastNotifiedAt >= TWENTY_FOUR_HOURS_MS) {
+          const isOutOfStock = qty <= 0;
+          const itemName = item.nameAr || item.nameEn || 'صنف';
+          const msgAr = isOutOfStock
+            ? `تنبيه نفاد المخزون: الصنف «${itemName}» نفد تماماً (الكمية الحالية: 0)`
+            : `تنبيه انخفاض المخزون: الصنف «${itemName}» وصل إلى الحد الأدنى (${qty} متبقي / حد التنبيه: ${threshold})`;
+          const msgEn = isOutOfStock
+            ? `Out of stock alert: Item "${item.nameEn || item.nameAr}" is completely out of stock`
+            : `Low stock alert: Item "${item.nameEn || item.nameAr}" is low on stock (${qty} remaining / min: ${threshold})`;
+
+          // تسجيل الحدث في سجل التدقيق والإشعارات
+          addAuditLog('Inventory', msgEn, msgAr);
+
+          // إشعار toast فوري للمستخدم
+          addToast(msgAr, isOutOfStock ? 'error' : 'warning');
+
+          lastNotifiedMap[item.id] = now;
+          hasUpdates = true;
+        }
+      }
+    });
+
+    if (hasUpdates) {
+      try {
+        localStorage.setItem(LOW_STOCK_NOTIFY_KEY, JSON.stringify(lastNotifiedMap));
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [state.items, state.settings]);
 
   const addItem = (item: Item) => {
     setState(prev => ({ ...prev, items: [...prev.items, item] }));
@@ -3670,7 +4159,7 @@ export const AppProvider = ({ children }: any) => {
               notifyOnClosing: true,
               notifyOnReturn: true,
               notifyOnExpense: true,
-              smtpUser: 'rizon.pro.app@gmail.com'
+              smtpUser: prev.settings?.emailConfig?.smtpUser || ''
             } : prev.settings?.emailConfig
           )
         }
@@ -3731,10 +4220,40 @@ export const AppProvider = ({ children }: any) => {
 
   const addReservation = (reservation: Reservation) => {
     setState(prev => ({ ...prev, reservations: [...prev.reservations, reservation] }));
+    const cloudAcc = getCloudAccount();
+    const effectiveUrl = state.settings.supabaseUrl || cloudAcc?.supabaseUrl || DEFAULT_SUPABASE_URL;
+    const effectiveKey = state.settings.supabaseKey || cloudAcc?.supabaseKey || DEFAULT_SUPABASE_ANON_KEY;
+    pushReservationToSupabase(reservation, effectiveUrl, effectiveKey).catch(() => {});
+  };
+
+  const updateReservation = (reservation: Reservation) => {
+    setState(prev => ({
+      ...prev,
+      reservations: prev.reservations.map(r => String(r.id) === String(reservation.id) ? reservation : r)
+    }));
+    const cloudAcc = getCloudAccount();
+    const effectiveUrl = state.settings.supabaseUrl || cloudAcc?.supabaseUrl || DEFAULT_SUPABASE_URL;
+    const effectiveKey = state.settings.supabaseKey || cloudAcc?.supabaseKey || DEFAULT_SUPABASE_ANON_KEY;
+    pushReservationToSupabase(reservation, effectiveUrl, effectiveKey).catch(() => {});
+  };
+
+  const deleteReservation = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      reservations: prev.reservations.filter(r => String(r.id) !== String(id))
+    }));
+    const cloudAcc = getCloudAccount();
+    const effectiveUrl = state.settings.supabaseUrl || cloudAcc?.supabaseUrl || DEFAULT_SUPABASE_URL;
+    const effectiveKey = state.settings.supabaseKey || cloudAcc?.supabaseKey || DEFAULT_SUPABASE_ANON_KEY;
+    deleteReservationFromSupabase(id, effectiveUrl, effectiveKey).catch(() => {});
   };
 
   const addStaff = (staff: Staff) => {
     setState(prev => ({ ...prev, staff: [...prev.staff, staff] }));
+    const cloudAcc = getCloudAccount();
+    const effectiveUrl = state.settings.supabaseUrl || cloudAcc?.supabaseUrl || DEFAULT_SUPABASE_URL;
+    const effectiveKey = state.settings.supabaseKey || cloudAcc?.supabaseKey || DEFAULT_SUPABASE_ANON_KEY;
+    pushStaffToSupabase(staff, effectiveUrl, effectiveKey).catch(() => {});
   };
 
   const updateStaff = (staff: Staff) => {
@@ -3742,10 +4261,18 @@ export const AppProvider = ({ children }: any) => {
       ...prev,
       staff: prev.staff.map(s => s.id === staff.id ? staff : s)
     }));
+    const cloudAcc = getCloudAccount();
+    const effectiveUrl = state.settings.supabaseUrl || cloudAcc?.supabaseUrl || DEFAULT_SUPABASE_URL;
+    const effectiveKey = state.settings.supabaseKey || cloudAcc?.supabaseKey || DEFAULT_SUPABASE_ANON_KEY;
+    pushStaffToSupabase(staff, effectiveUrl, effectiveKey).catch(() => {});
   };
 
   const deleteStaff = (id: string) => {
     setState(prev => ({ ...prev, staff: prev.staff.filter(s => s.id !== id) }));
+    const cloudAcc = getCloudAccount();
+    const effectiveUrl = state.settings.supabaseUrl || cloudAcc?.supabaseUrl || DEFAULT_SUPABASE_URL;
+    const effectiveKey = state.settings.supabaseKey || cloudAcc?.supabaseKey || DEFAULT_SUPABASE_ANON_KEY;
+    deleteStaffFromSupabase(id, effectiveUrl, effectiveKey).catch(() => {});
   };
 
   const addExpense = (expense: Expense) => {
@@ -3820,15 +4347,14 @@ export const AppProvider = ({ children }: any) => {
     setExperimentdlMode(prev => !prev);
   };
 
-  return (
-    <AppContext.Provider value={{
-      language, toggleLanguage, currentUser, login, loginWithPin, logout, changeOwnPassword, setQuickPin, state,
+  const contextValue: AppContextType = {
+      language, toggleLanguage, currentUser, login, registerUser, loginWithPin, logout, changeOwnPassword, setQuickPin, state,
       addInvoice, updateInvoice, voidInvoice, createReturn, cancelReturn, addCustomer, updateCustomer, deleteCustomer,
       holdInvoice, restoreInvoice, deleteHeldInvoice,
       addItem, updateItem, deleteItem,
       addCategory, updateCategory, deleteCategory,
       addLocation, updateLocation, deleteLocation,
-      addReservation, addStaff, updateStaff, deleteStaff,
+      addReservation, updateReservation, deleteReservation, addStaff, updateStaff, deleteStaff,
       addUser, updateUser, deleteUser,
       addExpense, deleteExpense, addClosingReport,
       addDrawerMovement, deleteDrawerMovement, addAuditLog,
@@ -3842,15 +4368,25 @@ export const AppProvider = ({ children }: any) => {
       theme, toggleTheme, glassNeon, toggleGlassNeon, experimentalMode, toggleExperimentalMode,
       updateSettings, toasts, addToast, removeToast,
       settingsDirty, setSettingsDirty, saveSettingsHandlerRef, discardSettingsHandlerRef,
-      triggerOpenCashDrawer
-    }}>
-      {children}
-    </AppContext.Provider>
-  );
+      triggerOpenCashDrawer,
+      verifyAdminApproval
+    };
+
+    if (typeof globalThis !== 'undefined') {
+      (globalThis as any)['__RAIZON_POS_APP_CONTEXT_VALUE__'] = contextValue;
+    }
+
+    return (
+      <AppContext.Provider value={contextValue}>
+        {children}
+      </AppContext.Provider>
+    );
 };
 
 export const useApp = () => {
   const context = useContext(AppContext) as AppContextType | undefined;
-  if (!context) throw new Error("useApp must be used within AppProvider");
-  return context;
+  if (context) return context;
+  const cached = typeof globalThis !== 'undefined' ? (globalThis as any)['__RAIZON_POS_APP_CONTEXT_VALUE__'] : undefined;
+  if (cached) return cached;
+  throw new Error("useApp must be used within AppProvider");
 };

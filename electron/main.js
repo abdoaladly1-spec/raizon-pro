@@ -1167,7 +1167,7 @@ ipcMain.handle('updater:download', async (event, opts = {}) => {
   isDownloadingUpdate = true;
   downloadAbortController = new AbortController();
 
-  const filename = opts.filename || 'RaiZon_Pro_Update_Setup.exe';
+  const filename = opts.filename || 'Flare_One_Update_Setup.exe';
   const targetDir = os.tmpdir();
   const destPath = path.join(targetDir, filename);
 

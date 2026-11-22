@@ -196,8 +196,8 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
             />
             <span className="text-[13px] font-semibold text-[#ded7f7]">
               {isReadyToInstall 
-                ? 'مساعد تحديث RIZON PRO — تحديث جديد جاهز للتثبيت' 
-                : 'مساعد تحديث RIZON PRO — تحديث جديد متاح'}
+                ? 'مساعد تحديث فلير وان (Flare One) — تحديث جديد جاهز للتثبيت' 
+                : 'مساعد تحديث فلير وان (Flare One) — تحديث جديد متاح'}
             </span>
           </div>
 
@@ -218,7 +218,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
               className="w-8 h-7 flex items-center justify-center rounded text-[#8a80a8] hover:text-white hover:bg-[#dc2626] transition-colors disabled:opacity-40"
               title={isReadyToInstall ? 'تخطي التثبيت حالياً' : 'تأجيل التحديث (لاحقاً)'}
             >
-              <span className="text-sm">✕</span>
+              <X size={16} />
             </button>
           </div>
         </div>
@@ -236,7 +236,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/img/logo-transparent.png';
                   }}
-                  alt="RaiZon Pro Art" 
+                  alt="Flare One Art" 
                   className="relative z-10 w-32 h-32 object-contain rounded-2xl drop-shadow-[0_0_20px_rgba(147,51,244,0.6)]"
                 />
               </div>
@@ -278,7 +278,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
                     <Shield size={16} className="text-amber-400 shrink-0 mt-0.5" />
                     <div className="text-xs text-amber-200 leading-relaxed">
                       <span className="font-bold text-amber-300 block mb-0.5">
-                        🛡️ توفير باقة الإنترنت والأمان:
+                        توفير باقة الإنترنت والأمان:
                       </span>
                       تم تجاوز الإصدارات السابقة ({updateInfo.skippedVersions.join('، ')}) تلقائياً والترقية مباشرة لأحدث إصدار ({updateInfo.latestVersion}) لحماية باقة الإنترنت وتجنب التنزيلات المتكررة مع دمج كافة التحسينات لضمان أمان النظام.
                     </div>

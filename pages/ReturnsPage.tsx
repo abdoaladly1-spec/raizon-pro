@@ -9,6 +9,7 @@ import { escapeHtml } from '../lib/escapeHtml';
 import { ReturnReceipt, openReturnWhatsApp } from '../components/ReturnReceipt';
 import { printReceipt as printBridgeReceipt, saveReceiptPdf } from '../lib/printBridge';
 import { normalizePrintDesign } from '../lib/printDesign';
+import { AdminApprovalModal } from '../components/AdminApprovalModal';
 
 const METHODS: PaymentPart['method'][] = ['cash', 'card', 'wallet', 'instapay'];
 
@@ -33,8 +34,12 @@ const saveReasons = (list: { reason: string; count: number }[]) => {
 };
 
 export const ReturnsPage = () => {
-    const { state, t, language, createReturn, cancelReturn, addToast, formatNumber } = useApp();
+    const { state, t, language, createReturn, cancelReturn, addToast, formatNumber, currentUser, addAuditLog } = useApp();
     const [cancelTarget, setCancelTarget] = useState<ReturnRecord | null>(null);
+
+    // --- نافذة موافقة المدير بالـ PIN لحماية المرتجعات ---
+    const [showApprovalForReturn, setShowApprovalForReturn] = useState(false);
+    const [showApprovalForCancel, setShowApprovalForCancel] = useState(false);
 
     // --- نافذة إضافة مرتجع ---
     const [addOpen, setAddOpen] = useState(false);
@@ -214,13 +219,16 @@ export const ReturnsPage = () => {
         setConfirmed(true);
     };
 
-    const handleSave = () => {
+    const executeSaveReturn = (approverName?: string) => {
         if (!invoice) { addToast(t('return_no_invoice'), 'error'); return; }
         if (!reason.trim()) { addToast(t('return_reason_required'), 'error'); return; }
         const res = createReturn({ invoice, selections, refundParts, reason: reason.trim(), notes: undefined, locationId: activeLocationId } as any);
         if (!res.ok) {
             addToast(t(res.error || '') || t('return_error'), 'error');
             return;
+        }
+        if (approverName) {
+            addAuditLog('Return', `Return approved by manager: ${approverName}`, `تم تسجيل واعتماد مرتجع فاتورة #${invoice.id} بقيمة ${round2(res.record?.refundAmount || 0)} ج.م بموافقة المدير: ${approverName}`);
         }
         // حفظ السبب في الاقتراحات (مرة واحدة + عدّاد تكرار)
         const trimmed = reason.trim();
@@ -238,16 +246,40 @@ export const ReturnsPage = () => {
         setPrintTarget({ rec, inv: target });
     };
 
-    // تأكيد إلغاء المرتجع وإعادة الأصناف لفاتورة العميل
-    const handleConfirmCancelReturn = () => {
+    const handleSave = () => {
+        if (!invoice) { addToast(t('return_no_invoice'), 'error'); return; }
+        if (!reason.trim()) { addToast(t('return_reason_required'), 'error'); return; }
+        // الكاشير يتطلب موافقة وتفويض المدير بالـ PIN لحماية الإيرادات
+        if (currentUser?.role !== 'admin') {
+            setShowApprovalForReturn(true);
+            return;
+        }
+        executeSaveReturn();
+    };
+
+    const executeCancelReturn = (approverName?: string) => {
         if (!cancelTarget) return;
         const res = cancelReturn(cancelTarget.uid);
         if (!res.ok) {
             addToast(t(res.error || 'return_error') || 'فشل إلغاء المرتجع', 'error');
             return;
         }
+        if (approverName) {
+            addAuditLog('Return', `Return cancellation approved by manager: ${approverName}`, `تم إلغاء المرتجع #${cancelTarget.uid} بموافقة وتفويض المدير: ${approverName}`);
+        }
         addToast(language === 'ar' ? 'تم إلغاء المرتجع ورفع الإيرادات مجدداً وإعادة الأصناف لفاتورة العميل' : 'Return cancelled and items restored to invoice', 'success');
         setCancelTarget(null);
+    };
+
+    // تأكيد إلغاء المرتجع وإعادة الأصناف لفاتورة العميل
+    const handleConfirmCancelReturn = () => {
+        if (!cancelTarget) return;
+        // الكاشير يتطلب موافقة وتفويض المدير بالـ PIN لإلغاء المرتجع
+        if (currentUser?.role !== 'admin') {
+            setShowApprovalForCancel(true);
+            return;
+        }
+        executeCancelReturn();
     };
 
     // حذف اقتراح سبب
@@ -965,6 +997,36 @@ export const ReturnsPage = () => {
                     </div>
                 </ModalShell>
             )}
+
+            {/* تفويض المدير لاعتماد مرتجع الفاتورة للكاشير */}
+            <AdminApprovalModal
+                isOpen={showApprovalForReturn}
+                onClose={() => setShowApprovalForReturn(false)}
+                actionTitle={language === 'ar' ? 'اعتماد مرتجع فاتورة' : 'Approve Return'}
+                actionDescription={language === 'ar' 
+                    ? 'يتطلب تسجيل مرتجع مالي وإخراج أموال من الدرج موافقة وتفويض المدير بالـ PIN لحماية الإيرادات والمخزون'
+                    : 'Manager PIN authorization required to process refund from register'}
+                targetDetails={invoice ? `فاتورة #${invoice.id} - إجمالي المرتجع: ${refundPreview} ج.م | العميل: ${invoice.customerName || 'عميل نقدي'}` : undefined}
+                onApproved={(adminUser) => {
+                    setShowApprovalForReturn(false);
+                    executeSaveReturn(adminUser.name);
+                }}
+            />
+
+            {/* تفويض المدير لإلغاء مرتجع سابق للكاشير */}
+            <AdminApprovalModal
+                isOpen={showApprovalForCancel}
+                onClose={() => setShowApprovalForCancel(false)}
+                actionTitle={language === 'ar' ? 'اعتماد إلغاء المرتجع' : 'Approve Return Cancellation'}
+                actionDescription={language === 'ar'
+                    ? 'يتطلب إلغاء المرتجع وإعادة احتساب الفاتورة تفويض واعتماد المدير بالـ PIN'
+                    : 'Manager PIN authorization required to cancel return record'}
+                targetDetails={cancelTarget ? `مرتجع #${cancelTarget.uid} بقيمة ${cancelTarget.refundAmount} ج.م` : undefined}
+                onApproved={(adminUser) => {
+                    setShowApprovalForCancel(false);
+                    executeCancelReturn(adminUser.name);
+                }}
+            />
 
             </Card>
         </div>

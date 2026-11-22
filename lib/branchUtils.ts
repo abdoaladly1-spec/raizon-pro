@@ -31,6 +31,14 @@ export const getActiveBranch = (locationId?: string | null, locations: Location[
   return activeLocations.find(l => String(l.id) === String(locationId)) || getMainBranch(activeLocations);
 };
 
+export const getStockForBranch = (item: any, locId?: string): number => {
+    if (!item) return 0;
+    if (locId && item.locationQuantities && typeof item.locationQuantities[locId] === 'number') {
+        return item.locationQuantities[locId];
+    }
+    return typeof item.quantity === 'number' ? item.quantity : 0;
+};
+
 /**
  * التحقق من كلمة مرور المدير لتفويض الطباعة
  */

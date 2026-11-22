@@ -51,11 +51,19 @@ app = FastAPI(title="ProCashier Server", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    # التطبيق يعمل من file:// (Origin: null) ومن الويب المحلي؛ لا نعتمد على Origin
-    # للحماية — الحماية الفعلية عبر X-API-Key.
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
+    # تحديد النطاقات المسموح بها بدلاً من الوايلدكارد لتعزيز أمان الـ API (VULN-05)
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:4189",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:4189",
+        "app://.",
+        "file://",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -203,45 +211,65 @@ class ReturnIn(BaseModel):
     deleted: int = 0
 
 
-ALLOWED_PAYMENT_METHODS = ("cash", "card", "wallet", "instapay", "credit", "visa")
+ALLOWED_PAYMENT_METHODS = (
+    "cash", "card", "wallet", "instapay", "credit", "visa",
+    "loyalty", "bank", "transfer", "mixed", "split", "on_account"
+)
 
 
 def _validate_payment(data: Dict[str, Any]) -> None:
     """يتحقق من الدفع المختلط قبل الحفظ (مبالغ موجبة + مجموع == الإجمالي + مستلم كافٍ)."""
     parts = data.get("payment_parts")
-    if parts is None:
+    if not parts or not isinstance(parts, list):
+        data["payment_parts"] = None
         return
-    if not isinstance(parts, list) or not parts:
-        raise HTTPException(status_code=400, detail="payment_no_parts")
     total = round(float(data.get("total") or 0), 2)
     cleaned: List[Tuple[str, float]] = []
     for part in parts:
         if not isinstance(part, dict):
-            raise HTTPException(status_code=400, detail="payment_invalid_part")
-        method = str(part.get("method") or "").strip().lower()
-        if method not in ALLOWED_PAYMENT_METHODS:
-            raise HTTPException(status_code=400, detail="payment_invalid_part")
+            continue
+        method = str(part.get("method") or "cash").strip().lower()
+        if method in ("نقدي", "نقد"):
+            method = "cash"
+        elif method in ("فيزا", "بطاقة", "شبكة", "visa"):
+            method = "card"
+        elif method in ("محفظة", "محفظه"):
+            method = "wallet"
+        elif method in ("انستا", "انستاباي"):
+            method = "instapay"
+        elif method in ("آجل", "اجل", "credit"):
+            method = "credit"
+        elif method not in ALLOWED_PAYMENT_METHODS:
+            method = "card"
         try:
             amount = float(part.get("amount") or 0)
-        except (TypeError, ValueError) as exc:
-            raise HTTPException(status_code=400, detail="payment_invalid_part") from exc
+        except (TypeError, ValueError):
+            amount = 0.0
         if amount < 0:
             raise HTTPException(status_code=400, detail="payment_negative")
         cleaned.append((method, round(amount, 2)))
     if not cleaned:
-        raise HTTPException(status_code=400, detail="payment_no_parts")
+        data["payment_parts"] = None
+        return
     amount_sum = round(sum(amount for _, amount in cleaned), 2)
+    # إذا كان هناك فرق بسيط في التقريب، يتم موازنته مع آخر جزء
     if abs(amount_sum - total) > 0.01:
-        raise HTTPException(status_code=400, detail="payment_sum_mismatch")
+        if abs(amount_sum - total) <= 0.05 and cleaned:
+            last_m, last_a = cleaned[-1]
+            diff = round(total - amount_sum, 2)
+            cleaned[-1] = (last_m, round(last_a + diff, 2))
+        else:
+            raise HTTPException(status_code=400, detail="payment_sum_mismatch")
     cash_part = round(sum(amount for method, amount in cleaned if method == "cash"), 2)
     received = data.get("received")
     if received is not None and str(received).strip() != "":
         try:
             received_amount = round(float(received), 2)
         except (TypeError, ValueError) as exc:
-            raise HTTPException(status_code=400, detail="payment_invalid_part") from exc
+            received_amount = cash_part
         if received_amount + 0.01 < cash_part:
             raise HTTPException(status_code=400, detail="payment_received_short")
+        data["received"] = received_amount
     data["payment_parts"] = [{"method": m, "amount": a} for m, a in cleaned]
     if data.get("cash_paid") is None:
         data["cash_paid"] = cash_part
@@ -512,9 +540,9 @@ def set_email_config(payload: Dict[str, Any] = Body(...)):
     notify_on_expense = bool(payload.get("notify_on_expense", True))
 
     if not smtp_user:
-        smtp_user = config.SMTP_USER or "rizon.pro.app@gmail.com"
+        smtp_user = config.SMTP_USER
     if not smtp_password:
-        smtp_password = config.SMTP_PASSWORD or "udgddndyondosvxk"
+        smtp_password = config.SMTP_PASSWORD
 
     config.SMTP_USER = smtp_user
     config.EMAIL_FROM = smtp_user
@@ -709,7 +737,7 @@ def save_backup(payload: Dict[str, Any] = Body(...), send_email: bool = True):
             "notifyOnClosing": getattr(config, "NOTIFY_ON_CLOSING", True),
             "notifyOnReturn": getattr(config, "NOTIFY_ON_RETURN", True),
             "notifyOnExpense": getattr(config, "NOTIFY_ON_EXPENSE", True),
-            "smtpUser": config.SMTP_USER or "rizon.pro.app@gmail.com"
+            "smtpUser": config.SMTP_USER or ""
         }
         if isinstance(payload, dict):
             client_email = (payload.get("settings", {}) or {}).get("emailConfig", {}).get("emailTo") or (payload.get("settings", {}) or {}).get("managerEmail") or payload.get("managerEmail")

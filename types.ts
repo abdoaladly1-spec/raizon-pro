@@ -49,6 +49,8 @@ export interface User {
   id: string;
   username: string;
   name: string;
+  email?: string;
+  phone?: string;
   /** @deprecated كلمة مرور قديمة (نص صريح) — تُرحَّل إلى hash عند أول دخول ثم تُمسح */
   password?: string;
   /** PBKDF2-SHA256 hash (base64) */
@@ -107,6 +109,8 @@ export interface Item {
   /** أرصدة المخزون المنفصلة لكل فرع (locationId -> quantity) */
   locationQuantities?: Record<string, number>;
   alertThreshold: number;
+  /** الحد الأدنى للمخزون (مرادف alertThreshold للتوافق والمراقبة الذكية) */
+  minStock?: number;
   variants: ItemVariant[];
   modifiers: ItemModifier[];
   image?: string;
@@ -515,6 +519,7 @@ export interface AppState {
     enableScreenSaver: boolean;
     touchMode: boolean;
     themeColor: 'blue' | 'ocean' | 'sunset' | 'forest' | 'midnight' | 'luxury' | 'purple';
+    backgroundStyle?: 'emerald' | 'aurora' | 'sunset' | 'tech_grid' | 'minimal';
     loyaltyEnabled: boolean;
     loyaltyMinSpend: number;
     loyaltyPointsAward: number;
@@ -534,6 +539,12 @@ export interface AppState {
     /** تم بذر خدمات الصالون في هذه القاعدة (مرة واحدة، إضافة فقط دون حذف) */
     salonServicesSeeded?: boolean;
     timeFormat?: '12h' | '24h';
+    /** أقصى نسبة خصم مسموحة للكاشير دون موافقة المدير (الافتراضي 10%) */
+    maxCashierDiscountPercent?: number;
+    /** اشتراط موافقة المدير بالـ PIN لحذف أو إلغاء أي فاتورة مسجلة (الافتراضي true) */
+    requireAdminPinToVoidInvoice?: boolean;
+    /** اشتراط موافقة المدير بالـ PIN لفتح الدرج يدوياً (الافتراضي false) */
+    requireAdminPinToOpenDrawer?: boolean;
     autoBackupOnClosing?: boolean;
     /** تفعيل النسخ الاحتياطي التلقائي (محلي كل 6 ساعات + سحابي بالبريد 12:00 منتصف الليل) */
     autoBackupEnabled?: boolean;

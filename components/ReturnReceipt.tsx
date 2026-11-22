@@ -26,7 +26,7 @@ export const ReturnReceipt = ({
   const live = normalizePrintDesign(state.settings.printDesign);
   const design = resolvePrintDesign(invoice, live);
 
-  const shopName = (state.settings.shopName || 'RaiZon Pro').trim();
+  const shopName = (state.settings.shopName || 'فلير وان | Flare One').trim();
   const shopPhone = (state.settings.phone || '').trim();
   const shopAddress = (state.settings.address || '').trim();
 
@@ -398,7 +398,7 @@ export const ReturnReceipt = ({
             {rtl ? 'نسعد دائماً بخدمتكم' : 'Thank you for your business'}
           </p>
           <p className="text-[8px] text-slate-600 font-mono mt-0.5">
-            RaiZon Pro POS System
+            Flare One POS System • فلير وان
           </p>
         </div>
       </div>

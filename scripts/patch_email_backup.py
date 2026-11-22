@@ -73,7 +73,7 @@ save_backup_replacement = """        BACKUP_DIR.mkdir(parents=True, exist_ok=Tru
             "notifyOnClosing": getattr(config, "NOTIFY_ON_CLOSING", True),
             "notifyOnReturn": getattr(config, "NOTIFY_ON_RETURN", True),
             "notifyOnExpense": getattr(config, "NOTIFY_ON_EXPENSE", True),
-            "smtpUser": config.SMTP_USER or "rizon.pro.app@gmail.com"
+            "smtpUser": config.SMTP_USER or ""
         }
         if isinstance(payload, dict):
             client_email = (payload.get("settings", {}) or {}).get("emailConfig", {}).get("emailTo") or (payload.get("settings", {}) or {}).get("managerEmail") or payload.get("managerEmail")

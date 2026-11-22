@@ -1,80 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'repositories/supabase_repository.dart';
+import 'screens/auth_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/manager_dashboard_screen.dart';
+import 'theme/app_theme.dart';
 
-import 'api.dart';
-import 'screens/customers_screen.dart';
-import 'screens/invoices_screen.dart';
-import 'screens/settings_screen.dart';
-import 'screens/stats_screen.dart';
-
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppApi.load();
-  runApp(const ViewerApp());
+  runApp(const FlareOneApp());
 }
 
-class ViewerApp extends StatelessWidget {
-  const ViewerApp({super.key});
+class FlareOneApp extends StatelessWidget {
+  const FlareOneApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    Widget initialScreen = const AuthScreen();
+    final user = SupabaseRepository.currentUser;
+    if (user != null) {
+      initialScreen = user.isAdmin ? const ManagerDashboardScreen() : const HomeScreen();
+    }
+
     return MaterialApp(
-      title: 'ProCashier',
+      title: 'فلير وان - Flare One',
       debugShowCheckedModeBanner: false,
-      locale: const Locale('ar'),
-      supportedLocales: const [Locale('ar'), Locale('en')],
+      theme: AppTheme.darkTheme,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(
-        colorSchemeSeed: const Color(0xFF0EA5E9),
-        useMaterial3: true,
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        colorSchemeSeed: const Color(0xFF0EA5E9),
-        useMaterial3: true,
-        brightness: Brightness.dark,
-      ),
-      themeMode: ThemeMode.system,
-      home: const HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  int _index = 0;
-
-  static const _screens = [
-    InvoicesScreen(),
-    StatsScreen(),
-    CustomersScreen(),
-    SettingsScreen(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(index: _index, children: _screens),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'الفواتير'),
-          NavigationDestination(icon: Icon(Icons.bar_chart_outlined), selectedIcon: Icon(Icons.bar_chart), label: 'الإحصائيات'),
-          NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'العملاء'),
-          NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'الإعدادات'),
-        ],
-      ),
+      supportedLocales: const [
+        Locale('ar', 'EG'),
+      ],
+      locale: const Locale('ar', 'EG'),
+      home: initialScreen,
     );
   }
 }

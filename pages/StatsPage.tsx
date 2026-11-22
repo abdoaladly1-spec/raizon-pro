@@ -774,15 +774,13 @@ export const StatsPage = () => {
                                         onClick={() => setPreset(o.v)}
                                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                                             active
-                                                ? isAll
-                                                    ? 'bg-purple-600 text-white shadow-md shadow-purple-600/25 ring-2 ring-purple-500/20'
-                                                    : 'bg-primary-600 text-white shadow-sm ring-2 ring-primary-500/20'
+                                                ? 'bg-primary-600 text-white shadow-md shadow-primary-600/25 ring-2 ring-primary-500/20'
                                                 : isAll
-                                                    ? 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60'
+                                                    ? 'bg-primary-50 hover:bg-primary-100 dark:bg-primary-950/40 dark:hover:bg-primary-900/60 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800/60'
                                                     : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/60'
                                         }`}
                                     >
-                                        {isAll && <span>♾️</span>}
+                                        
                                         <span>{t(o.k)}</span>
                                     </button>
                                 );
@@ -790,16 +788,16 @@ export const StatsPage = () => {
                         </div>
 
                         {preset === 'all' && (
-                            <div className="p-3 bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/50 rounded-xl text-xs text-purple-800 dark:text-purple-200 flex flex-wrap items-center justify-between gap-2 mb-3 animate-fade-in">
+                            <div className="p-3 bg-primary-50/70 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800/50 rounded-xl text-xs text-primary-800 dark:text-primary-200 flex flex-wrap items-center justify-between gap-2 mb-3 animate-fade-in">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-base">♾️</span>
+                                    <span className="text-xs font-bold">الكل</span>
                                     <span className="font-bold">
                                         {language === 'ar'
                                             ? 'عرض المدة الكاملة: يتم احتساب كافة العمليات والبيانات الحسابية منذ بداية تفعيل النظام وحتى اللحظة بدون أي استثناء أو انقطاع.'
                                             : 'All-Time Mode: Full lifetime calculations since the system was initialized.'}
                                     </span>
                                 </div>
-                                <span className="font-mono font-bold px-2 py-0.5 rounded-lg bg-purple-200/60 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200 text-[11px]">
+                                <span className="font-mono font-bold px-2 py-0.5 rounded-lg bg-primary-200/60 dark:bg-primary-900/60 text-primary-900 dark:text-primary-200 text-[11px]">
                                     {invoices.length} {language === 'ar' ? 'فاتورة كلية' : 'total invoices'}
                                 </span>
                             </div>

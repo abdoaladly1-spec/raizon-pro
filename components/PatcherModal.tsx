@@ -542,7 +542,7 @@ export const PatcherModal: React.FC<PatcherModalProps> = ({ isOpen, onClose, onA
               <h2 className="text-base font-black text-white flex items-center gap-2">
                 <span className="text-amber-400">لوحة تحكم</span> <span className="text-purple-400">التراخيص — Rizon Patcher</span>
               </h2>
-              <p className="text-[11px] text-slate-400">نظام إدارة وتوليد مفاتيح RaiZon Pro</p>
+              <p className="text-[11px] text-slate-400">نظام إدارة وتوليد مفاتيح فلير وان (Flare One)</p>
             </div>
           </div>
 
@@ -1004,7 +1004,7 @@ export const PatcherModal: React.FC<PatcherModalProps> = ({ isOpen, onClose, onA
 
         {/* الشريط السفلي */}
         <div className="px-6 py-3 border-t border-slate-800 bg-slate-950/70 flex items-center justify-between text-xs text-slate-500 shrink-0">
-          <span>باتشر تراخيص RaiZon Pro</span>
+          <span>باتشر تراخيص فلير وان (Flare One)</span>
           <div className="flex items-center gap-4">
             <button
               type="button"

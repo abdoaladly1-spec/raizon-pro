@@ -291,7 +291,7 @@ export const generateInvoicePdfBlob = async (
 
   ctx.fillStyle = '#94a3b8';
   ctx.font = 'normal 10px "Cairo", "Segoe UI", Tahoma, Arial, sans-serif';
-  ctx.fillText('منظومة الفواتير الإلكترونية المعتمدة · RaiZon Pro', w / 2, y);
+  ctx.fillText('منظومة الفواتير الإلكترونية المعتمدة · فلير وان (Flare One)', w / 2, y);
 
   // 6. تحويل الكانفاس إلى مستند PDF متناسق
   const imgData = canvas.toDataURL('image/png', 0.98);

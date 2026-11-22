@@ -305,7 +305,7 @@ export const ClosingHistoryPage: React.FC<Props> = ({ onNavigate }) => {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-sm border border-slate-300 dark:border-slate-700 active:scale-95 transition-all cursor-pointer"
             title={isAr ? 'تصدير وطباعة تقرير PDF مجمع للفترة المحددة' : 'Export PDF'}
           >
-            <FileText size={18} className="text-purple-500" />
+            <FileText size={18} className="text-primary-500" />
             <span>{isAr ? 'تصدير PDF' : 'Export PDF'}</span>
           </button>
 
@@ -377,9 +377,9 @@ export const ClosingHistoryPage: React.FC<Props> = ({ onNavigate }) => {
           </div>
           <p className="text-xs font-semibold mt-2">
             {summary.totalDiff === 0 ? (
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ {isAr ? 'مطابقة تامة بدون عجز' : 'Perfect match'}</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">{isAr ? 'مطابقة تامة بدون عجز' : 'Perfect match'}</span>
             ) : summary.totalDiff < 0 ? (
-              <span className="text-rose-600 dark:text-rose-400 font-bold">⚠️ {isAr ? 'عجز نقدي متراكم' : 'Shortage'}</span>
+              <span className="text-rose-600 dark:text-rose-400 font-bold">{isAr ? 'عجز نقدي متراكم' : 'Shortage'}</span>
             ) : (
               <span className="text-blue-600 dark:text-blue-400 font-bold">↑ {isAr ? 'زيادة نقدية متراكمة' : 'Surplus'}</span>
             )}
@@ -390,7 +390,7 @@ export const ClosingHistoryPage: React.FC<Props> = ({ onNavigate }) => {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-xs">
           <div className="flex justify-between items-center mb-3">
             <span className="text-sm font-bold text-slate-600 dark:text-slate-300">{isAr ? 'حالة الورديات والجرد' : 'Shifts Accuracy'}</span>
-            <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center">
               <CheckCircle2 size={18} />
             </div>
           </div>
@@ -404,7 +404,7 @@ export const ClosingHistoryPage: React.FC<Props> = ({ onNavigate }) => {
             {summary.shortageCount > 0 ? (
               <span className="text-rose-500 font-bold">{summary.shortageCount} {isAr ? 'وردية بها عجز' : 'with shortage'}</span>
             ) : (
-              <span className="text-emerald-500 font-bold">✓ {isAr ? 'جميع الورديات سليمة' : 'All clear'}</span>
+              <span className="text-emerald-500 font-bold">{isAr ? 'جميع الورديات سليمة' : 'All clear'}</span>
             )}
           </p>
         </div>
@@ -580,7 +580,7 @@ export const ClosingHistoryPage: React.FC<Props> = ({ onNavigate }) => {
                           {branch}
                         </div>
                         <div className="text-xs font-semibold text-slate-500 mt-0.5">
-                          👤 {r.performedBy || '—'}
+                          {r.performedBy || '—'}
                         </div>
                       </td>
 
@@ -646,7 +646,7 @@ export const ClosingHistoryPage: React.FC<Props> = ({ onNavigate }) => {
                           <button
                             onClick={() => handlePrintA4Pdf(r)}
                             title={isAr ? 'تصدير / طباعة تقرير PDF رسمي (A4)' : 'Export A4 PDF'}
-                            className="w-8 h-8 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/50 text-purple-600 dark:text-purple-300 flex items-center justify-center transition-colors cursor-pointer"
+                            className="w-8 h-8 rounded-xl bg-primary-50 hover:bg-primary-100 dark:bg-primary-950/50 dark:hover:bg-primary-900/50 text-primary-600 dark:text-primary-300 flex items-center justify-center transition-colors cursor-pointer"
                           >
                             <FileText size={17} />
                           </button>
@@ -695,7 +695,7 @@ export const ClosingHistoryPage: React.FC<Props> = ({ onNavigate }) => {
             {/* ترويسة المودال */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-primary-500/10 border border-primary-500/20 text-primary-600 dark:text-primary-400 flex items-center justify-center">
                   <FileText size={20} />
                 </div>
                 <div>
@@ -776,7 +776,7 @@ export const ClosingHistoryPage: React.FC<Props> = ({ onNavigate }) => {
 
                 <div className="pt-2 border-t border-slate-200 dark:border-slate-700/80 flex justify-between text-xs font-bold">
                   <span className="text-slate-700 dark:text-slate-200">{isAr ? '(=) النقدية المتوقعة بالدرج:' : 'Expected in Drawer:'}</span>
-                  <span className="font-mono text-purple-600 dark:text-purple-400">{formatNumber(activeReport.expectedCash || 0)} {t('egp')}</span>
+                  <span className="font-mono text-primary-600 dark:text-primary-400">{formatNumber(activeReport.expectedCash || 0)} {t('egp')}</span>
                 </div>
               </div>
 
@@ -850,7 +850,7 @@ export const ClosingHistoryPage: React.FC<Props> = ({ onNavigate }) => {
               <Button
                 variant="primary"
                 onClick={() => handlePrintA4Pdf(activeReport)}
-                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-600/20"
+                className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white shadow-md shadow-primary-600/20"
               >
                 <FileText size={16} />
                 <span>{isAr ? 'تصدير / طباعة PDF كاملة (A4)' : 'Export Full A4 PDF'}</span>

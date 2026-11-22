@@ -1,5 +1,6 @@
 import { printDebtsListThermal, printCustomerStatementThermal } from '../lib/thermalPrinter';
-import React, { useState, useMemo } from 'react';
+import { normalizePhone, isValidPhone } from '../lib/phoneUtils';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   Users, Search, DollarSign, CreditCard, Printer, 
@@ -535,12 +536,9 @@ export const DebtsPage: React.FC = () => {
       return;
     }
 
-    // تطهير رقم الهاتف وشرط 11 رقماً
-    let cleanPhone = toEnglishDigits(newCustPhone).replace(/\D/g, '');
-    if (cleanPhone.startsWith('20') && cleanPhone.length === 13) {
-      cleanPhone = cleanPhone.slice(2);
-    }
-    if (cleanPhone.length !== 11 || !cleanPhone.startsWith('01')) {
+    // تطهير وتوحيد رقم الهاتف وشرط 11 رقماً
+    let cleanPhone = normalizePhone(newCustPhone);
+    if (!isValidPhone(cleanPhone)) {
       addToast('رقم الهاتف يجب أن يتكون من 11 رقماً ويبدأ بـ 01 (مثال: 01012345678)', 'error');
       return;
     }
@@ -891,7 +889,7 @@ export const DebtsPage: React.FC = () => {
                 onClick={() => setStatusFilter(pill.id as any)}
                 className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
                   active
-                    ? 'bg-blue-600 text-white border border-blue-500 shadow-sm shadow-blue-500/30'
+                    ? 'bg-primary-600 text-white border border-primary-500 shadow-sm shadow-primary-500/30'
                     : 'bg-slate-100 dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
@@ -1178,8 +1176,8 @@ export const DebtsPage: React.FC = () => {
                   }}
                   className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                     paymentMode === 'full'
-                      ? 'bg-purple-600 text-white border-purple-500 shadow-sm'
-                      : 'bg-slate-100 dark:bg-slate-900/80 text-slate-300 border-slate-200 dark:border-slate-700/80 hover:border-purple-500/50'
+                      ? 'bg-primary-600 text-white border-primary-500 shadow-sm'
+                      : 'bg-slate-100 dark:bg-slate-900/80 text-slate-300 border-slate-200 dark:border-slate-700/80 hover:border-primary-500/50'
                   }`}
                 >
                   سداد كامل المبلغ ({formatNumber(paymentCustomer.balance || 0)})
@@ -1193,8 +1191,8 @@ export const DebtsPage: React.FC = () => {
                   }}
                   className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                     paymentMode === 'partial'
-                      ? 'bg-purple-600 text-white border-purple-500 shadow-sm'
-                      : 'bg-slate-100 dark:bg-slate-900/80 text-slate-300 border-slate-200 dark:border-slate-700/80 hover:border-purple-500/50'
+                      ? 'bg-primary-600 text-white border-primary-500 shadow-sm'
+                      : 'bg-slate-100 dark:bg-slate-900/80 text-slate-300 border-slate-200 dark:border-slate-700/80 hover:border-primary-500/50'
                   }`}
                 >
                   سداد جزء من المبلغ
@@ -1215,13 +1213,13 @@ export const DebtsPage: React.FC = () => {
                 value={paymentAmount}
                 onChange={(e) => setPaymentAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white font-bold font-mono text-lg outline-none focus:ring-2 focus:ring-purple-500 text-center"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600/80 bg-slate-100 dark:bg-slate-900/80 text-white font-bold font-mono text-lg outline-none focus:ring-2 focus:ring-primary-500 text-center"
               />
               {/* المديونية المتبقية المتوقعة */}
               {parseFloat(paymentAmount) > 0 && (
                 <div className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 flex justify-between">
                   <span>المبلغ المتبقي بعد السداد:</span>
-                  <span className="font-mono font-bold text-purple-400">
+                  <span className="font-mono font-bold text-primary-400">
                     {formatNumber(Math.max(0, (paymentCustomer.balance || 0) - (parseFloat(paymentAmount) || 0)))} {currencySymbol}
                   </span>
                 </div>
@@ -1246,8 +1244,8 @@ export const DebtsPage: React.FC = () => {
                     onClick={() => setPaymentMethod(m.id as any)}
                     className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1 cursor-pointer ${
                       paymentMethod === m.id
-                        ? 'bg-purple-600 text-white border-purple-500 shadow-sm'
-                        : 'bg-slate-100 dark:bg-slate-900/80 text-slate-300 border-slate-200 dark:border-slate-700/80 hover:border-purple-400'
+                        ? 'bg-primary-600 text-white border-primary-500 shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-900/80 text-slate-300 border-slate-200 dark:border-slate-700/80 hover:border-primary-400'
                     }`}
                   >
                     <span>{m.icon}</span>
@@ -1547,11 +1545,11 @@ export const DebtsPage: React.FC = () => {
 
               {debtType === 'drawer_cash' ? (
                 <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
-                  <span>💡 سيتم تسجيل سحب المبلغ من درج النقدية الآن كحركة مسحوبات وقيده كدين لمتابعته وسداده لاحقاً.</span>
+                  <span>سيتم تسجيل سحب المبلغ من درج النقدية الآن كحركة مسحوبات وقيده كدين لمتابعته وسداده لاحقاً.</span>
                 </div>
               ) : (
                 <div className="mt-2 p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs flex items-center gap-2">
-                  <span>💡 قيد متبقي الفاتورة كدين على العميل بسبب ظرف طارئ ليسدد لاحقاً دون التأثير على كاش الدرج.</span>
+                  <span>قيد متبقي الفاتورة كدين على العميل بسبب ظرف طارئ ليسدد لاحقاً دون التأثير على كاش الدرج.</span>
                 </div>
               )}
             </div>
@@ -1699,7 +1697,7 @@ export const DebtsPage: React.FC = () => {
                 <div className="mt-2 p-2 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
-                      ✓
+                      <Check size={14} />
                     </div>
                     <span className="text-slate-300">
                       عميل مسجل: <strong className="text-white">{selectedDebtCustomer.name}</strong> {selectedDebtCustomer.phone && `(${selectedDebtCustomer.phone})`}

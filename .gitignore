@@ -67,3 +67,8 @@ TEMP*.pdf
 # ===== Flutter (flutter_app لديه .gitignore خاص به) =====
 flutter_app/build/
 flutter_app/.dart_tool/
+
+# ===== Android Native App Intermediates =====
+android_app/app/build/
+android_app/.gradle/
+android_app/build/

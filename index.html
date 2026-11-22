@@ -3,21 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RaiZon Pro v1 - منصة الإدارة المتكاملة</title>
+    <!-- Content Security Policy (VULN-07) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cifijxcmmnosocnfizra.supabase.co https://*.supabase.co wss://*.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com https://cdn-icons-png.flaticon.com http://localhost:* http://127.0.0.1:*; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co http://localhost:* http://127.0.0.1:*;">
+    <title>فلير وان - Flare One | نظام إدارة نقاط البيع والكاشير</title>
     <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/x-icon" href="/icon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="apple-touch-icon" href="/icon-192.png">
     <meta name="theme-color" content="#10b981">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@300;400;500;700;800;900&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="stylesheet" href="/index.css">
   </head>
   <body class="bg-slate-900 text-slate-100 overflow-hidden select-none">
     <div id="root">
-      <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#030014;color:#f8fafc;font-family:Cairo,sans-serif;text-align:center;padding:20px;">
-        <div style="width:48px;height:48px;border:3px solid rgba(16,185,129,0.2);border-top-color:#10b981;border-radius:50%;animation:raizon-spin 1s linear infinite;margin-bottom:16px;"></div>
-        <h2 style="font-size:18px;font-weight:700;margin:0 0 8px 0;">جاري تشغيل RaiZon Pro...</h2>
-        <p style="font-size:13px;color:#94a3b8;margin:0;">يرجى الانتظار لحظات</p>
-        <style>@keyframes raizon-spin{to{transform:rotate(360deg)}}</style>
+      <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f172a;color:#f8fafc;font-family:Cairo,sans-serif;text-align:center;padding:20px;">
+        <img src="/logo.png" alt="فلير وان - Flare One" style="width:76px;height:76px;border-radius:18px;margin-bottom:18px;box-shadow:0 8px 24px rgba(16,185,129,0.35);object-fit:contain;">
+        <div style="width:36px;height:36px;border:3px solid rgba(16,185,129,0.2);border-top-color:#10b981;border-radius:50%;animation:flareone-spin 0.8s linear infinite;margin-bottom:14px;"></div>
+        <h2 style="font-size:17px;font-weight:800;margin:0 0 6px 0;">نظام فلير وان (Flare One)</h2>
+        <p style="font-size:12px;color:#94a3b8;margin:0;">جاري تحميل النظام السحابي...</p>
+        <style>@keyframes flareone-spin{to{transform:rotate(360deg)}}</style>
       </div>
     </div>
     <script src="/boot.js"></script>

@@ -51,7 +51,7 @@ export const openThermalPrintWindow = (title: string, htmlContent: string) => {
 
 /** غلاف صفحة HTML للطباعة الحرارية 80mm */
 export const wrapThermalHtml = (title: string, bodyContent: string, shop?: ThermalShopInfo): string => {
-  const shopName = (shop?.shopName || 'RaiZon Pro').trim();
+  const shopName = (shop?.shopName || 'فلير وان | Flare One').trim();
   const phone = (shop?.phone || '').trim();
   const address = (shop?.address || '').trim();
 
@@ -218,7 +218,7 @@ export const wrapThermalHtml = (title: string, bodyContent: string, shop?: Therm
   ${bodyContent}
 
   <div class="thermal-footer">
-    نظام برو كاشير لإدارة نقاط البيع • ProCashier
+    نظام فلير وان لإدارة نقاط البيع • Flare One POS
   </div>
 
   <script>
@@ -388,8 +388,130 @@ export const printClosingReportThermal = (
     </div>
   `;
 
-  const html = wrapThermalHtml('تقرير إقفال الوردية والخزينة', bodyHtml, shop);
-  openThermalPrintWindow('Shift Closing Report', html);
+  const html = wrapThermalHtml('تقرير جرد وإغلاق الوردية (Z-REPORT)', bodyHtml, shop);
+  openThermalPrintWindow('Shift Closing Z-Report', html);
+};
+
+/**
+ * 1.1 تقرير القراءة المؤقتة للوردية (X-Report)
+ * يُطبع أثناء الوردية لمطابقة النقدية والدرج دون تصفير الوردية أو إغلاقها
+ */
+export const printXReportThermal = (
+  report: ClosingReportData,
+  shop?: ThermalShopInfo,
+  cashierName?: string
+) => {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric' });
+  const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+  const cashier = cashierName || report.cashierName || 'كاشير رئيسي';
+  const diff = report.difference;
+  const diffLabel = diff === 0 ? 'متطابق تماماً' : diff < 0 ? `عجز ${Math.abs(diff).toLocaleString('en-US')} ج.م` : `زيادة ${diff.toLocaleString('en-US')} ج.م`;
+
+  const bodyHtml = `
+    <div style="text-align: center; font-size: 10px; font-weight: bold; background: #fff3cd; border: 1px dashed #856404; padding: 4px; margin-bottom: 6px; border-radius: 4px;">
+      ⚠️ قراءة استرشادية مؤقتة (X-Report)<br/>
+      الوردية مستمرة ولم يتم تصفير الحسابات
+    </div>
+
+    <!-- بيانات الوردية -->
+    <table class="thermal-table">
+      <tr>
+        <th style="width: 30%;">التاريخ / الوقت</th>
+        <td dir="ltr" style="font-family: monospace; font-weight: bold;">${dateStr} | ${timeStr}</td>
+      </tr>
+      <tr>
+        <th>الكاشير المسؤول</th>
+        <td>${cashier}</td>
+      </tr>
+      <tr>
+        <th>حالة الجرد الحالية</th>
+        <td style="font-weight: 800;">${diffLabel}</td>
+      </tr>
+    </table>
+
+    <!-- تفاصيل حركة درج النقدية -->
+    <div class="thermal-box">
+      <div style="font-weight: 800; text-align: center; margin-bottom: 4px; font-size: 10px; background: #eee; padding: 2px;">حركة درج النقدية حتى اللحظة</div>
+      
+      <div class="thermal-row">
+        <span>الرصيد الافتتاحي:</span>
+        <span style="font-family: monospace; font-weight: bold;">${Number(report.openingBalance || 0).toLocaleString('en-US')} ج.م</span>
+      </div>
+
+      <div class="thermal-row">
+        <span>إيراد مبيعات كاش:</span>
+        <span style="font-family: monospace; font-weight: bold;">+${Number(report.cashSales || 0).toLocaleString('en-US')} ج.م</span>
+      </div>
+
+      <div class="thermal-row">
+        <span>إيداعات نقدية للدرج:</span>
+        <span style="font-family: monospace; font-weight: bold;">+${Number(report.deposits || 0).toLocaleString('en-US')} ج.م</span>
+      </div>
+
+      <div class="thermal-row">
+        <span>مسحوبات من الدرج:</span>
+        <span style="font-family: monospace; font-weight: bold;">-${Number(report.withdrawals || 0).toLocaleString('en-US')} ج.م</span>
+      </div>
+
+      <div class="thermal-row">
+        <span>المصروفات والمرتجعات:</span>
+        <span style="font-family: monospace; font-weight: bold;">-${Number(report.totalExpenses || 0).toLocaleString('en-US')} ج.م</span>
+      </div>
+
+      <div class="thermal-divider"></div>
+
+      <div class="thermal-row highlight">
+        <span>رصيد الدرج المفترض الآن:</span>
+        <span style="font-family: monospace; font-size: 11px;">${Number(report.expectedCash || 0).toLocaleString('en-US')} ج.م</span>
+      </div>
+    </div>
+
+    <!-- باقي وسائل الدفع -->
+    <div class="thermal-box">
+      <div style="font-weight: 800; text-align: center; margin-bottom: 4px; font-size: 10px; background: #eee; padding: 2px;">مبيعات الطرق الإلكترونية والآجل</div>
+      
+      <div class="thermal-row">
+        <span>المحافظ الإلكترونية:</span>
+        <span style="font-family: monospace; font-weight: bold;">+${Number(report.walletSales || 0).toLocaleString('en-US')} ج.م</span>
+      </div>
+
+      ${report.cardSales ? `
+      <div class="thermal-row">
+        <span>البطاقات (فيزا/ماستركارد):</span>
+        <span style="font-family: monospace; font-weight: bold;">+${Number(report.cardSales || 0).toLocaleString('en-US')} ج.م</span>
+      </div>` : ''}
+
+      <div class="thermal-row">
+        <span>المديونيات والآجل:</span>
+        <span style="font-family: monospace; font-weight: bold;">${report.includeDebts === false ? '(مستبعدة) ' : '+'}${Number(report.creditSales || 0).toLocaleString('en-US')} ج.م</span>
+      </div>
+    </div>
+
+    <div class="thermal-total-banner">
+      <span>إجمالي المبيعات والإيرادات:</span>
+      <span style="font-family: monospace; font-size: 13px;">${Number(report.totalClosingAmount || (report.actualCash + report.walletSales + (report.cardSales || 0) + (report.creditSales || 0))).toLocaleString('en-US')} ج.م</span>
+    </div>
+
+    ${report.actualCash > 0 ? `
+    <div class="thermal-box">
+      <div class="thermal-row bold">
+        <span>المبلغ الفعلي بالدرج (العدّ):</span>
+        <span style="font-family: monospace;">${Number(report.actualCash || 0).toLocaleString('en-US')} ج.م</span>
+      </div>
+      <div class="thermal-row bold" style="border-top: 1px dashed #000; padding-top: 4px; margin-top: 4px;">
+        <span>فارق الجرد اللحظي:</span>
+        <span style="font-family: monospace;">${diff > 0 ? '+' : ''}${diff.toLocaleString('en-US')} ج.م</span>
+      </div>
+    </div>` : ''}
+
+    <div style="text-align: center; margin-top: 8px; font-size: 9.5px; color: #555;">
+      *** قراءة X-Report مؤقتة لأغراض الرقابة والمطابقة ***
+    </div>
+  `;
+
+  const html = wrapThermalHtml('تقرير قراءة مؤقتة (X-REPORT)', bodyHtml, shop);
+  openThermalPrintWindow('Shift X-Report', html);
 };
 
 /** فتح نافذة طباعة A4 رسمية لتصدير وحفظ PDF */
@@ -437,7 +559,7 @@ export const printClosingReportA4Pdf = (
   shop?: ThermalShopInfo,
   cashierName?: string
 ) => {
-  const shopName = (shop?.shopName || 'RaiZon Pro').trim();
+  const shopName = (shop?.shopName || 'فلير وان | Flare One').trim();
   const phone = (shop?.phone || '').trim();
   const address = (shop?.address || '').trim();
   const cashier = cashierName || report.cashierName || 'كاشير رئيسي';
@@ -722,7 +844,7 @@ export const printClosingHistoryReportA4Pdf = (
   filterTitle: string = 'سجل الإقفالات الشامل',
   shop?: ThermalShopInfo
 ) => {
-  const shopName = (shop?.shopName || 'RaiZon Pro').trim();
+  const shopName = (shop?.shopName || 'فلير وان | Flare One').trim();
   const phone = (shop?.phone || '').trim();
   const totalSalesAll = reports.reduce((s, r) => s + (r.totalClosingAmount || r.cashSales || 0), 0);
   const totalExpectedAll = reports.reduce((s, r) => s + (r.expectedCash || 0), 0);
@@ -831,7 +953,7 @@ export const printClosingHistoryReportA4Pdf = (
   </table>
 
   <div class="footer">
-    تم استخراج هذا التقرير تلقائياً بواسطة نظام RaiZon Pro الإداري المتكامل.
+    تم استخراج هذا التقرير تلقائياً بواسطة نظام فلير وان (Flare One) الإداري المتكامل.
   </div>
 </body>
 </html>`;

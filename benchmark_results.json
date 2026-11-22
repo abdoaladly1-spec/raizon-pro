@@ -1,0 +1,35 @@
+{
+  "data_sizing": {
+    "generation_time_sec": 1.44,
+    "customers_mb": 2.29,
+    "products_mb": 2.79,
+    "invoices_mb": 22.94,
+    "total_mb": 28.02
+  },
+  "sqlite_performance": {
+    "customer_insert_sec": 0.08,
+    "invoice_insert_sec": 2.76,
+    "query_month_ms": 44.73,
+    "customer_search_ms": 0.39,
+    "staff_groupby_ms": 307.87,
+    "db_size_mb": 30.83
+  },
+  "frontend_simulation": {
+    "invoice_filter_ms": 6.98,
+    "product_search_ms": 2.15,
+    "storage_analysis": {
+      "localStorage_limit_mb": 5.0,
+      "payload_size_mb": 28.02,
+      "localStorage_compatible": false,
+      "indexedDB_recommended": true,
+      "dom_virtualization_needed": true
+    }
+  },
+  "supabase_sync": {
+    "status": "FAILED: HTTP Error 400: Bad Request",
+    "batch_50_time_sec": 0,
+    "estimated_rate_per_sec": 0,
+    "estimated_time_10k_cust_min": "N/A",
+    "estimated_time_30k_inv_min": "N/A"
+  }
+}
